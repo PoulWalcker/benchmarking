@@ -14,7 +14,7 @@ from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.runtime.agency import MAX_BODY, build_prompt, canonical_hash
 from sapi_config_lab.runtime.composition import default_backend
 from sapi_config_lab.runtime.contracts import CompileOptions
-from sapi_config_lab.workflow.profile import read, read_bindings
+from sapi_config_lab.core.profile import read, read_bindings
 
 OPERATIONS = {"ticket.classify": 2, "research.product": 2, "research.marketing": 2, "research.write": 2}
 LIVE_CASES = {

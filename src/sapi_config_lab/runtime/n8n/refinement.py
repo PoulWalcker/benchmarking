@@ -8,7 +8,7 @@ import uuid
 
 from sapi_config_lab.runtime.contracts import Document, LlmMode
 from sapi_config_lab.runtime.n8n.compiler import RESOURCES, compile_n8n
-from sapi_config_lab.workflow.profile import SPEC
+from sapi_config_lab.core.profile import SPEC
 
 
 def compile_refinement(

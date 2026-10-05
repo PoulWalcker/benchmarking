@@ -41,7 +41,7 @@ from sapi_config_lab.runtime.agency import DispatchAudit, execute
 from sapi_config_lab.runtime.autowfbench import PINNED_REVISION, start_environment
 from sapi_config_lab.runtime.contracts import CompileOptions
 from sapi_config_lab.runtime.n8n.adapter import N8nBackend
-from sapi_config_lab.workflow.profile import read, read_bindings
+from sapi_config_lab.core.profile import read, read_bindings
 
 ROOT = workspace_root()
 CHALLENGE = "production-checkout-recovery"

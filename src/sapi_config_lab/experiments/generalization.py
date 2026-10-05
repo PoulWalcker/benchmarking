@@ -27,7 +27,7 @@ from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.runtime.agency import make_handler
 from sapi_config_lab.runtime.execution import run_case
 from sapi_config_lab.runtime.lifecycle import durable_json
-from sapi_config_lab.workflow import profile
+from sapi_config_lab.core import profile
 
 TASKS = ("billing-bulletin-packet", "two-audience-briefs")
 CAPS = {TASKS[0]: {"base": 1, "alternate": 1}, TASKS[1]: {"base": 6, "alternate": 6}}

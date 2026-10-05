@@ -15,7 +15,7 @@ from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.runtime.agency import urlopen
 from sapi_config_lab.runtime.contracts import Document
 from sapi_config_lab.runtime.lifecycle import digest, durable_json
-from sapi_config_lab.workflow import profile
+from sapi_config_lab.core import profile
 
 
 class WrapperRebuilder:

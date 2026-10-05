@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.runtime.agency import ContractError, DispatchAudit, execute
-from sapi_config_lab.workflow.profile import read_bindings
+from sapi_config_lab.core.profile import read_bindings
 
 
 class OccurrenceBudgetTests(unittest.TestCase):
@@ -62,7 +62,7 @@ class OccurrenceBudgetTests(unittest.TestCase):
         from sapi_config_lab.experiments.live_evidence import case_budget
         from sapi_config_lab.paths import workspace_root
         from sapi_config_lab.scenarios import EXPANSION_SCENARIOS
-        from sapi_config_lab.workflow.profile import read
+        from sapi_config_lab.core.profile import read
 
         root = workspace_root()
         cases = json.loads((root / "verification/cases.json").read_text())

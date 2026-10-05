@@ -190,7 +190,7 @@ class ExpansionLocalGraphTests(unittest.TestCase):
     def setUpClass(cls):
         import json
         from sapi_config_lab.paths import CATALOG, workspace_root
-        from sapi_config_lab.workflow.profile import read
+        from sapi_config_lab.core.profile import read
 
         cls.root = workspace_root()
         cls.catalog = read(CATALOG)["operations"]

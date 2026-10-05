@@ -14,7 +14,7 @@ from sapi_config_lab.experiments.live_evidence import reconcile_dispatches
 from sapi_config_lab.experiments.replay import load_selection
 from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.runtime.agency import DispatchAudit, canonical_hash, execute
-from sapi_config_lab.workflow.profile import read_bindings
+from sapi_config_lab.core.profile import read_bindings
 
 
 class LiveEvidenceTests(unittest.TestCase):

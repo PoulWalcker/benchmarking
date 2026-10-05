@@ -19,7 +19,7 @@ successful Result node.
 Use the `invoices.validate`, `invoices.sum`, and `invoices.report` operations.
 The source specification revision is
 `06ddd3333109cea8a2cb3071609070d7a3c0d3ff`. Read `/app/lab/docs/PROFILE.md` and
-`/app/lab/src/sapi_config_lab/workflow/bindings.yaml` for the experimental profile and operation contracts.
+`/app/lab/src/sapi_config_lab/core/bindings.yaml` for the experimental profile and operation contracts.
 Keep the callback fixture activation, fail-fast errors and independent
 concurrency. Compilation uses the shared compiler in `/app/lab/src/sapi_config_lab/runtime/n8n/compiler.py`.
 
