@@ -26,7 +26,7 @@ import webbrowser
 import yaml
 
 from sapi_config_lab.paths import CATALOG, workspace_root
-from sapi_config_lab.experiments.ui_n8n import DockerUi, fingerprint
+from sapi_config_lab.runtime.ui_n8n import DockerUi, fingerprint
 from sapi_config_lab.runtime.composition import default_backend
 from sapi_config_lab.core.contracts import CompileOptions
 from sapi_config_lab.core.profile import UniqueLoader, Unsupported, read_bindings, validate, validate_bindings

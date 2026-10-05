@@ -4,7 +4,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-from sapi_config_lab.experiments.task_evaluation import summarize_stages
+from sapi_config_lab.runtime.task_evaluation import summarize_stages
 
 
 def read(path):

@@ -4,7 +4,7 @@ import asyncio
 from decimal import Decimal
 import unittest
 
-from sapi_config_lab.experiments import task_evaluation
+from sapi_config_lab.runtime import task_evaluation
 from verification import rubric
 from verification.rubric import (
     Criterion,

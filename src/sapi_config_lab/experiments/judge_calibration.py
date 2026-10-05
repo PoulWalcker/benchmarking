@@ -17,7 +17,7 @@ import copy
 import json
 from pathlib import Path
 
-from sapi_config_lab.experiments.task_evaluation import Document, FrozenTaskContract, digest
+from sapi_config_lab.runtime.task_evaluation import Document, FrozenTaskContract, digest
 from sapi_config_lab.paths import workspace_root
 
 
@@ -127,7 +127,7 @@ def main():
     import argparse
     import sys
     from datetime import datetime, timezone
-    from sapi_config_lab.experiments.task_evaluation import freeze_contract, judge, evaluate, write_evaluation
+    from sapi_config_lab.runtime.task_evaluation import freeze_contract, judge, evaluate, write_evaluation
 
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--source", type=Path, required=True)

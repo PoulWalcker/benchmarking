@@ -34,7 +34,7 @@ one "it worked".
   expected behavior.
 - **Quality** means a judgement that the produced text or artifact is good. On
   the benchmark track that is the separate semantic judge
-  (`src/sapi_config_lab/experiments/task_evaluation.py:342`), scored out of ten.
+  (`src/sapi_config_lab/runtime/task_evaluation.py:342`), scored out of ten.
   On the project's own nine scenarios there is no automatic quality score at
   all: prose checks are lexical coverage checks, and human review is tracked as
   `human_review: pending`.
@@ -84,7 +84,7 @@ Their field names cannot be renamed.
 | --- | --- | --- |
 | `sapi-lab-execution/v1` | `src/sapi_config_lab/runtime/execution.py:95` | `execution`, `acceptance`, `input.activation` (holds a lifecycle admission), `llm`, `evidence` |
 | `sapi-lab-verification/v1` | `verification/verify.py:204` | `cases`, `case_count`, `scenario`, `submission_sha256`, `passed` |
-| `sapi-lab-task-evaluation/v1` | `src/sapi_config_lab/experiments/task_evaluation.py:22,412-420` | `normalized_reward`, `project_acceptance.criterion`, `evaluation_mode` |
+| `sapi-lab-task-evaluation/v1` | `src/sapi_config_lab/runtime/task_evaluation.py:22,412-420` | `normalized_reward`, `project_acceptance.criterion`, `evaluation_mode` |
 
 Harbor's own trial record carries `rewards: {"reward": <float>}`. That is
 upstream's schema, not ours, and is equally out of reach.
@@ -192,7 +192,7 @@ state which track produced it.
 | Meaning in use | Proof | Should be called | Rename |
 | --- | --- | --- | --- |
 | Binary suite pass for the project's nine scenarios | `harbor/templates/test.sh`; asserted at `experiments/harbor.py:185,190`, `generalization.py:171`, `lifecycle_run.py:289`, `replay.py:81,206` | **suite reward** | **Blocked**, Harbor's `rewards.reward` |
-| Continuous `score_0_10 / 10` on the AutoWFBench track | `src/sapi_config_lab/experiments/task_evaluation.py:139,418` | **normalized score** | **Blocked**, `normalized_reward` is a `sapi-lab-task-evaluation/v1` field |
+| Continuous `score_0_10 / 10` on the AutoWFBench track | `src/sapi_config_lab/runtime/task_evaluation.py:139,418` | **normalized score** | **Blocked**, `normalized_reward` is a `sapi-lab-task-evaluation/v1` field |
 
 A binary reward answers "did the whole suite pass". A `score/10` answers "how
 good was this one answer". Comparing or averaging them produces a meaningless

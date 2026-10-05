@@ -4,7 +4,7 @@ import copy
 import unittest
 
 from sapi_config_lab.experiments.judge_calibration import calibration_fixture, compare_calibration
-from sapi_config_lab.experiments.task_evaluation import evaluate
+from sapi_config_lab.runtime.task_evaluation import evaluate
 from tests import test_task_evaluation as fixtures
 
 

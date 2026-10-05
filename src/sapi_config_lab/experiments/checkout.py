@@ -29,7 +29,7 @@ from sapi_config_lab.experiments.generation.common import audit_stderr
 from sapi_config_lab.experiments.harbor import command, load_trials
 from sapi_config_lab.core.host import harbor_command
 from sapi_config_lab.core.provenance import source_manifest, host_environment
-from sapi_config_lab.experiments.task_evaluation import (
+from sapi_config_lab.runtime.task_evaluation import (
     build_run_log,
     evaluate,
     freeze_contract,
@@ -55,7 +55,7 @@ CATALOG = ROOT / "generation/checkout-bindings.yaml"
 # tests/test_packaging.py asserts every path below still exists under src/.
 ORACLE_MODULES = (
     "sapi_config_lab/experiments/checkout.py",
-    "sapi_config_lab/experiments/task_evaluation.py",
+    "sapi_config_lab/runtime/task_evaluation.py",
     "sapi_config_lab/experiments/judge_calibration.py",
     "sapi_config_lab/runtime/autowfbench.py",
     "sapi_config_lab/runtime/autowfbench-source.json",
@@ -616,7 +616,7 @@ def main():
         )
         paths = [output / name / "evaluation/evaluation.json" for name in evaluated_names]
         evaluations = [json.loads(path.read_text()) if path.exists() else None for path in paths]
-        from sapi_config_lab.experiments.task_evaluation import summarize_evaluations
+        from sapi_config_lab.runtime.task_evaluation import summarize_evaluations
 
         for name, evaluation in zip(evaluated_names, evaluations):
             report[name + "_evaluation"] = summarize_evaluations([evaluation] if (output / name).exists() else [])
