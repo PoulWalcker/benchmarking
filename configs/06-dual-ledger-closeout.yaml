@@ -1,0 +1,55 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: dual-ledger-closeout
+  revision: 1
+  kind: Pipeline
+  inputs:
+    domestic_invoices:
+      - {id: D-A, amount_minor: 1251, currency: AED}
+      - {id: D-B, amount_minor: 0, currency: AED}
+    export_invoices:
+      - {id: X-A, amount_minor: 73, currency: EUR}
+      - {id: X-B, amount_minor: 210, currency: EUR}
+  steps:
+    - id: domestic_validate
+      kind: Script
+      uses: invoices.validate
+      with: {invoices: {ref: inputs.domestic_invoices}}
+    - id: domestic_sum
+      kind: Script
+      uses: invoices.sum
+      with: {invoices: {ref: steps.domestic_validate.invoices}}
+    - id: domestic_report
+      kind: Script
+      uses: invoices.report
+      with: {total: {ref: steps.domestic_sum}}
+    - id: export_validate
+      kind: Script
+      uses: invoices.validate
+      with: {invoices: {ref: inputs.export_invoices}}
+    - id: export_sum
+      kind: Script
+      uses: invoices.sum
+      with: {invoices: {ref: steps.export_validate.invoices}}
+    - id: export_report
+      kind: Script
+      uses: invoices.report
+      with: {total: {ref: steps.export_sum}}
+  dependencies:
+    - [domestic_validate, domestic_sum]
+    - [domestic_sum, domestic_report]
+    - [export_validate, export_sum]
+    - [export_sum, export_report]
+  acceptance: Independently close both ledgers without mixing invoices or currencies.
+  output:
+    domestic: {ref: steps.domestic_report}
+    export: {ref: steps.export_report}
+activation:
+  kind: Callback
+  rule_id: closeout-requested
+  hook: finance.closeout_requested
+  condition: valid_input
+  reaction: Trigger
+  workflow_ref: {id: dual-ledger-closeout, revision: 1}
+execution: {concurrency: independent, deadline_seconds: 30, on_step_error: fail}

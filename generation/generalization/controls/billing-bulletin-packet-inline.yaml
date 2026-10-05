@@ -1,0 +1,84 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: billing-bulletin-packet
+  revision: 1
+  kind: Gantt
+  inputs:
+    invoices:
+    - id: A
+      amount_minor: 1251
+      currency: AED
+    - id: B
+      amount_minor: 349
+      currency: AED
+    articles:
+    - id: offline
+      title: Offline inventory
+      text: Rural cooperatives can manage offline inventory.
+    - id: export
+      title: CSV export
+      text: CSV export is available through local agents.
+  steps:
+  - id: v
+    kind: Script
+    uses: invoices.validate
+    with:
+      invoices:
+        ref: inputs.invoices
+  - id: s
+    kind: Script
+    uses: invoices.sum
+    with:
+      invoices:
+        ref: steps.v.invoices
+  - id: a
+    kind: Script
+    uses: digest.prepare
+    with:
+      articles:
+        ref: inputs.articles
+    join: all_terminal
+  - id: d
+    kind: LLM
+    uses: digest.summarize
+    with:
+      articles:
+        ref: steps.a.articles
+  dependencies:
+  - - v
+    - s
+  - - s
+    - a
+  - - v
+    - a
+  - - a
+    - d
+  acceptance: Produce source-grounded results for every supplied input.
+  output:
+    billing:
+      total_minor:
+        ref: steps.s.amount_minor
+      currency:
+        ref: steps.s.currency
+      invoice_count:
+        ref: steps.s.count
+    update:
+      mode: preview
+      text:
+        ref: steps.d.text
+      article_ids:
+        ref: steps.d.article_ids
+activation:
+  kind: Callback
+  rule_id: billing-bulletin-packet-requested
+  hook: research.requested
+  condition: valid_input
+  reaction: Trigger
+  workflow_ref:
+    id: billing-bulletin-packet
+    revision: 1
+execution:
+  concurrency: independent
+  deadline_seconds: 120
+  on_step_error: fail

@@ -1,0 +1,88 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: support-review-packet
+  revision: 1
+  kind: Gantt
+  inputs:
+    ticket: {id: S-31, text: 'Please check order A9137, delayed three days.', days_overdue: 3}
+    invoices:
+      - {id: B-1, amount_minor: 1251, currency: AED}
+      - {id: B-2, amount_minor: 349, currency: AED}
+    required_order_id: A9137
+    max_characters: 120
+  steps:
+    - id: classify
+      kind: LLM
+      uses: ticket.classify
+      with: {ticket: {ref: inputs.ticket}}
+    - id: escalate
+      kind: Script
+      uses: ticket.escalation_draft
+      when: {ref: steps.classify.priority, eq: high}
+      with: {ticket: {ref: inputs.ticket}}
+    - id: normal
+      kind: Script
+      uses: ticket.normal_draft
+      when: {ref: steps.classify.priority, eq: normal}
+      with: {ticket: {ref: inputs.ticket}}
+    - id: select
+      kind: Script
+      uses: branch.select_one
+      join: all_terminal
+      with:
+        escalated: {optional_ref: steps.escalate}
+        normal: {optional_ref: steps.normal}
+    - id: validate
+      kind: Script
+      uses: invoices.validate
+      with: {invoices: {ref: inputs.invoices}}
+    - id: total
+      kind: Script
+      uses: invoices.sum
+      with: {invoices: {ref: steps.validate.invoices}}
+    - id: report
+      kind: Script
+      uses: invoices.report
+      with: {total: {ref: steps.total}}
+    - id: draft
+      kind: LLM
+      uses: reply.generate
+      join: all_terminal
+      with:
+        ticket:
+          id: {ref: inputs.ticket.id}
+          text: {ref: inputs.ticket.text}
+        previous: null
+        feedback: []
+    - id: check
+      kind: Script
+      uses: reply.check
+      with:
+        draft: {ref: steps.draft}
+        order_id: {ref: inputs.required_order_id}
+        max_characters: {ref: inputs.max_characters}
+  dependencies:
+    - [classify, escalate]
+    - [classify, normal]
+    - [escalate, select]
+    - [normal, select]
+    - [validate, total]
+    - [total, report]
+    - [select, draft]
+    - [report, draft]
+    - [draft, check]
+  acceptance: Return the selected action, invoice report, one actual draft and its honest review.
+  output:
+    action: {ref: steps.select}
+    invoice_report: {ref: steps.report}
+    reply: {ref: steps.draft}
+    review: {ref: steps.check}
+activation:
+  kind: Callback
+  rule_id: support-review-requested
+  hook: support.review_requested
+  condition: valid_input
+  reaction: Trigger
+  workflow_ref: {id: support-review-packet, revision: 1}
+execution: {concurrency: independent, deadline_seconds: 120, on_step_error: fail}

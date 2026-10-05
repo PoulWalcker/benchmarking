@@ -1,0 +1,55 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: ticket-routing
+  revision: 1
+  kind: Gantt
+  inputs:
+    ticket:
+      id: T-17
+      text: Order A7842 is three days late. Please help.
+      days_overdue: 3
+  steps:
+    - id: classify
+      kind: LLM
+      uses: ticket.classify
+      with:
+        ticket: {ref: inputs.ticket}
+    - id: escalate
+      kind: Script
+      uses: ticket.escalation_draft
+      when: {ref: steps.classify.priority, eq: high}
+      with:
+        ticket: {ref: inputs.ticket}
+    - id: normal
+      kind: Script
+      uses: ticket.normal_draft
+      when: {ref: steps.classify.priority, eq: normal}
+      with:
+        ticket: {ref: inputs.ticket}
+    - id: result
+      kind: Script
+      uses: branch.select_one
+      join: all_terminal
+      with:
+        escalated: {optional_ref: steps.escalate}
+        normal: {optional_ref: steps.normal}
+  dependencies:
+    - [classify, escalate]
+    - [classify, normal]
+    - [escalate, result]
+    - [normal, result]
+  acceptance: Exactly one action draft; high priority routes to escalation.
+  output: {ref: steps.result}
+activation:
+  kind: Callback
+  rule_id: ticket-received
+  hook: support.ticket_received
+  condition: valid_input
+  reaction: Trigger
+  workflow_ref: {id: ticket-routing, revision: 1}
+execution:
+  concurrency: independent
+  deadline_seconds: 60
+  on_step_error: fail
+

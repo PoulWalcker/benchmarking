@@ -1,0 +1,53 @@
+[project]
+name = "sapi-config-lab"
+version = "0.2.0"
+description = "Reproducible experiments compiling a Sapiens-inspired YAML profile to real n8n"
+readme = "README.md"
+requires-python = ">=3.14,<3.15"
+dependencies = ["PyYAML==6.0.3"]
+
+[project.optional-dependencies]
+harbor = ["harbor==0.21.0"]
+benchmark = ["fastjsonschema>=2.21,<3"]
+
+[project.scripts]
+sapi-lab = "sapi_config_lab.cli:main"
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sapi_config_lab"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/verification", "/configs", "/docs", "/generation", "/harbor", "/infra", "/.github", "/README.md", "/pyproject.toml", "/uv.lock", "/.python-version", "/.gitignore", "/.dockerignore", "/provenance/SapiensSpecNotation.hs", "/provenance/spec-comparison.json", "/provenance/spec-source.json", "/run.sh", "/run-generation.sh"]
+exclude = ["/reports", "/generated", "/validation", "/review", "/reviews", "/.scratch", "/.python", "/.cache", "/.venv", "/provenance/environment.json", "**/__pycache__", "*.py[cod]", ".env", ".env.*"]
+
+[dependency-groups]
+dev = ["ruff>=0.11,<1", "mypy>=1.19,<2", "types-PyYAML>=6.0.12,<7"]
+
+[tool.uv]
+# Older uv releases need a current, immutable catalog for the Python patch pin.
+python-downloads-json-url = "https://raw.githubusercontent.com/astral-sh/uv/2118b618f121117141d5d128e99e527e43458780/crates/uv-python/download-metadata.json"
+
+[tool.ruff]
+target-version = "py314"
+line-length = 120
+extend-exclude = ["reports", "provenance", "generated", "validation"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.mypy]
+python_version = "3.14"
+files = ["src", "verification"]
+check_untyped_defs = true
+warn_unused_ignores = true
+show_error_codes = true
+pretty = true
+
+[[tool.mypy.overrides]]
+# Optional Harbor has no py.typed marker; project code is still checked.
+module = ["harbor.*"]
+ignore_missing_imports = true

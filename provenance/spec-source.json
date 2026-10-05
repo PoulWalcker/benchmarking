@@ -1,0 +1,12 @@
+{
+  "schema": "sapi-lab-spec-source/v1",
+  "repository": "https://github.com/aleski-green/sapiens4",
+  "revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+  "files": [
+    {
+      "upstream_path": "documentation/haskell-notation-specs/SapiensSpecNotation.hs",
+      "snapshot": "provenance/SapiensSpecNotation.hs",
+      "sha256": "43872d79e5e5d689dd37973b26ec50ad95a44541d999135d5ff00d67161aa55f"
+    }
+  ]
+}

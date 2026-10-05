@@ -1,0 +1,75 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: priority-support-brief
+  revision: 1
+  kind: Gantt
+  inputs:
+    ticket: {id: P-72, text: Delivery is three days late., days_overdue: 3}
+    product_material: The product supports barcode scanning and offline inventory.
+    marketing_material: The service targets local shops through partner referrals.
+  steps:
+    - id: classify
+      kind: LLM
+      uses: ticket.classify
+      with: {ticket: {ref: inputs.ticket}}
+    - id: escalate
+      kind: Script
+      uses: ticket.escalation_draft
+      when: {ref: steps.classify.priority, eq: high}
+      with: {ticket: {ref: inputs.ticket}}
+    - id: normal
+      kind: Script
+      uses: ticket.normal_draft
+      when: {ref: steps.classify.priority, eq: normal}
+      with: {ticket: {ref: inputs.ticket}}
+    - id: select
+      kind: Script
+      uses: branch.select_one
+      join: all_terminal
+      with:
+        escalated: {optional_ref: steps.escalate}
+        normal: {optional_ref: steps.normal}
+    - id: product
+      kind: LLM
+      uses: research.product
+      when: {ref: steps.classify.priority, eq: high}
+      with: {material: {ref: inputs.product_material}}
+    - id: marketing
+      kind: LLM
+      uses: research.marketing
+      when: {ref: steps.classify.priority, eq: high}
+      with: {material: {ref: inputs.marketing_material}}
+    - id: combine
+      kind: Script
+      uses: research.combine
+      join: all_terminal
+      when: {ref: steps.classify.priority, eq: high}
+      with:
+        product: {optional_ref: steps.product}
+        marketing: {optional_ref: steps.marketing}
+    - id: write
+      kind: LLM
+      uses: research.write
+      when: {ref: steps.classify.priority, eq: high}
+      with: {brief: {optional_ref: steps.combine}}
+  dependencies:
+    - [classify, escalate]
+    - [classify, normal]
+    - [escalate, select]
+    - [normal, select]
+    - [select, product]
+    - [select, marketing]
+    - [product, combine]
+    - [marketing, combine]
+    - [combine, write]
+  acceptance: High priority includes a source-grounded brief; normal skips every research operation.
+  output: {action: {ref: steps.select}, brief: {optional_ref: steps.write}}
+activation:
+  kind: Callback
+  rule_id: priority-brief-requested
+  hook: support.priority_brief_requested
+  condition: valid_input
+  reaction: Trigger
+  workflow_ref: {id: priority-support-brief, revision: 1}
+execution: {concurrency: independent, deadline_seconds: 120, on_step_error: fail}

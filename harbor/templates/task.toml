@@ -1,0 +1,20 @@
+version = "1.0"
+
+[metadata]
+name = "invoice-total"
+description = "Execute a Sapiens-inspired YAML definition in pinned real n8n and verify task data and execution invariants."
+difficulty = "medium"
+category = "workflow-execution"
+tags = ["sapi-lab", "n8n", "yaml", "runtime"]
+
+[agent]
+timeout_sec = 600
+
+[verifier]
+timeout_sec = 1800
+
+[environment]
+build_timeout_sec = 600
+cpus = 1
+memory_mb = 2048
+storage_mb = 4096
