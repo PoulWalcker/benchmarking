@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 import yaml
 from sapi_config_lab.runtime.execution import run_case
 from sapi_config_lab.core import profile
-from sapi_config_lab.experiments.provenance import source_manifest
+from sapi_config_lab.core.provenance import source_manifest
 
 if TYPE_CHECKING or __package__:
     from .contracts import Rejected, require

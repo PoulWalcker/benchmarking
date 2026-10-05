@@ -253,7 +253,7 @@ def collect_native(
 
 def case_budget(scenario: str, case_name: str, config: dict, *, cases: dict | None = None) -> dict:
     """Admit only the named case's independently declared model occurrences."""
-    from sapi_config_lab.scenarios import EXPANSION_SCENARIOS, EXTENSION_SCENARIOS
+    from sapi_config_lab.core.scenarios import EXPANSION_SCENARIOS, EXTENSION_SCENARIOS
 
     require(
         scenario in {**EXPANSION_SCENARIOS, **EXTENSION_SCENARIOS}, "Occurrence admission requires a bounded scenario"

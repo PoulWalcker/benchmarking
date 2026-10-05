@@ -24,11 +24,11 @@ import uuid
 
 import yaml
 
-from sapi_config_lab.experiments.benchmark_tasks import TASKS, task_definition
+from sapi_config_lab.core.benchmark_tasks import TASKS, task_definition
 from sapi_config_lab.experiments.generation.common import audit_stderr
 from sapi_config_lab.experiments.harbor import command, load_trials
-from sapi_config_lab.experiments.host import harbor_command
-from sapi_config_lab.experiments.provenance import source_manifest, host_environment
+from sapi_config_lab.core.host import harbor_command
+from sapi_config_lab.core.provenance import source_manifest, host_environment
 from sapi_config_lab.experiments.task_evaluation import (
     build_run_log,
     evaluate,

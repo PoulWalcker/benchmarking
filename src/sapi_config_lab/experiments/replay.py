@@ -167,8 +167,8 @@ def main():
 
 def expansion_selection(source_report: Path, scenario: str) -> dict:
     """Select the first submitted attempt only after both frozen stub attempts pass."""
-    from sapi_config_lab.experiments.provenance import source_manifest
-    from sapi_config_lab.scenarios import EXPANSION_SCENARIOS, EXTENSION_SCENARIOS
+    from sapi_config_lab.core.provenance import source_manifest
+    from sapi_config_lab.core.scenarios import EXPANSION_SCENARIOS, EXTENSION_SCENARIOS
 
     require(scenario in {**EXPANSION_SCENARIOS, **EXTENSION_SCENARIOS}, "Unknown bounded selection")
     refinement = scenario in EXTENSION_SCENARIOS

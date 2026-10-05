@@ -16,10 +16,10 @@ import os
 from pathlib import Path
 import secrets
 
-from sapi_config_lab.experiments.provenance import source_manifest
+from sapi_config_lab.core.provenance import source_manifest
 from sapi_config_lab.experiments.replay import read_json, require
 from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.scenarios import EXPANSION_SCENARIOS
+from sapi_config_lab.core.scenarios import EXPANSION_SCENARIOS
 
 RUNTIME_CAPS = {
     "dual-ledger-closeout": {"base-ledgers": 0, "alternate-ledgers": 0},

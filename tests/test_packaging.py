@@ -12,7 +12,7 @@ from sapi_config_lab.experiments.checkout import ORACLE_MODULES, oracle_scrub
 from sapi_config_lab.experiments.tasks import SCENARIOS, stage_tasks
 from sapi_config_lab.experiments.generation.common import fingerprints
 from sapi_config_lab.experiments.harbor import source_manifest
-from sapi_config_lab.experiments.provenance import source_manifest as inventory
+from sapi_config_lab.core.provenance import source_manifest as inventory
 from sapi_config_lab.paths import workspace_root
 
 ROOT = workspace_root()

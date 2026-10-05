@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from sapi_config_lab.experiments.generalization import GeneralizationSeries, TASKS, author, fresh_cases, stage
-from sapi_config_lab.scenarios import SCENARIOS
+from sapi_config_lab.core.scenarios import SCENARIOS
 
 
 class GeneralizationExperimentTests(unittest.TestCase):

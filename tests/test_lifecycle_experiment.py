@@ -19,7 +19,7 @@ from sapi_config_lab.experiments.lifecycle_run import (
 )
 from sapi_config_lab.experiments.tasks import stage_tasks
 from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.scenarios import select_scenarios
+from sapi_config_lab.core.scenarios import select_scenarios
 from sapi_config_lab.core import profile
 from verification.lifecycle_submission import validate_task
 from verification.lifecycle_submission import verify_submission

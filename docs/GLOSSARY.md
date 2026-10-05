@@ -60,7 +60,7 @@ control suite fails (`experiments/generation/run.py:224-227`).
 
 ### 3. Harbor's reward stays binary for the project's own nine scenarios
 
-For the nine scenarios in `src/sapi_config_lab/scenarios.py`, the packaged
+For the nine scenarios in `src/sapi_config_lab/core/scenarios.py`, the packaged
 `test.sh` writes exactly `1` or `0` to `/logs/verifier/reward.txt`
 (`harbor/templates/test.sh`), and every runner asserts exactly 1.0 or 0.0:
 
@@ -153,7 +153,7 @@ an environment, a verifier and a test script, built by `stage_tasks()`.
 | --- | --- | --- | --- |
 | Harbor package | `harbor/tasks/<scenario>/`, assembled by `src/sapi_config_lab/experiments/tasks.py:15` | **task** (keep) | n/a |
 | A natural-language prompt handed to an authoring model | `generation/tasks.json` | **prompt** | **Safe**, but the file name is referenced by `experiments/tasks.py:53` and by recorded source manifests, so rename the concept in prose and leave the file |
-| An AutoWFBench challenge plus its local wiring | `src/sapi_config_lab/experiments/benchmark_tasks.py:7` (`TaskDefinition`), `--task crm` | **task integration** | **Blocked** for `sapi-lab-task-definition/v1` (`benchmark_tasks.py:21`) and `sapi-lab-task-evaluation/v1`; the `--task` flag could change but the churn is not worth it |
+| An AutoWFBench challenge plus its local wiring | `src/sapi_config_lab/core/benchmark_tasks.py:7` (`TaskDefinition`), `--task crm` | **task integration** | **Blocked** for `sapi-lab-task-definition/v1` (`benchmark_tasks.py:21`) and `sapi-lab-task-evaluation/v1`; the `--task` flag could change but the churn is not worth it |
 
 ### control
 
@@ -208,7 +208,7 @@ project is split roughly in half.
 | --- | --- |
 | `workflow/bindings.yaml` is the single source operation catalog; its own first line calls itself a "Logical catalog" and its top-level key is `operations:` | `src/sapi_config_lab/workflow/bindings.yaml:1,8`; `docs/ARCHITECTURE.md` says the same |
 | The constant that points at it is `CATALOG` | `src/sapi_config_lab/paths.py:6` |
-| The benchmark track's per-task operation file is named `*-bindings.yaml` but the field selecting it is `catalog` | `src/sapi_config_lab/experiments/benchmark_tasks.py:10`; files `generation/crm-bindings.yaml`, `generation/checkout-bindings.yaml` |
+| The benchmark track's per-task operation file is named `*-bindings.yaml` but the field selecting it is `catalog` | `src/sapi_config_lab/core/benchmark_tasks.py:10`; files `generation/crm-bindings.yaml`, `generation/checkout-bindings.yaml` |
 | Runtime parameters and prose use `catalog` throughout | `src/sapi_config_lab/runtime/agency.py:245,257-259` |
 
 Proposed rule: **catalog** for the collection, **binding** for one operation's
@@ -229,7 +229,7 @@ These words have one meaning. They are listed because they are the vocabulary
 the ambiguous terms are defined against.
 
 - **scenario** — one of the nine named task families in
-  `src/sapi_config_lab/scenarios.py`, each mapped to one file in `configs/`.
+  `src/sapi_config_lab/core/scenarios.py`, each mapped to one file in `configs/`.
   `scenario` is a field of `sapi-lab-verification/v1`.
 - **challenge** — an upstream AutoWFBench problem, identified by
   `challenge_id` (`experiments/benchmark_tasks.py:9`). Only two are pinned:
