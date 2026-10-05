@@ -99,10 +99,10 @@ not modified. Responses are neither automatically repaired nor replaced by stubs
 
 ```text
 src/sapi_config_lab/
-  workflow/          YAML format, validation, bindings.yaml
-  runtime/           n8n compiler, executor, and Agency adapter
-  experiments/       Harbor, YAML generation, task packaging
-  cli.py             shared command entry point
+  core/              shared rules: YAML format, validation, bindings.yaml, backend contract, provenance
+  runtime/           independent services: n8n compiler, executor, Agency adapter, evaluation
+  interfaces/        interaction surfaces: cli.py, Harbor, YAML generation, task packaging
+  paths.py           installed resources and checkout discovery
 configs/             nine examples; 04 adds bounded refinement, 05 needs a lifecycle controller
 verification/        independent checks and cases.json test inputs
 harbor/              scenario instructions and shared task templates

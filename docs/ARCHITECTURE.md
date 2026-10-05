@@ -9,7 +9,7 @@ The reference is [Sapiens CONTRIBUTING at the pinned revision](https://github.co
 organize code by responsibility, keep runtime independent of the host, avoid
 import cycles, and preserve behavior during refactoring. The parent's Python
 code is divided into `corpora/runtime/computer`. This project has three different
-responsibilities: `workflow/runtime/experiments`. Its scope does not require
+responsibilities: `core/runtime/interfaces`. Its scope does not require
 copying the parent's desktop or web modules.
 
 The `src` layout makes tests use the installed package rather than accidentally
@@ -28,21 +28,26 @@ plugin registry or a hierarchy of empty classes.
 
 ```mermaid
 flowchart LR
-  E[experiments: Harbor and generation] --> R[runtime: n8n and Agency]
-  E --> W[workflow: profile and catalog]
-  R --> W
+  I[interfaces: commands, Harbor, generation] --> R[runtime: n8n, Agency, evaluation]
+  I --> C[core: profile, catalog, contract, provenance]
+  R --> C
   V[verification: independent criteria] --> R
-  C[cli: commands] --> E
-  C --> R
 ```
 
-- `workflow/profile.py`: YAML parsing with duplicate-key rejection, references,
+`core/` holds the shared rules every group reads, `runtime/` the independent
+services, `interfaces/` the surfaces a person or another process drives.
+Dependencies only ever point inward. `paths.py` and `__main__.py` stay at the
+package root: `paths.py` asserts that its own parent directory is
+`src/sapi_config_lab`, which is how a wheel installed from somewhere else is
+rejected, so it cannot sit inside a group.
+
+- `core/profile.py`: YAML parsing with duplicate-key rejection, references,
   dependencies, actors, and profile validation. It knows nothing about n8n,
-  Harbor, or Docker. `workflow/bindings.yaml` is the single source operation catalog.
+  Harbor, or Docker. `core/bindings.yaml` is the single source operation catalog.
 - `runtime/n8n/compiler.py`: `compile_n8n(config, bindings, ...) -> (artifact, mapping)`.
   Applies backend capability limits and generates JSON. Adjacent JS files are
   included in the wheel. The compiler neither starts processes nor computes acceptance.
-- `runtime/contracts.py`: the typed `WorkflowBackend` interface, `CompileOptions`,
+- `core/contracts.py`: the typed `WorkflowBackend` interface, `CompileOptions`,
   `CompiledWorkflow`, and `ExecutionRecord`. Compilation and execution are the
   two operations; expected business answers never enter this interface.
 - `runtime/execution.py`: `run_case(config, artifact_dir, ..., backend=...)`.
@@ -57,7 +62,14 @@ flowchart LR
 - `runtime/agency.py`: the HTTP contract between an LLM node and the existing
   wrapper, prompt construction, JSON validation, and safe auditing. The shared
   instruction is in `agency-prompt.md`; operation instructions are in the catalog.
-- `experiments/`: manages series, environment dependencies, and reports. Harbor
+- `core/provenance.py`, `core/scenarios.py`, `core/host.py`,
+  `core/benchmark_tasks.py`: the source inventory, the scenario list, the host
+  dependency probe, and the benchmark task definitions. Every group reads them
+  and none of them decides how a service runs.
+- `runtime/task_evaluation.py` and `runtime/ui_n8n.py`: scoring of a recorded
+  run and the local n8n container driver. Both are services other code calls.
+- `interfaces/`: `cli.py` plus the series runners, packagers and replay
+  drivers. They manage series, environment dependencies, and reports. Harbor
   runs in the same Python environment as the installed package, without relying
   on an arbitrary global executable or manual `sys.path` changes.
 - `verification/business.py`: independent arithmetic and scenario criteria using
@@ -92,7 +104,7 @@ separate experiments. This refactoring implements neither.
 
 ## Why reports still contain copies
 
-`experiments/tasks.py::stage_tasks()` assembles packages from canonical sources:
+`interfaces/tasks.py::stage_tasks()` assembles packages from canonical sources:
 
 | Source | Assembled package contents |
 | --- | --- |
@@ -141,11 +153,30 @@ in the working checkout and are excluded from Git, wheels, and source archives.
 `infra/check_distribution.py` verifies this by building actual archives from a
 temporary checkout containing private sentinel files.
 
-`experiments/provenance.py` hashes all public source modules and data, including
+`core/provenance.py` hashes all public source modules and data, including
 new files under the owned directories. Both Harbor manifests and generation
 fingerprints use this same inventory. Per-run host versions are recorded locally
 without environment variables or machine paths. Existing evidence is never
 rewritten when paths or dependencies change.
+
+### Manifests recorded before the `core`/`runtime`/`interfaces` split
+
+A manifest keys every hash on a path relative to the repository root, so the
+archived packages written before this restructure name files under
+`src/sapi_config_lab/workflow/`, `src/sapi_config_lab/experiments/` and
+`src/sapi_config_lab/runtime/contracts.py`. Those paths no longer exist. Their
+manifests therefore no longer match a current checkout, and a series recorded
+against them cannot be resumed or extended.
+
+This break is accepted rather than papered over. No path translation is applied
+when a manifest is read: a shim would make the code assert that a source is
+unchanged when in fact it moved, which is exactly the claim a manifest exists to
+make honestly. The consequences are bounded:
+
+- Each archived package is self-contained and stays readable on its own terms.
+  Re-reading past evidence needs nothing from this checkout.
+- Runs recorded after the split form a new comparison group. Do not pool their
+  numbers with pre-split runs in one series; compare within a group.
 
 ## Automated checks
 
@@ -204,10 +235,10 @@ the wrong place to type them: each needs an environment it does not get there.
 | `package-tasks` | Assemble Harbor task packages into a new directory without running them. | Every experiment stages its own packages; a standalone package is for inspection only. |
 | `transport` | Deterministic HTTP transport probes against a fake bridge. | Written to run inside the isolated lab image, where `run.sh` invokes it; outside that image it has no workspace to probe. |
 | `bridge` | Foreground local Agency adapter in front of the existing wrapper. | `live` and `ui` start it themselves; a second one competes for the port and the budget latch. |
-| `checkout-worker` | The trusted in-container verifier that runs frozen YAML through the real n8n backend. | The task container runs it as `python3 -m sapi_config_lab.experiments.checkout_worker`; it reads `/tests/connection.json` and writes `/logs/verifier`. |
+| `checkout-worker` | The trusted in-container verifier that runs frozen YAML through the real n8n backend. | The task container runs it as `python3 -m sapi_config_lab.interfaces.checkout_worker`; it reads `/tests/connection.json` and writes `/logs/verifier`. |
 
 `benchmark-calibrate` costs one model call. The module docstring in
-`src/sapi_config_lab/experiments/judge_calibration.py` states this, and the
+`src/sapi_config_lab/interfaces/judge_calibration.py` states this, and the
 command prints the model it is about to bill to stderr immediately before
 dispatching. `calibration_fixture()` on its own is unpaid: it only swaps prose in
 an already recorded trace. Budget for the dispatch accordingly.
@@ -233,9 +264,9 @@ Historical reports and source manifests are not rewritten to use new paths.
 
 ## Frozen generated replay
 
-`experiments/replay.py` validates the exact preselected historical artifacts and
+`interfaces/replay.py` validates the exact preselected historical artifacts and
 provenance. `stage_tasks(mode="replay", submissions=...)` preserves their bytes.
-`experiments/live.py` reuses Harbor and the existing verifier/typed backend path,
+`interfaces/live.py` reuses Harbor and the existing verifier/typed backend path,
 with source/image gates, unpaid replay verification and serial live trials.
 
 Replay mode is reachable only through `sapi-lab live --submissions-manifest`.
@@ -246,5 +277,5 @@ tag that the same `live` run freezes and pins into its hashes. Staged on its own
 with a default image tag, the package would carry no provenance anything checks.
 The `--mode` help text says so at the command.
 `runtime/agency.py::DispatchAudit` owns the outgoing budget and failure latch;
-`experiments/live_evidence.py` reconciles it with independent native evidence.
+`interfaces/live_evidence.py` reconciles it with independent native evidence.
 There is no additional workflow executor. See [the replay command](GENERATED-LIVE.md).

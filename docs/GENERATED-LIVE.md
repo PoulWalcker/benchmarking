@@ -16,7 +16,7 @@ source inventory and image ID as the successful control report.
 ./run.sh --report-dir reports/generated-live-controls-1
 
 # Build and validate the approved historical selection; no model call.
-uv run --locked python -m sapi_config_lab.experiments.replay \
+uv run --locked python -m sapi_config_lab.interfaces.replay \
   --source-report reports/20261004-yaml-generation-1/report.json \
   --output reports/generated-live-selection-1.json
 
