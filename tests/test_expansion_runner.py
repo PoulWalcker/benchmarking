@@ -1,5 +1,7 @@
 """Unpaid admission and private-fixture controls; no wrapper or Docker calls."""
 
+import contextlib
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -55,19 +57,28 @@ class ExpansionAdmissionTests(unittest.TestCase):
             self.assertEqual(len(read_json(series.path)["events"]), 1)
 
     def test_expansion_cli_cannot_start_without_named_caps_and_shared_series(self):
-        with patch("sapi_config_lab.interfaces.generation.run.subprocess.run") as outgoing:
+        with (
+            contextlib.redirect_stderr(io.StringIO()) as errors,
+            patch("sapi_config_lab.interfaces.generation.run.subprocess.run") as outgoing,
+        ):
             for args in (
                 ["--scenario", "dual-ledger-closeout"],
                 ["--scenario", "dual-ledger-closeout", "--attempts", "2"],
                 ["--scenario", "unknown", "--attempts", "2"],
             ):
-                with self.assertRaises(SystemExit):
+                with self.assertRaises(SystemExit) as caught:
                     generate(args)
+                self.assertEqual(caught.exception.code, 2)
             outgoing.assert_not_called()
-        with patch("sapi_config_lab.interfaces.live.subprocess.run") as outgoing:
-            with self.assertRaises(SystemExit):
+        with (
+            contextlib.redirect_stderr(errors),
+            patch("sapi_config_lab.interfaces.live.subprocess.run") as outgoing,
+        ):
+            with self.assertRaises(SystemExit) as caught:
                 live(["--scenario", "dual-ledger-closeout", "--stub-report", "/unused.json"])
+            self.assertEqual(caught.exception.code, 2)
             outgoing.assert_not_called()
+        self.assertNotIn("Traceback", errors.getvalue())
 
     def test_private_overlay_changes_values_without_changing_acceptance_contracts(self):
         canonical = read_json(workspace_root() / "verification/cases.json")
@@ -185,7 +196,8 @@ class ExpansionAdmissionTests(unittest.TestCase):
             directory.mkdir(parents=True)
             (directory / "result.json").write_text("{partial")
             report = {"status": "failed", "limitations": [], "error": "TimeoutExpired", "trials": []}
-            finalize_generation(report, output, staging, {}, ("dual-ledger-closeout",), 2)
+            with contextlib.redirect_stdout(io.StringIO()):
+                finalize_generation(report, output, staging, {}, ("dual-ledger-closeout",), 2)
             saved = read_json(output / "report.json")
             self.assertEqual(saved["status"], "failed")
             self.assertFalse(saved["experiment_completed"])
@@ -212,6 +224,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
                 series_dir=Path(tmp) / "series",
             )
             with (
+                contextlib.redirect_stdout(io.StringIO()),
                 patch("sapi_config_lab.interfaces.live.ExpansionSeries", side_effect=ValueError("preflight failure")),
                 patch.object(Path, "write_text", fail_combined_audit),
             ):
@@ -356,13 +369,18 @@ class ExpansionAdmissionTests(unittest.TestCase):
             flags = [arg for name in entry for arg in ("--series-scenario", name)]
             with (
                 self.subTest(entry=entry),
+                contextlib.redirect_stderr(io.StringIO()),
                 patch("sapi_config_lab.interfaces.generation.run.subprocess.run") as outgoing,
             ):
-                with self.assertRaises(SystemExit):
+                with self.assertRaises(SystemExit) as caught:
                     generate(["--scenario", selected[0], "--attempts", "2", "--series-dir", "/unused", *flags])
+                self.assertEqual(caught.exception.code, 2)
                 outgoing.assert_not_called()
-            with patch("sapi_config_lab.interfaces.live.run_expansion") as launch:
-                with self.assertRaises(SystemExit):
+            with (
+                contextlib.redirect_stderr(io.StringIO()),
+                patch("sapi_config_lab.interfaces.live.run_expansion") as launch,
+            ):
+                with self.assertRaises(SystemExit) as caught:
                     live(
                         [
                             "--stub-report",
@@ -376,6 +394,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
                             *flags,
                         ]
                     )
+                self.assertEqual(caught.exception.code, 2)
                 launch.assert_not_called()
 
     def test_both_runner_reports_retain_selected_cohort_and_derived_series_caps(self):
@@ -383,9 +402,12 @@ class ExpansionAdmissionTests(unittest.TestCase):
         flags = [arg for name in selected for arg in ("--series-scenario", name)]
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            with patch(
-                "sapi_config_lab.interfaces.generation.run.subprocess.run",
-                side_effect=RuntimeError("unpaid control unavailable"),
+            with (
+                contextlib.redirect_stdout(io.StringIO()),
+                patch(
+                    "sapi_config_lab.interfaces.generation.run.subprocess.run",
+                    side_effect=RuntimeError("unpaid control unavailable"),
+                ),
             ):
                 self.assertEqual(
                     generate(
@@ -403,9 +425,12 @@ class ExpansionAdmissionTests(unittest.TestCase):
                     ),
                     1,
                 )
-            with patch(
-                "sapi_config_lab.interfaces.live.harbor_command",
-                side_effect=RuntimeError("unpaid preflight unavailable"),
+            with (
+                contextlib.redirect_stdout(io.StringIO()),
+                patch(
+                    "sapi_config_lab.interfaces.live.harbor_command",
+                    side_effect=RuntimeError("unpaid preflight unavailable"),
+                ),
             ):
                 self.assertEqual(
                     live(
