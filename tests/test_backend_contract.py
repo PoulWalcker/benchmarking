@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab import cli
+from sapi_config_lab.interfaces import cli
 from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.core.contracts import CompiledWorkflow, CompileOptions
 from sapi_config_lab.runtime.execution import run_case
