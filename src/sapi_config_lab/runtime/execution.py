@@ -12,7 +12,7 @@ from typing import Any
 
 from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.runtime.composition import default_backend
-from sapi_config_lab.runtime.contracts import (
+from sapi_config_lab.core.contracts import (
     ArtifactTransform,
     CompileOptions,
     Document,

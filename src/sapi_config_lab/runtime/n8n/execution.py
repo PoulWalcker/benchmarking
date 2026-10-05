@@ -16,7 +16,7 @@ import uuid
 from typing import Any
 from functools import lru_cache
 
-from sapi_config_lab.runtime.contracts import CompiledWorkflow, ExecutionRecord
+from sapi_config_lab.core.contracts import CompiledWorkflow, ExecutionRecord
 
 PINNED_N8N_VERSION = "2.41.5"
 
