@@ -1,0 +1,113 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: two-audience-briefs
+  revision: 1
+  kind: Gantt
+  inputs:
+    product_material: The product supports offline inventory and CSV export.
+    cooperatives_material: The service targets rural cooperatives through printed
+      catalogues.
+    clinics_material: The service targets dental clinics through SMS reminders.
+  steps:
+  - id: pc
+    kind: LLM
+    uses: research.product
+    with:
+      material:
+        ref: inputs.product_material
+    actor: capabilities
+  - id: mc
+    kind: LLM
+    uses: research.marketing
+    with:
+      material:
+        ref: inputs.cooperatives_material
+    actor: audiences
+  - id: wc
+    kind: LLM
+    uses: research.write
+    with:
+      brief:
+        product:
+          ref: steps.pc
+        marketing:
+          ref: steps.mc
+    actor: reports
+    join: all_terminal
+  - id: pk
+    kind: LLM
+    uses: research.product
+    with:
+      material:
+        ref: inputs.product_material
+    actor: capabilities
+  - id: mk
+    kind: LLM
+    uses: research.marketing
+    with:
+      material:
+        ref: inputs.clinics_material
+    actor: audiences
+  - id: wk
+    kind: LLM
+    uses: research.write
+    with:
+      brief:
+        product:
+          ref: steps.pk
+        marketing:
+          ref: steps.mk
+    actor: reports
+    join: all_terminal
+  dependencies:
+  - - pc
+    - mc
+  - - pc
+    - wc
+  - - mc
+    - wc
+  - - pk
+    - mk
+  - - pk
+    - wk
+  - - mk
+    - wk
+  acceptance: Produce source-grounded results for every supplied input.
+  output:
+    cooperatives:
+      report:
+        ref: steps.wc.report
+      evidence:
+        ref: steps.wc.evidence
+    clinics:
+      report:
+        ref: steps.wk.report
+      evidence:
+        ref: steps.wk.evidence
+activation:
+  kind: Callback
+  rule_id: two-audience-briefs-requested
+  hook: research.requested
+  condition: valid_input
+  reaction: Trigger
+  workflow_ref:
+    id: two-audience-briefs
+    revision: 1
+execution:
+  concurrency: independent
+  deadline_seconds: 120
+  on_step_error: fail
+actors:
+  capabilities:
+    context_scope: capabilities
+    allowed_operations:
+    - research.product
+  audiences:
+    context_scope: audiences
+    allowed_operations:
+    - research.marketing
+  reports:
+    context_scope: reports
+    allowed_operations:
+    - research.write

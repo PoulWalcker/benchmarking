@@ -1,0 +1,1 @@
+Execute the daily digest candidate with the durable lifecycle controller. Verify its native Callback test and exact tested revision release, then its scheduled native invocation. A standalone candidate graph is not complete lifecycle evidence.

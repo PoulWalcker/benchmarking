@@ -1,0 +1,58 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: competitor-report
+  revision: 1
+  kind: Gantt
+  inputs:
+    product_material: Product has invoicing, stock tracking and a public API.
+    marketing_material: Marketing targets small shops using webinars and partner referrals.
+  steps:
+    - id: product
+      kind: LLM
+      uses: research.product
+      actor: product-sapi
+      with:
+        material: {ref: inputs.product_material}
+    - id: marketing
+      kind: LLM
+      uses: research.marketing
+      actor: marketing-sapi
+      with:
+        material: {ref: inputs.marketing_material}
+    - id: combine
+      kind: Script
+      uses: research.combine
+      join: all_terminal
+      with:
+        product: {ref: steps.product}
+        marketing: {ref: steps.marketing}
+    - id: write
+      kind: LLM
+      uses: research.write
+      actor: writer-sapi
+      with:
+        brief: {ref: steps.combine}
+  dependencies:
+    - [product, combine]
+    - [marketing, combine]
+    - [combine, write]
+  acceptance: The report includes both analyses and their source excerpts.
+  output: {ref: steps.write}
+activation:
+  kind: Callback
+  rule_id: report-requested
+  hook: research.report_requested
+  condition: valid_input
+  reaction: Trigger
+  workflow_ref: {id: competitor-report, revision: 1}
+execution:
+  # Independence permits sequential execution. It does not promise overlap.
+  concurrency: independent
+  deadline_seconds: 120
+  on_step_error: fail
+actors:
+  product-sapi: {context_scope: product, allowed_operations: [research.product]}
+  marketing-sapi: {context_scope: marketing, allowed_operations: [research.marketing]}
+  writer-sapi: {context_scope: writer, allowed_operations: [research.write]}
+

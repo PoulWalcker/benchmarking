@@ -1,0 +1,51 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: revise-answer
+  revision: 1
+  kind: Gantt
+  inputs:
+    ticket: {id: T-17, text: "Where is order A7842?"}
+    required_order_id: A7842
+    max_characters: 280
+  steps:
+    - id: draft
+      kind: LLM
+      uses: reply.generate
+      with:
+        ticket: {ref: inputs.ticket}
+        previous: {ref: runtime.previous}
+        feedback: {ref: runtime.feedback}
+    - id: check
+      kind: Script
+      uses: reply.check
+      with:
+        draft: {ref: steps.draft}
+        order_id: {ref: inputs.required_order_id}
+        max_characters: {ref: inputs.max_characters}
+  dependencies:
+    - [draft, check]
+  acceptance: Reply contains the order ID, stays within the character limit, and passes check.
+  output: {ref: steps.draft}
+activation:
+  kind: Callback
+  rule_id: reply-requested
+  hook: support.reply_requested
+  condition: valid_input
+  reaction: Trigger
+  workflow_ref: {id: revise-answer, revision: 1}
+execution:
+  concurrency: independent
+  deadline_seconds: 120
+  on_step_error: fail
+  # Proposed extension: semantic revision, not Retry of a transport failure.
+  refinement:
+    region: [draft, check]
+    initial_state: {previous: null, feedback: []}
+    until: {ref: steps.check.pass, eq: true}
+    max_attempts: 3 # Includes the first generation.
+    carry:
+      previous: {ref: steps.draft}
+      feedback: {ref: steps.check.errors}
+    exhausted: failed
+    output_policy: last_accepted_only

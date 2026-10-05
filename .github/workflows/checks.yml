@@ -1,0 +1,57 @@
+name: Checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      harbor:
+        description: Run the isolated Docker and Harbor control suite
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  local:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.4"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install the locked project environment
+        run: uv sync --locked
+      - name: Lint and formatting
+        run: |
+          uv run --locked ruff check src tests verification infra
+          uv run --locked ruff format --check src tests verification infra
+      - name: Types
+        run: uv run --locked mypy
+      - name: Local behavioral checks
+        run: uv run --locked python -m unittest discover -s tests -v
+      - name: Distribution privacy and resources
+        run: uv run --locked python infra/check_distribution.py
+
+  harbor:
+    if: github.event_name == 'workflow_dispatch' && inputs.harbor
+    needs: local
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.4"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Harbor from the project lock
+        run: uv sync --locked --extra harbor
+      - name: Real n8n transport and Harbor oracle/nop controls
+        run: ./run.sh --report-dir reports/ci-harbor

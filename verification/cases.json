@@ -1,0 +1,1451 @@
+{
+  "invoice-total": {
+    "positive": [
+      {
+        "name": "original-38000",
+        "inputs": {
+          "invoices": [
+            {
+              "id": "INV-1",
+              "amount_minor": 12500,
+              "currency": "AED"
+            },
+            {
+              "id": "INV-2",
+              "amount_minor": 8000,
+              "currency": "AED"
+            },
+            {
+              "id": "INV-3",
+              "amount_minor": 17500,
+              "currency": "AED"
+            }
+          ]
+        }
+      },
+      {
+        "name": "alternate-values-zero",
+        "inputs": {
+          "invoices": [
+            {
+              "id": "Q-9",
+              "amount_minor": 0,
+              "currency": "EUR"
+            },
+            {
+              "id": "Q-1",
+              "amount_minor": 719,
+              "currency": "EUR"
+            },
+            {
+              "id": "Q-3",
+              "amount_minor": 43,
+              "currency": "EUR"
+            },
+            {
+              "id": "Q-7",
+              "amount_minor": 8,
+              "currency": "EUR"
+            }
+          ]
+        }
+      },
+      {
+        "name": "maximum-safe-total",
+        "inputs": {
+          "invoices": [
+            {
+              "id": "MAX",
+              "amount_minor": 9007199254740990,
+              "currency": "USD"
+            },
+            {
+              "id": "ONE",
+              "amount_minor": 1,
+              "currency": "USD"
+            }
+          ]
+        }
+      }
+    ],
+    "negative": [
+      {
+        "name": "empty",
+        "inputs": {
+          "invoices": []
+        },
+        "error": "Invoices must be nonempty",
+        "operation": "invoices.validate"
+      },
+      {
+        "name": "duplicate-id",
+        "inputs": {
+          "invoices": [
+            {
+              "id": "D",
+              "amount_minor": 1,
+              "currency": "AED"
+            },
+            {
+              "id": "D",
+              "amount_minor": 2,
+              "currency": "AED"
+            }
+          ]
+        },
+        "error": "Duplicate invoice ID",
+        "operation": "invoices.validate"
+      },
+      {
+        "name": "mixed-currencies",
+        "inputs": {
+          "invoices": [
+            {
+              "id": "A",
+              "amount_minor": 1,
+              "currency": "AED"
+            },
+            {
+              "id": "B",
+              "amount_minor": 2,
+              "currency": "USD"
+            }
+          ]
+        },
+        "error": "Mixed/invalid currency",
+        "operation": "invoices.validate"
+      },
+      {
+        "name": "negative-amount",
+        "inputs": {
+          "invoices": [
+            {
+              "id": "A",
+              "amount_minor": -1,
+              "currency": "AED"
+            }
+          ]
+        },
+        "error": "Invalid amount",
+        "operation": "invoices.validate"
+      },
+      {
+        "name": "fractional-amount",
+        "inputs": {
+          "invoices": [
+            {
+              "id": "A",
+              "amount_minor": 1.5,
+              "currency": "AED"
+            }
+          ]
+        },
+        "error": "Invalid amount",
+        "operation": "invoices.validate"
+      },
+      {
+        "name": "unsafe-amount",
+        "inputs": {
+          "invoices": [
+            {
+              "id": "A",
+              "amount_minor": 9007199254740992,
+              "currency": "AED"
+            }
+          ]
+        },
+        "error": "Invalid amount",
+        "operation": "invoices.validate"
+      },
+      {
+        "name": "total-overflow",
+        "inputs": {
+          "invoices": [
+            {
+              "id": "A",
+              "amount_minor": 9007199254740991,
+              "currency": "AED"
+            },
+            {
+              "id": "B",
+              "amount_minor": 1,
+              "currency": "AED"
+            }
+          ]
+        },
+        "error": "Total exceeds safe integer range",
+        "operation": "invoices.sum"
+      }
+    ]
+  },
+  "ticket-routing": {
+    "positive": [
+      {
+        "name": "high-three-days",
+        "inputs": {
+          "ticket": {
+            "id": "T-17",
+            "text": "Order A7842 is three days late. Please help.",
+            "days_overdue": 3
+          }
+        }
+      },
+      {
+        "name": "normal-boundary-two",
+        "inputs": {
+          "ticket": {
+            "id": "BOUNDARY-2",
+            "text": "Delivery delayed two days.",
+            "days_overdue": 2
+          }
+        }
+      },
+      {
+        "name": "normal-zero",
+        "inputs": {
+          "ticket": {
+            "id": "ZERO-0",
+            "text": "Checking delivery today.",
+            "days_overdue": 0
+          }
+        }
+      },
+      {
+        "name": "high-alternate",
+        "inputs": {
+          "ticket": {
+            "id": "LATE-42",
+            "text": "Delivery delayed twelve days.",
+            "days_overdue": 12
+          }
+        }
+      }
+    ],
+    "negative": [
+      {
+        "name": "negative-days",
+        "inputs": {
+          "ticket": {
+            "id": "BAD",
+            "text": "Invalid days.",
+            "days_overdue": -1
+          }
+        },
+        "error": "Invalid overdue days",
+        "operation": "ticket.classify",
+        "schema_error": "Schema violation at inputs.ticket.days_overdue"
+      },
+      {
+        "name": "fractional-days",
+        "inputs": {
+          "ticket": {
+            "id": "BAD",
+            "text": "Invalid days.",
+            "days_overdue": 2.5
+          }
+        },
+        "error": "Invalid overdue days",
+        "operation": "ticket.classify",
+        "schema_error": "Schema violation at inputs.ticket.days_overdue"
+      }
+    ]
+  },
+  "competitor-report": {
+    "positive": [
+      {
+        "name": "original-evidence",
+        "inputs": {
+          "product_material": "Product has invoicing, stock tracking and a public API.",
+          "marketing_material": "Marketing targets small shops using webinars and partner referrals."
+        },
+        "report_anchors": [
+          [
+            "invoic"
+          ],
+          [
+            "stock",
+            "inventory"
+          ],
+          [
+            "\\bapi\\b",
+            "application programming interface"
+          ],
+          [
+            "small shops",
+            "small retail",
+            "small business"
+          ],
+          [
+            "webinar"
+          ],
+          [
+            "partner",
+            "referral"
+          ]
+        ]
+      },
+      {
+        "name": "unseen-source-markers",
+        "inputs": {
+          "product_material": "P-ALPHA-73: Offline inventory includes barcode scanning and CSV export.",
+          "marketing_material": "M-BETA-91: Rural cooperatives hear about the service through printed catalogues."
+        },
+        "report_anchors": [
+          [
+            "offline"
+          ],
+          [
+            "barcode"
+          ],
+          [
+            "\\bcsv\\b",
+            "comma.separated"
+          ],
+          [
+            "cooperativ"
+          ],
+          [
+            "catalog",
+            "catalogu"
+          ]
+        ]
+      }
+    ],
+    "negative": [
+      {
+        "name": "missing-product",
+        "inputs": {
+          "product_material": "",
+          "marketing_material": "M: local shops through referrals."
+        },
+        "error": "Missing product material",
+        "operation": "research.product",
+        "schema_error": "Schema violation at inputs.material"
+      },
+      {
+        "name": "missing-marketing",
+        "inputs": {
+          "product_material": "P: barcode inventory.",
+          "marketing_material": ""
+        },
+        "error": "Missing marketing material",
+        "operation": "research.marketing",
+        "schema_error": "Schema violation at inputs.material"
+      }
+    ]
+  },
+  "dual-ledger-closeout": {
+    "positive": [
+      {
+        "name": "base-ledgers",
+        "inputs": {
+          "domestic_invoices": [
+            {
+              "id": "D-A",
+              "amount_minor": 1251,
+              "currency": "AED"
+            },
+            {
+              "id": "D-B",
+              "amount_minor": 0,
+              "currency": "AED"
+            }
+          ],
+          "export_invoices": [
+            {
+              "id": "X-A",
+              "amount_minor": 73,
+              "currency": "EUR"
+            },
+            {
+              "id": "X-B",
+              "amount_minor": 210,
+              "currency": "EUR"
+            }
+          ]
+        }
+      },
+      {
+        "name": "alternate-ledgers",
+        "inputs": {
+          "domestic_invoices": [
+            {
+              "id": "L-Q",
+              "amount_minor": 91,
+              "currency": "USD"
+            }
+          ],
+          "export_invoices": [
+            {
+              "id": "R-A",
+              "amount_minor": 5,
+              "currency": "GBP"
+            },
+            {
+              "id": "R-B",
+              "amount_minor": 0,
+              "currency": "GBP"
+            },
+            {
+              "id": "R-C",
+              "amount_minor": 8,
+              "currency": "GBP"
+            }
+          ]
+        }
+      },
+      {
+        "name": "reversed-ledgers",
+        "inputs": {
+          "domestic_invoices": [
+            {
+              "id": "D-B",
+              "amount_minor": 0,
+              "currency": "AED"
+            },
+            {
+              "id": "D-A",
+              "amount_minor": 1251,
+              "currency": "AED"
+            }
+          ],
+          "export_invoices": [
+            {
+              "id": "X-B",
+              "amount_minor": 210,
+              "currency": "EUR"
+            },
+            {
+              "id": "X-A",
+              "amount_minor": 73,
+              "currency": "EUR"
+            }
+          ]
+        }
+      },
+      {
+        "name": "domestic-zero-added",
+        "inputs": {
+          "domestic_invoices": [
+            {
+              "id": "D-A",
+              "amount_minor": 1251,
+              "currency": "AED"
+            },
+            {
+              "id": "D-B",
+              "amount_minor": 0,
+              "currency": "AED"
+            },
+            {
+              "id": "D-ZERO",
+              "amount_minor": 0,
+              "currency": "AED"
+            }
+          ],
+          "export_invoices": [
+            {
+              "id": "X-A",
+              "amount_minor": 73,
+              "currency": "EUR"
+            },
+            {
+              "id": "X-B",
+              "amount_minor": 210,
+              "currency": "EUR"
+            }
+          ]
+        }
+      },
+      {
+        "name": "export-amount-changed",
+        "inputs": {
+          "domestic_invoices": [
+            {
+              "id": "D-A",
+              "amount_minor": 1251,
+              "currency": "AED"
+            },
+            {
+              "id": "D-B",
+              "amount_minor": 0,
+              "currency": "AED"
+            }
+          ],
+          "export_invoices": [
+            {
+              "id": "X-A",
+              "amount_minor": 74,
+              "currency": "EUR"
+            },
+            {
+              "id": "X-B",
+              "amount_minor": 210,
+              "currency": "EUR"
+            }
+          ]
+        }
+      }
+    ],
+    "negative": [
+      {
+        "name": "domestic-duplicate",
+        "inputs": {
+          "domestic_invoices": [
+            {
+              "id": "DUP",
+              "amount_minor": 1,
+              "currency": "AED"
+            },
+            {
+              "id": "DUP",
+              "amount_minor": 2,
+              "currency": "AED"
+            }
+          ],
+          "export_invoices": [
+            {
+              "id": "X-A",
+              "amount_minor": 73,
+              "currency": "EUR"
+            },
+            {
+              "id": "X-B",
+              "amount_minor": 210,
+              "currency": "EUR"
+            }
+          ]
+        },
+        "error": "Duplicate invoice ID",
+        "operation": "invoices.validate",
+        "role": "domestic_validate"
+      },
+      {
+        "name": "domestic-mixed",
+        "inputs": {
+          "domestic_invoices": [
+            {
+              "id": "A",
+              "amount_minor": 1,
+              "currency": "AED"
+            },
+            {
+              "id": "B",
+              "amount_minor": 2,
+              "currency": "JPY"
+            }
+          ],
+          "export_invoices": [
+            {
+              "id": "X-A",
+              "amount_minor": 73,
+              "currency": "EUR"
+            },
+            {
+              "id": "X-B",
+              "amount_minor": 210,
+              "currency": "EUR"
+            }
+          ]
+        },
+        "error": "Mixed/invalid currency",
+        "operation": "invoices.validate",
+        "role": "domestic_validate"
+      },
+      {
+        "name": "domestic-overflow",
+        "inputs": {
+          "domestic_invoices": [
+            {
+              "id": "MAX",
+              "amount_minor": 9007199254740991,
+              "currency": "AED"
+            },
+            {
+              "id": "ONE",
+              "amount_minor": 1,
+              "currency": "AED"
+            }
+          ],
+          "export_invoices": [
+            {
+              "id": "X-A",
+              "amount_minor": 73,
+              "currency": "EUR"
+            },
+            {
+              "id": "X-B",
+              "amount_minor": 210,
+              "currency": "EUR"
+            }
+          ]
+        },
+        "error": "Total exceeds safe integer range",
+        "operation": "invoices.sum",
+        "role": "domestic_sum"
+      },
+      {
+        "name": "export-duplicate",
+        "inputs": {
+          "domestic_invoices": [
+            {
+              "id": "D-A",
+              "amount_minor": 1251,
+              "currency": "AED"
+            },
+            {
+              "id": "D-B",
+              "amount_minor": 0,
+              "currency": "AED"
+            }
+          ],
+          "export_invoices": [
+            {
+              "id": "DUP",
+              "amount_minor": 1,
+              "currency": "EUR"
+            },
+            {
+              "id": "DUP",
+              "amount_minor": 2,
+              "currency": "EUR"
+            }
+          ]
+        },
+        "error": "Duplicate invoice ID",
+        "operation": "invoices.validate",
+        "role": "export_validate"
+      },
+      {
+        "name": "export-mixed",
+        "inputs": {
+          "domestic_invoices": [
+            {
+              "id": "D-A",
+              "amount_minor": 1251,
+              "currency": "AED"
+            },
+            {
+              "id": "D-B",
+              "amount_minor": 0,
+              "currency": "AED"
+            }
+          ],
+          "export_invoices": [
+            {
+              "id": "A",
+              "amount_minor": 1,
+              "currency": "EUR"
+            },
+            {
+              "id": "B",
+              "amount_minor": 2,
+              "currency": "JPY"
+            }
+          ]
+        },
+        "error": "Mixed/invalid currency",
+        "operation": "invoices.validate",
+        "role": "export_validate"
+      },
+      {
+        "name": "export-overflow",
+        "inputs": {
+          "domestic_invoices": [
+            {
+              "id": "D-A",
+              "amount_minor": 1251,
+              "currency": "AED"
+            },
+            {
+              "id": "D-B",
+              "amount_minor": 0,
+              "currency": "AED"
+            }
+          ],
+          "export_invoices": [
+            {
+              "id": "MAX",
+              "amount_minor": 9007199254740991,
+              "currency": "EUR"
+            },
+            {
+              "id": "ONE",
+              "amount_minor": 1,
+              "currency": "EUR"
+            }
+          ]
+        },
+        "error": "Total exceeds safe integer range",
+        "operation": "invoices.sum",
+        "role": "export_sum"
+      }
+    ],
+    "live_cases": [
+      "base-ledgers",
+      "alternate-ledgers"
+    ]
+  },
+  "support-review-packet": {
+    "positive": [
+      {
+        "name": "high-packet",
+        "inputs": {
+          "ticket": {
+            "id": "S-31",
+            "text": "Please check order A9137, delayed three days.",
+            "days_overdue": 3
+          },
+          "invoices": [
+            {
+              "id": "B-1",
+              "amount_minor": 1251,
+              "currency": "AED"
+            },
+            {
+              "id": "B-2",
+              "amount_minor": 349,
+              "currency": "AED"
+            }
+          ],
+          "required_order_id": "A9137",
+          "max_characters": 120
+        }
+      },
+      {
+        "name": "normal-packet",
+        "inputs": {
+          "ticket": {
+            "id": "S-N",
+            "text": "Please check order Z204, delayed two days.",
+            "days_overdue": 2
+          },
+          "invoices": [
+            {
+              "id": "N-1",
+              "amount_minor": 0,
+              "currency": "EUR"
+            },
+            {
+              "id": "N-2",
+              "amount_minor": 17,
+              "currency": "EUR"
+            }
+          ],
+          "required_order_id": "Z204",
+          "max_characters": 120
+        }
+      },
+      {
+        "name": "small-review-limit",
+        "inputs": {
+          "ticket": {
+            "id": "S-31",
+            "text": "Please check order A9137, delayed three days.",
+            "days_overdue": 3
+          },
+          "invoices": [
+            {
+              "id": "B-1",
+              "amount_minor": 1251,
+              "currency": "AED"
+            },
+            {
+              "id": "B-2",
+              "amount_minor": 349,
+              "currency": "AED"
+            }
+          ],
+          "required_order_id": "A9137",
+          "max_characters": 1
+        }
+      },
+      {
+        "name": "invoice-amount-changed",
+        "inputs": {
+          "ticket": {
+            "id": "S-31",
+            "text": "Please check order A9137, delayed three days.",
+            "days_overdue": 3
+          },
+          "invoices": [
+            {
+              "id": "B-1",
+              "amount_minor": 1252,
+              "currency": "AED"
+            },
+            {
+              "id": "B-2",
+              "amount_minor": 349,
+              "currency": "AED"
+            }
+          ],
+          "required_order_id": "A9137",
+          "max_characters": 120
+        }
+      },
+      {
+        "name": "boundary-high",
+        "inputs": {
+          "ticket": {
+            "id": "S-N",
+            "text": "Please check order Z204, delayed two days.",
+            "days_overdue": 3
+          },
+          "invoices": [
+            {
+              "id": "N-1",
+              "amount_minor": 0,
+              "currency": "EUR"
+            },
+            {
+              "id": "N-2",
+              "amount_minor": 17,
+              "currency": "EUR"
+            }
+          ],
+          "required_order_id": "Z204",
+          "max_characters": 120
+        }
+      },
+      {
+        "name": "wrong-order-id",
+        "inputs": {
+          "ticket": {
+            "id": "S-31",
+            "text": "Please check order A9137, delayed three days.",
+            "days_overdue": 3
+          },
+          "invoices": [
+            {
+              "id": "B-1",
+              "amount_minor": 1251,
+              "currency": "AED"
+            },
+            {
+              "id": "B-2",
+              "amount_minor": 349,
+              "currency": "AED"
+            }
+          ],
+          "required_order_id": "UNMENTIONED-ORDER",
+          "max_characters": 120
+        }
+      }
+    ],
+    "negative": [
+      {
+        "name": "duplicate-invoices",
+        "inputs": {
+          "ticket": {
+            "id": "S-31",
+            "text": "Please check order A9137, delayed three days.",
+            "days_overdue": 3
+          },
+          "invoices": [
+            {
+              "id": "DUP",
+              "amount_minor": 1,
+              "currency": "AED"
+            },
+            {
+              "id": "DUP",
+              "amount_minor": 2,
+              "currency": "AED"
+            }
+          ],
+          "required_order_id": "A9137",
+          "max_characters": 120
+        },
+        "error": "Duplicate invoice ID",
+        "operation": "invoices.validate",
+        "role": "validate"
+      },
+      {
+        "name": "invalid-days--1",
+        "inputs": {
+          "ticket": {
+            "id": "S-31",
+            "text": "Please check order A9137, delayed three days.",
+            "days_overdue": -1
+          },
+          "invoices": [
+            {
+              "id": "B-1",
+              "amount_minor": 1251,
+              "currency": "AED"
+            },
+            {
+              "id": "B-2",
+              "amount_minor": 349,
+              "currency": "AED"
+            }
+          ],
+          "required_order_id": "A9137",
+          "max_characters": 120
+        },
+        "error": "Invalid overdue days",
+        "schema_error": "Schema violation at inputs.ticket.days_overdue",
+        "operation": "ticket.classify",
+        "role": "classify"
+      },
+      {
+        "name": "invalid-days-2.5",
+        "inputs": {
+          "ticket": {
+            "id": "S-31",
+            "text": "Please check order A9137, delayed three days.",
+            "days_overdue": 2.5
+          },
+          "invoices": [
+            {
+              "id": "B-1",
+              "amount_minor": 1251,
+              "currency": "AED"
+            },
+            {
+              "id": "B-2",
+              "amount_minor": 349,
+              "currency": "AED"
+            }
+          ],
+          "required_order_id": "A9137",
+          "max_characters": 120
+        },
+        "error": "Invalid overdue days",
+        "schema_error": "Schema violation at inputs.ticket.days_overdue",
+        "operation": "ticket.classify",
+        "role": "classify"
+      }
+    ],
+    "live_cases": [
+      "high-packet",
+      "normal-packet"
+    ]
+  },
+  "bulletin-market-brief": {
+    "positive": [
+      {
+        "name": "base-bulletins",
+        "inputs": {
+          "articles": [
+            {
+              "id": "BL-1",
+              "title": "Offline inventory",
+              "text": "The product supports offline inventory."
+            },
+            {
+              "id": "BL-2",
+              "title": "CSV export",
+              "text": "The product supports CSV export."
+            }
+          ],
+          "marketing_material": "The service targets rural cooperatives through printed catalogues."
+        },
+        "product_anchors": [
+          [
+            "offline"
+          ],
+          [
+            "inventory",
+            "stock"
+          ],
+          [
+            "\\bcsv\\b",
+            "comma.separated"
+          ]
+        ],
+        "marketing_anchors": [
+          [
+            "rural"
+          ],
+          [
+            "cooperativ"
+          ],
+          [
+            "printed"
+          ],
+          [
+            "catalog"
+          ]
+        ],
+        "forbidden_anchors": [
+          "appointment",
+          "\\bsms\\b"
+        ]
+      },
+      {
+        "name": "alternate-bulletins",
+        "inputs": {
+          "articles": [
+            {
+              "id": "ALT-7",
+              "title": "Appointment booking",
+              "text": "The product supports appointment booking."
+            },
+            {
+              "id": "ALT-9",
+              "title": "SMS reminders",
+              "text": "The product supports SMS reminders."
+            }
+          ],
+          "marketing_material": "The service targets dental clinics through radio adverts."
+        },
+        "product_anchors": [
+          [
+            "appointment"
+          ],
+          [
+            "booking",
+            "schedul"
+          ],
+          [
+            "\\bsms\\b",
+            "text.message"
+          ],
+          [
+            "remind"
+          ]
+        ],
+        "marketing_anchors": [
+          [
+            "dental"
+          ],
+          [
+            "clinic"
+          ],
+          [
+            "radio"
+          ],
+          [
+            "advert",
+            "commercial"
+          ]
+        ],
+        "forbidden_anchors": [
+          "offline",
+          "\\bcsv\\b",
+          "cooperativ",
+          "catalog"
+        ]
+      },
+      {
+        "name": "reordered-bulletins",
+        "inputs": {
+          "articles": [
+            {
+              "id": "BL-2",
+              "title": "CSV export",
+              "text": "The product supports CSV export."
+            },
+            {
+              "id": "BL-1",
+              "title": "Offline inventory",
+              "text": "The product supports offline inventory."
+            }
+          ],
+          "marketing_material": "The service targets rural cooperatives through printed catalogues."
+        },
+        "product_anchors": [
+          [
+            "offline"
+          ],
+          [
+            "inventory",
+            "stock"
+          ],
+          [
+            "\\bcsv\\b",
+            "comma.separated"
+          ]
+        ],
+        "marketing_anchors": [
+          [
+            "rural"
+          ],
+          [
+            "cooperativ"
+          ],
+          [
+            "printed"
+          ],
+          [
+            "catalog"
+          ]
+        ]
+      },
+      {
+        "name": "replaced-capability",
+        "inputs": {
+          "articles": [
+            {
+              "id": "BL-1",
+              "title": "Offline inventory",
+              "text": "The product supports offline inventory."
+            },
+            {
+              "id": "BL-NEW",
+              "title": "Barcode scanning",
+              "text": "The product supports barcode scanning."
+            }
+          ],
+          "marketing_material": "The service targets rural cooperatives through printed catalogues."
+        },
+        "product_anchors": [
+          [
+            "offline"
+          ],
+          [
+            "inventory",
+            "stock"
+          ],
+          [
+            "barcode"
+          ],
+          [
+            "scann"
+          ]
+        ],
+        "marketing_anchors": [
+          [
+            "rural"
+          ],
+          [
+            "cooperativ"
+          ],
+          [
+            "printed"
+          ],
+          [
+            "catalog"
+          ]
+        ],
+        "forbidden_anchors": [
+          "\\bcsv\\b",
+          "comma.separated"
+        ]
+      },
+      {
+        "name": "changed-marketing",
+        "inputs": {
+          "articles": [
+            {
+              "id": "BL-1",
+              "title": "Offline inventory",
+              "text": "The product supports offline inventory."
+            },
+            {
+              "id": "BL-2",
+              "title": "CSV export",
+              "text": "The product supports CSV export."
+            }
+          ],
+          "marketing_material": "The service targets dental clinics through radio adverts."
+        },
+        "product_anchors": [
+          [
+            "offline"
+          ],
+          [
+            "inventory",
+            "stock"
+          ],
+          [
+            "\\bcsv\\b",
+            "comma.separated"
+          ]
+        ],
+        "marketing_anchors": [
+          [
+            "dental"
+          ],
+          [
+            "clinic"
+          ],
+          [
+            "radio"
+          ],
+          [
+            "advert",
+            "commercial"
+          ]
+        ],
+        "forbidden_anchors": [
+          "cooperativ",
+          "catalog"
+        ]
+      }
+    ],
+    "negative": [
+      {
+        "name": "empty-articles",
+        "inputs": {
+          "articles": [],
+          "marketing_material": "The service targets rural cooperatives through printed catalogues."
+        },
+        "error": "No articles",
+        "operation": "digest.prepare",
+        "role": "prepare"
+      },
+      {
+        "name": "duplicate-articles",
+        "inputs": {
+          "articles": [
+            {
+              "id": "BL-1",
+              "title": "Offline inventory",
+              "text": "The product supports offline inventory."
+            },
+            {
+              "id": "BL-1",
+              "title": "Offline inventory",
+              "text": "The product supports offline inventory."
+            }
+          ],
+          "marketing_material": "The service targets rural cooperatives through printed catalogues."
+        },
+        "error": "Duplicate article ID",
+        "operation": "digest.prepare",
+        "role": "prepare"
+      },
+      {
+        "name": "malformed-article-title",
+        "inputs": {
+          "articles": [
+            {
+              "id": "BL-1",
+              "title": "",
+              "text": "The product supports offline inventory."
+            }
+          ],
+          "marketing_material": "The service targets rural cooperatives through printed catalogues."
+        },
+        "error": "Schema violation at inputs.articles[0].title",
+        "schema_error": "Schema violation at inputs.articles[0].title",
+        "operation": "digest.summarize",
+        "role": "summarize"
+      },
+      {
+        "name": "empty-marketing",
+        "inputs": {
+          "articles": [
+            {
+              "id": "BL-1",
+              "title": "Offline inventory",
+              "text": "The product supports offline inventory."
+            },
+            {
+              "id": "BL-2",
+              "title": "CSV export",
+              "text": "The product supports CSV export."
+            }
+          ],
+          "marketing_material": ""
+        },
+        "error": "Missing marketing material",
+        "schema_error": "Schema violation at inputs.material",
+        "operation": "research.marketing",
+        "role": "marketing"
+      }
+    ],
+    "live_cases": [
+      "base-bulletins",
+      "alternate-bulletins"
+    ]
+  },
+  "priority-support-brief": {
+    "positive": [
+      {
+        "name": "high-brief",
+        "inputs": {
+          "ticket": {
+            "id": "P-72",
+            "text": "Delivery is three days late.",
+            "days_overdue": 3
+          },
+          "product_material": "The product supports barcode scanning and offline inventory.",
+          "marketing_material": "The service targets local shops through partner referrals."
+        },
+        "product_anchors": [
+          [
+            "barcode"
+          ],
+          [
+            "scann"
+          ],
+          [
+            "offline"
+          ],
+          [
+            "inventory",
+            "stock"
+          ]
+        ],
+        "marketing_anchors": [
+          [
+            "local"
+          ],
+          [
+            "shop",
+            "retail"
+          ],
+          [
+            "partner"
+          ],
+          [
+            "referral"
+          ]
+        ]
+      },
+      {
+        "name": "normal-empty",
+        "inputs": {
+          "ticket": {
+            "id": "P-72",
+            "text": "Delivery is three days late.",
+            "days_overdue": 2
+          },
+          "product_material": "",
+          "marketing_material": ""
+        }
+      },
+      {
+        "name": "normal-zero",
+        "inputs": {
+          "ticket": {
+            "id": "P-72",
+            "text": "Delivery is three days late.",
+            "days_overdue": 0
+          },
+          "product_material": "The product supports barcode scanning and offline inventory.",
+          "marketing_material": "The service targets local shops through partner referrals."
+        }
+      },
+      {
+        "name": "normal-valid",
+        "inputs": {
+          "ticket": {
+            "id": "P-72",
+            "text": "Delivery is three days late.",
+            "days_overdue": 2
+          },
+          "product_material": "The product supports barcode scanning and offline inventory.",
+          "marketing_material": "The service targets local shops through partner referrals."
+        }
+      },
+      {
+        "name": "boundary-high",
+        "inputs": {
+          "ticket": {
+            "id": "P-72",
+            "text": "Delivery is three days late.",
+            "days_overdue": 3
+          },
+          "product_material": "The product supports barcode scanning and offline inventory.",
+          "marketing_material": "The service targets local shops through partner referrals."
+        },
+        "product_anchors": [
+          [
+            "barcode"
+          ],
+          [
+            "scann"
+          ],
+          [
+            "offline"
+          ],
+          [
+            "inventory",
+            "stock"
+          ]
+        ],
+        "marketing_anchors": [
+          [
+            "local"
+          ],
+          [
+            "shop",
+            "retail"
+          ],
+          [
+            "partner"
+          ],
+          [
+            "referral"
+          ]
+        ]
+      }
+    ],
+    "negative": [
+      {
+        "name": "high-empty-product",
+        "inputs": {
+          "ticket": {
+            "id": "P-72",
+            "text": "Delivery is three days late.",
+            "days_overdue": 3
+          },
+          "product_material": "",
+          "marketing_material": "The service targets local shops through partner referrals."
+        },
+        "error": "Missing product material",
+        "schema_error": "Schema violation at inputs.material",
+        "operation": "research.product",
+        "role": "product"
+      },
+      {
+        "name": "high-empty-marketing",
+        "inputs": {
+          "ticket": {
+            "id": "P-72",
+            "text": "Delivery is three days late.",
+            "days_overdue": 3
+          },
+          "product_material": "The product supports barcode scanning and offline inventory.",
+          "marketing_material": ""
+        },
+        "error": "Missing marketing material",
+        "schema_error": "Schema violation at inputs.material",
+        "operation": "research.marketing",
+        "role": "marketing"
+      }
+    ],
+    "live_cases": [
+      "high-brief",
+      "normal-empty"
+    ]
+  },
+  "revise-answer": {
+    "positive": [
+      {
+        "name": "valid-reply",
+        "inputs": {
+          "ticket": {
+            "id": "T-17",
+            "text": "Where is order A7842?"
+          },
+          "required_order_id": "A7842",
+          "max_characters": 280
+        },
+        "expected": "accepted"
+      },
+      {
+        "name": "impossible-limit",
+        "inputs": {
+          "ticket": {
+            "id": "T-17",
+            "text": "Where is order A7842?"
+          },
+          "required_order_id": "A7842",
+          "max_characters": 1
+        },
+        "expected": "exhausted"
+      }
+    ],
+    "negative": [],
+    "live_cases": [
+      "valid-reply",
+      "impossible-limit"
+    ]
+  }
+}
