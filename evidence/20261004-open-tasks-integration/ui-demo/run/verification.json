@@ -1,0 +1,39 @@
+{
+  "status": "passed",
+  "execution_transport": "authenticated_n8n_ui_manual",
+  "workflow_id": "a306069acac34f50",
+  "execution_id": "61",
+  "native_nodes": 25,
+  "wrapper_attempts": 4,
+  "wrapper_completions": 4,
+  "authoring_calls": 0,
+  "provider_call_count": null,
+  "business": {
+    "output_verified": true,
+    "operation_count": 8,
+    "llm_mode": "live"
+  },
+  "output": {
+    "action": {
+      "ticket_id": "P-72",
+      "action": "escalate",
+      "mode": "draft"
+    },
+    "brief": {
+      "report": "The product supports barcode scanning and offline inventory. The service targets local shops through partner referrals.",
+      "evidence": [
+        "The product supports barcode scanning and offline inventory.",
+        "The service targets local shops through partner referrals."
+      ]
+    }
+  },
+  "checks": [
+    "persisted success and manual mode",
+    "all prepared node values/connections/settings retained; editor-added explicit defaults documented",
+    "native step/branch/join/Result lineage",
+    "independent fixture business checks",
+    "4 request/dispatch/completion/response identities and hashes"
+  ],
+  "cli_execution_exit_code": null,
+  "note": "UI transport has no fabricated n8n execute CLI status; native persisted records and UI success are checked directly."
+}

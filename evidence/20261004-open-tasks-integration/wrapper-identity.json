@@ -1,0 +1,20 @@
+{
+  "schema": "sapi-lab-wrapper-identity/v1",
+  "endpoint": "http://127.0.0.1:8765/run",
+  "dispatch": "codex-exec",
+  "response_substitution": false,
+  "wrapper_retries": 0,
+  "provider_internal_retries": "unknown",
+  "model": "gpt-6-astra",
+  "files": [
+    {
+      "path": "/Users/pashvel/n8n/codex_bridge.py",
+      "sha256": "bab6f6726380950ed81ad240e2ea9aa144598c550ec5f784bcfa20e280206f36"
+    },
+    {
+      "path": "/Users/pashvel/.codex/config.toml",
+      "sha256": "d437459890b35c019b65f9e88ce608066d0f5d56b2b5e317316a3af01d1ec751"
+    }
+  ],
+  "inspection_note": "Read-only source inspection confirms POST /run dispatches codex exec --skip-git-repo-check with the supplied prompt, captures stdout/stderr, and returns ok/exit_code from subprocess completion. No wrapper retry or response substitution. Runtime listener PID 4210 invokes this exact script. Subprocess timeout 180 seconds. CLI version 0.160.0. CLI/provider internal retries remain unknown without receipts. No provider dispatch was performed during inspection."
+}

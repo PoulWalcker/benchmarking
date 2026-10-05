@@ -1,0 +1,2480 @@
+{
+  "version": 1,
+  "startData": {},
+  "resultData": {
+    "runData": {
+      "Demo start": [
+        {
+          "startTime": 1791138888633,
+          "executionIndex": 0,
+          "source": [],
+          "hints": [],
+          "executionTime": 0,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {},
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "Fixture": [
+        {
+          "startTime": 1791138888634,
+          "executionIndex": 1,
+          "source": [
+            {
+              "previousNode": "Demo start",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 958,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "P-72",
+                        "text": "Delivery is three days late.",
+                        "days_overdue": 3
+                      },
+                      "product_material": "The product supports barcode scanning and offline inventory.",
+                      "marketing_material": "The service targets local shops through partner referrals."
+                    },
+                    "steps": {},
+                    "statuses": {},
+                    "events": {},
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "Prepare classify": [
+        {
+          "startTime": 1791138889592,
+          "executionIndex": 2,
+          "source": [
+            {
+              "previousNode": "Fixture",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 14,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "envelope": {
+                      "inputs": {
+                        "ticket": {
+                          "id": "P-72",
+                          "text": "Delivery is three days late.",
+                          "days_overdue": 3
+                        },
+                        "product_material": "The product supports barcode scanning and offline inventory.",
+                        "marketing_material": "The service targets local shops through partner referrals."
+                      },
+                      "steps": {},
+                      "statuses": {},
+                      "events": {},
+                      "simulation": true,
+                      "input_source": "fixture",
+                      "llm_mode": "live"
+                    },
+                    "should_run": true,
+                    "request": {
+                      "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61",
+                      "operation": "ticket.classify",
+                      "actor": null,
+                      "inputs": {
+                        "ticket": {
+                          "id": "P-72",
+                          "text": "Delivery is three days late.",
+                          "days_overdue": 3
+                        }
+                      }
+                    }
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "Guard classify": [
+        {
+          "startTime": 1791138889606,
+          "executionIndex": 3,
+          "source": [
+            {
+              "previousNode": "Prepare classify",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 6,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "envelope": {
+                      "inputs": {
+                        "ticket": {
+                          "id": "P-72",
+                          "text": "Delivery is three days late.",
+                          "days_overdue": 3
+                        },
+                        "product_material": "The product supports barcode scanning and offline inventory.",
+                        "marketing_material": "The service targets local shops through partner referrals."
+                      },
+                      "steps": {},
+                      "statuses": {},
+                      "events": {},
+                      "simulation": true,
+                      "input_source": "fixture",
+                      "llm_mode": "live"
+                    },
+                    "should_run": true,
+                    "request": {
+                      "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61",
+                      "operation": "ticket.classify",
+                      "actor": null,
+                      "inputs": {
+                        "ticket": {
+                          "id": "P-72",
+                          "text": "Delivery is three days late.",
+                          "days_overdue": 3
+                        }
+                      }
+                    }
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ],
+              []
+            ]
+          }
+        }
+      ],
+      "Agency classify": [
+        {
+          "startTime": 1791138889612,
+          "executionIndex": 4,
+          "source": [
+            {
+              "previousNode": "Guard classify",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 8868,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61",
+                    "status": "completed",
+                    "output": {
+                      "category": "delivery",
+                      "priority": "high"
+                    },
+                    "usage": null
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "classify [LLM LIVE]": [
+        {
+          "startTime": 1791138898481,
+          "executionIndex": 5,
+          "source": [
+            {
+              "previousNode": "Agency classify",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 27,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "P-72",
+                        "text": "Delivery is three days late.",
+                        "days_overdue": 3
+                      },
+                      "product_material": "The product supports barcode scanning and offline inventory.",
+                      "marketing_material": "The service targets local shops through partner referrals."
+                    },
+                    "steps": {
+                      "classify": {
+                        "category": "delivery",
+                        "priority": "high"
+                      }
+                    },
+                    "statuses": {
+                      "classify": "completed"
+                    },
+                    "events": {
+                      "classify": {
+                        "step_id": "classify",
+                        "operation": "ticket.classify",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "escalation": [
+        {
+          "startTime": 1791138898508,
+          "executionIndex": 6,
+          "source": [
+            {
+              "previousNode": "classify [LLM LIVE]",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 5,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "P-72",
+                        "text": "Delivery is three days late.",
+                        "days_overdue": 3
+                      },
+                      "product_material": "The product supports barcode scanning and offline inventory.",
+                      "marketing_material": "The service targets local shops through partner referrals."
+                    },
+                    "steps": {
+                      "classify": {
+                        "category": "delivery",
+                        "priority": "high"
+                      },
+                      "escalation": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      }
+                    },
+                    "statuses": {
+                      "classify": "completed",
+                      "escalation": "completed"
+                    },
+                    "events": {
+                      "classify": {
+                        "step_id": "classify",
+                        "operation": "ticket.classify",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                      },
+                      "escalation": {
+                        "step_id": "escalation",
+                        "operation": "ticket.escalation_draft",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "normal": [
+        {
+          "startTime": 1791138898514,
+          "executionIndex": 7,
+          "source": [
+            {
+              "previousNode": "classify [LLM LIVE]",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 5,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "P-72",
+                        "text": "Delivery is three days late.",
+                        "days_overdue": 3
+                      },
+                      "product_material": "The product supports barcode scanning and offline inventory.",
+                      "marketing_material": "The service targets local shops through partner referrals."
+                    },
+                    "steps": {
+                      "classify": {
+                        "category": "delivery",
+                        "priority": "high"
+                      }
+                    },
+                    "statuses": {
+                      "classify": "completed",
+                      "normal": "skipped"
+                    },
+                    "events": {
+                      "classify": {
+                        "step_id": "classify",
+                        "operation": "ticket.classify",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                      },
+                      "normal": {
+                        "step_id": "normal",
+                        "operation": "ticket.normal_draft",
+                        "status": "skipped",
+                        "actor": null,
+                        "implementation": "script"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "Join select_action": [
+        {
+          "startTime": 1791138898519,
+          "executionIndex": 8,
+          "source": [
+            {
+              "previousNode": "escalation",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            },
+            {
+              "previousNode": "normal",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 29,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "P-72",
+                        "text": "Delivery is three days late.",
+                        "days_overdue": 3
+                      },
+                      "product_material": "The product supports barcode scanning and offline inventory.",
+                      "marketing_material": "The service targets local shops through partner referrals."
+                    },
+                    "steps": {
+                      "classify": {
+                        "category": "delivery",
+                        "priority": "high"
+                      },
+                      "escalation": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      }
+                    },
+                    "statuses": {
+                      "classify": "completed",
+                      "escalation": "completed"
+                    },
+                    "events": {
+                      "classify": {
+                        "step_id": "classify",
+                        "operation": "ticket.classify",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                      },
+                      "escalation": {
+                        "step_id": "escalation",
+                        "operation": "ticket.escalation_draft",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                },
+                {
+                  "json": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "P-72",
+                        "text": "Delivery is three days late.",
+                        "days_overdue": 3
+                      },
+                      "product_material": "The product supports barcode scanning and offline inventory.",
+                      "marketing_material": "The service targets local shops through partner referrals."
+                    },
+                    "steps": {
+                      "classify": {
+                        "category": "delivery",
+                        "priority": "high"
+                      }
+                    },
+                    "statuses": {
+                      "classify": "completed",
+                      "normal": "skipped"
+                    },
+                    "events": {
+                      "classify": {
+                        "step_id": "classify",
+                        "operation": "ticket.classify",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                      },
+                      "normal": {
+                        "step_id": "normal",
+                        "operation": "ticket.normal_draft",
+                        "status": "skipped",
+                        "actor": null,
+                        "implementation": "script"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "pairedItem": {
+                    "item": 0,
+                    "input": 1
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "select_action": [
+        {
+          "startTime": 1791138898549,
+          "executionIndex": 9,
+          "source": [
+            {
+              "previousNode": "Join select_action",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 5,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "P-72",
+                        "text": "Delivery is three days late.",
+                        "days_overdue": 3
+                      },
+                      "product_material": "The product supports barcode scanning and offline inventory.",
+                      "marketing_material": "The service targets local shops through partner referrals."
+                    },
+                    "steps": {
+                      "classify": {
+                        "category": "delivery",
+                        "priority": "high"
+                      },
+                      "escalation": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "select_action": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      }
+                    },
+                    "statuses": {
+                      "classify": "completed",
+                      "escalation": "completed",
+                      "normal": "skipped",
+                      "select_action": "completed"
+                    },
+                    "events": {
+                      "classify": {
+                        "step_id": "classify",
+                        "operation": "ticket.classify",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                      },
+                      "escalation": {
+                        "step_id": "escalation",
+                        "operation": "ticket.escalation_draft",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "normal": {
+                        "step_id": "normal",
+                        "operation": "ticket.normal_draft",
+                        "status": "skipped",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "select_action": {
+                        "step_id": "select_action",
+                        "operation": "branch.select_one",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "Prepare product": [
+        {
+          "startTime": 1791138898555,
+          "executionIndex": 10,
+          "source": [
+            {
+              "previousNode": "select_action",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 5,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "envelope": {
+                      "inputs": {
+                        "ticket": {
+                          "id": "P-72",
+                          "text": "Delivery is three days late.",
+                          "days_overdue": 3
+                        },
+                        "product_material": "The product supports barcode scanning and offline inventory.",
+                        "marketing_material": "The service targets local shops through partner referrals."
+                      },
+                      "steps": {
+                        "classify": {
+                          "category": "delivery",
+                          "priority": "high"
+                        },
+                        "escalation": {
+                          "ticket_id": "P-72",
+                          "action": "escalate",
+                          "mode": "draft"
+                        },
+                        "select_action": {
+                          "ticket_id": "P-72",
+                          "action": "escalate",
+                          "mode": "draft"
+                        }
+                      },
+                      "statuses": {
+                        "classify": "completed",
+                        "escalation": "completed",
+                        "normal": "skipped",
+                        "select_action": "completed"
+                      },
+                      "events": {
+                        "classify": {
+                          "step_id": "classify",
+                          "operation": "ticket.classify",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "live",
+                          "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                        },
+                        "escalation": {
+                          "step_id": "escalation",
+                          "operation": "ticket.escalation_draft",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "script"
+                        },
+                        "normal": {
+                          "step_id": "normal",
+                          "operation": "ticket.normal_draft",
+                          "status": "skipped",
+                          "actor": null,
+                          "implementation": "script"
+                        },
+                        "select_action": {
+                          "step_id": "select_action",
+                          "operation": "branch.select_one",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "script"
+                        }
+                      },
+                      "simulation": true,
+                      "input_source": "fixture",
+                      "llm_mode": "live"
+                    },
+                    "should_run": true,
+                    "request": {
+                      "invocation_id": "priority-support-brief/r1/product/a306069acac34f50/61",
+                      "operation": "research.product",
+                      "actor": null,
+                      "inputs": {
+                        "material": "The product supports barcode scanning and offline inventory."
+                      }
+                    }
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "Guard product": [
+        {
+          "startTime": 1791138898561,
+          "executionIndex": 11,
+          "source": [
+            {
+              "previousNode": "Prepare product",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 0,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "envelope": {
+                      "inputs": {
+                        "ticket": {
+                          "id": "P-72",
+                          "text": "Delivery is three days late.",
+                          "days_overdue": 3
+                        },
+                        "product_material": "The product supports barcode scanning and offline inventory.",
+                        "marketing_material": "The service targets local shops through partner referrals."
+                      },
+                      "steps": {
+                        "classify": {
+                          "category": "delivery",
+                          "priority": "high"
+                        },
+                        "escalation": {
+                          "ticket_id": "P-72",
+                          "action": "escalate",
+                          "mode": "draft"
+                        },
+                        "select_action": {
+                          "ticket_id": "P-72",
+                          "action": "escalate",
+                          "mode": "draft"
+                        }
+                      },
+                      "statuses": {
+                        "classify": "completed",
+                        "escalation": "completed",
+                        "normal": "skipped",
+                        "select_action": "completed"
+                      },
+                      "events": {
+                        "classify": {
+                          "step_id": "classify",
+                          "operation": "ticket.classify",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "live",
+                          "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                        },
+                        "escalation": {
+                          "step_id": "escalation",
+                          "operation": "ticket.escalation_draft",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "script"
+                        },
+                        "normal": {
+                          "step_id": "normal",
+                          "operation": "ticket.normal_draft",
+                          "status": "skipped",
+                          "actor": null,
+                          "implementation": "script"
+                        },
+                        "select_action": {
+                          "step_id": "select_action",
+                          "operation": "branch.select_one",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "script"
+                        }
+                      },
+                      "simulation": true,
+                      "input_source": "fixture",
+                      "llm_mode": "live"
+                    },
+                    "should_run": true,
+                    "request": {
+                      "invocation_id": "priority-support-brief/r1/product/a306069acac34f50/61",
+                      "operation": "research.product",
+                      "actor": null,
+                      "inputs": {
+                        "material": "The product supports barcode scanning and offline inventory."
+                      }
+                    }
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ],
+              []
+            ]
+          }
+        }
+      ],
+      "Agency product": [
+        {
+          "startTime": 1791138898562,
+          "executionIndex": 12,
+          "source": [
+            {
+              "previousNode": "Guard product",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 10381,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "invocation_id": "priority-support-brief/r1/product/a306069acac34f50/61",
+                    "status": "completed",
+                    "output": {
+                      "summary": "The product supports barcode scanning and offline inventory.",
+                      "evidence": "The product supports barcode scanning and offline inventory."
+                    },
+                    "usage": null
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "product [LLM LIVE]": [
+        {
+          "startTime": 1791138908945,
+          "executionIndex": 13,
+          "source": [
+            {
+              "previousNode": "Agency product",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 25,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "P-72",
+                        "text": "Delivery is three days late.",
+                        "days_overdue": 3
+                      },
+                      "product_material": "The product supports barcode scanning and offline inventory.",
+                      "marketing_material": "The service targets local shops through partner referrals."
+                    },
+                    "steps": {
+                      "classify": {
+                        "category": "delivery",
+                        "priority": "high"
+                      },
+                      "escalation": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "select_action": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "product": {
+                        "summary": "The product supports barcode scanning and offline inventory.",
+                        "evidence": "The product supports barcode scanning and offline inventory."
+                      }
+                    },
+                    "statuses": {
+                      "classify": "completed",
+                      "escalation": "completed",
+                      "normal": "skipped",
+                      "select_action": "completed",
+                      "product": "completed"
+                    },
+                    "events": {
+                      "classify": {
+                        "step_id": "classify",
+                        "operation": "ticket.classify",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                      },
+                      "escalation": {
+                        "step_id": "escalation",
+                        "operation": "ticket.escalation_draft",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "normal": {
+                        "step_id": "normal",
+                        "operation": "ticket.normal_draft",
+                        "status": "skipped",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "select_action": {
+                        "step_id": "select_action",
+                        "operation": "branch.select_one",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "product": {
+                        "step_id": "product",
+                        "operation": "research.product",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/product/a306069acac34f50/61"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "Prepare marketing": [
+        {
+          "startTime": 1791138908970,
+          "executionIndex": 14,
+          "source": [
+            {
+              "previousNode": "select_action",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 5,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "envelope": {
+                      "inputs": {
+                        "ticket": {
+                          "id": "P-72",
+                          "text": "Delivery is three days late.",
+                          "days_overdue": 3
+                        },
+                        "product_material": "The product supports barcode scanning and offline inventory.",
+                        "marketing_material": "The service targets local shops through partner referrals."
+                      },
+                      "steps": {
+                        "classify": {
+                          "category": "delivery",
+                          "priority": "high"
+                        },
+                        "escalation": {
+                          "ticket_id": "P-72",
+                          "action": "escalate",
+                          "mode": "draft"
+                        },
+                        "select_action": {
+                          "ticket_id": "P-72",
+                          "action": "escalate",
+                          "mode": "draft"
+                        }
+                      },
+                      "statuses": {
+                        "classify": "completed",
+                        "escalation": "completed",
+                        "normal": "skipped",
+                        "select_action": "completed"
+                      },
+                      "events": {
+                        "classify": {
+                          "step_id": "classify",
+                          "operation": "ticket.classify",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "live",
+                          "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                        },
+                        "escalation": {
+                          "step_id": "escalation",
+                          "operation": "ticket.escalation_draft",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "script"
+                        },
+                        "normal": {
+                          "step_id": "normal",
+                          "operation": "ticket.normal_draft",
+                          "status": "skipped",
+                          "actor": null,
+                          "implementation": "script"
+                        },
+                        "select_action": {
+                          "step_id": "select_action",
+                          "operation": "branch.select_one",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "script"
+                        }
+                      },
+                      "simulation": true,
+                      "input_source": "fixture",
+                      "llm_mode": "live"
+                    },
+                    "should_run": true,
+                    "request": {
+                      "invocation_id": "priority-support-brief/r1/marketing/a306069acac34f50/61",
+                      "operation": "research.marketing",
+                      "actor": null,
+                      "inputs": {
+                        "material": "The service targets local shops through partner referrals."
+                      }
+                    }
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "Guard marketing": [
+        {
+          "startTime": 1791138908976,
+          "executionIndex": 15,
+          "source": [
+            {
+              "previousNode": "Prepare marketing",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 1,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "envelope": {
+                      "inputs": {
+                        "ticket": {
+                          "id": "P-72",
+                          "text": "Delivery is three days late.",
+                          "days_overdue": 3
+                        },
+                        "product_material": "The product supports barcode scanning and offline inventory.",
+                        "marketing_material": "The service targets local shops through partner referrals."
+                      },
+                      "steps": {
+                        "classify": {
+                          "category": "delivery",
+                          "priority": "high"
+                        },
+                        "escalation": {
+                          "ticket_id": "P-72",
+                          "action": "escalate",
+                          "mode": "draft"
+                        },
+                        "select_action": {
+                          "ticket_id": "P-72",
+                          "action": "escalate",
+                          "mode": "draft"
+                        }
+                      },
+                      "statuses": {
+                        "classify": "completed",
+                        "escalation": "completed",
+                        "normal": "skipped",
+                        "select_action": "completed"
+                      },
+                      "events": {
+                        "classify": {
+                          "step_id": "classify",
+                          "operation": "ticket.classify",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "live",
+                          "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                        },
+                        "escalation": {
+                          "step_id": "escalation",
+                          "operation": "ticket.escalation_draft",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "script"
+                        },
+                        "normal": {
+                          "step_id": "normal",
+                          "operation": "ticket.normal_draft",
+                          "status": "skipped",
+                          "actor": null,
+                          "implementation": "script"
+                        },
+                        "select_action": {
+                          "step_id": "select_action",
+                          "operation": "branch.select_one",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "script"
+                        }
+                      },
+                      "simulation": true,
+                      "input_source": "fixture",
+                      "llm_mode": "live"
+                    },
+                    "should_run": true,
+                    "request": {
+                      "invocation_id": "priority-support-brief/r1/marketing/a306069acac34f50/61",
+                      "operation": "research.marketing",
+                      "actor": null,
+                      "inputs": {
+                        "material": "The service targets local shops through partner referrals."
+                      }
+                    }
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ],
+              []
+            ]
+          }
+        }
+      ],
+      "Agency marketing": [
+        {
+          "startTime": 1791138908977,
+          "executionIndex": 16,
+          "source": [
+            {
+              "previousNode": "Guard marketing",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 11045,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "invocation_id": "priority-support-brief/r1/marketing/a306069acac34f50/61",
+                    "status": "completed",
+                    "output": {
+                      "summary": "The service targets local shops through partner referrals.",
+                      "evidence": "The service targets local shops through partner referrals."
+                    },
+                    "usage": null
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "marketing [LLM LIVE]": [
+        {
+          "startTime": 1791138920022,
+          "executionIndex": 17,
+          "source": [
+            {
+              "previousNode": "Agency marketing",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 19,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "P-72",
+                        "text": "Delivery is three days late.",
+                        "days_overdue": 3
+                      },
+                      "product_material": "The product supports barcode scanning and offline inventory.",
+                      "marketing_material": "The service targets local shops through partner referrals."
+                    },
+                    "steps": {
+                      "classify": {
+                        "category": "delivery",
+                        "priority": "high"
+                      },
+                      "escalation": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "select_action": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "marketing": {
+                        "summary": "The service targets local shops through partner referrals.",
+                        "evidence": "The service targets local shops through partner referrals."
+                      }
+                    },
+                    "statuses": {
+                      "classify": "completed",
+                      "escalation": "completed",
+                      "normal": "skipped",
+                      "select_action": "completed",
+                      "marketing": "completed"
+                    },
+                    "events": {
+                      "classify": {
+                        "step_id": "classify",
+                        "operation": "ticket.classify",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                      },
+                      "escalation": {
+                        "step_id": "escalation",
+                        "operation": "ticket.escalation_draft",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "normal": {
+                        "step_id": "normal",
+                        "operation": "ticket.normal_draft",
+                        "status": "skipped",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "select_action": {
+                        "step_id": "select_action",
+                        "operation": "branch.select_one",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "marketing": {
+                        "step_id": "marketing",
+                        "operation": "research.marketing",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/marketing/a306069acac34f50/61"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "Join combine": [
+        {
+          "startTime": 1791138920042,
+          "executionIndex": 18,
+          "source": [
+            {
+              "previousNode": "product [LLM LIVE]",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            },
+            {
+              "previousNode": "marketing [LLM LIVE]",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 1,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "P-72",
+                        "text": "Delivery is three days late.",
+                        "days_overdue": 3
+                      },
+                      "product_material": "The product supports barcode scanning and offline inventory.",
+                      "marketing_material": "The service targets local shops through partner referrals."
+                    },
+                    "steps": {
+                      "classify": {
+                        "category": "delivery",
+                        "priority": "high"
+                      },
+                      "escalation": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "select_action": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "product": {
+                        "summary": "The product supports barcode scanning and offline inventory.",
+                        "evidence": "The product supports barcode scanning and offline inventory."
+                      }
+                    },
+                    "statuses": {
+                      "classify": "completed",
+                      "escalation": "completed",
+                      "normal": "skipped",
+                      "select_action": "completed",
+                      "product": "completed"
+                    },
+                    "events": {
+                      "classify": {
+                        "step_id": "classify",
+                        "operation": "ticket.classify",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                      },
+                      "escalation": {
+                        "step_id": "escalation",
+                        "operation": "ticket.escalation_draft",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "normal": {
+                        "step_id": "normal",
+                        "operation": "ticket.normal_draft",
+                        "status": "skipped",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "select_action": {
+                        "step_id": "select_action",
+                        "operation": "branch.select_one",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "product": {
+                        "step_id": "product",
+                        "operation": "research.product",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/product/a306069acac34f50/61"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                },
+                {
+                  "json": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "P-72",
+                        "text": "Delivery is three days late.",
+                        "days_overdue": 3
+                      },
+                      "product_material": "The product supports barcode scanning and offline inventory.",
+                      "marketing_material": "The service targets local shops through partner referrals."
+                    },
+                    "steps": {
+                      "classify": {
+                        "category": "delivery",
+                        "priority": "high"
+                      },
+                      "escalation": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "select_action": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "marketing": {
+                        "summary": "The service targets local shops through partner referrals.",
+                        "evidence": "The service targets local shops through partner referrals."
+                      }
+                    },
+                    "statuses": {
+                      "classify": "completed",
+                      "escalation": "completed",
+                      "normal": "skipped",
+                      "select_action": "completed",
+                      "marketing": "completed"
+                    },
+                    "events": {
+                      "classify": {
+                        "step_id": "classify",
+                        "operation": "ticket.classify",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                      },
+                      "escalation": {
+                        "step_id": "escalation",
+                        "operation": "ticket.escalation_draft",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "normal": {
+                        "step_id": "normal",
+                        "operation": "ticket.normal_draft",
+                        "status": "skipped",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "select_action": {
+                        "step_id": "select_action",
+                        "operation": "branch.select_one",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "marketing": {
+                        "step_id": "marketing",
+                        "operation": "research.marketing",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/marketing/a306069acac34f50/61"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "pairedItem": {
+                    "item": 0,
+                    "input": 1
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "combine": [
+        {
+          "startTime": 1791138920044,
+          "executionIndex": 19,
+          "source": [
+            {
+              "previousNode": "Join combine",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 8,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "P-72",
+                        "text": "Delivery is three days late.",
+                        "days_overdue": 3
+                      },
+                      "product_material": "The product supports barcode scanning and offline inventory.",
+                      "marketing_material": "The service targets local shops through partner referrals."
+                    },
+                    "steps": {
+                      "classify": {
+                        "category": "delivery",
+                        "priority": "high"
+                      },
+                      "escalation": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "select_action": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "product": {
+                        "summary": "The product supports barcode scanning and offline inventory.",
+                        "evidence": "The product supports barcode scanning and offline inventory."
+                      },
+                      "marketing": {
+                        "summary": "The service targets local shops through partner referrals.",
+                        "evidence": "The service targets local shops through partner referrals."
+                      },
+                      "combine": {
+                        "product": {
+                          "summary": "The product supports barcode scanning and offline inventory.",
+                          "evidence": "The product supports barcode scanning and offline inventory."
+                        },
+                        "marketing": {
+                          "summary": "The service targets local shops through partner referrals.",
+                          "evidence": "The service targets local shops through partner referrals."
+                        }
+                      }
+                    },
+                    "statuses": {
+                      "classify": "completed",
+                      "escalation": "completed",
+                      "normal": "skipped",
+                      "select_action": "completed",
+                      "product": "completed",
+                      "marketing": "completed",
+                      "combine": "completed"
+                    },
+                    "events": {
+                      "classify": {
+                        "step_id": "classify",
+                        "operation": "ticket.classify",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                      },
+                      "escalation": {
+                        "step_id": "escalation",
+                        "operation": "ticket.escalation_draft",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "normal": {
+                        "step_id": "normal",
+                        "operation": "ticket.normal_draft",
+                        "status": "skipped",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "select_action": {
+                        "step_id": "select_action",
+                        "operation": "branch.select_one",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "product": {
+                        "step_id": "product",
+                        "operation": "research.product",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/product/a306069acac34f50/61"
+                      },
+                      "marketing": {
+                        "step_id": "marketing",
+                        "operation": "research.marketing",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/marketing/a306069acac34f50/61"
+                      },
+                      "combine": {
+                        "step_id": "combine",
+                        "operation": "research.combine",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "Prepare write_brief": [
+        {
+          "startTime": 1791138920052,
+          "executionIndex": 20,
+          "source": [
+            {
+              "previousNode": "combine",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 7,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "envelope": {
+                      "inputs": {
+                        "ticket": {
+                          "id": "P-72",
+                          "text": "Delivery is three days late.",
+                          "days_overdue": 3
+                        },
+                        "product_material": "The product supports barcode scanning and offline inventory.",
+                        "marketing_material": "The service targets local shops through partner referrals."
+                      },
+                      "steps": {
+                        "classify": {
+                          "category": "delivery",
+                          "priority": "high"
+                        },
+                        "escalation": {
+                          "ticket_id": "P-72",
+                          "action": "escalate",
+                          "mode": "draft"
+                        },
+                        "select_action": {
+                          "ticket_id": "P-72",
+                          "action": "escalate",
+                          "mode": "draft"
+                        },
+                        "product": {
+                          "summary": "The product supports barcode scanning and offline inventory.",
+                          "evidence": "The product supports barcode scanning and offline inventory."
+                        },
+                        "marketing": {
+                          "summary": "The service targets local shops through partner referrals.",
+                          "evidence": "The service targets local shops through partner referrals."
+                        },
+                        "combine": {
+                          "product": {
+                            "summary": "The product supports barcode scanning and offline inventory.",
+                            "evidence": "The product supports barcode scanning and offline inventory."
+                          },
+                          "marketing": {
+                            "summary": "The service targets local shops through partner referrals.",
+                            "evidence": "The service targets local shops through partner referrals."
+                          }
+                        }
+                      },
+                      "statuses": {
+                        "classify": "completed",
+                        "escalation": "completed",
+                        "normal": "skipped",
+                        "select_action": "completed",
+                        "product": "completed",
+                        "marketing": "completed",
+                        "combine": "completed"
+                      },
+                      "events": {
+                        "classify": {
+                          "step_id": "classify",
+                          "operation": "ticket.classify",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "live",
+                          "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                        },
+                        "escalation": {
+                          "step_id": "escalation",
+                          "operation": "ticket.escalation_draft",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "script"
+                        },
+                        "normal": {
+                          "step_id": "normal",
+                          "operation": "ticket.normal_draft",
+                          "status": "skipped",
+                          "actor": null,
+                          "implementation": "script"
+                        },
+                        "select_action": {
+                          "step_id": "select_action",
+                          "operation": "branch.select_one",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "script"
+                        },
+                        "product": {
+                          "step_id": "product",
+                          "operation": "research.product",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "live",
+                          "invocation_id": "priority-support-brief/r1/product/a306069acac34f50/61"
+                        },
+                        "marketing": {
+                          "step_id": "marketing",
+                          "operation": "research.marketing",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "live",
+                          "invocation_id": "priority-support-brief/r1/marketing/a306069acac34f50/61"
+                        },
+                        "combine": {
+                          "step_id": "combine",
+                          "operation": "research.combine",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "script"
+                        }
+                      },
+                      "simulation": true,
+                      "input_source": "fixture",
+                      "llm_mode": "live"
+                    },
+                    "should_run": true,
+                    "request": {
+                      "invocation_id": "priority-support-brief/r1/write_brief/a306069acac34f50/61",
+                      "operation": "research.write",
+                      "actor": null,
+                      "inputs": {
+                        "brief": {
+                          "product": {
+                            "summary": "The product supports barcode scanning and offline inventory.",
+                            "evidence": "The product supports barcode scanning and offline inventory."
+                          },
+                          "marketing": {
+                            "summary": "The service targets local shops through partner referrals.",
+                            "evidence": "The service targets local shops through partner referrals."
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "Guard write_brief": [
+        {
+          "startTime": 1791138920060,
+          "executionIndex": 21,
+          "source": [
+            {
+              "previousNode": "Prepare write_brief",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 2,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "envelope": {
+                      "inputs": {
+                        "ticket": {
+                          "id": "P-72",
+                          "text": "Delivery is three days late.",
+                          "days_overdue": 3
+                        },
+                        "product_material": "The product supports barcode scanning and offline inventory.",
+                        "marketing_material": "The service targets local shops through partner referrals."
+                      },
+                      "steps": {
+                        "classify": {
+                          "category": "delivery",
+                          "priority": "high"
+                        },
+                        "escalation": {
+                          "ticket_id": "P-72",
+                          "action": "escalate",
+                          "mode": "draft"
+                        },
+                        "select_action": {
+                          "ticket_id": "P-72",
+                          "action": "escalate",
+                          "mode": "draft"
+                        },
+                        "product": {
+                          "summary": "The product supports barcode scanning and offline inventory.",
+                          "evidence": "The product supports barcode scanning and offline inventory."
+                        },
+                        "marketing": {
+                          "summary": "The service targets local shops through partner referrals.",
+                          "evidence": "The service targets local shops through partner referrals."
+                        },
+                        "combine": {
+                          "product": {
+                            "summary": "The product supports barcode scanning and offline inventory.",
+                            "evidence": "The product supports barcode scanning and offline inventory."
+                          },
+                          "marketing": {
+                            "summary": "The service targets local shops through partner referrals.",
+                            "evidence": "The service targets local shops through partner referrals."
+                          }
+                        }
+                      },
+                      "statuses": {
+                        "classify": "completed",
+                        "escalation": "completed",
+                        "normal": "skipped",
+                        "select_action": "completed",
+                        "product": "completed",
+                        "marketing": "completed",
+                        "combine": "completed"
+                      },
+                      "events": {
+                        "classify": {
+                          "step_id": "classify",
+                          "operation": "ticket.classify",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "live",
+                          "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                        },
+                        "escalation": {
+                          "step_id": "escalation",
+                          "operation": "ticket.escalation_draft",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "script"
+                        },
+                        "normal": {
+                          "step_id": "normal",
+                          "operation": "ticket.normal_draft",
+                          "status": "skipped",
+                          "actor": null,
+                          "implementation": "script"
+                        },
+                        "select_action": {
+                          "step_id": "select_action",
+                          "operation": "branch.select_one",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "script"
+                        },
+                        "product": {
+                          "step_id": "product",
+                          "operation": "research.product",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "live",
+                          "invocation_id": "priority-support-brief/r1/product/a306069acac34f50/61"
+                        },
+                        "marketing": {
+                          "step_id": "marketing",
+                          "operation": "research.marketing",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "live",
+                          "invocation_id": "priority-support-brief/r1/marketing/a306069acac34f50/61"
+                        },
+                        "combine": {
+                          "step_id": "combine",
+                          "operation": "research.combine",
+                          "status": "completed",
+                          "actor": null,
+                          "implementation": "script"
+                        }
+                      },
+                      "simulation": true,
+                      "input_source": "fixture",
+                      "llm_mode": "live"
+                    },
+                    "should_run": true,
+                    "request": {
+                      "invocation_id": "priority-support-brief/r1/write_brief/a306069acac34f50/61",
+                      "operation": "research.write",
+                      "actor": null,
+                      "inputs": {
+                        "brief": {
+                          "product": {
+                            "summary": "The product supports barcode scanning and offline inventory.",
+                            "evidence": "The product supports barcode scanning and offline inventory."
+                          },
+                          "marketing": {
+                            "summary": "The service targets local shops through partner referrals.",
+                            "evidence": "The service targets local shops through partner referrals."
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ],
+              []
+            ]
+          }
+        }
+      ],
+      "Agency write_brief": [
+        {
+          "startTime": 1791138920062,
+          "executionIndex": 22,
+          "source": [
+            {
+              "previousNode": "Guard write_brief",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 11136,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "invocation_id": "priority-support-brief/r1/write_brief/a306069acac34f50/61",
+                    "status": "completed",
+                    "output": {
+                      "report": "The product supports barcode scanning and offline inventory. The service targets local shops through partner referrals.",
+                      "evidence": [
+                        "The product supports barcode scanning and offline inventory.",
+                        "The service targets local shops through partner referrals."
+                      ]
+                    },
+                    "usage": null
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "write_brief [LLM LIVE]": [
+        {
+          "startTime": 1791138931199,
+          "executionIndex": 23,
+          "source": [
+            {
+              "previousNode": "Agency write_brief",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 22,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "P-72",
+                        "text": "Delivery is three days late.",
+                        "days_overdue": 3
+                      },
+                      "product_material": "The product supports barcode scanning and offline inventory.",
+                      "marketing_material": "The service targets local shops through partner referrals."
+                    },
+                    "steps": {
+                      "classify": {
+                        "category": "delivery",
+                        "priority": "high"
+                      },
+                      "escalation": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "select_action": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "product": {
+                        "summary": "The product supports barcode scanning and offline inventory.",
+                        "evidence": "The product supports barcode scanning and offline inventory."
+                      },
+                      "marketing": {
+                        "summary": "The service targets local shops through partner referrals.",
+                        "evidence": "The service targets local shops through partner referrals."
+                      },
+                      "combine": {
+                        "product": {
+                          "summary": "The product supports barcode scanning and offline inventory.",
+                          "evidence": "The product supports barcode scanning and offline inventory."
+                        },
+                        "marketing": {
+                          "summary": "The service targets local shops through partner referrals.",
+                          "evidence": "The service targets local shops through partner referrals."
+                        }
+                      },
+                      "write_brief": {
+                        "report": "The product supports barcode scanning and offline inventory. The service targets local shops through partner referrals.",
+                        "evidence": [
+                          "The product supports barcode scanning and offline inventory.",
+                          "The service targets local shops through partner referrals."
+                        ]
+                      }
+                    },
+                    "statuses": {
+                      "classify": "completed",
+                      "escalation": "completed",
+                      "normal": "skipped",
+                      "select_action": "completed",
+                      "product": "completed",
+                      "marketing": "completed",
+                      "combine": "completed",
+                      "write_brief": "completed"
+                    },
+                    "events": {
+                      "classify": {
+                        "step_id": "classify",
+                        "operation": "ticket.classify",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                      },
+                      "escalation": {
+                        "step_id": "escalation",
+                        "operation": "ticket.escalation_draft",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "normal": {
+                        "step_id": "normal",
+                        "operation": "ticket.normal_draft",
+                        "status": "skipped",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "select_action": {
+                        "step_id": "select_action",
+                        "operation": "branch.select_one",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "product": {
+                        "step_id": "product",
+                        "operation": "research.product",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/product/a306069acac34f50/61"
+                      },
+                      "marketing": {
+                        "step_id": "marketing",
+                        "operation": "research.marketing",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/marketing/a306069acac34f50/61"
+                      },
+                      "combine": {
+                        "step_id": "combine",
+                        "operation": "research.combine",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "write_brief": {
+                        "step_id": "write_brief",
+                        "operation": "research.write",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/write_brief/a306069acac34f50/61"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "Result": [
+        {
+          "startTime": 1791138931221,
+          "executionIndex": 24,
+          "source": [
+            {
+              "previousNode": "write_brief [LLM LIVE]",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ],
+          "hints": [],
+          "executionTime": 11,
+          "executionStatus": "success",
+          "data": {
+            "main": [
+              [
+                {
+                  "json": {
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live",
+                    "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+                    "workflow_ref": {
+                      "id": "priority-support-brief",
+                      "revision": 1
+                    },
+                    "output": {
+                      "action": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "brief": {
+                        "report": "The product supports barcode scanning and offline inventory. The service targets local shops through partner referrals.",
+                        "evidence": [
+                          "The product supports barcode scanning and offline inventory.",
+                          "The service targets local shops through partner referrals."
+                        ]
+                      }
+                    },
+                    "trace": [
+                      {
+                        "step_id": "classify",
+                        "operation": "ticket.classify",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61"
+                      },
+                      {
+                        "step_id": "escalation",
+                        "operation": "ticket.escalation_draft",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      {
+                        "step_id": "normal",
+                        "operation": "ticket.normal_draft",
+                        "status": "skipped",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      {
+                        "step_id": "select_action",
+                        "operation": "branch.select_one",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      {
+                        "step_id": "product",
+                        "operation": "research.product",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/product/a306069acac34f50/61"
+                      },
+                      {
+                        "step_id": "marketing",
+                        "operation": "research.marketing",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/marketing/a306069acac34f50/61"
+                      },
+                      {
+                        "step_id": "combine",
+                        "operation": "research.combine",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      {
+                        "step_id": "write_brief",
+                        "operation": "research.write",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "priority-support-brief/r1/write_brief/a306069acac34f50/61"
+                      }
+                    ],
+                    "steps": {
+                      "classify": {
+                        "category": "delivery",
+                        "priority": "high"
+                      },
+                      "escalation": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "select_action": {
+                        "ticket_id": "P-72",
+                        "action": "escalate",
+                        "mode": "draft"
+                      },
+                      "product": {
+                        "summary": "The product supports barcode scanning and offline inventory.",
+                        "evidence": "The product supports barcode scanning and offline inventory."
+                      },
+                      "marketing": {
+                        "summary": "The service targets local shops through partner referrals.",
+                        "evidence": "The service targets local shops through partner referrals."
+                      },
+                      "combine": {
+                        "product": {
+                          "summary": "The product supports barcode scanning and offline inventory.",
+                          "evidence": "The product supports barcode scanning and offline inventory."
+                        },
+                        "marketing": {
+                          "summary": "The service targets local shops through partner referrals.",
+                          "evidence": "The service targets local shops through partner referrals."
+                        }
+                      },
+                      "write_brief": {
+                        "report": "The product supports barcode scanning and offline inventory. The service targets local shops through partner referrals.",
+                        "evidence": [
+                          "The product supports barcode scanning and offline inventory.",
+                          "The service targets local shops through partner referrals."
+                        ]
+                      }
+                    },
+                    "statuses": {
+                      "classify": "completed",
+                      "escalation": "completed",
+                      "normal": "skipped",
+                      "select_action": "completed",
+                      "product": "completed",
+                      "marketing": "completed",
+                      "combine": "completed",
+                      "write_brief": "completed"
+                    }
+                  },
+                  "pairedItem": {
+                    "item": 0
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    "pinData": {},
+    "lastNodeExecuted": "Result"
+  },
+  "executionData": {
+    "contextData": {
+      "node:Agency classify": {
+        "response": {
+          "body": {
+            "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61",
+            "status": "completed",
+            "output": {
+              "category": "delivery",
+              "priority": "high"
+            },
+            "usage": null
+          },
+          "headers": {
+            "server": "BaseHTTP/0.6 Python/3.14.8",
+            "date": "Sun, 04 Oct 2026 18:34:58 GMT",
+            "content-type": "application/json",
+            "content-length": "169"
+          },
+          "statusCode": 200,
+          "statusMessage": "OK"
+        }
+      },
+      "node:Agency product": {
+        "response": {
+          "body": {
+            "invocation_id": "priority-support-brief/r1/product/a306069acac34f50/61",
+            "status": "completed",
+            "output": {
+              "summary": "The product supports barcode scanning and offline inventory.",
+              "evidence": "The product supports barcode scanning and offline inventory."
+            },
+            "usage": null
+          },
+          "headers": {
+            "server": "BaseHTTP/0.6 Python/3.14.8",
+            "date": "Sun, 04 Oct 2026 18:35:08 GMT",
+            "content-type": "application/json",
+            "content-length": "275"
+          },
+          "statusCode": 200,
+          "statusMessage": "OK"
+        }
+      },
+      "node:Agency marketing": {
+        "response": {
+          "body": {
+            "invocation_id": "priority-support-brief/r1/marketing/a306069acac34f50/61",
+            "status": "completed",
+            "output": {
+              "summary": "The service targets local shops through partner referrals.",
+              "evidence": "The service targets local shops through partner referrals."
+            },
+            "usage": null
+          },
+          "headers": {
+            "server": "BaseHTTP/0.6 Python/3.14.8",
+            "date": "Sun, 04 Oct 2026 18:35:20 GMT",
+            "content-type": "application/json",
+            "content-length": "273"
+          },
+          "statusCode": 200,
+          "statusMessage": "OK"
+        }
+      },
+      "node:Agency write_brief": {
+        "response": {
+          "body": {
+            "invocation_id": "priority-support-brief/r1/write_brief/a306069acac34f50/61",
+            "status": "completed",
+            "output": {
+              "report": "The product supports barcode scanning and offline inventory. The service targets local shops through partner referrals.",
+              "evidence": [
+                "The product supports barcode scanning and offline inventory.",
+                "The service targets local shops through partner referrals."
+              ]
+            },
+            "usage": null
+          },
+          "headers": {
+            "server": "BaseHTTP/0.6 Python/3.14.8",
+            "date": "Sun, 04 Oct 2026 18:35:31 GMT",
+            "content-type": "application/json",
+            "content-length": "401"
+          },
+          "statusCode": 200,
+          "statusMessage": "OK"
+        }
+      }
+    },
+    "nodeExecutionStack": [],
+    "metadata": {},
+    "waitingExecution": {},
+    "waitingExecutionSource": {},
+    "runtimeData": {
+      "version": 1,
+      "establishedAt": 1791138888628,
+      "source": "manual",
+      "triggerNode": {
+        "name": "Demo start",
+        "type": "n8n-nodes-base.manualTrigger"
+      },
+      "redaction": {
+        "version": 2,
+        "production": false,
+        "manual": false
+      },
+      "credentials": "U2FsdGVkX186si8jhvOkAJ7Qa9Q/CUM4b7Nuiu4ejSZ0J147LimtirNYe7LTrHPYVYT/c+VcGn+Nk5vI2+zL0qOv8ohRXSIZb35raACabKBnyp21/VWjcA86+Zb51gPXpUi9bCCPwIkpm57OKHDjJ52bFC65LrIQ0Ouynq5lIIGuQetDL5K/pOzDd703pfjfSkQLOlqIJF95m5VjeUKZkceqEb1A/Uu/OQFSMsMElKIqdZHlrrQOT4oWtsO0hTfSWjody71m/jLrVqg5yPKMYKqMYW5y+k3pxANUUaXjJDMTRVzlRcYHyTFt29hXUy6QOkLG1GH5ovEEk8k7kpfuRdaNp72evzi9tRPZOasuxPwJvLzDDyO9MXrB82pLSegvtWnJ2B+oOUYy5qbjWIHuBGbWjBesO8zR8IV9lNYym7UQHRXEoCIr6u9yVX+E378uAJpzIlYt2GRpHft+H8KnVRm/FssZc5gF52yrtlJhYrEHkJfF9AMTPidU3XJJ25jCHP4XG2CRjPHV8KRuYpb7FA=="
+    }
+  },
+  "resumeToken": "2456a825b3bbe5493ce9e3e246598ec914a145b3a3e319381bda638ed41e0b58"
+}

@@ -40,5 +40,8 @@ not resolve from this directory.** Four rules translate them:
   [sapiens-harness-feasibility.md](sapiens-harness-feasibility.md) here.
 
 Links into `reports/` were already dead before the move: that tree is listed in
-`.gitignore` and is never committed or distributed. `RESULTS.md` records the
-identifying hashes of those directories instead.
+`.gitignore` and is never committed or distributed. The artefacts those links
+cited have since been extracted into the committed [`evidence/`](../../evidence/README.md)
+tree and the links inside these records were repointed at it, so they now
+resolve; the full run directories are archived outside the repository.
+`RESULTS.md` still records the identifying hashes of the original directories.

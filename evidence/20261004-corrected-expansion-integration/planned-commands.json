@@ -1,0 +1,124 @@
+{
+  "cwd": "/Users/pashvel/Desktop/sapi-config-lab",
+  "ordered_commands": [
+    {
+      "phase": "sc03-generation",
+      "argv": [
+        "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+        "-m",
+        "sapi_config_lab.experiments.generation.run",
+        "--scenario",
+        "bulletin-market-brief",
+        "--attempts",
+        "2",
+        "--series-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/series",
+        "--series-scenario",
+        "bulletin-market-brief",
+        "--series-scenario",
+        "priority-support-brief",
+        "--report-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-generation"
+      ]
+    },
+    {
+      "phase": "sc03-selection",
+      "argv": [
+        "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+        "-m",
+        "sapi_config_lab.experiments.replay",
+        "--scenario",
+        "bulletin-market-brief",
+        "--source-report",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-generation/report.json",
+        "--output",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-selection.json"
+      ]
+    },
+    {
+      "phase": "sc03-live",
+      "argv": [
+        "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+        "-m",
+        "sapi_config_lab.experiments.live",
+        "--scenario",
+        "bulletin-market-brief",
+        "--series-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/series",
+        "--series-scenario",
+        "bulletin-market-brief",
+        "--series-scenario",
+        "priority-support-brief",
+        "--stub-report",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-generation/control/report.json",
+        "--submissions-manifest",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-selection.json",
+        "--wrapper-evidence",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/wrapper-identity.json",
+        "--report-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-live"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "argv": [
+        "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+        "-m",
+        "sapi_config_lab.experiments.generation.run",
+        "--scenario",
+        "priority-support-brief",
+        "--attempts",
+        "2",
+        "--series-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/series",
+        "--series-scenario",
+        "bulletin-market-brief",
+        "--series-scenario",
+        "priority-support-brief",
+        "--report-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc04-generation"
+      ]
+    },
+    {
+      "phase": "sc04-selection",
+      "argv": [
+        "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+        "-m",
+        "sapi_config_lab.experiments.replay",
+        "--scenario",
+        "priority-support-brief",
+        "--source-report",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc04-generation/report.json",
+        "--output",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc04-selection.json"
+      ]
+    },
+    {
+      "phase": "sc04-live",
+      "argv": [
+        "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+        "-m",
+        "sapi_config_lab.experiments.live",
+        "--scenario",
+        "priority-support-brief",
+        "--series-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/series",
+        "--series-scenario",
+        "bulletin-market-brief",
+        "--series-scenario",
+        "priority-support-brief",
+        "--stub-report",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc04-generation/control/report.json",
+        "--submissions-manifest",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc04-selection.json",
+        "--wrapper-evidence",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/wrapper-identity.json",
+        "--report-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc04-live"
+      ]
+    }
+  ],
+  "stop_on_nonzero_or_failed_report": true,
+  "max_authoring_attempts": 4,
+  "max_runtime_wrapper_attempts": 13
+}

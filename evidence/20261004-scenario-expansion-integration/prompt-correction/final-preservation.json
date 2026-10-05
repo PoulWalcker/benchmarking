@@ -1,0 +1,15 @@
+{
+  "executed_source_manifest_sha256": "b502ffd98e9694e319b003d0ad2794c840be095540d1a75d873f40a490db1a96",
+  "corrected_source_manifest_sha256": "f2aa719789f3dce7f5570cab9f42098edd389858d86011497f19d3e8cb9e9437",
+  "changed_files": [
+    "docs/RESEARCH-QUESTIONS.md",
+    "docs/SCENARIO-EXPANSION.md",
+    "docs/planning/scenario-expansion.md",
+    "generation/tasks.json",
+    "harbor/tasks/bulletin-market-brief/instruction.md",
+    "harbor/tasks/priority-support-brief/instruction.md"
+  ],
+  "runtime_verifier_fixtures_catalog_compiler_tests_unchanged": true,
+  "executed_artifacts_unchanged": 3055,
+  "historical_files_unchanged": 5659
+}

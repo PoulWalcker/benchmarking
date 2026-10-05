@@ -1,0 +1,2447 @@
+{
+  "status": "success",
+  "output": {
+    "action": {
+      "ticket_id": "4BC634781FA1-S-N",
+      "action": "normal_reply",
+      "mode": "draft"
+    },
+    "invoice_report": {
+      "total_minor": 383,
+      "currency": "EUR",
+      "invoice_count": 2
+    },
+    "reply": {
+      "text": "I’m sorry order 4BC634781FA1-Z204 is two days late. I can’t verify its current status from the details provided. Please share the latest tracking update and estimated delivery date so I can help explain the status and suggest next steps."
+    },
+    "review": {
+      "pass": false,
+      "errors": [
+        "Shorten the reply"
+      ]
+    }
+  },
+  "execution_id": "1",
+  "workflow_id": "469a564a09724662",
+  "n8n_version": "2.41.5",
+  "engine_version": "2.41.5",
+  "run_data": {
+    "Demo start": [
+      {
+        "startTime": 1791127997448,
+        "executionIndex": 0,
+        "source": [],
+        "hints": [],
+        "executionTime": 1,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {},
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Fixture": [
+      {
+        "startTime": 1791127997449,
+        "executionIndex": 1,
+        "source": [
+          {
+            "previousNode": "Demo start",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 521,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "ticket": {
+                      "id": "4BC634781FA1-S-N",
+                      "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                      "days_overdue": 2
+                    },
+                    "invoices": [
+                      {
+                        "id": "4BC634781FA1-N-1",
+                        "amount_minor": 0,
+                        "currency": "EUR"
+                      },
+                      {
+                        "id": "4BC634781FA1-N-2",
+                        "amount_minor": 383,
+                        "currency": "EUR"
+                      }
+                    ],
+                    "required_order_id": "4BC634781FA1-Z204",
+                    "max_characters": 120
+                  },
+                  "steps": {},
+                  "statuses": {},
+                  "events": {},
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Prepare classify_ticket": [
+      {
+        "startTime": 1791127997970,
+        "executionIndex": 2,
+        "source": [
+          {
+            "previousNode": "Fixture",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 17,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "envelope": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "4BC634781FA1-S-N",
+                        "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                        "days_overdue": 2
+                      },
+                      "invoices": [
+                        {
+                          "id": "4BC634781FA1-N-1",
+                          "amount_minor": 0,
+                          "currency": "EUR"
+                        },
+                        {
+                          "id": "4BC634781FA1-N-2",
+                          "amount_minor": 383,
+                          "currency": "EUR"
+                        }
+                      ],
+                      "required_order_id": "4BC634781FA1-Z204",
+                      "max_characters": 120
+                    },
+                    "steps": {},
+                    "statuses": {},
+                    "events": {},
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "should_run": true,
+                  "request": {
+                    "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1",
+                    "operation": "ticket.classify",
+                    "actor": null,
+                    "inputs": {
+                      "ticket": {
+                        "id": "4BC634781FA1-S-N",
+                        "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                        "days_overdue": 2
+                      }
+                    }
+                  }
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Guard classify_ticket": [
+      {
+        "startTime": 1791127997987,
+        "executionIndex": 3,
+        "source": [
+          {
+            "previousNode": "Prepare classify_ticket",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 59,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "envelope": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "4BC634781FA1-S-N",
+                        "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                        "days_overdue": 2
+                      },
+                      "invoices": [
+                        {
+                          "id": "4BC634781FA1-N-1",
+                          "amount_minor": 0,
+                          "currency": "EUR"
+                        },
+                        {
+                          "id": "4BC634781FA1-N-2",
+                          "amount_minor": 383,
+                          "currency": "EUR"
+                        }
+                      ],
+                      "required_order_id": "4BC634781FA1-Z204",
+                      "max_characters": 120
+                    },
+                    "steps": {},
+                    "statuses": {},
+                    "events": {},
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "should_run": true,
+                  "request": {
+                    "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1",
+                    "operation": "ticket.classify",
+                    "actor": null,
+                    "inputs": {
+                      "ticket": {
+                        "id": "4BC634781FA1-S-N",
+                        "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                        "days_overdue": 2
+                      }
+                    }
+                  }
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ],
+            []
+          ]
+        }
+      }
+    ],
+    "Agency classify_ticket": [
+      {
+        "startTime": 1791127998046,
+        "executionIndex": 4,
+        "source": [
+          {
+            "previousNode": "Guard classify_ticket",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 10861,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1",
+                  "status": "completed",
+                  "output": {
+                    "category": "delivery",
+                    "priority": "normal"
+                  },
+                  "usage": null
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "classify_ticket [LLM LIVE]": [
+      {
+        "startTime": 1791128008907,
+        "executionIndex": 5,
+        "source": [
+          {
+            "previousNode": "Agency classify_ticket",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 25,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "ticket": {
+                      "id": "4BC634781FA1-S-N",
+                      "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                      "days_overdue": 2
+                    },
+                    "invoices": [
+                      {
+                        "id": "4BC634781FA1-N-1",
+                        "amount_minor": 0,
+                        "currency": "EUR"
+                      },
+                      {
+                        "id": "4BC634781FA1-N-2",
+                        "amount_minor": 383,
+                        "currency": "EUR"
+                      }
+                    ],
+                    "required_order_id": "4BC634781FA1-Z204",
+                    "max_characters": 120
+                  },
+                  "steps": {
+                    "classify_ticket": {
+                      "category": "delivery",
+                      "priority": "normal"
+                    }
+                  },
+                  "statuses": {
+                    "classify_ticket": "completed"
+                  },
+                  "events": {
+                    "classify_ticket": {
+                      "step_id": "classify_ticket",
+                      "operation": "ticket.classify",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "escalation_draft": [
+      {
+        "startTime": 1791128008932,
+        "executionIndex": 6,
+        "source": [
+          {
+            "previousNode": "classify_ticket [LLM LIVE]",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 8,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "ticket": {
+                      "id": "4BC634781FA1-S-N",
+                      "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                      "days_overdue": 2
+                    },
+                    "invoices": [
+                      {
+                        "id": "4BC634781FA1-N-1",
+                        "amount_minor": 0,
+                        "currency": "EUR"
+                      },
+                      {
+                        "id": "4BC634781FA1-N-2",
+                        "amount_minor": 383,
+                        "currency": "EUR"
+                      }
+                    ],
+                    "required_order_id": "4BC634781FA1-Z204",
+                    "max_characters": 120
+                  },
+                  "steps": {
+                    "classify_ticket": {
+                      "category": "delivery",
+                      "priority": "normal"
+                    }
+                  },
+                  "statuses": {
+                    "classify_ticket": "completed",
+                    "escalation_draft": "skipped"
+                  },
+                  "events": {
+                    "classify_ticket": {
+                      "step_id": "classify_ticket",
+                      "operation": "ticket.classify",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1"
+                    },
+                    "escalation_draft": {
+                      "step_id": "escalation_draft",
+                      "operation": "ticket.escalation_draft",
+                      "status": "skipped",
+                      "actor": null,
+                      "implementation": "script"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "normal_draft": [
+      {
+        "startTime": 1791128008941,
+        "executionIndex": 7,
+        "source": [
+          {
+            "previousNode": "classify_ticket [LLM LIVE]",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 6,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "ticket": {
+                      "id": "4BC634781FA1-S-N",
+                      "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                      "days_overdue": 2
+                    },
+                    "invoices": [
+                      {
+                        "id": "4BC634781FA1-N-1",
+                        "amount_minor": 0,
+                        "currency": "EUR"
+                      },
+                      {
+                        "id": "4BC634781FA1-N-2",
+                        "amount_minor": 383,
+                        "currency": "EUR"
+                      }
+                    ],
+                    "required_order_id": "4BC634781FA1-Z204",
+                    "max_characters": 120
+                  },
+                  "steps": {
+                    "classify_ticket": {
+                      "category": "delivery",
+                      "priority": "normal"
+                    },
+                    "normal_draft": {
+                      "ticket_id": "4BC634781FA1-S-N",
+                      "action": "normal_reply",
+                      "mode": "draft"
+                    }
+                  },
+                  "statuses": {
+                    "classify_ticket": "completed",
+                    "normal_draft": "completed"
+                  },
+                  "events": {
+                    "classify_ticket": {
+                      "step_id": "classify_ticket",
+                      "operation": "ticket.classify",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1"
+                    },
+                    "normal_draft": {
+                      "step_id": "normal_draft",
+                      "operation": "ticket.normal_draft",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Join select_action": [
+      {
+        "startTime": 1791128008948,
+        "executionIndex": 8,
+        "source": [
+          {
+            "previousNode": "escalation_draft",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          },
+          {
+            "previousNode": "normal_draft",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 12,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "ticket": {
+                      "id": "4BC634781FA1-S-N",
+                      "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                      "days_overdue": 2
+                    },
+                    "invoices": [
+                      {
+                        "id": "4BC634781FA1-N-1",
+                        "amount_minor": 0,
+                        "currency": "EUR"
+                      },
+                      {
+                        "id": "4BC634781FA1-N-2",
+                        "amount_minor": 383,
+                        "currency": "EUR"
+                      }
+                    ],
+                    "required_order_id": "4BC634781FA1-Z204",
+                    "max_characters": 120
+                  },
+                  "steps": {
+                    "classify_ticket": {
+                      "category": "delivery",
+                      "priority": "normal"
+                    }
+                  },
+                  "statuses": {
+                    "classify_ticket": "completed",
+                    "escalation_draft": "skipped"
+                  },
+                  "events": {
+                    "classify_ticket": {
+                      "step_id": "classify_ticket",
+                      "operation": "ticket.classify",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1"
+                    },
+                    "escalation_draft": {
+                      "step_id": "escalation_draft",
+                      "operation": "ticket.escalation_draft",
+                      "status": "skipped",
+                      "actor": null,
+                      "implementation": "script"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              },
+              {
+                "json": {
+                  "inputs": {
+                    "ticket": {
+                      "id": "4BC634781FA1-S-N",
+                      "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                      "days_overdue": 2
+                    },
+                    "invoices": [
+                      {
+                        "id": "4BC634781FA1-N-1",
+                        "amount_minor": 0,
+                        "currency": "EUR"
+                      },
+                      {
+                        "id": "4BC634781FA1-N-2",
+                        "amount_minor": 383,
+                        "currency": "EUR"
+                      }
+                    ],
+                    "required_order_id": "4BC634781FA1-Z204",
+                    "max_characters": 120
+                  },
+                  "steps": {
+                    "classify_ticket": {
+                      "category": "delivery",
+                      "priority": "normal"
+                    },
+                    "normal_draft": {
+                      "ticket_id": "4BC634781FA1-S-N",
+                      "action": "normal_reply",
+                      "mode": "draft"
+                    }
+                  },
+                  "statuses": {
+                    "classify_ticket": "completed",
+                    "normal_draft": "completed"
+                  },
+                  "events": {
+                    "classify_ticket": {
+                      "step_id": "classify_ticket",
+                      "operation": "ticket.classify",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1"
+                    },
+                    "normal_draft": {
+                      "step_id": "normal_draft",
+                      "operation": "ticket.normal_draft",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0,
+                  "input": 1
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "select_action": [
+      {
+        "startTime": 1791128008960,
+        "executionIndex": 9,
+        "source": [
+          {
+            "previousNode": "Join select_action",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 6,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "ticket": {
+                      "id": "4BC634781FA1-S-N",
+                      "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                      "days_overdue": 2
+                    },
+                    "invoices": [
+                      {
+                        "id": "4BC634781FA1-N-1",
+                        "amount_minor": 0,
+                        "currency": "EUR"
+                      },
+                      {
+                        "id": "4BC634781FA1-N-2",
+                        "amount_minor": 383,
+                        "currency": "EUR"
+                      }
+                    ],
+                    "required_order_id": "4BC634781FA1-Z204",
+                    "max_characters": 120
+                  },
+                  "steps": {
+                    "classify_ticket": {
+                      "category": "delivery",
+                      "priority": "normal"
+                    },
+                    "normal_draft": {
+                      "ticket_id": "4BC634781FA1-S-N",
+                      "action": "normal_reply",
+                      "mode": "draft"
+                    },
+                    "select_action": {
+                      "ticket_id": "4BC634781FA1-S-N",
+                      "action": "normal_reply",
+                      "mode": "draft"
+                    }
+                  },
+                  "statuses": {
+                    "classify_ticket": "completed",
+                    "escalation_draft": "skipped",
+                    "normal_draft": "completed",
+                    "select_action": "completed"
+                  },
+                  "events": {
+                    "classify_ticket": {
+                      "step_id": "classify_ticket",
+                      "operation": "ticket.classify",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1"
+                    },
+                    "escalation_draft": {
+                      "step_id": "escalation_draft",
+                      "operation": "ticket.escalation_draft",
+                      "status": "skipped",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "normal_draft": {
+                      "step_id": "normal_draft",
+                      "operation": "ticket.normal_draft",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "select_action": {
+                      "step_id": "select_action",
+                      "operation": "branch.select_one",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "validate_invoices": [
+      {
+        "startTime": 1791128008966,
+        "executionIndex": 10,
+        "source": [
+          {
+            "previousNode": "Fixture",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 6,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "ticket": {
+                      "id": "4BC634781FA1-S-N",
+                      "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                      "days_overdue": 2
+                    },
+                    "invoices": [
+                      {
+                        "id": "4BC634781FA1-N-1",
+                        "amount_minor": 0,
+                        "currency": "EUR"
+                      },
+                      {
+                        "id": "4BC634781FA1-N-2",
+                        "amount_minor": 383,
+                        "currency": "EUR"
+                      }
+                    ],
+                    "required_order_id": "4BC634781FA1-Z204",
+                    "max_characters": 120
+                  },
+                  "steps": {
+                    "validate_invoices": {
+                      "invoices": [
+                        {
+                          "id": "4BC634781FA1-N-1",
+                          "amount_minor": 0,
+                          "currency": "EUR"
+                        },
+                        {
+                          "id": "4BC634781FA1-N-2",
+                          "amount_minor": 383,
+                          "currency": "EUR"
+                        }
+                      ]
+                    }
+                  },
+                  "statuses": {
+                    "validate_invoices": "completed"
+                  },
+                  "events": {
+                    "validate_invoices": {
+                      "step_id": "validate_invoices",
+                      "operation": "invoices.validate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "sum_invoices": [
+      {
+        "startTime": 1791128008972,
+        "executionIndex": 11,
+        "source": [
+          {
+            "previousNode": "validate_invoices",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 7,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "ticket": {
+                      "id": "4BC634781FA1-S-N",
+                      "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                      "days_overdue": 2
+                    },
+                    "invoices": [
+                      {
+                        "id": "4BC634781FA1-N-1",
+                        "amount_minor": 0,
+                        "currency": "EUR"
+                      },
+                      {
+                        "id": "4BC634781FA1-N-2",
+                        "amount_minor": 383,
+                        "currency": "EUR"
+                      }
+                    ],
+                    "required_order_id": "4BC634781FA1-Z204",
+                    "max_characters": 120
+                  },
+                  "steps": {
+                    "validate_invoices": {
+                      "invoices": [
+                        {
+                          "id": "4BC634781FA1-N-1",
+                          "amount_minor": 0,
+                          "currency": "EUR"
+                        },
+                        {
+                          "id": "4BC634781FA1-N-2",
+                          "amount_minor": 383,
+                          "currency": "EUR"
+                        }
+                      ]
+                    },
+                    "sum_invoices": {
+                      "amount_minor": 383,
+                      "currency": "EUR",
+                      "count": 2
+                    }
+                  },
+                  "statuses": {
+                    "validate_invoices": "completed",
+                    "sum_invoices": "completed"
+                  },
+                  "events": {
+                    "validate_invoices": {
+                      "step_id": "validate_invoices",
+                      "operation": "invoices.validate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "sum_invoices": {
+                      "step_id": "sum_invoices",
+                      "operation": "invoices.sum",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "invoice_report": [
+      {
+        "startTime": 1791128008979,
+        "executionIndex": 12,
+        "source": [
+          {
+            "previousNode": "sum_invoices",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 6,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "ticket": {
+                      "id": "4BC634781FA1-S-N",
+                      "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                      "days_overdue": 2
+                    },
+                    "invoices": [
+                      {
+                        "id": "4BC634781FA1-N-1",
+                        "amount_minor": 0,
+                        "currency": "EUR"
+                      },
+                      {
+                        "id": "4BC634781FA1-N-2",
+                        "amount_minor": 383,
+                        "currency": "EUR"
+                      }
+                    ],
+                    "required_order_id": "4BC634781FA1-Z204",
+                    "max_characters": 120
+                  },
+                  "steps": {
+                    "validate_invoices": {
+                      "invoices": [
+                        {
+                          "id": "4BC634781FA1-N-1",
+                          "amount_minor": 0,
+                          "currency": "EUR"
+                        },
+                        {
+                          "id": "4BC634781FA1-N-2",
+                          "amount_minor": 383,
+                          "currency": "EUR"
+                        }
+                      ]
+                    },
+                    "sum_invoices": {
+                      "amount_minor": 383,
+                      "currency": "EUR",
+                      "count": 2
+                    },
+                    "invoice_report": {
+                      "total_minor": 383,
+                      "currency": "EUR",
+                      "invoice_count": 2
+                    }
+                  },
+                  "statuses": {
+                    "validate_invoices": "completed",
+                    "sum_invoices": "completed",
+                    "invoice_report": "completed"
+                  },
+                  "events": {
+                    "validate_invoices": {
+                      "step_id": "validate_invoices",
+                      "operation": "invoices.validate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "sum_invoices": {
+                      "step_id": "sum_invoices",
+                      "operation": "invoices.sum",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "invoice_report": {
+                      "step_id": "invoice_report",
+                      "operation": "invoices.report",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Join generate_reply": [
+      {
+        "startTime": 1791128008985,
+        "executionIndex": 13,
+        "source": [
+          {
+            "previousNode": "select_action",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          },
+          {
+            "previousNode": "invoice_report",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 0,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "ticket": {
+                      "id": "4BC634781FA1-S-N",
+                      "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                      "days_overdue": 2
+                    },
+                    "invoices": [
+                      {
+                        "id": "4BC634781FA1-N-1",
+                        "amount_minor": 0,
+                        "currency": "EUR"
+                      },
+                      {
+                        "id": "4BC634781FA1-N-2",
+                        "amount_minor": 383,
+                        "currency": "EUR"
+                      }
+                    ],
+                    "required_order_id": "4BC634781FA1-Z204",
+                    "max_characters": 120
+                  },
+                  "steps": {
+                    "classify_ticket": {
+                      "category": "delivery",
+                      "priority": "normal"
+                    },
+                    "normal_draft": {
+                      "ticket_id": "4BC634781FA1-S-N",
+                      "action": "normal_reply",
+                      "mode": "draft"
+                    },
+                    "select_action": {
+                      "ticket_id": "4BC634781FA1-S-N",
+                      "action": "normal_reply",
+                      "mode": "draft"
+                    }
+                  },
+                  "statuses": {
+                    "classify_ticket": "completed",
+                    "escalation_draft": "skipped",
+                    "normal_draft": "completed",
+                    "select_action": "completed"
+                  },
+                  "events": {
+                    "classify_ticket": {
+                      "step_id": "classify_ticket",
+                      "operation": "ticket.classify",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1"
+                    },
+                    "escalation_draft": {
+                      "step_id": "escalation_draft",
+                      "operation": "ticket.escalation_draft",
+                      "status": "skipped",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "normal_draft": {
+                      "step_id": "normal_draft",
+                      "operation": "ticket.normal_draft",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "select_action": {
+                      "step_id": "select_action",
+                      "operation": "branch.select_one",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              },
+              {
+                "json": {
+                  "inputs": {
+                    "ticket": {
+                      "id": "4BC634781FA1-S-N",
+                      "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                      "days_overdue": 2
+                    },
+                    "invoices": [
+                      {
+                        "id": "4BC634781FA1-N-1",
+                        "amount_minor": 0,
+                        "currency": "EUR"
+                      },
+                      {
+                        "id": "4BC634781FA1-N-2",
+                        "amount_minor": 383,
+                        "currency": "EUR"
+                      }
+                    ],
+                    "required_order_id": "4BC634781FA1-Z204",
+                    "max_characters": 120
+                  },
+                  "steps": {
+                    "validate_invoices": {
+                      "invoices": [
+                        {
+                          "id": "4BC634781FA1-N-1",
+                          "amount_minor": 0,
+                          "currency": "EUR"
+                        },
+                        {
+                          "id": "4BC634781FA1-N-2",
+                          "amount_minor": 383,
+                          "currency": "EUR"
+                        }
+                      ]
+                    },
+                    "sum_invoices": {
+                      "amount_minor": 383,
+                      "currency": "EUR",
+                      "count": 2
+                    },
+                    "invoice_report": {
+                      "total_minor": 383,
+                      "currency": "EUR",
+                      "invoice_count": 2
+                    }
+                  },
+                  "statuses": {
+                    "validate_invoices": "completed",
+                    "sum_invoices": "completed",
+                    "invoice_report": "completed"
+                  },
+                  "events": {
+                    "validate_invoices": {
+                      "step_id": "validate_invoices",
+                      "operation": "invoices.validate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "sum_invoices": {
+                      "step_id": "sum_invoices",
+                      "operation": "invoices.sum",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "invoice_report": {
+                      "step_id": "invoice_report",
+                      "operation": "invoices.report",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0,
+                  "input": 1
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Prepare generate_reply": [
+      {
+        "startTime": 1791128008985,
+        "executionIndex": 14,
+        "source": [
+          {
+            "previousNode": "Join generate_reply",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 5,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "envelope": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "4BC634781FA1-S-N",
+                        "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                        "days_overdue": 2
+                      },
+                      "invoices": [
+                        {
+                          "id": "4BC634781FA1-N-1",
+                          "amount_minor": 0,
+                          "currency": "EUR"
+                        },
+                        {
+                          "id": "4BC634781FA1-N-2",
+                          "amount_minor": 383,
+                          "currency": "EUR"
+                        }
+                      ],
+                      "required_order_id": "4BC634781FA1-Z204",
+                      "max_characters": 120
+                    },
+                    "steps": {
+                      "classify_ticket": {
+                        "category": "delivery",
+                        "priority": "normal"
+                      },
+                      "normal_draft": {
+                        "ticket_id": "4BC634781FA1-S-N",
+                        "action": "normal_reply",
+                        "mode": "draft"
+                      },
+                      "select_action": {
+                        "ticket_id": "4BC634781FA1-S-N",
+                        "action": "normal_reply",
+                        "mode": "draft"
+                      },
+                      "validate_invoices": {
+                        "invoices": [
+                          {
+                            "id": "4BC634781FA1-N-1",
+                            "amount_minor": 0,
+                            "currency": "EUR"
+                          },
+                          {
+                            "id": "4BC634781FA1-N-2",
+                            "amount_minor": 383,
+                            "currency": "EUR"
+                          }
+                        ]
+                      },
+                      "sum_invoices": {
+                        "amount_minor": 383,
+                        "currency": "EUR",
+                        "count": 2
+                      },
+                      "invoice_report": {
+                        "total_minor": 383,
+                        "currency": "EUR",
+                        "invoice_count": 2
+                      }
+                    },
+                    "statuses": {
+                      "classify_ticket": "completed",
+                      "escalation_draft": "skipped",
+                      "normal_draft": "completed",
+                      "select_action": "completed",
+                      "validate_invoices": "completed",
+                      "sum_invoices": "completed",
+                      "invoice_report": "completed"
+                    },
+                    "events": {
+                      "classify_ticket": {
+                        "step_id": "classify_ticket",
+                        "operation": "ticket.classify",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1"
+                      },
+                      "escalation_draft": {
+                        "step_id": "escalation_draft",
+                        "operation": "ticket.escalation_draft",
+                        "status": "skipped",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "normal_draft": {
+                        "step_id": "normal_draft",
+                        "operation": "ticket.normal_draft",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "select_action": {
+                        "step_id": "select_action",
+                        "operation": "branch.select_one",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "validate_invoices": {
+                        "step_id": "validate_invoices",
+                        "operation": "invoices.validate",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "sum_invoices": {
+                        "step_id": "sum_invoices",
+                        "operation": "invoices.sum",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "invoice_report": {
+                        "step_id": "invoice_report",
+                        "operation": "invoices.report",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "should_run": true,
+                  "request": {
+                    "invocation_id": "support-review-packet/r1/generate_reply/469a564a09724662/1",
+                    "operation": "reply.generate",
+                    "actor": null,
+                    "inputs": {
+                      "ticket": {
+                        "id": "4BC634781FA1-S-N",
+                        "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days."
+                      },
+                      "previous": null,
+                      "feedback": []
+                    }
+                  }
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Guard generate_reply": [
+      {
+        "startTime": 1791128008990,
+        "executionIndex": 15,
+        "source": [
+          {
+            "previousNode": "Prepare generate_reply",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 1,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "envelope": {
+                    "inputs": {
+                      "ticket": {
+                        "id": "4BC634781FA1-S-N",
+                        "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                        "days_overdue": 2
+                      },
+                      "invoices": [
+                        {
+                          "id": "4BC634781FA1-N-1",
+                          "amount_minor": 0,
+                          "currency": "EUR"
+                        },
+                        {
+                          "id": "4BC634781FA1-N-2",
+                          "amount_minor": 383,
+                          "currency": "EUR"
+                        }
+                      ],
+                      "required_order_id": "4BC634781FA1-Z204",
+                      "max_characters": 120
+                    },
+                    "steps": {
+                      "classify_ticket": {
+                        "category": "delivery",
+                        "priority": "normal"
+                      },
+                      "normal_draft": {
+                        "ticket_id": "4BC634781FA1-S-N",
+                        "action": "normal_reply",
+                        "mode": "draft"
+                      },
+                      "select_action": {
+                        "ticket_id": "4BC634781FA1-S-N",
+                        "action": "normal_reply",
+                        "mode": "draft"
+                      },
+                      "validate_invoices": {
+                        "invoices": [
+                          {
+                            "id": "4BC634781FA1-N-1",
+                            "amount_minor": 0,
+                            "currency": "EUR"
+                          },
+                          {
+                            "id": "4BC634781FA1-N-2",
+                            "amount_minor": 383,
+                            "currency": "EUR"
+                          }
+                        ]
+                      },
+                      "sum_invoices": {
+                        "amount_minor": 383,
+                        "currency": "EUR",
+                        "count": 2
+                      },
+                      "invoice_report": {
+                        "total_minor": 383,
+                        "currency": "EUR",
+                        "invoice_count": 2
+                      }
+                    },
+                    "statuses": {
+                      "classify_ticket": "completed",
+                      "escalation_draft": "skipped",
+                      "normal_draft": "completed",
+                      "select_action": "completed",
+                      "validate_invoices": "completed",
+                      "sum_invoices": "completed",
+                      "invoice_report": "completed"
+                    },
+                    "events": {
+                      "classify_ticket": {
+                        "step_id": "classify_ticket",
+                        "operation": "ticket.classify",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1"
+                      },
+                      "escalation_draft": {
+                        "step_id": "escalation_draft",
+                        "operation": "ticket.escalation_draft",
+                        "status": "skipped",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "normal_draft": {
+                        "step_id": "normal_draft",
+                        "operation": "ticket.normal_draft",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "select_action": {
+                        "step_id": "select_action",
+                        "operation": "branch.select_one",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "validate_invoices": {
+                        "step_id": "validate_invoices",
+                        "operation": "invoices.validate",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "sum_invoices": {
+                        "step_id": "sum_invoices",
+                        "operation": "invoices.sum",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "invoice_report": {
+                        "step_id": "invoice_report",
+                        "operation": "invoices.report",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "should_run": true,
+                  "request": {
+                    "invocation_id": "support-review-packet/r1/generate_reply/469a564a09724662/1",
+                    "operation": "reply.generate",
+                    "actor": null,
+                    "inputs": {
+                      "ticket": {
+                        "id": "4BC634781FA1-S-N",
+                        "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days."
+                      },
+                      "previous": null,
+                      "feedback": []
+                    }
+                  }
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ],
+            []
+          ]
+        }
+      }
+    ],
+    "Agency generate_reply": [
+      {
+        "startTime": 1791128008991,
+        "executionIndex": 16,
+        "source": [
+          {
+            "previousNode": "Guard generate_reply",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 14762,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "invocation_id": "support-review-packet/r1/generate_reply/469a564a09724662/1",
+                  "status": "completed",
+                  "output": {
+                    "text": "I’m sorry order 4BC634781FA1-Z204 is two days late. I can’t verify its current status from the details provided. Please share the latest tracking update and estimated delivery date so I can help explain the status and suggest next steps."
+                  },
+                  "usage": null
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "generate_reply [LLM LIVE]": [
+      {
+        "startTime": 1791128023753,
+        "executionIndex": 17,
+        "source": [
+          {
+            "previousNode": "Agency generate_reply",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 18,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "ticket": {
+                      "id": "4BC634781FA1-S-N",
+                      "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                      "days_overdue": 2
+                    },
+                    "invoices": [
+                      {
+                        "id": "4BC634781FA1-N-1",
+                        "amount_minor": 0,
+                        "currency": "EUR"
+                      },
+                      {
+                        "id": "4BC634781FA1-N-2",
+                        "amount_minor": 383,
+                        "currency": "EUR"
+                      }
+                    ],
+                    "required_order_id": "4BC634781FA1-Z204",
+                    "max_characters": 120
+                  },
+                  "steps": {
+                    "classify_ticket": {
+                      "category": "delivery",
+                      "priority": "normal"
+                    },
+                    "normal_draft": {
+                      "ticket_id": "4BC634781FA1-S-N",
+                      "action": "normal_reply",
+                      "mode": "draft"
+                    },
+                    "select_action": {
+                      "ticket_id": "4BC634781FA1-S-N",
+                      "action": "normal_reply",
+                      "mode": "draft"
+                    },
+                    "validate_invoices": {
+                      "invoices": [
+                        {
+                          "id": "4BC634781FA1-N-1",
+                          "amount_minor": 0,
+                          "currency": "EUR"
+                        },
+                        {
+                          "id": "4BC634781FA1-N-2",
+                          "amount_minor": 383,
+                          "currency": "EUR"
+                        }
+                      ]
+                    },
+                    "sum_invoices": {
+                      "amount_minor": 383,
+                      "currency": "EUR",
+                      "count": 2
+                    },
+                    "invoice_report": {
+                      "total_minor": 383,
+                      "currency": "EUR",
+                      "invoice_count": 2
+                    },
+                    "generate_reply": {
+                      "text": "I’m sorry order 4BC634781FA1-Z204 is two days late. I can’t verify its current status from the details provided. Please share the latest tracking update and estimated delivery date so I can help explain the status and suggest next steps."
+                    }
+                  },
+                  "statuses": {
+                    "classify_ticket": "completed",
+                    "escalation_draft": "skipped",
+                    "normal_draft": "completed",
+                    "select_action": "completed",
+                    "validate_invoices": "completed",
+                    "sum_invoices": "completed",
+                    "invoice_report": "completed",
+                    "generate_reply": "completed"
+                  },
+                  "events": {
+                    "classify_ticket": {
+                      "step_id": "classify_ticket",
+                      "operation": "ticket.classify",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1"
+                    },
+                    "escalation_draft": {
+                      "step_id": "escalation_draft",
+                      "operation": "ticket.escalation_draft",
+                      "status": "skipped",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "normal_draft": {
+                      "step_id": "normal_draft",
+                      "operation": "ticket.normal_draft",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "select_action": {
+                      "step_id": "select_action",
+                      "operation": "branch.select_one",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "validate_invoices": {
+                      "step_id": "validate_invoices",
+                      "operation": "invoices.validate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "sum_invoices": {
+                      "step_id": "sum_invoices",
+                      "operation": "invoices.sum",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "invoice_report": {
+                      "step_id": "invoice_report",
+                      "operation": "invoices.report",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "generate_reply": {
+                      "step_id": "generate_reply",
+                      "operation": "reply.generate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "support-review-packet/r1/generate_reply/469a564a09724662/1"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "check_reply": [
+      {
+        "startTime": 1791128023771,
+        "executionIndex": 18,
+        "source": [
+          {
+            "previousNode": "generate_reply [LLM LIVE]",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 11,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "ticket": {
+                      "id": "4BC634781FA1-S-N",
+                      "text": "Fixture 4BC634781FA1: Please check order 4BC634781FA1-Z204, delayed two days.",
+                      "days_overdue": 2
+                    },
+                    "invoices": [
+                      {
+                        "id": "4BC634781FA1-N-1",
+                        "amount_minor": 0,
+                        "currency": "EUR"
+                      },
+                      {
+                        "id": "4BC634781FA1-N-2",
+                        "amount_minor": 383,
+                        "currency": "EUR"
+                      }
+                    ],
+                    "required_order_id": "4BC634781FA1-Z204",
+                    "max_characters": 120
+                  },
+                  "steps": {
+                    "classify_ticket": {
+                      "category": "delivery",
+                      "priority": "normal"
+                    },
+                    "normal_draft": {
+                      "ticket_id": "4BC634781FA1-S-N",
+                      "action": "normal_reply",
+                      "mode": "draft"
+                    },
+                    "select_action": {
+                      "ticket_id": "4BC634781FA1-S-N",
+                      "action": "normal_reply",
+                      "mode": "draft"
+                    },
+                    "validate_invoices": {
+                      "invoices": [
+                        {
+                          "id": "4BC634781FA1-N-1",
+                          "amount_minor": 0,
+                          "currency": "EUR"
+                        },
+                        {
+                          "id": "4BC634781FA1-N-2",
+                          "amount_minor": 383,
+                          "currency": "EUR"
+                        }
+                      ]
+                    },
+                    "sum_invoices": {
+                      "amount_minor": 383,
+                      "currency": "EUR",
+                      "count": 2
+                    },
+                    "invoice_report": {
+                      "total_minor": 383,
+                      "currency": "EUR",
+                      "invoice_count": 2
+                    },
+                    "generate_reply": {
+                      "text": "I’m sorry order 4BC634781FA1-Z204 is two days late. I can’t verify its current status from the details provided. Please share the latest tracking update and estimated delivery date so I can help explain the status and suggest next steps."
+                    },
+                    "check_reply": {
+                      "pass": false,
+                      "errors": [
+                        "Shorten the reply"
+                      ]
+                    }
+                  },
+                  "statuses": {
+                    "classify_ticket": "completed",
+                    "escalation_draft": "skipped",
+                    "normal_draft": "completed",
+                    "select_action": "completed",
+                    "validate_invoices": "completed",
+                    "sum_invoices": "completed",
+                    "invoice_report": "completed",
+                    "generate_reply": "completed",
+                    "check_reply": "completed"
+                  },
+                  "events": {
+                    "classify_ticket": {
+                      "step_id": "classify_ticket",
+                      "operation": "ticket.classify",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1"
+                    },
+                    "escalation_draft": {
+                      "step_id": "escalation_draft",
+                      "operation": "ticket.escalation_draft",
+                      "status": "skipped",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "normal_draft": {
+                      "step_id": "normal_draft",
+                      "operation": "ticket.normal_draft",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "select_action": {
+                      "step_id": "select_action",
+                      "operation": "branch.select_one",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "validate_invoices": {
+                      "step_id": "validate_invoices",
+                      "operation": "invoices.validate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "sum_invoices": {
+                      "step_id": "sum_invoices",
+                      "operation": "invoices.sum",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "invoice_report": {
+                      "step_id": "invoice_report",
+                      "operation": "invoices.report",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "generate_reply": {
+                      "step_id": "generate_reply",
+                      "operation": "reply.generate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "support-review-packet/r1/generate_reply/469a564a09724662/1"
+                    },
+                    "check_reply": {
+                      "step_id": "check_reply",
+                      "operation": "reply.check",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Result": [
+      {
+        "startTime": 1791128023782,
+        "executionIndex": 19,
+        "source": [
+          {
+            "previousNode": "check_reply",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 8,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live",
+                  "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+                  "workflow_ref": {
+                    "id": "support-review-packet",
+                    "revision": 1
+                  },
+                  "output": {
+                    "action": {
+                      "ticket_id": "4BC634781FA1-S-N",
+                      "action": "normal_reply",
+                      "mode": "draft"
+                    },
+                    "invoice_report": {
+                      "total_minor": 383,
+                      "currency": "EUR",
+                      "invoice_count": 2
+                    },
+                    "reply": {
+                      "text": "I’m sorry order 4BC634781FA1-Z204 is two days late. I can’t verify its current status from the details provided. Please share the latest tracking update and estimated delivery date so I can help explain the status and suggest next steps."
+                    },
+                    "review": {
+                      "pass": false,
+                      "errors": [
+                        "Shorten the reply"
+                      ]
+                    }
+                  },
+                  "trace": [
+                    {
+                      "step_id": "classify_ticket",
+                      "operation": "ticket.classify",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1"
+                    },
+                    {
+                      "step_id": "escalation_draft",
+                      "operation": "ticket.escalation_draft",
+                      "status": "skipped",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    {
+                      "step_id": "normal_draft",
+                      "operation": "ticket.normal_draft",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    {
+                      "step_id": "select_action",
+                      "operation": "branch.select_one",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    {
+                      "step_id": "validate_invoices",
+                      "operation": "invoices.validate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    {
+                      "step_id": "sum_invoices",
+                      "operation": "invoices.sum",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    {
+                      "step_id": "invoice_report",
+                      "operation": "invoices.report",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    {
+                      "step_id": "generate_reply",
+                      "operation": "reply.generate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "support-review-packet/r1/generate_reply/469a564a09724662/1"
+                    },
+                    {
+                      "step_id": "check_reply",
+                      "operation": "reply.check",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    }
+                  ],
+                  "steps": {
+                    "classify_ticket": {
+                      "category": "delivery",
+                      "priority": "normal"
+                    },
+                    "normal_draft": {
+                      "ticket_id": "4BC634781FA1-S-N",
+                      "action": "normal_reply",
+                      "mode": "draft"
+                    },
+                    "select_action": {
+                      "ticket_id": "4BC634781FA1-S-N",
+                      "action": "normal_reply",
+                      "mode": "draft"
+                    },
+                    "validate_invoices": {
+                      "invoices": [
+                        {
+                          "id": "4BC634781FA1-N-1",
+                          "amount_minor": 0,
+                          "currency": "EUR"
+                        },
+                        {
+                          "id": "4BC634781FA1-N-2",
+                          "amount_minor": 383,
+                          "currency": "EUR"
+                        }
+                      ]
+                    },
+                    "sum_invoices": {
+                      "amount_minor": 383,
+                      "currency": "EUR",
+                      "count": 2
+                    },
+                    "invoice_report": {
+                      "total_minor": 383,
+                      "currency": "EUR",
+                      "invoice_count": 2
+                    },
+                    "generate_reply": {
+                      "text": "I’m sorry order 4BC634781FA1-Z204 is two days late. I can’t verify its current status from the details provided. Please share the latest tracking update and estimated delivery date so I can help explain the status and suggest next steps."
+                    },
+                    "check_reply": {
+                      "pass": false,
+                      "errors": [
+                        "Shorten the reply"
+                      ]
+                    }
+                  },
+                  "statuses": {
+                    "classify_ticket": "completed",
+                    "escalation_draft": "skipped",
+                    "normal_draft": "completed",
+                    "select_action": "completed",
+                    "validate_invoices": "completed",
+                    "sum_invoices": "completed",
+                    "invoice_report": "completed",
+                    "generate_reply": "completed",
+                    "check_reply": "completed"
+                  }
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "error": null,
+  "import_exit_code": 0,
+  "execute_exit_code": 0,
+  "result_node_present": true,
+  "mapping": {
+    "classify_ticket": "classify_ticket [LLM LIVE]",
+    "validate_invoices": "validate_invoices",
+    "escalation_draft": "escalation_draft",
+    "normal_draft": "normal_draft",
+    "sum_invoices": "sum_invoices",
+    "select_action": "select_action",
+    "invoice_report": "invoice_report",
+    "generate_reply": "generate_reply [LLM LIVE]",
+    "check_reply": "check_reply"
+  },
+  "llm_mode": "live",
+  "workflow_sha256": "c4357de8b7377a5f69e46829303009531ea1d743b6d7fe2dd72f771f07973a87",
+  "result": {
+    "simulation": true,
+    "input_source": "fixture",
+    "llm_mode": "live",
+    "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+    "workflow_ref": {
+      "id": "support-review-packet",
+      "revision": 1
+    },
+    "output": {
+      "action": {
+        "ticket_id": "4BC634781FA1-S-N",
+        "action": "normal_reply",
+        "mode": "draft"
+      },
+      "invoice_report": {
+        "total_minor": 383,
+        "currency": "EUR",
+        "invoice_count": 2
+      },
+      "reply": {
+        "text": "I’m sorry order 4BC634781FA1-Z204 is two days late. I can’t verify its current status from the details provided. Please share the latest tracking update and estimated delivery date so I can help explain the status and suggest next steps."
+      },
+      "review": {
+        "pass": false,
+        "errors": [
+          "Shorten the reply"
+        ]
+      }
+    },
+    "trace": [
+      {
+        "step_id": "classify_ticket",
+        "operation": "ticket.classify",
+        "status": "completed",
+        "actor": null,
+        "implementation": "live",
+        "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1"
+      },
+      {
+        "step_id": "escalation_draft",
+        "operation": "ticket.escalation_draft",
+        "status": "skipped",
+        "actor": null,
+        "implementation": "script"
+      },
+      {
+        "step_id": "normal_draft",
+        "operation": "ticket.normal_draft",
+        "status": "completed",
+        "actor": null,
+        "implementation": "script"
+      },
+      {
+        "step_id": "select_action",
+        "operation": "branch.select_one",
+        "status": "completed",
+        "actor": null,
+        "implementation": "script"
+      },
+      {
+        "step_id": "validate_invoices",
+        "operation": "invoices.validate",
+        "status": "completed",
+        "actor": null,
+        "implementation": "script"
+      },
+      {
+        "step_id": "sum_invoices",
+        "operation": "invoices.sum",
+        "status": "completed",
+        "actor": null,
+        "implementation": "script"
+      },
+      {
+        "step_id": "invoice_report",
+        "operation": "invoices.report",
+        "status": "completed",
+        "actor": null,
+        "implementation": "script"
+      },
+      {
+        "step_id": "generate_reply",
+        "operation": "reply.generate",
+        "status": "completed",
+        "actor": null,
+        "implementation": "live",
+        "invocation_id": "support-review-packet/r1/generate_reply/469a564a09724662/1"
+      },
+      {
+        "step_id": "check_reply",
+        "operation": "reply.check",
+        "status": "completed",
+        "actor": null,
+        "implementation": "script"
+      }
+    ],
+    "steps": {
+      "classify_ticket": {
+        "category": "delivery",
+        "priority": "normal"
+      },
+      "normal_draft": {
+        "ticket_id": "4BC634781FA1-S-N",
+        "action": "normal_reply",
+        "mode": "draft"
+      },
+      "select_action": {
+        "ticket_id": "4BC634781FA1-S-N",
+        "action": "normal_reply",
+        "mode": "draft"
+      },
+      "validate_invoices": {
+        "invoices": [
+          {
+            "id": "4BC634781FA1-N-1",
+            "amount_minor": 0,
+            "currency": "EUR"
+          },
+          {
+            "id": "4BC634781FA1-N-2",
+            "amount_minor": 383,
+            "currency": "EUR"
+          }
+        ]
+      },
+      "sum_invoices": {
+        "amount_minor": 383,
+        "currency": "EUR",
+        "count": 2
+      },
+      "invoice_report": {
+        "total_minor": 383,
+        "currency": "EUR",
+        "invoice_count": 2
+      },
+      "generate_reply": {
+        "text": "I’m sorry order 4BC634781FA1-Z204 is two days late. I can’t verify its current status from the details provided. Please share the latest tracking update and estimated delivery date so I can help explain the status and suggest next steps."
+      },
+      "check_reply": {
+        "pass": false,
+        "errors": [
+          "Shorten the reply"
+        ]
+      }
+    },
+    "statuses": {
+      "classify_ticket": "completed",
+      "escalation_draft": "skipped",
+      "normal_draft": "completed",
+      "select_action": "completed",
+      "validate_invoices": "completed",
+      "sum_invoices": "completed",
+      "invoice_report": "completed",
+      "generate_reply": "completed",
+      "check_reply": "completed"
+    }
+  },
+  "persisted_status": "success",
+  "llm": {
+    "selected_mode": "live",
+    "agency_http_call_count": 2,
+    "count_source": "n8n_agency_http_node_executions",
+    "provider_call_count": null
+  },
+  "evidence": {
+    "engine": {
+      "kind": "n8n",
+      "source": "engine_execution_records",
+      "run_data_field": "run_data",
+      "execution_artifact": "execution.json",
+      "persisted_artifact": "execution.persisted.json",
+      "metadata_artifact": "execution.metadata.json"
+    },
+    "workflow_trace": {
+      "source": "workflow_authored",
+      "events": [
+        {
+          "step_id": "classify_ticket",
+          "operation": "ticket.classify",
+          "status": "completed",
+          "actor": null,
+          "implementation": "live",
+          "invocation_id": "support-review-packet/r1/classify_ticket/469a564a09724662/1"
+        },
+        {
+          "step_id": "escalation_draft",
+          "operation": "ticket.escalation_draft",
+          "status": "skipped",
+          "actor": null,
+          "implementation": "script"
+        },
+        {
+          "step_id": "normal_draft",
+          "operation": "ticket.normal_draft",
+          "status": "completed",
+          "actor": null,
+          "implementation": "script"
+        },
+        {
+          "step_id": "select_action",
+          "operation": "branch.select_one",
+          "status": "completed",
+          "actor": null,
+          "implementation": "script"
+        },
+        {
+          "step_id": "validate_invoices",
+          "operation": "invoices.validate",
+          "status": "completed",
+          "actor": null,
+          "implementation": "script"
+        },
+        {
+          "step_id": "sum_invoices",
+          "operation": "invoices.sum",
+          "status": "completed",
+          "actor": null,
+          "implementation": "script"
+        },
+        {
+          "step_id": "invoice_report",
+          "operation": "invoices.report",
+          "status": "completed",
+          "actor": null,
+          "implementation": "script"
+        },
+        {
+          "step_id": "generate_reply",
+          "operation": "reply.generate",
+          "status": "completed",
+          "actor": null,
+          "implementation": "live",
+          "invocation_id": "support-review-packet/r1/generate_reply/469a564a09724662/1"
+        },
+        {
+          "step_id": "check_reply",
+          "operation": "reply.check",
+          "status": "completed",
+          "actor": null,
+          "implementation": "script"
+        }
+      ]
+    }
+  },
+  "report_schema": "sapi-lab-execution/v1",
+  "artifact_dir": "/logs/verifier/cases/normal-packet",
+  "duration_seconds": 31.213,
+  "execution": {
+    "status": "success",
+    "succeeded": true,
+    "engine": {
+      "name": "n8n",
+      "version": "2.41.5"
+    }
+  },
+  "acceptance": {
+    "status": "accepted",
+    "passed": true
+  },
+  "input": {
+    "source": "fixture",
+    "activation": "injected",
+    "config_artifact": "config.json"
+  }
+}

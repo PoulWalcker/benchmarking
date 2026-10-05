@@ -1,0 +1,19 @@
+{
+  "schema": "sapi-lab-spec-comparison/v1",
+  "repository": "https://github.com/aleski-green/sapiens4",
+  "pinned_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+  "requested_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+  "resolved_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+  "checked_at": "2026-10-04T18:29:41.093536+00:00",
+  "files": [
+    {
+      "upstream_path": "documentation/haskell-notation-specs/SapiensSpecNotation.hs",
+      "snapshot": "provenance/SapiensSpecNotation.hs",
+      "sha256": "43872d79e5e5d689dd37973b26ec50ad95a44541d999135d5ff00d67161aa55f",
+      "candidate_sha256": "43872d79e5e5d689dd37973b26ec50ad95a44541d999135d5ff00d67161aa55f",
+      "identical": true
+    }
+  ],
+  "changed_files": [],
+  "pin_updated": false
+}

@@ -1,0 +1,938 @@
+{
+  "schema": "sapi-lab-generation/v1",
+  "status": "passed",
+  "experiment_completed": true,
+  "attempts_per_task": 3,
+  "scenarios": [
+    "revise-answer"
+  ],
+  "authoring_attempt_ceiling": 3,
+  "runtime_llm_mode": "stub",
+  "started_at": "2026-10-04T18:50:55.255053+00:00",
+  "trials": [
+    {
+      "scenario": "revise-answer",
+      "passed": true,
+      "failure_stage": null,
+      "generation": {
+        "status": "submitted",
+        "provider": "existing-codex-exec-wrapper",
+        "prompt_sha256": "94a2fa3749b2c3be6355247ae36d7759f71db995c9e4b54212d1c2e4dd6f5e96",
+        "generation_calls": 1,
+        "repairs": 0,
+        "runtime_llm_mode": "stub",
+        "failure_reason": null,
+        "model": "gpt-6-astra",
+        "cli_reported_tokens": 9572,
+        "observed_tool_markers": [],
+        "stderr_sha256": "01730dc4750404273cca452c5b4683b6af3191bad80744337088d634ec767275",
+        "tool_isolation": "prompt restriction plus stderr audit; not enforced by wrapper",
+        "submission_sha256": "fcbfa07ca72238ceddec93155950ba0b4d3f481e65d26a1d0c5c9610e74db8d6",
+        "duration_seconds": 25.857
+      },
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "acceptance": {
+        "scenario": "revise-answer",
+        "mode": "stub",
+        "passed": true,
+        "report_schema": "sapi-lab-verification/v1",
+        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+        "cases": [
+          {
+            "name": "valid-reply",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "e3ba75fe006e4abf",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/valid-reply",
+            "deadline_seconds": 120,
+            "config_sha256": "d1adf6b2e4dee52580f9a91d6e82e56ee5b8f3ac372e066d7d27a099cd4641a4",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "accepted_attempt": 2,
+            "attempt_count": 2,
+            "maximum_attempts": 3,
+            "output": {
+              "text": "We are checking order A7842."
+            },
+            "exhausted": false,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "missing-native-draft",
+              "invented-initial-carry"
+            ]
+          },
+          {
+            "name": "impossible-limit",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "3de2c214e7154e2c",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/impossible-limit",
+            "deadline_seconds": 120,
+            "config_sha256": "07d490deb3594a286e63a651902bcbf0cf5eaa9eec9c843808f63d11d14a626b",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "accepted_attempt": null,
+            "attempt_count": 3,
+            "maximum_attempts": 3,
+            "output": null,
+            "exhausted": true,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected refinement exhaustion; no accepted reply"
+            },
+            "verifier_corruptions_rejected": [
+              "missing-native-draft",
+              "invented-initial-carry"
+            ]
+          },
+          {
+            "name": "wrong-result-in-generated-json",
+            "kind": "mutated-generated-workflow",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "e0f012ca5005413e",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/mutated-generated-result",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "rejection": "Final Result is not the accepted attempt: output (keys)",
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Final Result is not the accepted attempt: output (keys)"
+            }
+          },
+          {
+            "name": "unknown-operation",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-unknown-operation",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          },
+          {
+            "name": "cycle",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-cycle",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          },
+          {
+            "name": "unsupported-required-parallel",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-unsupported-required-parallel",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ],
+        "submission_sha256": "fcbfa07ca72238ceddec93155950ba0b4d3f481e65d26a1d0c5c9610e74db8d6",
+        "config_transformations": [
+          "workflow.inputs replaced by case fixture"
+        ]
+      },
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/refinement-evaluation-2/generation/jobs/generated/revise-answer__KVNbMkv/result.json"
+    },
+    {
+      "scenario": "revise-answer",
+      "passed": true,
+      "failure_stage": null,
+      "generation": {
+        "status": "submitted",
+        "provider": "existing-codex-exec-wrapper",
+        "prompt_sha256": "94a2fa3749b2c3be6355247ae36d7759f71db995c9e4b54212d1c2e4dd6f5e96",
+        "generation_calls": 1,
+        "repairs": 0,
+        "runtime_llm_mode": "stub",
+        "failure_reason": null,
+        "model": "gpt-6-astra",
+        "cli_reported_tokens": 10597,
+        "observed_tool_markers": [],
+        "stderr_sha256": "488a24b063af89c71e3203b4ac28ae6392b341c6cf4537e15e3b78e5a26359d3",
+        "tool_isolation": "prompt restriction plus stderr audit; not enforced by wrapper",
+        "submission_sha256": "89cc7c1e4326755e4848d295f8e91bb226efa2f247b65acc55b40b7c83e6862e",
+        "duration_seconds": 30.373
+      },
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "acceptance": {
+        "scenario": "revise-answer",
+        "mode": "stub",
+        "passed": true,
+        "report_schema": "sapi-lab-verification/v1",
+        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+        "cases": [
+          {
+            "name": "valid-reply",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "81f832dd011a4293",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/valid-reply",
+            "deadline_seconds": 120,
+            "config_sha256": "b19f2355ea2ff96696d29c06e8701cc0889fcca3255e25ed8cd570ebe3c902ac",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "accepted_attempt": 2,
+            "attempt_count": 2,
+            "maximum_attempts": 3,
+            "output": {
+              "text": "We are checking order A7842."
+            },
+            "exhausted": false,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "missing-native-draft",
+              "invented-initial-carry"
+            ]
+          },
+          {
+            "name": "impossible-limit",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "a9e0d34d30244090",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/impossible-limit",
+            "deadline_seconds": 120,
+            "config_sha256": "064f98d36d1eaf37cf528ce3b3bce9001b848b2e098a98a4953175359f52d2f7",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "accepted_attempt": null,
+            "attempt_count": 3,
+            "maximum_attempts": 3,
+            "output": null,
+            "exhausted": true,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected refinement exhaustion; no accepted reply"
+            },
+            "verifier_corruptions_rejected": [
+              "missing-native-draft",
+              "invented-initial-carry"
+            ]
+          },
+          {
+            "name": "wrong-result-in-generated-json",
+            "kind": "mutated-generated-workflow",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "c0e4bf02cb084c93",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/mutated-generated-result",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "rejection": "Final Result is not the accepted attempt: output (keys)",
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Final Result is not the accepted attempt: output (keys)"
+            }
+          },
+          {
+            "name": "unknown-operation",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-unknown-operation",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          },
+          {
+            "name": "cycle",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-cycle",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          },
+          {
+            "name": "unsupported-required-parallel",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-unsupported-required-parallel",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ],
+        "submission_sha256": "89cc7c1e4326755e4848d295f8e91bb226efa2f247b65acc55b40b7c83e6862e",
+        "config_transformations": [
+          "workflow.inputs replaced by case fixture"
+        ]
+      },
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/refinement-evaluation-2/generation/jobs/generated/revise-answer__SGNjK3y/result.json"
+    },
+    {
+      "scenario": "revise-answer",
+      "passed": true,
+      "failure_stage": null,
+      "generation": {
+        "status": "submitted",
+        "provider": "existing-codex-exec-wrapper",
+        "prompt_sha256": "94a2fa3749b2c3be6355247ae36d7759f71db995c9e4b54212d1c2e4dd6f5e96",
+        "generation_calls": 1,
+        "repairs": 0,
+        "runtime_llm_mode": "stub",
+        "failure_reason": null,
+        "model": "gpt-6-astra",
+        "cli_reported_tokens": 10614,
+        "observed_tool_markers": [],
+        "stderr_sha256": "475ab0c2c1cd31827f3ff0d6a3ba9a519539548330a53ed30877d5ab16e00c32",
+        "tool_isolation": "prompt restriction plus stderr audit; not enforced by wrapper",
+        "submission_sha256": "15ea95f0e12b7b3cd2df541a8e59619087d1d2bd4a92028e286a99278afaa29b",
+        "duration_seconds": 31.866
+      },
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "acceptance": {
+        "scenario": "revise-answer",
+        "mode": "stub",
+        "passed": true,
+        "report_schema": "sapi-lab-verification/v1",
+        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+        "cases": [
+          {
+            "name": "valid-reply",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "5f4da5e964204bc8",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/valid-reply",
+            "deadline_seconds": 120,
+            "config_sha256": "595237b4d335dbf5c85d1e34e67154b5d111518c89f9b2ca1b4df63b235d42c9",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "accepted_attempt": 2,
+            "attempt_count": 2,
+            "maximum_attempts": 3,
+            "output": {
+              "text": "We are checking order A7842."
+            },
+            "exhausted": false,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "missing-native-draft",
+              "invented-initial-carry"
+            ]
+          },
+          {
+            "name": "impossible-limit",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "a60e0d8a65324c84",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/impossible-limit",
+            "deadline_seconds": 120,
+            "config_sha256": "1ca6dfb009ff43692f256503f2e2ddb3fe1aa7d70ae93b37ed99bec925ab4fba",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "accepted_attempt": null,
+            "attempt_count": 3,
+            "maximum_attempts": 3,
+            "output": null,
+            "exhausted": true,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected refinement exhaustion; no accepted reply"
+            },
+            "verifier_corruptions_rejected": [
+              "missing-native-draft",
+              "invented-initial-carry"
+            ]
+          },
+          {
+            "name": "wrong-result-in-generated-json",
+            "kind": "mutated-generated-workflow",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "18ba301b8fbe4d52",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/mutated-generated-result",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "rejection": "Final Result is not the accepted attempt: output (keys)",
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Final Result is not the accepted attempt: output (keys)"
+            }
+          },
+          {
+            "name": "unknown-operation",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-unknown-operation",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          },
+          {
+            "name": "cycle",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-cycle",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          },
+          {
+            "name": "unsupported-required-parallel",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-unsupported-required-parallel",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ],
+        "submission_sha256": "15ea95f0e12b7b3cd2df541a8e59619087d1d2bd4a92028e286a99278afaa29b",
+        "config_transformations": [
+          "workflow.inputs replaced by case fixture"
+        ]
+      },
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/refinement-evaluation-2/generation/jobs/generated/revise-answer__potobY3/result.json"
+    }
+  ],
+  "limitations": [
+    "Explicitly selected task families with a fixed specialized catalog; not held-out generalization.",
+    "Single-shot YAML output; no tools, retries or repair requested.",
+    "Wrapper tool restrictions are prompt-only, audited from CLI stderr, not a filesystem sandbox.",
+    "Runtime model steps are deterministic stubs; only YAML generation calls the live model.",
+    "Verifier checks exact task role/source obligations while permitting renamed step IDs.",
+    "The wrapper does not provide reliable token/cost breakdowns; costs remain unknown."
+  ],
+  "series_ledger": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/refinement-evaluation-2/series/series.json",
+  "series_scenarios": [
+    "revise-answer"
+  ],
+  "series_ceilings": {
+    "authoring": 3,
+    "runtime": 6
+  },
+  "base_image_id": "sha256:a05e2dc97f328553555fc251bc2099c26344dc001b96f094a81a7589d8a62da3",
+  "frozen_image": "sapi-config-lab-generation-base:a05e2dc97f328553",
+  "prompt_sha256": {
+    "revise-answer": "94a2fa3749b2c3be6355247ae36d7759f71db995c9e4b54212d1c2e4dd6f5e96"
+  },
+  "private_cases_sha256": {
+    "revise-answer": "c282334106638ab627e9718446307699dda8152aab309ec263c876c3703a40e4"
+  },
+  "command": [
+    "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+    "-c",
+    "from harbor.cli.main import app; app()",
+    "run",
+    "--path",
+    "/private/tmp/sapi-yaml-generation-4951_4pe/tasks",
+    "--agent",
+    "sapi_config_lab.experiments.generation.agent:WrapperYamlAgent",
+    "--ak",
+    "upstream=http://127.0.0.1:8765/run",
+    "--n-attempts",
+    "3",
+    "--n-concurrent",
+    "1",
+    "--max-retries",
+    "0",
+    "--jobs-dir",
+    "/private/tmp/sapi-yaml-generation-4951_4pe/jobs",
+    "--job-name",
+    "generated",
+    "--force-build"
+  ],
+  "commands": [
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-yaml-generation-4951_4pe/tasks",
+      "--agent",
+      "sapi_config_lab.experiments.generation.agent:WrapperYamlAgent",
+      "--ak",
+      "upstream=http://127.0.0.1:8765/run",
+      "--n-attempts",
+      "1",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-yaml-generation-4951_4pe/jobs",
+      "--job-name",
+      "generated-attempt-1",
+      "--force-build"
+    ],
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-yaml-generation-4951_4pe/tasks",
+      "--agent",
+      "sapi_config_lab.experiments.generation.agent:WrapperYamlAgent",
+      "--ak",
+      "upstream=http://127.0.0.1:8765/run",
+      "--n-attempts",
+      "1",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-yaml-generation-4951_4pe/jobs",
+      "--job-name",
+      "generated-attempt-2",
+      "--force-build"
+    ],
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-yaml-generation-4951_4pe/tasks",
+      "--agent",
+      "sapi_config_lab.experiments.generation.agent:WrapperYamlAgent",
+      "--ak",
+      "upstream=http://127.0.0.1:8765/run",
+      "--n-attempts",
+      "1",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-yaml-generation-4951_4pe/jobs",
+      "--job-name",
+      "generated-attempt-3",
+      "--force-build"
+    ]
+  ],
+  "harbor_exit_code": 0,
+  "frozen_core_unchanged": true,
+  "passed_trials": 3,
+  "total_trials": 3,
+  "authoring_attempts_spent": 3,
+  "attempt_outcomes": [
+    {
+      "scenario": "revise-answer",
+      "phase": "authoring",
+      "name": "1",
+      "count": 1,
+      "status": "passed",
+      "report": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/refinement-evaluation-2/generation/report.json"
+    },
+    {
+      "scenario": "revise-answer",
+      "phase": "authoring",
+      "name": "2",
+      "count": 1,
+      "status": "passed",
+      "report": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/refinement-evaluation-2/generation/report.json"
+    },
+    {
+      "scenario": "revise-answer",
+      "phase": "authoring",
+      "name": "3",
+      "count": 1,
+      "status": "passed",
+      "report": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/refinement-evaluation-2/generation/report.json"
+    }
+  ],
+  "finished_at": "2026-10-04T18:55:45.326159+00:00"
+}

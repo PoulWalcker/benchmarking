@@ -1,0 +1,25 @@
+{
+  "schema": "sapi-lab-expansion-selection/v1",
+  "experiment_kind": "bounded_expansion",
+  "source_report": {
+    "path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-generation/report.json",
+    "sha256": "0290905cfd797292567b4b02041b9419f6571dd08f7b6514c25a2abf0cc266f3"
+  },
+  "frozen_core_sha256": "265d4fd30ed46028acaf898c3f168d6bea0a732e926d80659ae4fbd5d1850f5b",
+  "entries": [
+    {
+      "scenario": "bulletin-market-brief",
+      "source_trial": "bulletin-market-brief__Avem5eg",
+      "source_yaml_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-generation/jobs/generated/bulletin-market-brief__Avem5eg/agent/submission.yaml",
+      "source_yaml_sha256": "a9e11cbc3c7649c5d2cd6c5824f0bf21dd04c0c24027ff6193779f0f8ac7691b",
+      "cases_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-generation/task-packages/bulletin-market-brief/tests/cases.json",
+      "cases_sha256": "97b545ee92de35efa1552b3e9756656b34bf1abd78f7d880d77c75fd29a4c42f",
+      "provenance": {
+        "agent/generation.json": "8fc1da86a26ced45afeeb3465a636aa87ec4ab5664b5fd0133dc68b7d6cd7188",
+        "agent/prompt.txt": "3a4417f5cfde766899eb1f73b382c21832fb8c97e7c1f6cbc40eefa19b587538",
+        "result.json": "e77f9a008a839a05c85f9e74027a3926516837420abb4f45addc2f02cc4bbdd7",
+        "verifier/report.json": "04ee53e1116296dbd275575bf88daf16df63a538787f856838745e340b4b1537"
+      }
+    }
+  ]
+}

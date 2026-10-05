@@ -1,0 +1,39 @@
+{
+  "passed": true,
+  "probe_count": 4,
+  "runtime_wrapper_attempts": 0,
+  "probes": [
+    {
+      "name": "dual-ledger-closeout-renamed-reordered",
+      "expected": "accepted",
+      "execution_status": "success",
+      "execution_id": "1",
+      "accepted": true
+    },
+    {
+      "name": "dual-ledger-closeout-removed-token",
+      "expected": "rejected",
+      "execution_status": "error",
+      "execution_id": "1",
+      "result_node_present": true,
+      "accepted": false,
+      "rejection": "n8n runtime did not succeed"
+    },
+    {
+      "name": "priority-support-brief-renamed-reordered",
+      "expected": "accepted",
+      "execution_status": "success",
+      "execution_id": "1",
+      "accepted": true
+    },
+    {
+      "name": "priority-support-brief-removed-token",
+      "expected": "rejected",
+      "execution_status": "error",
+      "execution_id": "1",
+      "result_node_present": false,
+      "accepted": false,
+      "rejection": "n8n runtime did not succeed"
+    }
+  ]
+}

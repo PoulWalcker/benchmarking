@@ -1,0 +1,25 @@
+{
+  "schema": "sapi-lab-refinement-selection/v1",
+  "experiment_kind": "bounded_refinement",
+  "source_report": {
+    "path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/refinement-evaluation-2/generation/report.json",
+    "sha256": "97c22549f05ac75a6d6fdf1c533a1697c6e86d3acbdad815d6cd212e7c3182df"
+  },
+  "frozen_core_sha256": "7ccb4dbca7748b874cf9fd633cff69c915e0f1619b294e70964661ea4abdf3e6",
+  "entries": [
+    {
+      "scenario": "revise-answer",
+      "source_trial": "revise-answer__potobY3",
+      "source_yaml_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/refinement-evaluation-2/generation/jobs/generated/revise-answer__potobY3/agent/submission.yaml",
+      "source_yaml_sha256": "15ea95f0e12b7b3cd2df541a8e59619087d1d2bd4a92028e286a99278afaa29b",
+      "cases_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/refinement-evaluation-2/generation/task-packages/revise-answer/tests/cases.json",
+      "cases_sha256": "c282334106638ab627e9718446307699dda8152aab309ec263c876c3703a40e4",
+      "provenance": {
+        "agent/generation.json": "94a7f76b7d384691d41a44ed93b8dc8cde288b969a9937eb3f96476234358c64",
+        "agent/prompt.txt": "94a2fa3749b2c3be6355247ae36d7759f71db995c9e4b54212d1c2e4dd6f5e96",
+        "result.json": "2118e13f6f75c18eb34117529742c98d23a58270181fbb9a1e5dadce383e01a8",
+        "verifier/report.json": "70f555d95e6381b54ca0d845f7658137af2ea41a301c59aeb1732197f35dfbb1"
+      }
+    }
+  ]
+}

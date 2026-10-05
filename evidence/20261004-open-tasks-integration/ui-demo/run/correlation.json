@@ -1,0 +1,102 @@
+[
+  {
+    "step_id": "classify",
+    "http_node": "Agency classify",
+    "attempt": 1,
+    "invocation_id": "priority-support-brief/r1/classify/a306069acac34f50/61",
+    "operation": "ticket.classify",
+    "inputs_sha256": "90e0a14f62970ba1b2c911a5986837109468cb25578f3599571ed727834ae0f2",
+    "request_sha256": "05b981aa077c65507bb11de67ee69e796441d79f8e4d96ac02be121a4d3f588c",
+    "prompt_sha256": "71d150fd221273fa712e7fe54434584c132c5b09475b1160f141df3d8d92cdd6",
+    "response_sha256": "abb9c7221798e6ec5939d456cf64cd4c88237ec13d3032b8b8a128d2a40b4d18",
+    "dispatch_confirmed": true,
+    "wrapper_completion": {
+      "ok": true,
+      "exit_code": 0,
+      "model": "gpt-6-astra",
+      "response_bytes": 1268,
+      "response_sha256": "8fe6c65f17e59cb131d887e8254fde49a5b638735c289ba63ae860a9f6ad5c94",
+      "output_text_sha256": "0ad82c9b90b5cf768afeba2b214617a12d1f1697a915f3222d830377ee8ec451",
+      "stderr_sha256": "88f752632dccfd9fa68347a5855373df0d8c9a9fee21b8355456c37634f5b7a8",
+      "cli_reported_tokens": 4905,
+      "observed_retry_markers": 0,
+      "provider_call_count": null
+    },
+    "provider_call_count": null
+  },
+  {
+    "step_id": "product",
+    "http_node": "Agency product",
+    "attempt": 2,
+    "invocation_id": "priority-support-brief/r1/product/a306069acac34f50/61",
+    "operation": "research.product",
+    "inputs_sha256": "11e70583a1118ec454771bfa57a39a4a54b43f046bccfbda085a88405e51f939",
+    "request_sha256": "a6f09c0aa56a7cd68d0e8649dccb42e8d70487f806cb844f0e2873f18ddda527",
+    "prompt_sha256": "f82a1fc708c54e0a8ccf6fef7f274a2e785228e397ed1c7c20f72cfa93791e24",
+    "response_sha256": "af2387dbd9871b18b2cd7bb2855eaf169f9562be5732d7409e8b209be3bb86cb",
+    "dispatch_confirmed": true,
+    "wrapper_completion": {
+      "ok": true,
+      "exit_code": 0,
+      "model": "gpt-6-astra",
+      "response_bytes": 1703,
+      "response_sha256": "0953213cc5e1edeace7be54691e6c2b985a4f1ec25c291c6de8cbeab0dd8dc2e",
+      "output_text_sha256": "8a92a52b80093cde6170d75853372ea8ff5c19e1db9bd2c5eee3951b9914b2dc",
+      "stderr_sha256": "b915d0b3e51f19fe9773a952d0f9b78993aa109550635a7c35684136111d78a5",
+      "cli_reported_tokens": 3959,
+      "observed_retry_markers": 0,
+      "provider_call_count": null
+    },
+    "provider_call_count": null
+  },
+  {
+    "step_id": "marketing",
+    "http_node": "Agency marketing",
+    "attempt": 3,
+    "invocation_id": "priority-support-brief/r1/marketing/a306069acac34f50/61",
+    "operation": "research.marketing",
+    "inputs_sha256": "013114ef542e09878c523203b61e93d144495d01ba14360110c07c3e6a211874",
+    "request_sha256": "d91de6b759dbec0a18dc7d023f7f781289108290887523b5b19cfad1b0b327aa",
+    "prompt_sha256": "ec67928e9f3d62a70b59bd51506db37ac5f5b804292a533995e8955b096d1d8d",
+    "response_sha256": "3d72a386e815b4d1e746a2c95e85695a3dac06db34ab195a6ee63f0bb77d2ca3",
+    "dispatch_confirmed": true,
+    "wrapper_completion": {
+      "ok": true,
+      "exit_code": 0,
+      "model": "gpt-6-astra",
+      "response_bytes": 1718,
+      "response_sha256": "8ef70a7c71a03aa335d266a27b1cc25862ed48e12f7124b2a74e1ae88bb9b817",
+      "output_text_sha256": "27b531d80c0b03bb5eba8b8b5cb2aedcf38e30c85818a34e9248575e3ea9e508",
+      "stderr_sha256": "cd1c7130741fcf2f7e578e8a83472bc4a4d2ea61294aadc9ddea7213be90f277",
+      "cli_reported_tokens": 4002,
+      "observed_retry_markers": 0,
+      "provider_call_count": null
+    },
+    "provider_call_count": null
+  },
+  {
+    "step_id": "write_brief",
+    "http_node": "Agency write_brief",
+    "attempt": 4,
+    "invocation_id": "priority-support-brief/r1/write_brief/a306069acac34f50/61",
+    "operation": "research.write",
+    "inputs_sha256": "52355c1f158f1e0b91ed520ffad3218dba6a0337f1ee337cdf60b81cbc330d9d",
+    "request_sha256": "c8cf14970e61e830d193e7ea1272afb0d65bb9bb4deb3604bfc2a2226a58c514",
+    "prompt_sha256": "c0a9c18d45985041c0f22c78146139f778f1c6ed7d4256d52e7c9dba0b72c269",
+    "response_sha256": "93371c5dda3be03523dd6d7d6239c1c77fefebca7fc6e534d2c842b550573367",
+    "dispatch_confirmed": true,
+    "wrapper_completion": {
+      "ok": true,
+      "exit_code": 0,
+      "model": "gpt-6-astra",
+      "response_bytes": 2243,
+      "response_sha256": "e0e5aa676b8ad1b92659c58add82d4b49bb1e492a1242a9a0202994ba6e9e494",
+      "output_text_sha256": "c37e73c5e528c1b809e86eb470852b21cbc2516d3e3c1ef70a70d45318f2bd75",
+      "stderr_sha256": "c2c6d18b13cc6fe096f4f3a8159d1f2eb8cbf668add5b65241704e9b45173ce4",
+      "cli_reported_tokens": 4080,
+      "observed_retry_markers": 0,
+      "provider_call_count": null
+    },
+    "provider_call_count": null
+  }
+]

@@ -1,0 +1,71 @@
+{
+  "source_manifest": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/lifecycle-freeze/source-manifest.json",
+  "source_manifest_sha256": "0617ff5ab148da9ab6aa1798eb5ea35ae359e14a5f4ea12d4f863ce0b7d37d6a",
+  "prompt_sha256": {
+    "daily-digest": "70d11e29f5910912e9fd70947e41a7a1f31ac0f4a1396e12f511e3a1a0c197b6"
+  },
+  "series": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/lifecycle-evaluation/series/series.json",
+  "ceilings": {
+    "authoring": 1,
+    "runtime": 6,
+    "rebuild": 2,
+    "total": 9
+  },
+  "commands": [
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-m",
+      "sapi_config_lab.experiments.lifecycle_run",
+      "--series-dir",
+      "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/lifecycle-evaluation/series",
+      "author",
+      "--upstream",
+      "http://127.0.0.1:8765/run",
+      "--image",
+      "sapi-config-lab-lifecycle:0617ff5a"
+    ],
+    [
+      "python3",
+      "-m",
+      "sapi_config_lab.experiments.lifecycle_run",
+      "--series-dir",
+      "/probe/series",
+      "live",
+      "--phase",
+      "authored",
+      "--upstream",
+      "http://host.docker.internal:8765/run",
+      "--cron-delay-seconds",
+      "180"
+    ],
+    [
+      "python3",
+      "-m",
+      "sapi_config_lab.experiments.lifecycle_run",
+      "--series-dir",
+      "/probe/series",
+      "live",
+      "--phase",
+      "mutation",
+      "--upstream",
+      "http://host.docker.internal:8765/run",
+      "--cron-delay-seconds",
+      "900"
+    ]
+  ],
+  "host_env": {
+    "PYTHONPATH": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/lifecycle-freeze/source/src",
+    "SAPI_LAB_ROOT": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/lifecycle-freeze/source"
+  },
+  "container_env": {
+    "PYTHONPATH": "/app/lab/src",
+    "SAPI_LAB_ROOT": "/app/lab"
+  },
+  "schedule_overlays": {
+    "authored_delay_seconds": 180,
+    "mutation_delay_seconds": 900,
+    "clock": "actual UTC minute, fixed once per phase; no reschedule"
+  },
+  "original_container_baseline": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/baseline-container-identities.json",
+  "wrapper_identity": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/wrapper-identity.json"
+}

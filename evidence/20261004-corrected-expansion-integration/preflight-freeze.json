@@ -1,0 +1,26 @@
+{
+  "source_manifest_sha256": "265d4fd30ed46028acaf898c3f168d6bea0a732e926d80659ae4fbd5d1850f5b",
+  "source_files": 109,
+  "changed_paths": [
+    "docs/SCENARIO-EXPANSION.md",
+    "src/sapi_config_lab/experiments/expansion.py",
+    "src/sapi_config_lab/experiments/generation/run.py",
+    "src/sapi_config_lab/experiments/live.py",
+    "tests/test_expansion_runner.py"
+  ],
+  "runtime_verifier_catalog_profile_spec_task_prompts_unchanged": true,
+  "selected_scenarios": [
+    "bulletin-market-brief",
+    "priority-support-brief"
+  ],
+  "ceilings": {
+    "authoring": 4,
+    "runtime": 13
+  },
+  "events": [],
+  "initial_ledger_sha256": "2651e5eec55cc78932a264ae7072b65dad75879d6fdec7a7812cd5afb7626aa3",
+  "frozen_prompt_hashes": {
+    "bulletin-market-brief": "3a4417f5cfde766899eb1f73b382c21832fb8c97e7c1f6cbc40eefa19b587538",
+    "priority-support-brief": "81e4faa2b71ebea4c02a4f7b2f29995ee70c16f8364425ee0c77eb32ce3b3ef6"
+  }
+}

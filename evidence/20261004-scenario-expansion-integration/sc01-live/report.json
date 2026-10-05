@@ -1,0 +1,311 @@
+{
+  "schema": "sapi-lab-expansion-live/v1",
+  "experiment_kind": "bounded_expansion",
+  "scenario": "dual-ledger-closeout",
+  "mode": "live",
+  "status": "passed",
+  "source_manifest": "source-manifest.json",
+  "started_at": "2026-10-04T15:24:37.465614+00:00",
+  "trials": [
+    {
+      "task_name": "dual-ledger-closeout",
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-scenario-expansion-integration/sc01-live/jobs/live-dual-ledger-closeout-base-ledgers/dual-ledger-closeout__s8GUHG7/result.json",
+      "acceptance": {
+        "scenario": "dual-ledger-closeout",
+        "mode": "live",
+        "passed": true,
+        "report_schema": "sapi-lab-verification/v1",
+        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+        "cases": [
+          {
+            "name": "base-ledgers",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "82d74dab69e04fce",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/base-ledgers",
+            "deadline_seconds": 600,
+            "config_sha256": "f74af8a1702eeb34d25bdbd15c5c3d1e0e90ed45c16708047119bb17a09ff42e",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "live",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 6,
+            "llm_mode": "live",
+            "n8n_node_count": 10,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "domestic": {
+                "total_minor": 1417,
+                "currency": "AED",
+                "invoice_count": 2
+              },
+              "export": {
+                "total_minor": 615,
+                "currency": "EUR",
+                "invoice_count": 2
+              }
+            }
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ],
+        "submission_sha256": "7d9c69bdf6999c9f80c66f44caad10fc2e382fcafe9bfbdccaaf4449f6852449",
+        "config_transformations": [
+          "workflow.inputs replaced by case fixture",
+          "execution.deadline_seconds set to 600"
+        ]
+      }
+    },
+    {
+      "task_name": "dual-ledger-closeout",
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-scenario-expansion-integration/sc01-live/jobs/live-dual-ledger-closeout-alternate-ledgers/dual-ledger-closeout__RWXehpJ/result.json",
+      "acceptance": {
+        "scenario": "dual-ledger-closeout",
+        "mode": "live",
+        "passed": true,
+        "report_schema": "sapi-lab-verification/v1",
+        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+        "cases": [
+          {
+            "name": "alternate-ledgers",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "9f89b894315b4a89",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/alternate-ledgers",
+            "deadline_seconds": 600,
+            "config_sha256": "258e93a6d500557403bbef8ed9c5ea93af040f240824429705145ea8ad415472",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "live",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 6,
+            "llm_mode": "live",
+            "n8n_node_count": 10,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "domestic": {
+                "total_minor": 257,
+                "currency": "USD",
+                "invoice_count": 1
+              },
+              "export": {
+                "total_minor": 345,
+                "currency": "GBP",
+                "invoice_count": 3
+              }
+            }
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ],
+        "submission_sha256": "7d9c69bdf6999c9f80c66f44caad10fc2e382fcafe9bfbdccaaf4449f6852449",
+        "config_transformations": [
+          "workflow.inputs replaced by case fixture",
+          "execution.deadline_seconds set to 600"
+        ]
+      }
+    }
+  ],
+  "not_run": [],
+  "correlation": [],
+  "phases": [
+    {
+      "phase": "before-live",
+      "source_unchanged": true,
+      "packages_unchanged": true
+    },
+    {
+      "phase": "before-base-ledgers",
+      "source_unchanged": true,
+      "packages_unchanged": true
+    },
+    {
+      "phase": "after-base-ledgers",
+      "source_unchanged": true,
+      "packages_unchanged": true
+    },
+    {
+      "phase": "before-alternate-ledgers",
+      "source_unchanged": true,
+      "packages_unchanged": true
+    },
+    {
+      "phase": "after-alternate-ledgers",
+      "source_unchanged": true,
+      "packages_unchanged": true
+    }
+  ],
+  "generation_calls": 0,
+  "budget": {
+    "max_attempts": 0,
+    "cases": {
+      "base-ledgers": 0,
+      "alternate-ledgers": 0
+    },
+    "series_max_attempts": 17
+  },
+  "counts": {
+    "agency_http_attempts": 0,
+    "wrapper_attempts": 0,
+    "wrapper_completions": 0,
+    "provider_call_count": null
+  },
+  "human_review": "not_applicable",
+  "limitations": [
+    "Call/time caps are enforced; currency cost and provider-internal retries remain unknown.",
+    "Lexical and citation checks are bounded; they are separate from human text review.",
+    "Authoring tool restrictions are cooperative prompt/audit controls, not a secure sandbox."
+  ],
+  "series_ledger": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-scenario-expansion-integration/series/series.json",
+  "stub_report_sha256": "be5e5e1d42fe70212abd5d070a6cd292a068bb522fe29c8b8331c4be36cf4431",
+  "image_id": "sha256:200c5b5d136d9a191dcf2abc0ea243edf815f285ef30decbfdc44dfd5bf2cfa5",
+  "selection_sha256": "c1bf0ab1ce844d20ebd98ac1cd3a66552c1acc3b5b1f93d6d6218dbb5829e92c",
+  "private_cases_sha256": "9719bf85d2864f82ade7a406656ce24fd3162e727c452985117a02fcd61b25ac",
+  "wrapper_identity": {
+    "schema": "sapi-lab-wrapper-identity/v1",
+    "endpoint": "http://127.0.0.1:8765/run",
+    "dispatch": "codex-exec",
+    "response_substitution": false,
+    "wrapper_retries": 0,
+    "provider_internal_retries": "unknown",
+    "model": "gpt-6-astra",
+    "files": [
+      {
+        "path": "/Users/pashvel/n8n/codex_bridge.py",
+        "sha256": "bab6f6726380950ed81ad240e2ea9aa144598c550ec5f784bcfa20e280206f36"
+      },
+      {
+        "path": "/Users/pashvel/.codex/config.toml",
+        "sha256": "d437459890b35c019b65f9e88ce608066d0f5d56b2b5e317316a3af01d1ec751"
+      }
+    ],
+    "inspection_note": "Read-only source inspection confirms POST /run dispatches codex exec --skip-git-repo-check with the supplied prompt, captures stdout/stderr, and returns ok/exit_code from subprocess completion. No wrapper retry or response substitution. Runtime listener PID 4210 invokes this exact script. Subprocess timeout 180 seconds. CLI version 0.160.0. CLI/provider internal retries remain unknown without receipts. No provider dispatch was performed during inspection."
+  },
+  "preflight": {
+    "passed": true,
+    "source": "two preserved generated stub trials",
+    "source_report_sha256": "a874670f960c369a683fecc1d6413ae3e617ca6b3f9a62a8fc1460ac098badbf"
+  },
+  "commands": [
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-lab-expansion-exhcyxvw/tasks/dual-ledger-closeout",
+      "--agent",
+      "oracle",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-lab-expansion-exhcyxvw/jobs",
+      "--job-name",
+      "live-dual-ledger-closeout-base-ledgers",
+      "--verifier-env",
+      "SAPI_LLM_MODE=live",
+      "--verifier-env",
+      "SAPI_CASE_NAME=base-ledgers",
+      "--verifier-env",
+      "SAPI_BRIDGE_URL=http://host.docker.internal:18765",
+      "--force-build"
+    ],
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-lab-expansion-exhcyxvw/tasks/dual-ledger-closeout",
+      "--agent",
+      "oracle",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-lab-expansion-exhcyxvw/jobs",
+      "--job-name",
+      "live-dual-ledger-closeout-alternate-ledgers",
+      "--verifier-env",
+      "SAPI_LLM_MODE=live",
+      "--verifier-env",
+      "SAPI_CASE_NAME=alternate-ledgers",
+      "--verifier-env",
+      "SAPI_BRIDGE_URL=http://host.docker.internal:18765",
+      "--force-build"
+    ]
+  ],
+  "audit": [],
+  "source_unchanged": true,
+  "existing_container_identities_preserved": true,
+  "finished_at": "2026-10-04T15:25:21.435723+00:00"
+}

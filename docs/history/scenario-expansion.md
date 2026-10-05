@@ -1,8 +1,8 @@
 # Scenario expansion: preparation backlog
 
 Status update, October 4, 2026: **all four bounded task families have recorded
-native live evidence**. The [original series](../../reports/20261004-scenario-expansion-integration/SUMMARY.md)
-completed SC-01/02 and stopped at SC-03; a [separate corrected series](../../reports/20261004-corrected-expansion-integration/SUMMARY.md)
+native live evidence**. The [original series](../../evidence/20261004-scenario-expansion-integration/SUMMARY.md)
+completed SC-01/02 and stopped at SC-03; a [separate corrected series](../../evidence/20261004-corrected-expansion-integration/SUMMARY.md)
 completed SC-03/04. The original rejection is preserved. Independent agent content
 review is recorded separately; human review and the proposed third-authoring
 team-pilot gate are not claimed complete. That gate is project policy, not a

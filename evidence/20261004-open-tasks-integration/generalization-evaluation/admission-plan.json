@@ -1,0 +1,93 @@
+{
+  "source_manifest": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/generalization-freeze/source-manifest.json",
+  "source_manifest_sha256": "527061058b79bfd95ed0497f01a82ffdfa2fd45b4f3e152a1f6441f74ebe2685",
+  "prompt_sha256": {
+    "billing-bulletin-packet": "c658bb2217c49a81f6f8251efbff76301e75813320005c17fae4495fc60fa40e",
+    "two-audience-briefs": "5647fea015bfeca5889aea5ce4b5f2ac091463dc6284a925ccfba119e52f7f5e"
+  },
+  "series": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/generalization-evaluation/series/series.json",
+  "caps": {
+    "authoring": 4,
+    "runtime": 14
+  },
+  "runtime_cases": {
+    "billing-bulletin-packet": {
+      "base": 1,
+      "alternate": 1
+    },
+    "two-audience-briefs": {
+      "base": 6,
+      "alternate": 6
+    }
+  },
+  "commands": [
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-m",
+      "sapi_config_lab.experiments.generalization",
+      "--series-dir",
+      "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/generalization-evaluation/series",
+      "--scenario",
+      "billing-bulletin-packet",
+      "--phase",
+      "author",
+      "--upstream",
+      "http://127.0.0.1:8765/run",
+      "--image",
+      "sapi-config-lab-generalization:52706105"
+    ],
+    [
+      "python3",
+      "-m",
+      "sapi_config_lab.experiments.generalization",
+      "--series-dir",
+      "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/generalization-evaluation/series",
+      "--scenario",
+      "billing-bulletin-packet",
+      "--phase",
+      "live",
+      "--upstream",
+      "http://host.docker.internal:8765/run"
+    ],
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-m",
+      "sapi_config_lab.experiments.generalization",
+      "--series-dir",
+      "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/generalization-evaluation/series",
+      "--scenario",
+      "two-audience-briefs",
+      "--phase",
+      "author",
+      "--upstream",
+      "http://127.0.0.1:8765/run",
+      "--image",
+      "sapi-config-lab-generalization:52706105"
+    ],
+    [
+      "python3",
+      "-m",
+      "sapi_config_lab.experiments.generalization",
+      "--series-dir",
+      "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/generalization-evaluation/series",
+      "--scenario",
+      "two-audience-briefs",
+      "--phase",
+      "live",
+      "--upstream",
+      "http://host.docker.internal:8765/run"
+    ]
+  ],
+  "host_env": {
+    "PYTHONPATH": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/generalization-freeze/source/src",
+    "SAPI_LAB_ROOT": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/generalization-freeze/source"
+  },
+  "container_env": {
+    "PYTHONPATH": "/app/lab/src",
+    "SAPI_LAB_ROOT": "/app/lab"
+  },
+  "ledger_transfer": "Identical absolute series path; one owner at a time. Preserve pre-live ledger, copy complete finalized runtime checkpoint back to canonical host directory before next authoring. No concurrent dispatch.",
+  "prior_model_activity_gate": "Do not start until lifecycle-evaluation-3 is finalized.",
+  "wrapper_identity": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/wrapper-identity.json",
+  "controls": "Two distinct native oracle graphs per task plus nop; expected negative and metamorphic checks before each task authoring."
+}

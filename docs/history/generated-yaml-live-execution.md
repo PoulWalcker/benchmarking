@@ -1,7 +1,7 @@
 # Generated YAML with live operations: execution task
 
 Status update, October 4, 2026: **implemented and evaluated**. The
-[frozen replay](../../reports/20261004-generated-live-integration/SUMMARY.md)
+[frozen replay](../../evidence/20261004-generated-live-integration/SUMMARY.md)
 passed seven live business cases with eight runtime wrapper calls. Its immutable
 overall report retains a container-preservation failure caused by a separately
 documented, user-confirmed service stop; it is not relabeled as a whole-run pass.

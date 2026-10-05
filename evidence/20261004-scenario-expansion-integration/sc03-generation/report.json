@@ -1,0 +1,176 @@
+{
+  "schema": "sapi-lab-generation/v1",
+  "status": "failed",
+  "experiment_completed": false,
+  "attempts_per_task": 2,
+  "scenarios": [
+    "bulletin-market-brief"
+  ],
+  "authoring_attempt_ceiling": 2,
+  "runtime_llm_mode": "stub",
+  "started_at": "2026-10-04T15:34:30.539815+00:00",
+  "trials": [
+    {
+      "scenario": "bulletin-market-brief",
+      "passed": false,
+      "failure_stage": "acceptance",
+      "generation": {
+        "status": "submitted",
+        "provider": "existing-codex-exec-wrapper",
+        "prompt_sha256": "e4518496b7ed3ffa8ad3dbd66472ebc2c8b6571b8ab2c1d90fd49571efecb90e",
+        "generation_calls": 1,
+        "repairs": 0,
+        "runtime_llm_mode": "stub",
+        "failure_reason": null,
+        "model": "gpt-6-astra",
+        "cli_reported_tokens": 9507,
+        "observed_tool_markers": [],
+        "stderr_sha256": "02c85ded08c892219c9692a782077645a55c28c27bf7a8dc68e9a9b91390aaa1",
+        "tool_isolation": "prompt restriction plus stderr audit; not enforced by wrapper",
+        "submission_sha256": "124fda0fe69701a8b9115671a39e2bbf8bae4325e07f28e16497707b08791e97",
+        "duration_seconds": 32.491
+      },
+      "rewards": {
+        "reward": 0.0
+      },
+      "exception": null,
+      "acceptance": {
+        "scenario": "bulletin-market-brief",
+        "mode": "stub",
+        "passed": false,
+        "report_schema": "sapi-lab-verification/v1",
+        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+        "cases": [
+          {
+            "name": "base-bulletins",
+            "kind": "positive",
+            "passed": false,
+            "execution_id": "1",
+            "workflow_id": "559a6bab21a54b7d",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/base-bulletins",
+            "deadline_seconds": 120,
+            "config_sha256": "1272ed1ae028cfacbf7d28a552dbc76c308f03a45dbef2bf93819295a5199c6c",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Missing, ambiguous, or incorrect occurrence role/input lineage"
+            }
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ],
+        "submission_sha256": "124fda0fe69701a8b9115671a39e2bbf8bae4325e07f28e16497707b08791e97",
+        "config_transformations": [
+          "workflow.inputs replaced by case fixture"
+        ],
+        "error": "Missing, ambiguous, or incorrect occurrence role/input lineage",
+        "error_type": "Rejected"
+      },
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-scenario-expansion-integration/sc03-generation/jobs/generated/bulletin-market-brief__AMHwS4P/result.json"
+    }
+  ],
+  "limitations": [
+    "Explicitly selected task families with a fixed specialized catalog; not held-out generalization.",
+    "Single-shot YAML output; no tools, retries or repair requested.",
+    "Wrapper tool restrictions are prompt-only, audited from CLI stderr, not a filesystem sandbox.",
+    "Runtime model steps are deterministic stubs; only YAML generation calls the live model.",
+    "Verifier checks exact task role/source obligations while permitting renamed step IDs.",
+    "The wrapper does not provide reliable token/cost breakdowns; costs remain unknown."
+  ],
+  "series_ledger": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-scenario-expansion-integration/series/series.json",
+  "base_image_id": "sha256:7f9619ed6bf92504ac47a9ebe15a166427c0b35b9abc7c022b53b2a8894259cd",
+  "frozen_image": "sapi-config-lab-generation-base:7f9619ed6bf92504",
+  "prompt_sha256": {
+    "bulletin-market-brief": "e4518496b7ed3ffa8ad3dbd66472ebc2c8b6571b8ab2c1d90fd49571efecb90e"
+  },
+  "private_cases_sha256": {
+    "bulletin-market-brief": "b50fe60279c0e6710c7071c2d3d917b1c1a31ed8cb27c94a7d9f9eb448044b2d"
+  },
+  "command": [
+    "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+    "-c",
+    "from harbor.cli.main import app; app()",
+    "run",
+    "--path",
+    "/private/tmp/sapi-yaml-generation-c6v4_zk_/tasks",
+    "--agent",
+    "sapi_config_lab.experiments.generation.agent:WrapperYamlAgent",
+    "--ak",
+    "upstream=http://127.0.0.1:8765/run",
+    "--n-attempts",
+    "2",
+    "--n-concurrent",
+    "1",
+    "--max-retries",
+    "0",
+    "--jobs-dir",
+    "/private/tmp/sapi-yaml-generation-c6v4_zk_/jobs",
+    "--job-name",
+    "generated",
+    "--force-build"
+  ],
+  "commands": [
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-yaml-generation-c6v4_zk_/tasks",
+      "--agent",
+      "sapi_config_lab.experiments.generation.agent:WrapperYamlAgent",
+      "--ak",
+      "upstream=http://127.0.0.1:8765/run",
+      "--n-attempts",
+      "1",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-yaml-generation-c6v4_zk_/jobs",
+      "--job-name",
+      "generated-attempt-1",
+      "--force-build"
+    ]
+  ],
+  "harbor_exit_code": 0,
+  "error": "RuntimeError: Authoring/stub gate failed; remaining paid attempts were not started",
+  "frozen_core_unchanged": true,
+  "passed_trials": 0,
+  "total_trials": 1,
+  "authoring_attempts_spent": 1,
+  "attempt_outcomes": [
+    {
+      "scenario": "bulletin-market-brief",
+      "phase": "authoring",
+      "name": "1",
+      "count": 1,
+      "status": "failed",
+      "report": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-scenario-expansion-integration/sc03-generation/report.json"
+    }
+  ],
+  "finished_at": "2026-10-04T15:37:38.579750+00:00"
+}

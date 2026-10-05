@@ -1,0 +1,19 @@
+{
+  "captured_at": "2026-10-04T17:10:45.528855+00:00",
+  "source_files": 109,
+  "source_manifest_sha256": "265d4fd30ed46028acaf898c3f168d6bea0a732e926d80659ae4fbd5d1850f5b",
+  "current_source_mismatches": [],
+  "archived_source_mismatches": [],
+  "historical_files": 9150,
+  "historical_mismatches": [],
+  "original_containers": 12,
+  "original_running": 5,
+  "final_containers": 12,
+  "final_running": 5,
+  "container_mismatches": [],
+  "additional_container_ids": [],
+  "wrapper_or_config_mismatches": [],
+  "passed": true,
+  "mount_comparison": "Order-independent; identical captured fields; absent Docker bind-mount Name normalized to null as in baseline",
+  "correction": "Initial assessment serialized absent bind-mount Name by omission instead of baseline null, producing three representational mismatches. Saved snapshots show no state/config/image/mount-value differences; no additional Docker command or service action was used for this correction."
+}
