@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 from sapi_config_lab import cli
 from sapi_config_lab.paths import CATALOG, workspace_root
-from sapi_config_lab.runtime.contracts import CompiledWorkflow, CompileOptions
+from sapi_config_lab.core.contracts import CompiledWorkflow, CompileOptions
 from sapi_config_lab.runtime.execution import run_case
 from sapi_config_lab.runtime.n8n.adapter import N8nBackend
 from sapi_config_lab.core import profile

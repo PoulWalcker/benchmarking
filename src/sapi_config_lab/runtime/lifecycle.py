@@ -21,7 +21,7 @@ from typing import Any, Callable, Iterator
 from zoneinfo import ZoneInfo
 
 from sapi_config_lab.paths import CATALOG
-from sapi_config_lab.runtime.contracts import Document, ExecutionRecord, LlmMode, WorkflowBackend
+from sapi_config_lab.core.contracts import Document, ExecutionRecord, LlmMode, WorkflowBackend
 from sapi_config_lab.runtime.execution import run_case
 from sapi_config_lab.core import profile
 

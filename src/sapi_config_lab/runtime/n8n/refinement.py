@@ -6,7 +6,7 @@ import copy
 import json
 import uuid
 
-from sapi_config_lab.runtime.contracts import Document, LlmMode
+from sapi_config_lab.core.contracts import Document, LlmMode
 from sapi_config_lab.runtime.n8n.compiler import RESOURCES, compile_n8n
 from sapi_config_lab.core.profile import SPEC
 

@@ -39,7 +39,7 @@ from sapi_config_lab.experiments.task_evaluation import (
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.runtime.agency import DispatchAudit, execute
 from sapi_config_lab.runtime.autowfbench import PINNED_REVISION, start_environment
-from sapi_config_lab.runtime.contracts import CompileOptions
+from sapi_config_lab.core.contracts import CompileOptions
 from sapi_config_lab.runtime.n8n.adapter import N8nBackend
 from sapi_config_lab.core.profile import read, read_bindings
 

@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from sapi_config_lab.runtime.contracts import CompiledWorkflow, CompileOptions, Document, ExecutionRecord
+from sapi_config_lab.core.contracts import CompiledWorkflow, CompileOptions, Document, ExecutionRecord
 from sapi_config_lab.runtime.n8n.compiler import compile_n8n
 from sapi_config_lab.runtime.n8n.execution import execute_compiled
 

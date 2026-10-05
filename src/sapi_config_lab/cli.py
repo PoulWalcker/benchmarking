@@ -9,7 +9,7 @@ import sys
 from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.core.profile import read, read_bindings, validate, Invalid, Unsupported
 from sapi_config_lab.runtime.composition import default_backend
-from sapi_config_lab.runtime.contracts import CompileOptions, WorkflowBackend
+from sapi_config_lab.core.contracts import CompileOptions, WorkflowBackend
 
 # Commands dispatched by importing a module and calling its main(). The four
 # remaining names are handled inline below.

@@ -7,7 +7,7 @@ import subprocess
 import unittest
 
 from sapi_config_lab.paths import CATALOG
-from sapi_config_lab.runtime.contracts import CompileOptions
+from sapi_config_lab.core.contracts import CompileOptions
 from sapi_config_lab.runtime.n8n.adapter import N8nBackend
 from sapi_config_lab.core.profile import Invalid, read, read_bindings
 

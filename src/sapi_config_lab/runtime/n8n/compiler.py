@@ -5,7 +5,7 @@ import math
 import uuid
 from pathlib import Path
 from urllib.parse import urlparse
-from sapi_config_lab.runtime.contracts import Document, LlmMode
+from sapi_config_lab.core.contracts import Document, LlmMode
 from sapi_config_lab.core.profile import SPEC, Unsupported, check, validate
 
 RESOURCES = Path(__file__).resolve().parent
