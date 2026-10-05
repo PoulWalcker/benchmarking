@@ -8,6 +8,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from sapi_config_lab.experiments.checkout import ORACLE_MODULES, oracle_scrub
 from sapi_config_lab.experiments.tasks import SCENARIOS, stage_tasks
 from sapi_config_lab.experiments.generation.common import fingerprints
 from sapi_config_lab.experiments.harbor import source_manifest
@@ -91,9 +92,22 @@ class PackagingTests(unittest.TestCase):
             self.assertNotEqual(inventory(root), before)
 
     def test_imports_respect_responsibilities(self):
+        # core holds the shared rules, runtime the independent services, interfaces the
+        # interaction surfaces. Dependencies only ever point inward: core knows about
+        # neither of the others, and runtime knows nothing about an interaction surface.
         package = ROOT / "src/sapi_config_lab"
+        forbidden = {
+            "core": ("sapi_config_lab.runtime", "sapi_config_lab.interfaces", "verification", "harbor"),
+            "runtime": ("sapi_config_lab.interfaces", "verification", "harbor"),
+        }
+        for group in ("core", "runtime", "interfaces"):
+            # Without this the rules above silently stop applying to anything.
+            self.assertTrue((package / group).is_dir(), group)
         for path in package.rglob("*.py"):
             relative = path.relative_to(package)
+            rules = forbidden.get(relative.parts[0])
+            if rules is None:
+                continue
             for node in ast.walk(ast.parse(path.read_text())):
                 imports = (
                     [node.module or ""]
@@ -101,15 +115,16 @@ class PackagingTests(unittest.TestCase):
                     else ([a.name for a in node.names] if isinstance(node, ast.Import) else [])
                 )
                 for name in imports:
-                    if relative.parts[0] == "workflow":
-                        self.assertFalse(
-                            name.startswith(("sapi_config_lab.runtime", "sapi_config_lab.experiments", "harbor")),
-                            (relative, name),
-                        )
-                    if relative.parts[0] == "runtime":
-                        self.assertFalse(
-                            name.startswith(("sapi_config_lab.experiments", "verification", "harbor")), (relative, name)
-                        )
+                    self.assertFalse(name.startswith(rules), (relative, name))
+
+    def test_agent_image_still_deletes_every_scoring_oracle_module(self):
+        # rm -rf exits 0 on a missing path, so a stale entry would leave the oracle
+        # readable inside the agent's container and nothing at run time would say so.
+        scrub = oracle_scrub()
+        self.assertTrue(ORACLE_MODULES)
+        for relative in ORACLE_MODULES:
+            self.assertTrue((ROOT / "src" / relative).exists(), relative)
+            self.assertIn(f"/app/lab/src/{relative}", scrub)
 
     def test_verifier_injects_runner_but_does_not_trust_its_success(self):
         spec = importlib.util.spec_from_file_location("independent_verifier", ROOT / "verification/verify.py")
