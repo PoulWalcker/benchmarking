@@ -85,8 +85,9 @@ uv run --locked sapi-lab package-tasks /tmp/sapi-tasks
 
 `run.sh` and `run-generation.sh` are thin wrappers around
 `uv run --locked --extra harbor sapi-lab harbor` and `sapi-lab generate`.
-Use `uv run --locked sapi-lab --help` for the CLI; each command also accepts
-`--help`. Package commands replace the old Python entry points in the project
+Use `uv run --locked sapi-lab --help` for the CLI; it lists the commands you run
+separately from the entry points a container or another command invokes, and each
+command also accepts `--help`. Package commands replace the old Python entry points in the project
 root and `scripts/`: see the [migration table](docs/ARCHITECTURE.md).
 
 Live calls require the existing wrapper at `http://127.0.0.1:8765/run`.

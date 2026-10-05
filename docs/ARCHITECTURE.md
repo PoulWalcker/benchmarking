@@ -162,44 +162,55 @@ uploads local execution artifacts.
 
 ## Commands
 
-`uv run --locked sapi-lab --help` lists every subcommand, and each one accepts
-`--help`. This project uses `--locked`, not `--frozen`, everywhere: the CI
+`uv run --locked sapi-lab --help` lists every subcommand in two groups, and each
+one accepts `--help`. The first group is what a person runs; the second holds
+entry points a container or another command invokes, which have no use at a host
+checkout. This project uses `--locked`, not `--frozen`, everywhere: the CI
 workflow `.github/workflows/checks.yml` runs `uv sync --locked` and
 `uv run --locked` for all steps. `--locked` additionally verifies that `uv.lock`
 still agrees with `pyproject.toml` and fails if it does not, which is what the
 pinned-environment statements in the reports rely on. `--frozen` would skip that
 check. Terms used below are defined in the [glossary](GLOSSARY.md).
 
+### Commands you run
+
 | Command | What it does | Also needs | Costs model calls |
 | --- | --- | --- | --- |
 | `compile` | Validate one YAML and write the n8n JSON plus its step-to-node map. It does not execute anything. | — | No |
 | `build` | Compile every `configs/*.yaml` into `--output-dir` and record which were rejected. | — | No |
-| `execute` | Run one config through the selected engine and write a `sapi-lab-execution/v1` record. | the real n8n CLI on `PATH` | Only with `--llm-mode live` |
-| `package-tasks` | Assemble Harbor task packages into a new directory without running them. | — | No |
 | `harbor` | The unpaid control suite: build the pinned image, run transport probes, then the oracle and nop trials. | `--extra harbor`, Docker | No |
 | `generate` | Model-authored YAML. Runs the control suite first and refuses to continue if it fails, then dispatches independent one-shot authoring attempts. | `--extra harbor`, Docker, the wrapper | Yes |
 | `live` | Replay frozen generated submissions with live runtime operations, after an unpaid source-matched gate. | `--extra harbor`, Docker, the wrapper | Yes |
-| `checkout`, `benchmark` | The AutoWFBench task evaluation; both names reach the same module. `--mode prepare` and `--mode controls` dispatch nothing. | `--extra harbor --extra benchmark`, Docker | `--mode live` only |
+| `benchmark` | The AutoWFBench task evaluation, with `--task checkout` or `--task crm`. `--mode prepare` and `--mode controls` dispatch nothing. | `--extra harbor --extra benchmark`, Docker | `--mode live` only |
 | `benchmark-series` | Build a comparison manifest from existing reports. It reruns nothing. | `--extra benchmark` | No |
 | `benchmark-calibrate` | Compare the semantic judge against frozen evaluator-only controls. **It dispatches one real, paid judge call** unless `--prepare-only` is passed. | `--extra benchmark` | Yes, unless `--prepare-only` |
-| `bridge` | Foreground local Agency adapter in front of the existing wrapper. | the wrapper | It is the path live calls take |
 | `ui` | Compile and import graphs into local n8n, and prepare one bounded manual live session. | local n8n | Only when you press Execute on an LLM graph |
 | `lifecycle` | The durable lifecycle controller: `register`, `callback`, `restore`, `status`, `tick`, `drain`, `serve` against a registry directory. Same entry point as the `python -m sapi_config_lab.runtime.lifecycle` form used in the [lifecycle guide](LIFECYCLE.md). | — | Only with `--llm-mode live` or `--rebuilder-url` |
 | `review-export` | Write a derived `analysis.md` beside recorded evaluations so the Harbor viewer can display them. It adds files only; `evaluation.json` is read-only to it. | a Harbor jobs directory | No |
-| `transport` | Deterministic HTTP transport probes against a fake bridge. | **the isolated lab image** | No |
 
-Two of these are not meant to be typed by a person at a normal checkout.
-`transport` is written to run inside the isolated lab image and is invoked there
-by `run.sh`; outside that image it has no workspace to probe. `execute` requires
-the real n8n CLI on `PATH`, which the lab image provides and a host checkout
-normally does not; use `harbor` or `live` to get a real execution with evidence.
+`checkout` is a deprecated hidden alias of `benchmark`. It still works and prints
+a deprecation line to stderr. The module serves two tasks selected by `--task`,
+so the old name advertised one of them as if it were the whole command. Use
+`benchmark`; `checkout` will be removed.
 
-`benchmark-calibrate` costs one model call. The docstring at the top of
-`src/sapi_config_lab/experiments/judge_calibration.py` says "No model call is
-made here"; that sentence describes `calibration_fixture()`, which only swaps
-prose in an already recorded trace. `main()` in the same file calls `judge()`
-after writing the fixture, so a run without `--prepare-only` pays for a judge
-dispatch. Budget for it accordingly.
+### Internal and in-container commands
+
+These run from the same entry point and are not hidden, but a host checkout is
+the wrong place to type them: each needs an environment it does not get there.
+
+| Command | What it does | Why it is not for you |
+| --- | --- | --- |
+| `execute` | Run one config through the selected engine and write a `sapi-lab-execution/v1` record. | Requires the real n8n CLI 2.41.5 on `PATH`, which the lab image provides and a host checkout normally does not. Use `harbor` or `live` for a real execution with evidence. |
+| `package-tasks` | Assemble Harbor task packages into a new directory without running them. | Every experiment stages its own packages; a standalone package is for inspection only. |
+| `transport` | Deterministic HTTP transport probes against a fake bridge. | Written to run inside the isolated lab image, where `run.sh` invokes it; outside that image it has no workspace to probe. |
+| `bridge` | Foreground local Agency adapter in front of the existing wrapper. | `live` and `ui` start it themselves; a second one competes for the port and the budget latch. |
+| `checkout-worker` | The trusted in-container verifier that runs frozen YAML through the real n8n backend. | The task container runs it as `python3 -m sapi_config_lab.experiments.checkout_worker`; it reads `/tests/connection.json` and writes `/logs/verifier`. |
+
+`benchmark-calibrate` costs one model call. The module docstring in
+`src/sapi_config_lab/experiments/judge_calibration.py` states this, and the
+command prints the model it is about to bill to stderr immediately before
+dispatching. `calibration_fixture()` on its own is unpaid: it only swaps prose in
+an already recorded trace. Budget for the dispatch accordingly.
 
 ## Command migration
 
@@ -226,6 +237,14 @@ Historical reports and source manifests are not rewritten to use new paths.
 provenance. `stage_tasks(mode="replay", submissions=...)` preserves their bytes.
 `experiments/live.py` reuses Harbor and the existing verifier/typed backend path,
 with source/image gates, unpaid replay verification and serial live trials.
+
+Replay mode is reachable only through `sapi-lab live --submissions-manifest`.
+`package-tasks --mode` offers `oracle` and `generation` and deliberately not
+`replay`: a replay package is defined by a submissions manifest that
+`load_selection()` revalidates against a frozen source report, and by the image
+tag that the same `live` run freezes and pins into its hashes. Staged on its own
+with a default image tag, the package would carry no provenance anything checks.
+The `--mode` help text says so at the command.
 `runtime/agency.py::DispatchAudit` owns the outgoing budget and failure latch;
 `experiments/live_evidence.py` reconciles it with independent native evidence.
 There is no additional workflow executor. See [the replay command](GENERATED-LIVE.md).

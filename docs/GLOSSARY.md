@@ -34,7 +34,7 @@ one "it worked".
   expected behavior.
 - **Quality** means a judgement that the produced text or artifact is good. On
   the benchmark track that is the separate semantic judge
-  (`src/sapi_config_lab/experiments/task_evaluation.py:327`), scored out of ten.
+  (`src/sapi_config_lab/experiments/task_evaluation.py:342`), scored out of ten.
   On the project's own nine scenarios there is no automatic quality score at
   all: prose checks are lexical coverage checks, and human review is tracked as
   `human_review: pending`.
@@ -71,8 +71,9 @@ For the nine scenarios in `src/sapi_config_lab/scenarios.py`, the packaged
   which must have recorded `{"reward": 1.0}`)
 
 The continuous `score/10` reward belongs only to the separate AutoWFBench
-benchmark track, where it is `normalized_reward = score_0_10 / 10`
-(`experiments/task_evaluation.py:403`). The two are never pooled.
+benchmark track, where it is `normalized_reward = score_0_10 / 10`, computed in
+`Decimal` from the same quantized value as the score
+(`experiments/task_evaluation.py:34,418`). The two are never pooled.
 
 ## Frozen schemas
 
@@ -83,7 +84,7 @@ Their field names cannot be renamed.
 | --- | --- | --- |
 | `sapi-lab-execution/v1` | `src/sapi_config_lab/runtime/execution.py:95` | `execution`, `acceptance`, `input.activation` (holds a lifecycle admission), `llm`, `evidence` |
 | `sapi-lab-verification/v1` | `verification/verify.py:204` | `cases`, `case_count`, `scenario`, `submission_sha256`, `passed` |
-| `sapi-lab-task-evaluation/v1` | `src/sapi_config_lab/experiments/task_evaluation.py:21,397-405` | `normalized_reward`, `project_acceptance.criterion`, `evaluation_mode` |
+| `sapi-lab-task-evaluation/v1` | `src/sapi_config_lab/experiments/task_evaluation.py:22,412-420` | `normalized_reward`, `project_acceptance.criterion`, `evaluation_mode` |
 
 Harbor's own trial record carries `rewards: {"reward": <float>}`. That is
 upstream's schema, not ours, and is equally out of reach.
@@ -119,7 +120,7 @@ positive control of a run. It is never a grader.
 
 | Meaning in use | Proof | Should be called | Rename |
 | --- | --- | --- | --- |
-| Harbor agent that copies the reference YAML in as the submission | `harbor/templates/solve.sh`; `--mode oracle` at `src/sapi_config_lab/cli.py:101`; `experiments/tasks.py:30` | **oracle** (keep) | n/a |
+| Harbor agent that copies the reference YAML in as the submission | `harbor/templates/solve.sh`; `--mode oracle` at `src/sapi_config_lab/cli.py:131`; `experiments/tasks.py:30` | **oracle** (keep) | n/a |
 | `oracle_config(contract)` builds a scripted reference configuration for the benchmark tasks | `tests/support/checkout_oracle.py:1,9`, `tests/support/crm_oracle.py:1,9`, loaded at `experiments/checkout.py:128-134` | **oracle** (keep) | n/a |
 
 Audit correction: these two are **not** opposite roles. `checkout_oracle.py` and
@@ -140,7 +141,7 @@ That is the verifier's unit of work.
 | --- | --- | --- | --- |
 | A verifier test input and its expected outcome | `verification/cases.json`; iterated at `verification/verify.py:235-266` | **case** (keep) | n/a |
 | The per-execution record produced by running one case | `src/sapi_config_lab/runtime/execution.py:30` (`run_case`), written to `case.json` at `execution.py:123` | **execution record** in prose; the file name stays | **Blocked** for the artifact name and `cases`/`case_count` in `sapi-lab-verification/v1` |
-| `--case` of `benchmark-calibrate`: one of three frozen calibration narratives | `src/sapi_config_lab/experiments/judge_calibration.py:126` | **`--control`** — these are evaluator-only controls, not inputs | **Safe**, it is a CLI flag with three fixed values |
+| `--case` of `benchmark-calibrate`: one of three frozen calibration narratives | `src/sapi_config_lab/experiments/judge_calibration.py:135` | **`--control`** — these are evaluator-only controls, not inputs | **Safe**, it is a CLI flag with three fixed values |
 | A whole AutoWFBench challenge, as in "the single-case Checkout Recovery evaluation" | `README.md:20`; `docs/CHECKOUT-EVALUATION.md:73` | **challenge** | **Safe**, prose only |
 
 ### task
@@ -166,8 +167,8 @@ advance, run to check the instrument rather than the subject.
 | Hand-written reference DAGs used as the positive controls of the composition experiments | `generation/generalization/controls/*.yaml`, selected at `experiments/generalization.py:61` | **control** (keep) — they are the oracle solutions of those two tasks | n/a |
 | The lifecycle **controller** daemon | `src/sapi_config_lab/runtime/lifecycle.py:169` (`LifecycleController`) | **controller** — a different word already; never shorten it to "control" | n/a |
 
-Audit note: `--mode controls` belongs to `checkout`/`benchmark`
-(`experiments/checkout.py:459`), not to `generate`. `generate` has no `--mode`;
+Audit note: `--mode controls` belongs to `benchmark` (and its deprecated
+`checkout` alias) at `experiments/checkout.py:459`, not to `generate`. `generate` has no `--mode`;
 it always runs the control suite first and aborts if it fails
 (`experiments/generation/run.py:224-227`).
 
@@ -191,7 +192,7 @@ state which track produced it.
 | Meaning in use | Proof | Should be called | Rename |
 | --- | --- | --- | --- |
 | Binary suite pass for the project's nine scenarios | `harbor/templates/test.sh`; asserted at `experiments/harbor.py:185,190`, `generalization.py:171`, `lifecycle_run.py:289`, `replay.py:81,206` | **suite reward** | **Blocked**, Harbor's `rewards.reward` |
-| Continuous `score_0_10 / 10` on the AutoWFBench track | `src/sapi_config_lab/experiments/task_evaluation.py:124,403` | **normalized score** | **Blocked**, `normalized_reward` is a `sapi-lab-task-evaluation/v1` field |
+| Continuous `score_0_10 / 10` on the AutoWFBench track | `src/sapi_config_lab/experiments/task_evaluation.py:139,418` | **normalized score** | **Blocked**, `normalized_reward` is a `sapi-lab-task-evaluation/v1` field |
 
 A binary reward answers "did the whole suite pass". A `score/10` answers "how
 good was this one answer". Comparing or averaging them produces a meaningless
@@ -254,12 +255,12 @@ the ambiguous terms are defined against.
   (`workflow.acceptance`, validated at `workflow/profile.py:254`); the YAML
   field is the author's statement of intent and is never read as a decision.
 - **evaluation** — one scored benchmark trial, written once to
-  `evaluation.json` and immutable thereafter (`task_evaluation.py:408-430`).
+  `evaluation.json` and immutable thereafter (`task_evaluation.py:423-445`).
 - **criterion** — one scored line of an upstream scorecard, with its own weight
   and cited evidence. Four deterministic criteria are worth six points and three
   semantic criteria four points for the checkout challenge.
 - **judge** — the separate upstream semantic grader invoked by
-  `task_evaluation.py:327`. It has its own prompt and subprocess, it costs a
+  `task_evaluation.py:342`. It has its own prompt and subprocess, it costs a
   real model call, and a missing or invalid judgement leaves a trial *unscored*,
   never zero.
 - **nop** — the Harbor agent that writes no solution. Its trial must score 0.

@@ -18,11 +18,12 @@ uv run --locked --extra benchmark python -c 'from pathlib import Path; from sapi
 Then run the complete evaluation with one command:
 
 ```bash
-uv run --locked --extra harbor --extra benchmark sapi-lab checkout --mode live --report-dir reports/checkout-new-run
+uv run --locked --extra harbor --extra benchmark sapi-lab benchmark --task checkout --mode live --report-dir reports/checkout-new-run
 ```
 
-The command builds the pinned n8n image, runs unpaid source/image-matched
-reference/nop controls, then performs bounded live authoring, runtime, and judging.
+`--task checkout` is the default. The command builds the pinned n8n image, runs
+unpaid source/image-matched reference/nop controls, then performs bounded live
+authoring, runtime, and judging.
 No manual graph import or editing is needed. See
 [AUTOWFBENCH-ENVIRONMENT.md](AUTOWFBENCH-ENVIRONMENT.md) for cache verification.
 Existing reports are immutable; use a new directory. `--mode prepare` writes the frozen prompt,
