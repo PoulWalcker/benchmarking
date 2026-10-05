@@ -14,7 +14,7 @@ from sapi_config_lab.runtime.lifecycle import durable_json
 from sapi_config_lab.runtime.n8n.adapter import N8nBackend
 from sapi_config_lab.runtime.contracts import CompileOptions
 from sapi_config_lab.paths import CATALOG
-from sapi_config_lab.workflow import profile
+from sapi_config_lab.core import profile
 
 
 class DigestBackend:

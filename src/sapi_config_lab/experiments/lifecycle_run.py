@@ -35,7 +35,7 @@ from sapi_config_lab.runtime.agency import make_handler
 from sapi_config_lab.runtime.lifecycle import LifecycleController, digest, durable_json
 from sapi_config_lab.runtime.n8n.adapter import N8nBackend
 from sapi_config_lab.runtime.rebuilder import WrapperRebuilder
-from sapi_config_lab.workflow import profile
+from sapi_config_lab.core import profile
 
 POLICY = {
     "authoring": {"authoring": 1, "runtime": 0, "rebuild": 0},

@@ -20,7 +20,7 @@ from sapi_config_lab.runtime.contracts import (
     LlmMode,
     WorkflowBackend,
 )
-from sapi_config_lab.workflow import profile
+from sapi_config_lab.core import profile
 
 
 def write_json(path: Path, value: Any) -> None:

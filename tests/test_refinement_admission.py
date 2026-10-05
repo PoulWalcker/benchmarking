@@ -14,7 +14,7 @@ from sapi_config_lab.experiments.live import main as live
 from sapi_config_lab.experiments.live_evidence import case_budget
 from sapi_config_lab.experiments.tasks import stage_tasks
 from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.workflow.profile import read
+from sapi_config_lab.core.profile import read
 from tests.test_extension_verification import evidence
 from verification.verify import check_execution
 

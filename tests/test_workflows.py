@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from sapi_config_lab.workflow import profile
+from sapi_config_lab.core import profile
 from sapi_config_lab.runtime.n8n import compiler
 from sapi_config_lab.paths import workspace_root, CATALOG
 

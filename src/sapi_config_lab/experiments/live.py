@@ -34,7 +34,7 @@ from sapi_config_lab.experiments.expansion import (
 )
 from sapi_config_lab.experiments.live_evidence import case_budget
 from sapi_config_lab.scenarios import EXPANSION_SCENARIOS, EXTENSION_SCENARIOS
-from sapi_config_lab.workflow.profile import read
+from sapi_config_lab.core.profile import read
 
 ROOT = workspace_root()
 BUDGET: dict[str, Any] = {"max_attempts": 8, "operations": OPERATIONS, "model": "gpt-6-astra"}

@@ -69,7 +69,7 @@ def main() -> int:
             if required not in source_members:
                 raise RuntimeError(f"Missing reproducibility source: {required}")
         for required in (
-            "sapi_config_lab/workflow/bindings.yaml",
+            "sapi_config_lab/core/bindings.yaml",
             "sapi_config_lab/runtime/agency-prompt.md",
             "sapi_config_lab/runtime/n8n/operations.js",
             "sapi_config_lab/runtime/n8n/runtime-fragment.js",

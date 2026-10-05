@@ -5,7 +5,7 @@ import json
 from urllib.request import Request, urlopen
 
 from sapi_config_lab.runtime.execution import run_case, write_json
-from sapi_config_lab.workflow.profile import read, read_bindings
+from sapi_config_lab.core.profile import read, read_bindings
 
 
 def main():

@@ -16,7 +16,7 @@ import time
 from typing import Any
 
 from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.workflow import profile
+from sapi_config_lab.core import profile
 from sapi_config_lab.runtime.execution import run_case, write_json
 
 ROOT = workspace_root()

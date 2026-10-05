@@ -9,7 +9,7 @@ import unittest
 
 from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.runtime.n8n.compiler import compile_n8n
-from sapi_config_lab.workflow import profile
+from sapi_config_lab.core import profile
 
 
 class RefinementTests(unittest.TestCase):

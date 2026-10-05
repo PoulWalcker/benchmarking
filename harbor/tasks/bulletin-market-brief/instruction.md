@@ -21,7 +21,7 @@ dependency edges, including redundant ones.
 Keep Callback fixture activation, revision 1, independent concurrency and
 fail-fast errors. The common profile and complete operation catalog are in
 `/app/lab/docs/PROFILE.md` and
-`/app/lab/src/sapi_config_lab/workflow/bindings.yaml`.
+`/app/lab/src/sapi_config_lab/core/bindings.yaml`.
 Only modify the submitted YAML. Do not alter the compiler, runtime, installed
 n8n or verifier. The verifier replaces sample inputs and checks real n8n
 records plus independent business obligations. All outputs remain local
