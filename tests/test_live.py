@@ -1,6 +1,8 @@
 """Unpaid guards for the frozen replay runner; no Docker or real wrapper calls."""
 
+import contextlib
 import copy
+import io
 from io import BytesIO
 import json
 from pathlib import Path
@@ -124,8 +126,11 @@ class LiveEvidenceTests(unittest.TestCase):
                     path.write_text(json.dumps(manifest))
                     with self.assertRaises((ValueError, FileNotFoundError)):
                         load_selection(path)
-                with self.assertRaises(SystemExit):
-                    main(["--stub-report", str(root / "absent"), "--report-dir", str(root)])
+                with contextlib.redirect_stderr(io.StringIO()) as errors:
+                    with self.assertRaises(SystemExit) as caught:
+                        main(["--stub-report", str(root / "absent"), "--report-dir", str(root)])
+                self.assertEqual(caught.exception.code, 2)
+                self.assertIn("every existing output directory is immutable", errors.getvalue())
                 dispatch.assert_not_called()
 
     def test_truncated_audit_is_never_accepted(self):

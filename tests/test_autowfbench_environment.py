@@ -1,6 +1,7 @@
 """Pinned-source integrity and actual local upstream simulator controls; no models."""
 
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -18,6 +19,8 @@ from tests.support.checkout_controls import CHECKOUT_INCOMPLETE_ACTIONS, CHECKOU
 SOURCE = Path(
     os.environ.get("SAPI_AUTOWFBENCH_SOURCE", Path(__file__).parents[1] / ".cache/autowfbench" / PINNED_REVISION)
 )
+# The simulator runs on this interpreter, so its own imports must resolve here too.
+AVAILABLE = (SOURCE / "autowfbench/__main__.py").is_file() and importlib.util.find_spec("fastjsonschema") is not None
 
 
 def post(connection, path, request, *, token=None):
@@ -94,7 +97,7 @@ class SourceCacheTests(unittest.TestCase):
             verify_source(source)
 
 
-@unittest.skipUnless(SOURCE.is_dir(), "Explicitly fetch the pinned AutoWFBench source cache first")
+@unittest.skipUnless(AVAILABLE, "Requires the pinned AutoWFBench source cache and the benchmark extra")
 class OriginalEnvironmentTests(unittest.TestCase):
     def test_crm_original_case_passes_with_explicit_bounded_transient_retry(self):
         with start_environment(SOURCE, "crm-lead-qualification", seed=2) as session:
