@@ -12,6 +12,8 @@ deterministic criterion names a source either, because its check answers it.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from types import MappingProxyType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING or __package__:
@@ -86,11 +88,17 @@ SUPPORT_REVIEW_PACKET = RubricCard(
 
 # Scenarios whose acceptance is already one independent pass/fail obligation keep
 # that behaviour exactly, through this same code path, as a ten-point check.
-CARDS: dict[str, RubricCard] = {
-    SUPPORT_REVIEW_PACKET.id: SUPPORT_REVIEW_PACKET,
-    "invoice-total": RubricCard.binary("invoice-total"),
-    "dual-ledger-closeout": RubricCard.binary("dual-ledger-closeout"),
-}
+#
+# Sealed, and built from a literal that nothing else holds a name for: a plain
+# dict let any in-process caller swap a scenario's card for its own and have
+# card_for() hand that one to every later run.
+CARDS: Mapping[str, RubricCard] = MappingProxyType(
+    {
+        SUPPORT_REVIEW_PACKET.id: SUPPORT_REVIEW_PACKET,
+        "invoice-total": RubricCard.binary("invoice-total"),
+        "dual-ledger-closeout": RubricCard.binary("dual-ledger-closeout"),
+    }
+)
 
 
 def card_for(scenario: str) -> RubricCard:
