@@ -14,7 +14,7 @@ import uuid
 from typing import Any
 
 from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.experiments.tasks import stage_tasks
+from sapi_config_lab.interfaces.tasks import stage_tasks
 from sapi_config_lab.core.scenarios import SCENARIOS, select_scenarios
 from sapi_config_lab.core.host import harbor_command
 from sapi_config_lab.core.provenance import host_environment, source_manifest
@@ -140,7 +140,7 @@ def main():
                 IMAGE,
                 "python3",
                 "-m",
-                "sapi_config_lab.experiments.transport",
+                "sapi_config_lab.interfaces.transport",
                 "--artifacts",
                 "/probe",
             ]
@@ -213,7 +213,7 @@ def main():
         return 1
     if args.live:
         return subprocess.call(
-            [sys.executable, "-m", "sapi_config_lab.experiments.live", "--stub-report", str(output / "report.json")],
+            [sys.executable, "-m", "sapi_config_lab.interfaces.live", "--stub-report", str(output / "report.json")],
             cwd=ROOT,
         )
     return 0

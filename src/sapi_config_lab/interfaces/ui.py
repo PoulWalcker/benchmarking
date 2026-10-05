@@ -166,7 +166,7 @@ def serve(
         raise ValueError("Invalid UI cap or grant duration")
     if (directory / "budget.json").exists():
         raise ValueError("This UI grant already exists; use 'ui open CONFIG --live' for a fresh copy")
-    from sapi_config_lab.experiments.live import wrapper_identity
+    from sapi_config_lab.interfaces.live import wrapper_identity
     from sapi_config_lab.runtime.agency import make_handler, urlopen
 
     endpoint = urlparse(upstream)
@@ -330,7 +330,7 @@ def open_workflow(
 
 
 def wrapper_preference(state: Path, supplied: Path | None) -> Path:
-    from sapi_config_lab.experiments.live import wrapper_identity
+    from sapi_config_lab.interfaces.live import wrapper_identity
 
     settings = state / "settings.json"
     saved = json.loads(settings.read_text()) if settings.exists() else {}

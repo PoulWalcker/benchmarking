@@ -23,13 +23,13 @@ import subprocess
 import threading
 import time
 
-from sapi_config_lab.experiments.generation.common import summarize_trials
+from sapi_config_lab.interfaces.generation.common import summarize_trials
 from sapi_config_lab.core.host import harbor_command
-from sapi_config_lab.experiments.harbor import load_trials
-from sapi_config_lab.experiments.live_evidence import load_verifier, reconcile_dispatches
+from sapi_config_lab.interfaces.harbor import load_trials
+from sapi_config_lab.interfaces.live_evidence import load_verifier, reconcile_dispatches
 from sapi_config_lab.core.provenance import source_manifest
-from sapi_config_lab.experiments.replay import require
-from sapi_config_lab.experiments.tasks import stage_tasks
+from sapi_config_lab.interfaces.replay import require
+from sapi_config_lab.interfaces.tasks import stage_tasks
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.runtime.agency import make_handler
 from sapi_config_lab.runtime.lifecycle import LifecycleController, digest, durable_json
@@ -326,7 +326,7 @@ def author(series, *, upstream, image):
             "--path",
             str(directory / "tasks"),
             "--agent",
-            "sapi_config_lab.experiments.generation.agent:WrapperYamlAgent",
+            "sapi_config_lab.interfaces.generation.agent:WrapperYamlAgent",
             "--ak",
             "upstream=" + upstream,
             "--n-attempts",

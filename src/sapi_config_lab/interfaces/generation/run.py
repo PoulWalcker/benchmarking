@@ -17,8 +17,8 @@ import tempfile
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.core.scenarios import EXPANSION_SCENARIOS, EXTENSION_SCENARIOS, select_scenarios
 from sapi_config_lab.core.host import harbor_command
-from sapi_config_lab.experiments.generation.common import fingerprints, prepare_tasks, summarize_trials, write_json
-from sapi_config_lab.experiments.expansion import (
+from sapi_config_lab.interfaces.generation.common import fingerprints, prepare_tasks, summarize_trials, write_json
+from sapi_config_lab.interfaces.expansion import (
     ExpansionSeries,
     RefinementSeries,
     fresh_case_overlay,
@@ -146,7 +146,7 @@ def main(argv: list[str] | None = None):
         scenarios = tuple(select_scenarios(tuple(args.scenario) if args.scenario else None))
         if "daily-digest" in scenarios:
             parser.error(
-                "daily-digest requires sapi_config_lab.experiments.lifecycle_run and its 1+2+6 admission policy"
+                "daily-digest requires sapi_config_lab.interfaces.lifecycle_run and its 1+2+6 admission policy"
             )
     except ValueError as error:
         parser.error(str(error))
@@ -213,7 +213,7 @@ def main(argv: list[str] | None = None):
         print(f"Control suite first; reports: {output}", flush=True)
         with (output / "control.log").open("w") as log:
             control = subprocess.run(
-                [sys.executable, "-m", "sapi_config_lab.experiments.harbor", "--report-dir", str(output / "control")]
+                [sys.executable, "-m", "sapi_config_lab.interfaces.harbor", "--report-dir", str(output / "control")]
                 + [arg for scenario in scenarios for arg in ("--scenario", scenario)],
                 cwd=ROOT,
                 stdout=log,
@@ -259,7 +259,7 @@ def main(argv: list[str] | None = None):
             "--path",
             str(staging / "tasks"),
             "--agent",
-            "sapi_config_lab.experiments.generation.agent:WrapperYamlAgent",
+            "sapi_config_lab.interfaces.generation.agent:WrapperYamlAgent",
             "--ak",
             "upstream=" + args.upstream,
             "--n-attempts",

@@ -6,8 +6,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from sapi_config_lab.experiments.generation.common import ROOT, audit_stderr, prepare_tasks, summarize_trials
-from sapi_config_lab.experiments.tasks import SCENARIOS, stage_tasks
+from sapi_config_lab.interfaces.generation.common import ROOT, audit_stderr, prepare_tasks, summarize_trials
+from sapi_config_lab.interfaces.tasks import SCENARIOS, stage_tasks
 
 
 class GenerationTests(unittest.TestCase):

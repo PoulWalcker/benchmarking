@@ -14,18 +14,18 @@ from sapi_config_lab.core.contracts import CompileOptions, WorkflowBackend
 # Commands dispatched by importing a module and calling its main(). The four
 # remaining names are handled inline below.
 MODULES = {
-    "harbor": "experiments.harbor",
-    "benchmark": "experiments.checkout",
-    "benchmark-series": "experiments.benchmark_series",
-    "benchmark-calibrate": "experiments.judge_calibration",
-    "live": "experiments.live",
-    "generate": "experiments.generation.run",
+    "harbor": "interfaces.harbor",
+    "benchmark": "interfaces.checkout",
+    "benchmark-series": "interfaces.benchmark_series",
+    "benchmark-calibrate": "interfaces.judge_calibration",
+    "live": "interfaces.live",
+    "generate": "interfaces.generation.run",
     "bridge": "runtime.agency",
-    "transport": "experiments.transport",
-    "ui": "experiments.ui",
-    "review-export": "experiments.review_export",
+    "transport": "interfaces.transport",
+    "ui": "interfaces.ui",
+    "review-export": "interfaces.review_export",
     "lifecycle": "runtime.lifecycle",
-    "checkout-worker": "experiments.checkout_worker",
+    "checkout-worker": "interfaces.checkout_worker",
 }
 
 # What a person types at a normal checkout.
@@ -123,7 +123,7 @@ def build_command(argv: list[str], *, backend: WorkflowBackend | None = None) ->
 
 
 def package_tasks_command(argv: list[str]) -> int:
-    from sapi_config_lab.experiments.tasks import stage_tasks
+    from sapi_config_lab.interfaces.tasks import stage_tasks
 
     options = argparse.ArgumentParser(description="Assemble disposable Harbor task packages.")
     options.add_argument("destination", type=Path)

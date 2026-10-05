@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.experiments.generalization import GeneralizationSeries, TASKS, author, fresh_cases, stage
+from sapi_config_lab.interfaces.generalization import GeneralizationSeries, TASKS, author, fresh_cases, stage
 from sapi_config_lab.core.scenarios import SCENARIOS
 
 
@@ -15,9 +15,7 @@ class GeneralizationExperimentTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
         self.addCleanup(self.temporary.cleanup)
-        self.manifest = patch(
-            "sapi_config_lab.experiments.expansion.source_manifest", return_value={"frozen": "source"}
-        )
+        self.manifest = patch("sapi_config_lab.interfaces.expansion.source_manifest", return_value={"frozen": "source"})
         self.manifest.start()
         self.addCleanup(self.manifest.stop)
 
@@ -53,10 +51,10 @@ class GeneralizationExperimentTests(unittest.TestCase):
         series = GeneralizationSeries(self.root / "series")
         with (
             patch(
-                "sapi_config_lab.experiments.generalization.controls", side_effect=ValueError("native control failed")
+                "sapi_config_lab.interfaces.generalization.controls", side_effect=ValueError("native control failed")
             ),
-            patch("sapi_config_lab.experiments.generalization.command") as dispatch,
-            patch("sapi_config_lab.experiments.generalization.source_manifest", return_value={"frozen": "source"}),
+            patch("sapi_config_lab.interfaces.generalization.command") as dispatch,
+            patch("sapi_config_lab.interfaces.generalization.source_manifest", return_value={"frozen": "source"}),
         ):
             report = author(series, TASKS[0], image="lab:test", upstream="http://127.0.0.1:8765/run")
         self.assertEqual(report["status"], "failed")
