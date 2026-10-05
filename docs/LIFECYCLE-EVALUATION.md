@@ -15,7 +15,7 @@ The total ceiling is **9 wrapper attempts: 1 authoring + 8 runtime/rebuild**. Ce
 First build the isolated lab image from the frozen source tree, following `infra/Dockerfile`. On the host, run:
 
 ```sh
-python -m sapi_config_lab.experiments.lifecycle_run --series-dir /absolute/new-series author \
+python -m sapi_config_lab.interfaces.lifecycle_run --series-dir /absolute/new-series author \
   --upstream http://127.0.0.1:8765/run --image sapi-config-lab-n8n:2.41.5
 ```
 
@@ -24,9 +24,9 @@ Before the paid call, the command pins the local image ID and runs fresh native 
 Copy the complete frozen source tree and series directory into an isolated lab container; point `PYTHONPATH` and `SAPI_LAB_ROOT` at that copied tree. Preserve the directory between commands. No user n8n data or services are needed. Inside that container, run serially:
 
 ```sh
-python -m sapi_config_lab.experiments.lifecycle_run --series-dir /probe/series live \
+python -m sapi_config_lab.interfaces.lifecycle_run --series-dir /probe/series live \
   --phase authored --upstream http://host.docker.internal:8765/run --cron-delay-seconds 180
-python -m sapi_config_lab.experiments.lifecycle_run --series-dir /probe/series live \
+python -m sapi_config_lab.interfaces.lifecycle_run --series-dir /probe/series live \
   --phase mutation --upstream http://host.docker.internal:8765/run --cron-delay-seconds 900
 ```
 

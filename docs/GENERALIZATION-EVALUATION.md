@@ -22,7 +22,7 @@ The immutable series has **4 authoring attempts and at most 14 runtime wrapper a
 Use the same absolute series directory on the host and inside the isolated container because the reused admission ledger retains absolute report paths. For example, choose a new `/private/tmp/sapi-generalization-UNIQUE` directory. Build the isolated lab image from the frozen source, then run on the host:
 
 ```sh
-python -m sapi_config_lab.experiments.generalization \
+python -m sapi_config_lab.interfaces.generalization \
   --series-dir /private/tmp/sapi-generalization-UNIQUE \
   --scenario billing-bulletin-packet --phase author \
   --upstream http://127.0.0.1:8765/run --image sapi-config-lab-n8n:2.41.5
@@ -31,7 +31,7 @@ python -m sapi_config_lab.experiments.generalization \
 Copy the complete frozen source and series directory into the isolated lab container, retaining that exact absolute series path. Set `PYTHONPATH` and `SAPI_LAB_ROOT` to the copied source. Run inside the container:
 
 ```sh
-python -m sapi_config_lab.experiments.generalization \
+python -m sapi_config_lab.interfaces.generalization \
   --series-dir /private/tmp/sapi-generalization-UNIQUE \
   --scenario billing-bulletin-packet --phase live \
   --upstream http://host.docker.internal:8765/run
