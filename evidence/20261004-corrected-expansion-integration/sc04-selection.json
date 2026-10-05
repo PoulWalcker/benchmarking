@@ -1,0 +1,25 @@
+{
+  "schema": "sapi-lab-expansion-selection/v1",
+  "experiment_kind": "bounded_expansion",
+  "source_report": {
+    "path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc04-generation/report.json",
+    "sha256": "59a82605bd02de4636b0beb4af5291681928b4456c319752ee05325fa16c0433"
+  },
+  "frozen_core_sha256": "265d4fd30ed46028acaf898c3f168d6bea0a732e926d80659ae4fbd5d1850f5b",
+  "entries": [
+    {
+      "scenario": "priority-support-brief",
+      "source_trial": "priority-support-brief__8nKfTih",
+      "source_yaml_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc04-generation/jobs/generated/priority-support-brief__8nKfTih/agent/submission.yaml",
+      "source_yaml_sha256": "4542af50e2ea3891c5f4272123787ac61bc1165eb942e9e755e74527754f16ad",
+      "cases_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc04-generation/task-packages/priority-support-brief/tests/cases.json",
+      "cases_sha256": "283201e633c258654cc9c68152126c18fd4b8edb18fe962a4237ecf22a534a03",
+      "provenance": {
+        "agent/generation.json": "0ca3867bafae46ba20e0221115ef046fbbea0e729cb06f06b2026b53472fdf67",
+        "agent/prompt.txt": "81e4faa2b71ebea4c02a4f7b2f29995ee70c16f8364425ee0c77eb32ce3b3ef6",
+        "result.json": "836567d2754c2a5f3f48caedd37193cf50a6df52b0da51a1bc8baa531c803abd",
+        "verifier/report.json": "7a0ca2b1a46980ff1fca47a38900a41edcae07cf049640157f81beef407c7227"
+      }
+    }
+  ]
+}

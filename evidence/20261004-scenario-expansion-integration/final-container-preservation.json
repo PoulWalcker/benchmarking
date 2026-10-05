@@ -1,0 +1,103 @@
+{
+  "containers": [
+    {
+      "id": "871150d79e0f3142208fc753888cbc82230aa25cce93ffc9ea4c3a369ca5383a",
+      "name": "/vip-test-postgres",
+      "identity_unchanged": true,
+      "config_unchanged": true,
+      "state_unchanged": true,
+      "mount_set_unchanged": true
+    },
+    {
+      "id": "41b6b73730537e3e44a44b9aeb8d756cc2a3f5641be3d71013207764d1792eae",
+      "name": "/n8n-runners-1",
+      "identity_unchanged": true,
+      "config_unchanged": true,
+      "state_unchanged": true,
+      "mount_set_unchanged": true
+    },
+    {
+      "id": "c7aac24dc5ffe42c56446eb2af2fa30db6729713a7dee7646ea52072797bb78f",
+      "name": "/n8n-n8n-1",
+      "identity_unchanged": true,
+      "config_unchanged": true,
+      "state_unchanged": true,
+      "mount_set_unchanged": true
+    },
+    {
+      "id": "5d2c803770f2f0a8ea86a02bcc2e6c5df468c08855760117683894a20711f161",
+      "name": "/n8n-sandbox-runner-1-1",
+      "identity_unchanged": true,
+      "config_unchanged": true,
+      "state_unchanged": true,
+      "mount_set_unchanged": true
+    },
+    {
+      "id": "8c5b58e634415e400ac38d34848af92db929f04671a5b671f99cdf864ab3ac4f",
+      "name": "/n8n-sandbox-api-1",
+      "identity_unchanged": true,
+      "config_unchanged": true,
+      "state_unchanged": true,
+      "mount_set_unchanged": true
+    },
+    {
+      "id": "8b2de42778a3f258e4edfc2cf407f11fa988151d826c644776ad73643215005a",
+      "name": "/n8n-sandbox-certs-1",
+      "identity_unchanged": true,
+      "config_unchanged": true,
+      "state_unchanged": true,
+      "mount_set_unchanged": true
+    },
+    {
+      "id": "53ff8901c495a9b273a7e2d4e3b0dc918a219381f880c44fb944d839a70b21b1",
+      "name": "/n8n-searxng-1",
+      "identity_unchanged": true,
+      "config_unchanged": true,
+      "state_unchanged": true,
+      "mount_set_unchanged": true
+    },
+    {
+      "id": "9a8cb8cee5217e41fd3b4ae1d1738dce56bf23e6c4278b565599bde7d561d58d",
+      "name": "/m6adminf552-loyalty-consumer",
+      "identity_unchanged": true,
+      "config_unchanged": true,
+      "state_unchanged": true,
+      "mount_set_unchanged": true
+    },
+    {
+      "id": "434c08115f35b8f8f733f58f1c1cde67533c34d7d2623637417efe9083a89ae4",
+      "name": "/m6adminf552-loyalty-scheduler",
+      "identity_unchanged": true,
+      "config_unchanged": true,
+      "state_unchanged": true,
+      "mount_set_unchanged": true
+    },
+    {
+      "id": "8bd5bdb5d155f067703890a293a0df9f5a74770a056758dac6af093efed074be",
+      "name": "/m6adminf552-loyalty-api",
+      "identity_unchanged": true,
+      "config_unchanged": true,
+      "state_unchanged": true,
+      "mount_set_unchanged": true
+    },
+    {
+      "id": "f8357f8d1f8662c7ad375eef1abd0ca885f0ddf37cb1540a4d05f92b250a053d",
+      "name": "/m6adminf552-redis-1",
+      "identity_unchanged": true,
+      "config_unchanged": true,
+      "state_unchanged": true,
+      "mount_set_unchanged": true
+    },
+    {
+      "id": "b8c9929ddebe9381cd0bc0a4e93a6691a7d3f284caf405ee7e81d4024f4ef89f",
+      "name": "/m6adminf552-kafka-1",
+      "identity_unchanged": true,
+      "config_unchanged": true,
+      "state_unchanged": true,
+      "mount_set_unchanged": true
+    }
+  ],
+  "additional_container_ids": [],
+  "all_original_metadata_preserved": true,
+  "running_originals_at_baseline": 5
+}

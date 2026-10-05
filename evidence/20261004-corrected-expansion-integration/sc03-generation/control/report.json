@@ -1,0 +1,1249 @@
+{
+  "schema": "sapi-lab-harbor/v1",
+  "status": "passed",
+  "mode": "stub",
+  "started_at": "2026-10-04T16:51:02.582157+00:00",
+  "n8n_version": "2.41.5",
+  "harbor_version": "0.21.0",
+  "host_environment": {
+    "python": "3.14.8",
+    "python_implementation": "cpython",
+    "platform": "darwin",
+    "machine": "arm64",
+    "harbor": "0.21.0",
+    "pyyaml": "6.0.3"
+  },
+  "image": "sapi-config-lab-n8n:2.41.5",
+  "checks": [
+    {
+      "name": "local_tests",
+      "passed": true,
+      "exit_code": 0
+    },
+    {
+      "name": "real_n8n_transport",
+      "passed": true
+    },
+    {
+      "name": "harbor_oracle",
+      "passed": true
+    },
+    {
+      "name": "harbor_nop",
+      "passed": true
+    }
+  ],
+  "scenarios": [
+    "bulletin-market-brief"
+  ],
+  "oracle": {
+    "passed": true,
+    "harbor_exit_code": 0,
+    "command": [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-lab-harbor-nzj0jbtf/tasks",
+      "--agent",
+      "oracle",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-lab-harbor-nzj0jbtf/jobs",
+      "--job-name",
+      "oracle",
+      "--force-build"
+    ],
+    "trials": [
+      {
+        "task_name": "bulletin-market-brief",
+        "rewards": {
+          "reward": 1.0
+        },
+        "exception": null,
+        "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-generation/control/jobs/oracle/bulletin-market-brief__ucb6QC2/result.json",
+        "acceptance": {
+          "scenario": "bulletin-market-brief",
+          "mode": "stub",
+          "passed": true,
+          "report_schema": "sapi-lab-verification/v1",
+          "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+          "cases": [
+            {
+              "name": "base-bulletins",
+              "kind": "positive",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "29498b30ac954a11",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/cases/base-bulletins",
+              "deadline_seconds": 120,
+              "config_sha256": "751061fa4a44e9e9796ee625914fc9e6522609c295919e1622cbe793585d30e1",
+              "execution": {
+                "status": "success",
+                "succeeded": true,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "output_verified": true,
+              "operation_count": 7,
+              "llm_mode": "stub",
+              "n8n_node_count": 12,
+              "engine_provenance_verified": true,
+              "acceptance": {
+                "status": "accepted",
+                "passed": true
+              },
+              "verifier_corruptions_rejected": [
+                "wrong-final-output",
+                "output-without-real-result-node",
+                "falsified-step-trace"
+              ],
+              "output": {
+                "digest": {
+                  "mode": "preview",
+                  "text": "Offline inventory: The product supports offline inventory.\nCSV export: The product supports CSV export.",
+                  "article_ids": [
+                    "BL-1",
+                    "BL-2"
+                  ]
+                },
+                "brief": {
+                  "report": "Product: Offline inventory: The product supports offline inventory.\nCSV export: The product supports CSV export.\n\nMarketing: The service targets rural cooperatives through printed catalogues.",
+                  "evidence": [
+                    "Offline inventory: The product supports offline inventory.\nCSV export: The product supports CSV export.",
+                    "The service targets rural cooperatives through printed catalogues."
+                  ]
+                }
+              }
+            },
+            {
+              "name": "alternate-bulletins",
+              "kind": "positive",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "562a9f7cd7074878",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/cases/alternate-bulletins",
+              "deadline_seconds": 120,
+              "config_sha256": "5d7917a28deaec0a1595c29d462f73a0431e3f5cc63f31f36e9f304fab423843",
+              "execution": {
+                "status": "success",
+                "succeeded": true,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "output_verified": true,
+              "operation_count": 7,
+              "llm_mode": "stub",
+              "n8n_node_count": 12,
+              "engine_provenance_verified": true,
+              "acceptance": {
+                "status": "accepted",
+                "passed": true
+              },
+              "verifier_corruptions_rejected": [
+                "wrong-final-output",
+                "output-without-real-result-node",
+                "falsified-step-trace"
+              ],
+              "output": {
+                "digest": {
+                  "mode": "preview",
+                  "text": "Appointment booking: The product supports appointment booking.\nSMS reminders: The product supports SMS reminders.",
+                  "article_ids": [
+                    "ALT-7",
+                    "ALT-9"
+                  ]
+                },
+                "brief": {
+                  "report": "Product: Appointment booking: The product supports appointment booking.\nSMS reminders: The product supports SMS reminders.\n\nMarketing: The service targets dental clinics through radio adverts.",
+                  "evidence": [
+                    "Appointment booking: The product supports appointment booking.\nSMS reminders: The product supports SMS reminders.",
+                    "The service targets dental clinics through radio adverts."
+                  ]
+                }
+              }
+            },
+            {
+              "name": "reordered-bulletins",
+              "kind": "positive",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "acd8a87ce3d44bbe",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/cases/reordered-bulletins",
+              "deadline_seconds": 120,
+              "config_sha256": "8c997c012f2e7012212f7f1e87d2231ec81b5b861b6c47b654f0550962bdbde0",
+              "execution": {
+                "status": "success",
+                "succeeded": true,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "output_verified": true,
+              "operation_count": 7,
+              "llm_mode": "stub",
+              "n8n_node_count": 12,
+              "engine_provenance_verified": true,
+              "acceptance": {
+                "status": "accepted",
+                "passed": true
+              },
+              "verifier_corruptions_rejected": [
+                "wrong-final-output",
+                "output-without-real-result-node",
+                "falsified-step-trace"
+              ],
+              "output": {
+                "digest": {
+                  "mode": "preview",
+                  "text": "CSV export: The product supports CSV export.\nOffline inventory: The product supports offline inventory.",
+                  "article_ids": [
+                    "BL-2",
+                    "BL-1"
+                  ]
+                },
+                "brief": {
+                  "report": "Product: CSV export: The product supports CSV export.\nOffline inventory: The product supports offline inventory.\n\nMarketing: The service targets rural cooperatives through printed catalogues.",
+                  "evidence": [
+                    "CSV export: The product supports CSV export.\nOffline inventory: The product supports offline inventory.",
+                    "The service targets rural cooperatives through printed catalogues."
+                  ]
+                }
+              }
+            },
+            {
+              "name": "replaced-capability",
+              "kind": "positive",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "720fb2767a9140a5",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/cases/replaced-capability",
+              "deadline_seconds": 120,
+              "config_sha256": "d26e5831d9b10b8a5a52fb0eb380c6ab0334cc9594cbdf371dafb16b71814238",
+              "execution": {
+                "status": "success",
+                "succeeded": true,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "output_verified": true,
+              "operation_count": 7,
+              "llm_mode": "stub",
+              "n8n_node_count": 12,
+              "engine_provenance_verified": true,
+              "acceptance": {
+                "status": "accepted",
+                "passed": true
+              },
+              "verifier_corruptions_rejected": [
+                "wrong-final-output",
+                "output-without-real-result-node",
+                "falsified-step-trace"
+              ],
+              "output": {
+                "digest": {
+                  "mode": "preview",
+                  "text": "Offline inventory: The product supports offline inventory.\nBarcode scanning: The product supports barcode scanning.",
+                  "article_ids": [
+                    "BL-1",
+                    "BL-NEW"
+                  ]
+                },
+                "brief": {
+                  "report": "Product: Offline inventory: The product supports offline inventory.\nBarcode scanning: The product supports barcode scanning.\n\nMarketing: The service targets rural cooperatives through printed catalogues.",
+                  "evidence": [
+                    "Offline inventory: The product supports offline inventory.\nBarcode scanning: The product supports barcode scanning.",
+                    "The service targets rural cooperatives through printed catalogues."
+                  ]
+                }
+              }
+            },
+            {
+              "name": "changed-marketing",
+              "kind": "positive",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "b2a83b55340f4481",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/cases/changed-marketing",
+              "deadline_seconds": 120,
+              "config_sha256": "8affa12d1fecb186f882a1cf23a3698ace0da3447cc7593fade99b9ed43c106a",
+              "execution": {
+                "status": "success",
+                "succeeded": true,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "output_verified": true,
+              "operation_count": 7,
+              "llm_mode": "stub",
+              "n8n_node_count": 12,
+              "engine_provenance_verified": true,
+              "acceptance": {
+                "status": "accepted",
+                "passed": true
+              },
+              "verifier_corruptions_rejected": [
+                "wrong-final-output",
+                "output-without-real-result-node",
+                "falsified-step-trace"
+              ],
+              "output": {
+                "digest": {
+                  "mode": "preview",
+                  "text": "Offline inventory: The product supports offline inventory.\nCSV export: The product supports CSV export.",
+                  "article_ids": [
+                    "BL-1",
+                    "BL-2"
+                  ]
+                },
+                "brief": {
+                  "report": "Product: Offline inventory: The product supports offline inventory.\nCSV export: The product supports CSV export.\n\nMarketing: The service targets dental clinics through radio adverts.",
+                  "evidence": [
+                    "Offline inventory: The product supports offline inventory.\nCSV export: The product supports CSV export.",
+                    "The service targets dental clinics through radio adverts."
+                  ]
+                }
+              }
+            },
+            {
+              "name": "empty-articles",
+              "kind": "negative",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "9f9ad9a026d34cef",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/cases/empty-articles",
+              "deadline_seconds": 120,
+              "config_sha256": "2e874877e17a4a1c0cc1cd66e8c0d046aa0cc31e2baf8f54e9a82b9eb5a72394",
+              "execution": {
+                "status": "error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Expected invalid input rejection"
+              },
+              "expected_error": "No articles"
+            },
+            {
+              "name": "duplicate-articles",
+              "kind": "negative",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "8c698c0b3b364efe",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/cases/duplicate-articles",
+              "deadline_seconds": 120,
+              "config_sha256": "5da6a895f4c5d687283ea7ffe1c64ef40af56ee74baf502a592e3a81418c5ac1",
+              "execution": {
+                "status": "error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Expected invalid input rejection"
+              },
+              "expected_error": "Duplicate article ID"
+            },
+            {
+              "name": "malformed-article-title",
+              "kind": "negative",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "db83914f02154f06",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/cases/malformed-article-title",
+              "deadline_seconds": 120,
+              "config_sha256": "acd1d77aa1e703f7a7f84c35cb0ceffcd3a983a20fb8d3cd271e26d0112e3f4f",
+              "execution": {
+                "status": "error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Expected invalid input rejection"
+              },
+              "expected_error": "Schema violation at inputs.articles[0].title"
+            },
+            {
+              "name": "empty-marketing",
+              "kind": "negative",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "6ba9a2a8e9a74b21",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/cases/empty-marketing",
+              "deadline_seconds": 120,
+              "config_sha256": "a6984f7c9c777c7b976736b1d3cfe0cad09189ca002974548ed7c8d69987a680",
+              "execution": {
+                "status": "error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Expected invalid input rejection"
+              },
+              "expected_error": "Missing marketing material"
+            },
+            {
+              "name": "wrong-result-in-generated-json",
+              "kind": "mutated-generated-workflow",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "290e8ab7dc5b4345",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/cases/mutated-generated-result",
+              "execution": {
+                "status": "success",
+                "succeeded": true,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "rejection": "Result differs from submitted output lineage (keys)",
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Result differs from submitted output lineage (keys)"
+              }
+            },
+            {
+              "name": "unknown-operation",
+              "kind": "invalid-definition",
+              "passed": true,
+              "artifacts": "/logs/verifier/cases/invalid-yaml-unknown-operation",
+              "execution": {
+                "status": "compile_error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": null
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "not_executed",
+                "provider_call_count": 0
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Definition rejected before execution"
+              }
+            },
+            {
+              "name": "cycle",
+              "kind": "invalid-definition",
+              "passed": true,
+              "artifacts": "/logs/verifier/cases/invalid-yaml-cycle",
+              "execution": {
+                "status": "compile_error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": null
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "not_executed",
+                "provider_call_count": 0
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Definition rejected before execution"
+              }
+            },
+            {
+              "name": "unsupported-required-parallel",
+              "kind": "invalid-definition",
+              "passed": true,
+              "artifacts": "/logs/verifier/cases/invalid-yaml-unsupported-required-parallel",
+              "execution": {
+                "status": "compile_error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": null
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "not_executed",
+                "provider_call_count": 0
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Definition rejected before execution"
+              }
+            }
+          ],
+          "limits": [
+            "Checks the supported static sapi-lab/v0 profile only.",
+            "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+          ],
+          "submission_sha256": "6b01ffb55e345ab7bbb7c976a99da3f7929fe123f27bddd7110fd8f331e312a3",
+          "config_transformations": [
+            "workflow.inputs replaced by case fixture"
+          ]
+        }
+      }
+    ]
+  },
+  "nop": {
+    "passed": true,
+    "harbor_exit_code": 0,
+    "command": [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-lab-harbor-nzj0jbtf/tasks",
+      "--agent",
+      "nop",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-lab-harbor-nzj0jbtf/jobs",
+      "--job-name",
+      "nop",
+      "--force-build"
+    ],
+    "trials": [
+      {
+        "task_name": "bulletin-market-brief",
+        "rewards": {
+          "reward": 0.0
+        },
+        "exception": null,
+        "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-generation/control/jobs/nop/bulletin-market-brief__DMgqtkL/result.json",
+        "acceptance": {
+          "scenario": "bulletin-market-brief",
+          "mode": "stub",
+          "passed": false,
+          "report_schema": "sapi-lab-verification/v1",
+          "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+          "cases": [],
+          "limits": [
+            "Checks the supported static sapi-lab/v0 profile only.",
+            "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+          ],
+          "error": "[Errno 2] No such file or directory: '/app/submission/config.yaml'",
+          "error_type": "FileNotFoundError"
+        }
+      }
+    ]
+  },
+  "source_manifest": "source-manifest.json",
+  "docker_version": "29.4.0",
+  "image_id": "sha256:91fb223b6b04578857d4dd4458780f15a5bb16b15838c196f1c079a06cf96cdc",
+  "transport": {
+    "passed": true,
+    "cases": [
+      {
+        "case": "valid",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "logical_status": true,
+          "result_data": true
+        },
+        "workflow_id": "3986d54d97774b68",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "success",
+        "error": null
+      },
+      {
+        "case": "guard_false",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "logical_status": true,
+          "result_data": true,
+          "http_node_not_executed": true
+        },
+        "workflow_id": "ae95812a50884469",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 0,
+        "status": "success",
+        "error": null
+      },
+      {
+        "case": "guard_false_invalid_inputs",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "logical_status": true,
+          "result_data": true,
+          "http_node_not_executed": true
+        },
+        "workflow_id": "137aea006c17474e",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 0,
+        "status": "success",
+        "error": null
+      },
+      {
+        "case": "invalid_inputs",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "929b027c8ce640c1",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 0,
+        "status": "error",
+        "error": {
+          "level": "info",
+          "shouldReport": false,
+          "description": null,
+          "tags": {},
+          "name": "WrappedExecutionError",
+          "lineNumber": 2,
+          "message": "Schema violation at inputs.ticket.days_overdue: minimum [line 2]",
+          "stack": "WrappedExecutionError: Schema violation at inputs.ticket.days_overdue: minimum [line 2]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "wrong_invocation",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "445aabe0aeaa4f04",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "info",
+          "shouldReport": false,
+          "description": null,
+          "tags": {},
+          "name": "WrappedExecutionError",
+          "lineNumber": 2,
+          "message": "Agency invocation ID mismatch [line 2]",
+          "stack": "WrappedExecutionError: Agency invocation ID mismatch [line 2]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "wrong_schema",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "b04289028eb44124",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "info",
+          "shouldReport": false,
+          "description": null,
+          "tags": {},
+          "name": "WrappedExecutionError",
+          "lineNumber": 2,
+          "message": "Schema violation at output.priority: enum [line 2]",
+          "stack": "WrappedExecutionError: Schema violation at output.priority: enum [line 2]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "failed_status",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "239dac783e97425b",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "info",
+          "shouldReport": false,
+          "description": null,
+          "tags": {},
+          "name": "WrappedExecutionError",
+          "lineNumber": 2,
+          "message": "Agency did not complete [line 2]",
+          "stack": "WrappedExecutionError: Agency did not complete [line 2]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "extra_field",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "05cca492708946ed",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "info",
+          "shouldReport": false,
+          "description": null,
+          "tags": {},
+          "name": "WrappedExecutionError",
+          "lineNumber": 2,
+          "message": "Unexpected Agency response fields [line 2]",
+          "stack": "WrappedExecutionError: Unexpected Agency response fields [line 2]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "malformed_json",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "76181127b079443a",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "warning",
+          "shouldReport": true,
+          "tags": {},
+          "timestamp": 1791132708024,
+          "context": {
+            "itemIndex": 0
+          },
+          "functionality": "regular",
+          "name": "NodeOperationError",
+          "node": {
+            "id": "6918b03a-ebcf-512e-b34a-cc61023520e6",
+            "name": "Agency classify",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "parameters": {
+              "curlImport": "",
+              "method": "POST",
+              "url": "http://127.0.0.1:34791/v1/agency/execute",
+              "authentication": "none",
+              "provideSslCertificates": false,
+              "sendQuery": false,
+              "sendHeaders": false,
+              "sendBody": true,
+              "contentType": "json",
+              "specifyBody": "json",
+              "jsonBody": "={{ JSON.stringify($json.request) }}",
+              "options": {
+                "redirect": {
+                  "redirect": {
+                    "followRedirects": false
+                  }
+                },
+                "response": {
+                  "response": {
+                    "fullResponse": false,
+                    "neverError": false,
+                    "responseFormat": "json"
+                  }
+                },
+                "timeout": 30000
+              },
+              "infoMessage": ""
+            },
+            "position": [
+              910,
+              -70
+            ],
+            "notes": "Live Agency transport. HTTP/status/schema errors fail the run; no retries."
+          },
+          "messages": [],
+          "message": "Response body is not valid JSON. Change \"Response Format\" to \"Text\"",
+          "stack": "NodeOperationError: Response body is not valid JSON. Change \"Response Format\" to \"Text\"\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/HttpRequest/V3/HttpRequestV3.node.ts:1133:17)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "http_error",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "02628bed66804140",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "warning",
+          "shouldReport": true,
+          "description": "503 - {\"invocation_id\":\"agency-transport-probe/r1/classify/02628bed66804140/1\",\"status\":\"completed\",\"output\":{\"category\":\"delivery\",\"priority\":\"high\"}}",
+          "tags": {},
+          "timestamp": 1791132711820,
+          "context": {
+            "itemIndex": 0,
+            "request": {
+              "body": {
+                "invocation_id": "agency-transport-probe/r1/classify/02628bed66804140/1",
+                "operation": "ticket.classify",
+                "actor": null,
+                "inputs": {
+                  "ticket": {
+                    "id": "T-17",
+                    "text": "Order A7842 is three days late. Please help.",
+                    "days_overdue": 3
+                  }
+                }
+              },
+              "headers": {
+                "accept": "application/json,text/*;q=0.99",
+                "content-type": "application/json"
+              },
+              "method": "POST",
+              "uri": "http://127.0.0.1:34791/v1/agency/execute",
+              "gzip": true,
+              "rejectUnauthorized": true,
+              "followRedirect": false,
+              "resolveWithFullResponse": true,
+              "sendCredentialsOnCrossOriginRedirect": true,
+              "followAllRedirects": false,
+              "timeout": 30000,
+              "json": true
+            }
+          },
+          "functionality": "regular",
+          "name": "NodeApiError",
+          "node": {
+            "id": "6918b03a-ebcf-512e-b34a-cc61023520e6",
+            "name": "Agency classify",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "parameters": {
+              "curlImport": "",
+              "method": "POST",
+              "url": "http://127.0.0.1:34791/v1/agency/execute",
+              "authentication": "none",
+              "provideSslCertificates": false,
+              "sendQuery": false,
+              "sendHeaders": false,
+              "sendBody": true,
+              "contentType": "json",
+              "specifyBody": "json",
+              "jsonBody": "={{ JSON.stringify($json.request) }}",
+              "options": {
+                "redirect": {
+                  "redirect": {
+                    "followRedirects": false
+                  }
+                },
+                "response": {
+                  "response": {
+                    "fullResponse": false,
+                    "neverError": false,
+                    "responseFormat": "json"
+                  }
+                },
+                "timeout": 30000
+              },
+              "infoMessage": ""
+            },
+            "position": [
+              910,
+              -70
+            ],
+            "notes": "Live Agency transport. HTTP/status/schema errors fail the run; no retries."
+          },
+          "messages": [
+            "503 - {\"invocation_id\":\"agency-transport-probe/r1/classify/02628bed66804140/1\",\"status\":\"completed\",\"output\":{\"category\":\"delivery\",\"priority\":\"high\"}}"
+          ],
+          "httpCode": "503",
+          "message": "Service unavailable - try again later or consider setting this node to retry automatically (in the node settings)",
+          "stack": "NodeApiError: Service unavailable - try again later or consider setting this node to retry automatically (in the node settings)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/HttpRequest/V3/HttpRequestV3.node.ts:892:16)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "array_response",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "845a22205f7c4ee8",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "info",
+          "shouldReport": false,
+          "description": null,
+          "tags": {},
+          "name": "WrappedExecutionError",
+          "lineNumber": 2,
+          "message": "Agency must return exactly one response item [line 2]",
+          "stack": "WrappedExecutionError: Agency must return exactly one response item [line 2]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "timeout",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "c4aa9e7b2f844e6c",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "warning",
+          "shouldReport": true,
+          "tags": {},
+          "timestamp": 1791132719257,
+          "context": {
+            "itemIndex": 0,
+            "request": {
+              "body": {
+                "invocation_id": "agency-transport-probe/r1/classify/c4aa9e7b2f844e6c/1",
+                "operation": "ticket.classify",
+                "actor": null,
+                "inputs": {
+                  "ticket": {
+                    "id": "T-17",
+                    "text": "Order A7842 is three days late. Please help.",
+                    "days_overdue": 3
+                  }
+                }
+              },
+              "headers": {
+                "accept": "application/json,text/*;q=0.99",
+                "content-type": "application/json"
+              },
+              "method": "POST",
+              "uri": "http://127.0.0.1:34791/v1/agency/execute",
+              "gzip": true,
+              "rejectUnauthorized": true,
+              "followRedirect": false,
+              "resolveWithFullResponse": true,
+              "sendCredentialsOnCrossOriginRedirect": true,
+              "followAllRedirects": false,
+              "timeout": 200,
+              "json": true
+            }
+          },
+          "functionality": "regular",
+          "name": "NodeApiError",
+          "node": {
+            "id": "6918b03a-ebcf-512e-b34a-cc61023520e6",
+            "name": "Agency classify",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "parameters": {
+              "curlImport": "",
+              "method": "POST",
+              "url": "http://127.0.0.1:34791/v1/agency/execute",
+              "authentication": "none",
+              "provideSslCertificates": false,
+              "sendQuery": false,
+              "sendHeaders": false,
+              "sendBody": true,
+              "contentType": "json",
+              "specifyBody": "json",
+              "jsonBody": "={{ JSON.stringify($json.request) }}",
+              "options": {
+                "redirect": {
+                  "redirect": {
+                    "followRedirects": false
+                  }
+                },
+                "response": {
+                  "response": {
+                    "fullResponse": false,
+                    "neverError": false,
+                    "responseFormat": "json"
+                  }
+                },
+                "timeout": 200
+              },
+              "infoMessage": ""
+            },
+            "position": [
+              910,
+              -70
+            ],
+            "notes": "Live Agency transport. HTTP/status/schema errors fail the run; no retries."
+          },
+          "messages": [
+            "timeout of 200ms exceeded",
+            "timeout of 200ms exceeded"
+          ],
+          "httpCode": "ECONNABORTED",
+          "message": "The connection was aborted, perhaps the server is offline",
+          "stack": "NodeApiError: The connection was aborted, perhaps the server is offline\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/HttpRequest/V3/HttpRequestV3.node.ts:892:16)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      }
+    ],
+    "engine": "real n8n",
+    "llm": "deterministic fake HTTP bridge; no model calls"
+  },
+  "finished_at": "2026-10-04T16:53:22.779937+00:00",
+  "source_unchanged": true
+}

@@ -388,7 +388,7 @@ def main(argv=None) -> int:
                 parser.error("--all is view-only; select one config for --live")
             if not 1 <= args.seconds <= 3600:
                 parser.error("--seconds must be between one second and one hour")
-            state = args.state_dir or workspace_root() / "reports/ui"
+            state = args.state_dir or workspace_root() / "var/ui"
             configs = sorted((workspace_root() / "configs").glob("*.yaml")) if args.all else [args.config]
             evidence = None
             if args.live:

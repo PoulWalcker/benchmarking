@@ -1,0 +1,378 @@
+{
+  "schema": "sapi-lab-live/v1",
+  "mode": "live",
+  "status": "passed",
+  "started_at": "2026-10-04T10:35:39.371492+00:00",
+  "stub_report": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-verified-2/report.json",
+  "n8n_version": "2.41.5",
+  "harbor_version": "0.21.0",
+  "wrapper": "http://127.0.0.1:8765/run",
+  "trials": [
+    {
+      "task_name": "competitor-report",
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-verified-2/live/jobs/live/competitor-report__nBU8QXn/result.json",
+      "acceptance": {
+        "scenario": "competitor-report",
+        "mode": "live",
+        "passed": true,
+        "cases": [
+          {
+            "name": "original-evidence",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "92a3183eaa054501",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/original-evidence",
+            "deadline_seconds": 600,
+            "output_verified": true,
+            "operation_count": 4,
+            "n8n_node_count": 17,
+            "llm_mode": "live",
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace",
+              "missing-analysis-execution",
+              "contentless-report-with-preserved-evidence"
+            ],
+            "output": {
+              "report": "The product supports invoicing, stock tracking, and a public API. Marketing targets small shops through webinars and partner referrals.",
+              "evidence": [
+                "Product has invoicing, stock tracking and a public API.",
+                "Marketing targets small shops using webinars and partner referrals."
+              ]
+            }
+          },
+          {
+            "name": "unseen-source-markers",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "05482f82e52b40b2",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/unseen-source-markers",
+            "deadline_seconds": 600,
+            "output_verified": true,
+            "operation_count": 4,
+            "n8n_node_count": 17,
+            "llm_mode": "live",
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace",
+              "missing-analysis-execution",
+              "contentless-report-with-preserved-evidence"
+            ],
+            "output": {
+              "report": "P-ALPHA-73 supports offline inventory with barcode scanning and CSV export. The target customers are rural cooperatives, reached through printed catalogues.",
+              "evidence": [
+                "P-ALPHA-73: Offline inventory includes barcode scanning and CSV export.",
+                "M-BETA-91: Rural cooperatives hear about the service through printed catalogues."
+              ]
+            }
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ]
+      }
+    },
+    {
+      "task_name": "invoice-total",
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-verified-2/live/jobs/live/invoice-total__LgzaR4W/result.json",
+      "acceptance": {
+        "scenario": "invoice-total",
+        "mode": "live",
+        "passed": true,
+        "cases": [
+          {
+            "name": "original-38000",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "dc452bd9f9f84b0b",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/original-38000",
+            "deadline_seconds": 600,
+            "output_verified": true,
+            "operation_count": 3,
+            "n8n_node_count": 6,
+            "llm_mode": "live",
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "total_minor": 38000,
+              "currency": "AED",
+              "invoice_count": 3
+            }
+          },
+          {
+            "name": "alternate-values-zero",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "a30eb147513e4ffc",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/alternate-values-zero",
+            "deadline_seconds": 600,
+            "output_verified": true,
+            "operation_count": 3,
+            "n8n_node_count": 6,
+            "llm_mode": "live",
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "total_minor": 770,
+              "currency": "EUR",
+              "invoice_count": 4
+            }
+          },
+          {
+            "name": "maximum-safe-total",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "e1d195cddd6b4530",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/maximum-safe-total",
+            "deadline_seconds": 600,
+            "output_verified": true,
+            "operation_count": 3,
+            "n8n_node_count": 6,
+            "llm_mode": "live",
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "total_minor": 9007199254740991,
+              "currency": "USD",
+              "invoice_count": 2
+            }
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ]
+      }
+    },
+    {
+      "task_name": "ticket-routing",
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-verified-2/live/jobs/live/ticket-routing__iJyYCyV/result.json",
+      "acceptance": {
+        "scenario": "ticket-routing",
+        "mode": "live",
+        "passed": true,
+        "cases": [
+          {
+            "name": "high-three-days",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "4871c480f61b49f8",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/high-three-days",
+            "deadline_seconds": 600,
+            "output_verified": true,
+            "operation_count": 4,
+            "n8n_node_count": 11,
+            "llm_mode": "live",
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "ticket_id": "T-17",
+              "action": "escalate",
+              "mode": "draft"
+            }
+          },
+          {
+            "name": "normal-boundary-two",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "0da286675f2f42e7",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/normal-boundary-two",
+            "deadline_seconds": 600,
+            "output_verified": true,
+            "operation_count": 4,
+            "n8n_node_count": 11,
+            "llm_mode": "live",
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "ticket_id": "BOUNDARY-2",
+              "action": "normal_reply",
+              "mode": "draft"
+            }
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ]
+      }
+    }
+  ],
+  "bridge_calls": [
+    {
+      "timestamp_unix": 1791110158.6106062,
+      "duration_seconds": 10.239,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "competitor-report/r1/product/92a3183eaa054501/1",
+      "operation": "research.product",
+      "inputs_sha256": "8f84ed350c9105236b0d58d10f87768c2fac50db0ab98d63d14f7725c141f6e8"
+    },
+    {
+      "timestamp_unix": 1791110169.664903,
+      "duration_seconds": 11.009,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "competitor-report/r1/marketing/92a3183eaa054501/1",
+      "operation": "research.marketing",
+      "inputs_sha256": "29c2dcfb3be01d61d323873895ac22ebd8903994bff5be0d44b5431a39e91691"
+    },
+    {
+      "timestamp_unix": 1791110182.478833,
+      "duration_seconds": 12.738,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "competitor-report/r1/write/92a3183eaa054501/1",
+      "operation": "research.write",
+      "inputs_sha256": "dd498b3c1ddad00397efb003b859986969b4ad2acaa8c6b88f6f938ba2b1b387"
+    },
+    {
+      "timestamp_unix": 1791110198.414926,
+      "duration_seconds": 10.633,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "competitor-report/r1/product/05482f82e52b40b2/1",
+      "operation": "research.product",
+      "inputs_sha256": "735edce001279ca41a94e83550541ba3371a7ee344355dc6bd18243d2728aaed"
+    },
+    {
+      "timestamp_unix": 1791110210.777472,
+      "duration_seconds": 12.312,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "competitor-report/r1/marketing/05482f82e52b40b2/1",
+      "operation": "research.marketing",
+      "inputs_sha256": "ce59a59af96e916caa1af1c8211ac06c01fdbc7cf236ed45961f720dcf2e9d7e"
+    },
+    {
+      "timestamp_unix": 1791110223.0481012,
+      "duration_seconds": 12.209,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "competitor-report/r1/write/05482f82e52b40b2/1",
+      "operation": "research.write",
+      "inputs_sha256": "6b60a8e0a86c5be1f11b2a78166a8b0babbe9db0515d91de2f6b22f32a2099e1"
+    },
+    {
+      "timestamp_unix": 1791110252.10286,
+      "duration_seconds": 9.776,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "ticket-routing/r1/classify/4871c480f61b49f8/1",
+      "operation": "ticket.classify",
+      "inputs_sha256": "d9cb4749544a5d78b7b365ab4aef5940e669f1306d96cc827e024f2abde1b964"
+    },
+    {
+      "timestamp_unix": 1791110265.616077,
+      "duration_seconds": 8.319,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "ticket-routing/r1/classify/0da286675f2f42e7/1",
+      "operation": "ticket.classify",
+      "inputs_sha256": "42c32b33632fda2c32af9d36e21eb6fe398153cf1d4353d7d0235feec42ca608"
+    }
+  ],
+  "limitations": [
+    "No retries, actor memory, cancellation propagation or Sapiens harness.",
+    "Model is inherited from the existing wrapper; stochastic results may vary.",
+    "Natural-language checks cover source evidence and bounded factual anchors, not exhaustive semantic correctness."
+  ],
+  "command": [
+    "/Users/pashvel/.local/bin/harbor",
+    "run",
+    "--path",
+    "/private/tmp/sapi-lab-live-ltoxxyqm/tasks",
+    "--agent",
+    "oracle",
+    "--n-concurrent",
+    "1",
+    "--max-retries",
+    "0",
+    "--jobs-dir",
+    "/private/tmp/sapi-lab-live-ltoxxyqm/jobs",
+    "--job-name",
+    "live",
+    "--verifier-env",
+    "SAPI_LLM_MODE=live",
+    "--verifier-env",
+    "SAPI_BRIDGE_URL=http://host.docker.internal:18765",
+    "--force-build"
+  ],
+  "harbor_exit_code": 0,
+  "audit_matches_n8n_invocations": true,
+  "call_counts": {
+    "ticket.classify": 2,
+    "research.product": 2,
+    "research.marketing": 2,
+    "research.write": 2
+  },
+  "finished_at": "2026-10-04T10:38:27.067032+00:00"
+}

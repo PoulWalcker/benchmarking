@@ -33,7 +33,7 @@ agent read of the live outputs. No Sapiens executor, arbitrary workflow generati
 or team-pilot readiness is established by these bounded results.
 
 The [README evidence table](../README.md#evidence-and-limits) links the individual
-series and usage guides. [Independent agent review](../reports/20261004-open-tasks-integration/INDEPENDENT-REVIEW.md)
+series and usage guides. [Independent agent review](../../evidence/20261004-open-tasks-integration/INDEPENDENT-REVIEW.md)
 separates technical acceptance from prose quality. SC-02's correctly rejected
 support drafts are not accepted customer answers; human review is not claimed.
 For 05, the independent review recomputed the WBS candidate, prompt, source and

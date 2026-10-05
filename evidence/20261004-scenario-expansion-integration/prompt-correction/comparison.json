@@ -1,0 +1,34 @@
+{
+  "generation_calls": 0,
+  "runtime_calls": 0,
+  "changed_rendered_prompts": [
+    "bulletin-market-brief",
+    "priority-support-brief"
+  ],
+  "unchanged_rendered_prompts": [
+    "invoice-total",
+    "ticket-routing",
+    "competitor-report",
+    "dual-ledger-closeout",
+    "support-review-packet"
+  ],
+  "before": {
+    "invoice-total": "ece9cdeafcdf7127ecfee6126ccca4e256a424b2f3ba355b07358277b2af3427",
+    "ticket-routing": "bd61ac2a7f5ad87b63b2640336068012579f660d026db1fe44d3a1a302e6e60f",
+    "competitor-report": "2712cbe1201d2dc841ef14a8e72b53908bf9eb55b4eb8c0ba671e1805be9066b",
+    "dual-ledger-closeout": "b2038ba17dcb798b1c4ae593c5faa489fc2b099a6070cd588697c542e7a41391",
+    "support-review-packet": "c43bf6775f086c9cad1127ae8bb3b74e95b50b0b3d4bfebbc905a3e0fc0dac6a",
+    "bulletin-market-brief": "e4518496b7ed3ffa8ad3dbd66472ebc2c8b6571b8ab2c1d90fd49571efecb90e",
+    "priority-support-brief": "b8d89e7b3e87b467952ab097dd7c4b95e66273393f47c5865ebaa626df2e481e"
+  },
+  "after": {
+    "invoice-total": "ece9cdeafcdf7127ecfee6126ccca4e256a424b2f3ba355b07358277b2af3427",
+    "ticket-routing": "bd61ac2a7f5ad87b63b2640336068012579f660d026db1fe44d3a1a302e6e60f",
+    "competitor-report": "2712cbe1201d2dc841ef14a8e72b53908bf9eb55b4eb8c0ba671e1805be9066b",
+    "dual-ledger-closeout": "b2038ba17dcb798b1c4ae593c5faa489fc2b099a6070cd588697c542e7a41391",
+    "support-review-packet": "c43bf6775f086c9cad1127ae8bb3b74e95b50b0b3d4bfebbc905a3e0fc0dac6a",
+    "bulletin-market-brief": "3a4417f5cfde766899eb1f73b382c21832fb8c97e7c1f6cbc40eefa19b587538",
+    "priority-support-brief": "81e4faa2b71ebea4c02a4f7b2f29995ee70c16f8364425ee0c77eb32ce3b3ef6"
+  },
+  "rendered_from_source_manifest_sha256": "f2aa719789f3dce7f5570cab9f42098edd389858d86011497f19d3e8cb9e9437"
+}

@@ -1,0 +1,971 @@
+{
+  "schema": "sapi-lab-expansion-live/v1",
+  "experiment_kind": "bounded_expansion",
+  "scenario": "bulletin-market-brief",
+  "mode": "live",
+  "status": "passed",
+  "source_manifest": "source-manifest.json",
+  "started_at": "2026-10-04T16:58:37.358898+00:00",
+  "trials": [
+    {
+      "task_name": "bulletin-market-brief",
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-live/jobs/live-bulletin-market-brief-base-bulletins/bulletin-market-brief__9EvUws2/result.json",
+      "acceptance": {
+        "scenario": "bulletin-market-brief",
+        "mode": "live",
+        "passed": true,
+        "report_schema": "sapi-lab-verification/v1",
+        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+        "cases": [
+          {
+            "name": "base-bulletins",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "2835baac84374966",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/base-bulletins",
+            "deadline_seconds": 600,
+            "config_sha256": "6e59e79a65530095accc76a6fd58f56ece28e84f561ce9609abc0aeb0a81e6bf",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "live",
+              "agency_http_call_count": 4,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 7,
+            "llm_mode": "live",
+            "n8n_node_count": 24,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "digest": {
+                "mode": "preview",
+                "text": "The product supports offline inventory and CSV export.",
+                "article_ids": [
+                  "319929BB5149-BL-1",
+                  "319929BB5149-BL-2"
+                ]
+              },
+              "brief": {
+                "report": "The product supports offline inventory and CSV export. The service targets rural cooperatives through printed catalogues.",
+                "evidence": [
+                  "The product supports offline inventory and CSV export.",
+                  "The service targets rural cooperatives through printed catalogues."
+                ]
+              }
+            }
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ],
+        "submission_sha256": "a9e11cbc3c7649c5d2cd6c5824f0bf21dd04c0c24027ff6193779f0f8ac7691b",
+        "config_transformations": [
+          "workflow.inputs replaced by case fixture",
+          "execution.deadline_seconds set to 600"
+        ]
+      }
+    },
+    {
+      "task_name": "bulletin-market-brief",
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-live/jobs/live-bulletin-market-brief-alternate-bulletins/bulletin-market-brief__zF2bD6A/result.json",
+      "acceptance": {
+        "scenario": "bulletin-market-brief",
+        "mode": "live",
+        "passed": true,
+        "report_schema": "sapi-lab-verification/v1",
+        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+        "cases": [
+          {
+            "name": "alternate-bulletins",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "dcd3d1ab840a42af",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/alternate-bulletins",
+            "deadline_seconds": 600,
+            "config_sha256": "c4669160ca7f29346f4dc79b065f974f0ecd0cd0153264f543a972d098573ad8",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "live",
+              "agency_http_call_count": 4,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 7,
+            "llm_mode": "live",
+            "n8n_node_count": 24,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "digest": {
+                "mode": "preview",
+                "text": "The product supports appointment booking and SMS reminders.",
+                "article_ids": [
+                  "319929BB5149-ALT-7",
+                  "319929BB5149-ALT-9"
+                ]
+              },
+              "brief": {
+                "report": "The product supports appointment booking and SMS reminders. The service targets dental clinics through radio adverts.",
+                "evidence": [
+                  "The product supports appointment booking and SMS reminders.",
+                  "The service targets dental clinics through radio adverts."
+                ]
+              }
+            }
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ],
+        "submission_sha256": "a9e11cbc3c7649c5d2cd6c5824f0bf21dd04c0c24027ff6193779f0f8ac7691b",
+        "config_transformations": [
+          "workflow.inputs replaced by case fixture",
+          "execution.deadline_seconds set to 600"
+        ]
+      }
+    }
+  ],
+  "not_run": [],
+  "correlation": [
+    {
+      "scenario": "bulletin-market-brief",
+      "case": "base-bulletins",
+      "submission_sha256": "a9e11cbc3c7649c5d2cd6c5824f0bf21dd04c0c24027ff6193779f0f8ac7691b",
+      "workflow_id": "2835baac84374966",
+      "execution_id": "1",
+      "step_id": "summarize",
+      "http_node": "Agency summarize",
+      "attempt": 1,
+      "invocation_id": "bulletin-market-brief/r1/summarize/2835baac84374966/1",
+      "operation": "digest.summarize",
+      "inputs_sha256": "c4bd86de580a8b4e601ce4879967b5d6c0671a41f42008390dbd3eaef6b56898",
+      "request_sha256": "d447f1a09de4e937cc8073ef9b70f77e3928f30091f6342823a2ac67b43b91f3",
+      "prompt_sha256": "9478fab5636391d232fb98c48151e2247af4bf940531f2270fe3ce65d4aeed05",
+      "response_sha256": "09da42af145e3f708db6ad6ad3e117414373c97df3290b474591a528d86b61a4",
+      "dispatch_confirmed": true,
+      "wrapper_completion": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1595,
+        "response_sha256": "db2bc618780b533dfcee1348a294227bf4b067da57849198804ce398e3a11727",
+        "output_text_sha256": "40e3f5f88da1d01b44ef3baf2550b0ffbf4b9c8441690280aecfdad4e460828e",
+        "stderr_sha256": "19a1db9e54e032aa82254fd1e46818953e3577c67934633d5d1825bad713a1c0",
+        "cli_reported_tokens": 4007,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      },
+      "provider_call_count": null
+    },
+    {
+      "scenario": "bulletin-market-brief",
+      "case": "base-bulletins",
+      "submission_sha256": "a9e11cbc3c7649c5d2cd6c5824f0bf21dd04c0c24027ff6193779f0f8ac7691b",
+      "workflow_id": "2835baac84374966",
+      "execution_id": "1",
+      "step_id": "product",
+      "http_node": "Agency product",
+      "attempt": 2,
+      "invocation_id": "bulletin-market-brief/r1/product/2835baac84374966/1",
+      "operation": "research.product",
+      "inputs_sha256": "6895294abde97314027104743ebbf0e0ce6445e286376a588f406b155f214bca",
+      "request_sha256": "03a726dd32637634ac5565f6d607d98fbdaacbb9379f46374e3c604249128dd9",
+      "prompt_sha256": "c3fa5097151d81f47fb5c101bc1c5c2b555e4290f479cc0068cb8c07e573280b",
+      "response_sha256": "92171aa5dbe7d6aa90b06cfc65c4730c389042cda655989c08ec29070b21a40b",
+      "dispatch_confirmed": true,
+      "wrapper_completion": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1673,
+        "response_sha256": "74c3311a2704194a36a3d208a07f499a2acec15be82f702e088b54a1bd53b3da",
+        "output_text_sha256": "57b1eb460f609b0a39130e53973f024cd14acd1302297be46892ad341d9221e4",
+        "stderr_sha256": "11314e7607e0722134d1ae0f3395395f16e5a8aeea9377fd80e86b105139ebbd",
+        "cli_reported_tokens": 3987,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      },
+      "provider_call_count": null
+    },
+    {
+      "scenario": "bulletin-market-brief",
+      "case": "base-bulletins",
+      "submission_sha256": "a9e11cbc3c7649c5d2cd6c5824f0bf21dd04c0c24027ff6193779f0f8ac7691b",
+      "workflow_id": "2835baac84374966",
+      "execution_id": "1",
+      "step_id": "marketing",
+      "http_node": "Agency marketing",
+      "attempt": 3,
+      "invocation_id": "bulletin-market-brief/r1/marketing/2835baac84374966/1",
+      "operation": "research.marketing",
+      "inputs_sha256": "8202349252f86e8d21290068e6d0311a03627a3340a7439312052e1b82777d83",
+      "request_sha256": "d759fe2a1fb611ae0d9657f54734c56aa10ed7f26b0bfd7d8cc1c159ca53ad5b",
+      "prompt_sha256": "a0d067b0c9f278f01f95de6481030dff13c4ff44db86780d46cf8ef7489b666f",
+      "response_sha256": "1147c35b748c6af11c55b2c47277f4eb192555a6fbfa72ed5e68854c055c63be",
+      "dispatch_confirmed": true,
+      "wrapper_completion": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1780,
+        "response_sha256": "7c57e84201d84b44f20ce609107c2f4b0cbb8812925976bb412c94b04673627c",
+        "output_text_sha256": "5e87076f4df939711efa103cb3594b17c4056d6c19fb9f582125ee259c019e49",
+        "stderr_sha256": "ffe9b3517e64d48312bff2c8829e725c3b5e0caf76e6b125450f22ffd196c5f4",
+        "cli_reported_tokens": 1456,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      },
+      "provider_call_count": null
+    },
+    {
+      "scenario": "bulletin-market-brief",
+      "case": "base-bulletins",
+      "submission_sha256": "a9e11cbc3c7649c5d2cd6c5824f0bf21dd04c0c24027ff6193779f0f8ac7691b",
+      "workflow_id": "2835baac84374966",
+      "execution_id": "1",
+      "step_id": "write",
+      "http_node": "Agency write",
+      "attempt": 4,
+      "invocation_id": "bulletin-market-brief/r1/write/2835baac84374966/1",
+      "operation": "research.write",
+      "inputs_sha256": "4ba88583ddd999b13fc3afe17eff9b7edc28286f506d7919a078b7cd87e1ca07",
+      "request_sha256": "14b9646d4f67fa943870d64ee8a6f487a8898ba55c846ea1c5fd2a4095731078",
+      "prompt_sha256": "50343b2e371b32e3c27d312cb601608b3e16d55bbe2d4d3ad313c22d527cd993",
+      "response_sha256": "4034ac79f9d9b8bd2cdc1bf5a56eafeccf44eb7778f948a1218315b65d73db38",
+      "dispatch_confirmed": true,
+      "wrapper_completion": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 2255,
+        "response_sha256": "d8e8a457f44c5eca9f0e4d4db15a08e57e33b002d4b6e5a25bbd4d6ca7cddb8d",
+        "output_text_sha256": "f75ca375d58426c92aec3c0d072e8994ef657482816bc4861f095dd2c9028df1",
+        "stderr_sha256": "9341552871a8a5903dc2b2249fa497c7c509527e98d28b64eb46c986e56e9a3f",
+        "cli_reported_tokens": 4055,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      },
+      "provider_call_count": null
+    },
+    {
+      "scenario": "bulletin-market-brief",
+      "case": "alternate-bulletins",
+      "submission_sha256": "a9e11cbc3c7649c5d2cd6c5824f0bf21dd04c0c24027ff6193779f0f8ac7691b",
+      "workflow_id": "dcd3d1ab840a42af",
+      "execution_id": "1",
+      "step_id": "summarize",
+      "http_node": "Agency summarize",
+      "attempt": 1,
+      "invocation_id": "bulletin-market-brief/r1/summarize/dcd3d1ab840a42af/1",
+      "operation": "digest.summarize",
+      "inputs_sha256": "5c3a05bba2ffa187e946b8a34d0e2c8b52803a6715422525ede418baf8b884ab",
+      "request_sha256": "735b5f025dc573c046d7a06fd78f0de027716cb6827535330ff15e7f664fa54f",
+      "prompt_sha256": "1cba85fadd1a90f3cd17a8ac5bdaf85cff7edcc5bf35cbcc0dc2ef8c77f38bd9",
+      "response_sha256": "59298347d93fac2da38477a63f3a278e6b79de2e93a18ac658c33228b6c185d5",
+      "dispatch_confirmed": true,
+      "wrapper_completion": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1621,
+        "response_sha256": "a1b48d85fff7a45b915b989fbf4f047bab1e810998d434c96be5fea97c8c9dac",
+        "output_text_sha256": "73d976b69d2b1ec8952f3a9ae3957c0e1ed5024e9d7203248b5fdc6a7624e4a2",
+        "stderr_sha256": "4f1661760ee802140edc3f3ff2b5635a92c2a920cd7624a19d300115cbc32e56",
+        "cli_reported_tokens": 1408,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      },
+      "provider_call_count": null
+    },
+    {
+      "scenario": "bulletin-market-brief",
+      "case": "alternate-bulletins",
+      "submission_sha256": "a9e11cbc3c7649c5d2cd6c5824f0bf21dd04c0c24027ff6193779f0f8ac7691b",
+      "workflow_id": "dcd3d1ab840a42af",
+      "execution_id": "1",
+      "step_id": "product",
+      "http_node": "Agency product",
+      "attempt": 2,
+      "invocation_id": "bulletin-market-brief/r1/product/dcd3d1ab840a42af/1",
+      "operation": "research.product",
+      "inputs_sha256": "e302f09f0f5ef770063d8f78cbe08bcf419d4704ba1a28060b2b3f781e04a751",
+      "request_sha256": "1503c75fa1f4f490bbe039a9fbafc70a89da176bbbeb003d755fdb2f877bda8e",
+      "prompt_sha256": "f3526d1f714ebaafbcb62e6626107b88d1170d8366afcbac0be4479fa9a07c90",
+      "response_sha256": "38ec5549b518fea7490c70ee64eaba7dd388c3b1aefeeada563f71fdce368d3a",
+      "dispatch_confirmed": true,
+      "wrapper_completion": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1674,
+        "response_sha256": "7da2498d51a97e9e7a2226b959e6b4829e4be56218beb12fe9c90c25b2a30048",
+        "output_text_sha256": "7be629039cacec8afc807f3bbb72722e7a42df2ca51a27a7ac4d3dbfd08e877c",
+        "stderr_sha256": "9532f355f7c0807d72c428402c17138a52774d36bb47371fac8ce2dcac9f973d",
+        "cli_reported_tokens": 1410,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      },
+      "provider_call_count": null
+    },
+    {
+      "scenario": "bulletin-market-brief",
+      "case": "alternate-bulletins",
+      "submission_sha256": "a9e11cbc3c7649c5d2cd6c5824f0bf21dd04c0c24027ff6193779f0f8ac7691b",
+      "workflow_id": "dcd3d1ab840a42af",
+      "execution_id": "1",
+      "step_id": "marketing",
+      "http_node": "Agency marketing",
+      "attempt": 3,
+      "invocation_id": "bulletin-market-brief/r1/marketing/dcd3d1ab840a42af/1",
+      "operation": "research.marketing",
+      "inputs_sha256": "cef0776b3534e5e44055049f60a4d552357b47967c695ce777a7d38cabc5456c",
+      "request_sha256": "30214a28676c9233feec7b6c49840154c9685b5ea073d820e9dbe612483910c8",
+      "prompt_sha256": "b15702cd2e3b5efdb66014a13ed4239a2c08a6ba8808a99b19b4ed4c2820ec17",
+      "response_sha256": "37d9f52e28136119131a8b81ec5802ef768fe007990236f25d514d247ea56814",
+      "dispatch_confirmed": true,
+      "wrapper_completion": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1733,
+        "response_sha256": "f9a48dae602ef49a04d5cfb2a3ec6692e7d392f24582c7033b5494faa08d58ce",
+        "output_text_sha256": "5cc90bcb70aafab23ea4cadd981500a9457a26615746bdb53a1bddc2b98e0fee",
+        "stderr_sha256": "5cc6c4e509807be49444f86edf9772c1f39a18a2b7319c3f9d6c24e84a893b95",
+        "cli_reported_tokens": 280,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      },
+      "provider_call_count": null
+    },
+    {
+      "scenario": "bulletin-market-brief",
+      "case": "alternate-bulletins",
+      "submission_sha256": "a9e11cbc3c7649c5d2cd6c5824f0bf21dd04c0c24027ff6193779f0f8ac7691b",
+      "workflow_id": "dcd3d1ab840a42af",
+      "execution_id": "1",
+      "step_id": "write",
+      "http_node": "Agency write",
+      "attempt": 4,
+      "invocation_id": "bulletin-market-brief/r1/write/dcd3d1ab840a42af/1",
+      "operation": "research.write",
+      "inputs_sha256": "0ee3a3dc608fa3110a545f995885d76f6ac460853229c54392be0e98c2fdafd4",
+      "request_sha256": "282bd6d55f798250c66a7e85b905fa50690b3e269fedb44f0ec06b7952275f95",
+      "prompt_sha256": "64af01201179d8b50e0acb70a83247f3982c6bfa1a9a02a9d39d97955a2cb8db",
+      "response_sha256": "b306603957302b031112f157c8eabc59c79e44b655b114d6364c7cf36ad3ca04",
+      "dispatch_confirmed": true,
+      "wrapper_completion": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 2219,
+        "response_sha256": "b08995c0e8e1f244c43dfc8485feaeccf2246eb486d4aa8a4cfa69f4ce6520f5",
+        "output_text_sha256": "7fc020a496089b9364ef87cf32a0afd951f063893f657be7ebcfd5866fa68eab",
+        "stderr_sha256": "359e1b61c1f285b54c4c1d2bf94dbc8314241592d12dd76b8f0bc047266182c6",
+        "cli_reported_tokens": 4065,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      },
+      "provider_call_count": null
+    }
+  ],
+  "phases": [
+    {
+      "phase": "before-live",
+      "source_unchanged": true,
+      "packages_unchanged": true
+    },
+    {
+      "phase": "before-base-bulletins",
+      "source_unchanged": true,
+      "packages_unchanged": true
+    },
+    {
+      "phase": "after-base-bulletins",
+      "source_unchanged": true,
+      "packages_unchanged": true
+    },
+    {
+      "phase": "before-alternate-bulletins",
+      "source_unchanged": true,
+      "packages_unchanged": true
+    },
+    {
+      "phase": "after-alternate-bulletins",
+      "source_unchanged": true,
+      "packages_unchanged": true
+    }
+  ],
+  "generation_calls": 0,
+  "budget": {
+    "max_attempts": 8,
+    "cases": {
+      "base-bulletins": 4,
+      "alternate-bulletins": 4
+    },
+    "series_max_attempts": 13
+  },
+  "counts": {
+    "agency_http_attempts": 8,
+    "wrapper_attempts": 8,
+    "wrapper_completions": 8,
+    "provider_call_count": null
+  },
+  "human_review": "pending",
+  "limitations": [
+    "Call/time caps are enforced; currency cost and provider-internal retries remain unknown.",
+    "Lexical and citation checks are bounded; they are separate from human text review.",
+    "Authoring tool restrictions are cooperative prompt/audit controls, not a secure sandbox."
+  ],
+  "series_ledger": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/series/series.json",
+  "series_scenarios": [
+    "bulletin-market-brief",
+    "priority-support-brief"
+  ],
+  "series_ceilings": {
+    "authoring": 4,
+    "runtime": 13
+  },
+  "stub_report_sha256": "d15d45279a9e41850bf254e91a875aa0aacdd9c145d2dce88d8fd3e3f641bf15",
+  "image_id": "sha256:91fb223b6b04578857d4dd4458780f15a5bb16b15838c196f1c079a06cf96cdc",
+  "selection_sha256": "7b8376844fc9fdf5d1332b19551870ba30f950a4fca78566af43cf9c4ad18218",
+  "private_cases_sha256": "97b545ee92de35efa1552b3e9756656b34bf1abd78f7d880d77c75fd29a4c42f",
+  "wrapper_identity": {
+    "schema": "sapi-lab-wrapper-identity/v1",
+    "endpoint": "http://127.0.0.1:8765/run",
+    "dispatch": "codex-exec",
+    "response_substitution": false,
+    "wrapper_retries": 0,
+    "provider_internal_retries": "unknown",
+    "model": "gpt-6-astra",
+    "files": [
+      {
+        "path": "/Users/pashvel/n8n/codex_bridge.py",
+        "sha256": "bab6f6726380950ed81ad240e2ea9aa144598c550ec5f784bcfa20e280206f36"
+      },
+      {
+        "path": "/Users/pashvel/.codex/config.toml",
+        "sha256": "d437459890b35c019b65f9e88ce608066d0f5d56b2b5e317316a3af01d1ec751"
+      }
+    ],
+    "inspection_note": "Read-only source inspection confirms POST /run dispatches codex exec --skip-git-repo-check with the supplied prompt, captures stdout/stderr, and returns ok/exit_code from subprocess completion. No wrapper retry or response substitution. Runtime listener PID 4210 invokes this exact script. Subprocess timeout 180 seconds. CLI version 0.160.0. CLI/provider internal retries remain unknown without receipts. No provider dispatch was performed during inspection."
+  },
+  "preflight": {
+    "passed": true,
+    "source": "two preserved generated stub trials",
+    "source_report_sha256": "0290905cfd797292567b4b02041b9419f6571dd08f7b6514c25a2abf0cc266f3"
+  },
+  "commands": [
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-lab-expansion-d8hsv8yu/tasks/bulletin-market-brief",
+      "--agent",
+      "oracle",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-lab-expansion-d8hsv8yu/jobs",
+      "--job-name",
+      "live-bulletin-market-brief-base-bulletins",
+      "--verifier-env",
+      "SAPI_LLM_MODE=live",
+      "--verifier-env",
+      "SAPI_CASE_NAME=base-bulletins",
+      "--verifier-env",
+      "SAPI_BRIDGE_URL=http://host.docker.internal:18765",
+      "--force-build"
+    ],
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-lab-expansion-d8hsv8yu/tasks/bulletin-market-brief",
+      "--agent",
+      "oracle",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-lab-expansion-d8hsv8yu/jobs",
+      "--job-name",
+      "live-bulletin-market-brief-alternate-bulletins",
+      "--verifier-env",
+      "SAPI_LLM_MODE=live",
+      "--verifier-env",
+      "SAPI_CASE_NAME=alternate-bulletins",
+      "--verifier-env",
+      "SAPI_BRIDGE_URL=http://host.docker.internal:18765",
+      "--force-build"
+    ]
+  ],
+  "audit": [
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133127.545114,
+      "event": "dispatch_attempt",
+      "attempt": 1,
+      "invocation_id": "bulletin-market-brief/r1/summarize/2835baac84374966/1",
+      "operation": "digest.summarize",
+      "inputs_sha256": "c4bd86de580a8b4e601ce4879967b5d6c0671a41f42008390dbd3eaef6b56898",
+      "request_sha256": "d447f1a09de4e937cc8073ef9b70f77e3928f30091f6342823a2ac67b43b91f3",
+      "prompt_sha256": "9478fab5636391d232fb98c48151e2247af4bf940531f2270fe3ce65d4aeed05"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133140.9614148,
+      "event": "completion",
+      "attempt": 1,
+      "invocation_id": "bulletin-market-brief/r1/summarize/2835baac84374966/1",
+      "operation": "digest.summarize",
+      "inputs_sha256": "c4bd86de580a8b4e601ce4879967b5d6c0671a41f42008390dbd3eaef6b56898",
+      "request_sha256": "d447f1a09de4e937cc8073ef9b70f77e3928f30091f6342823a2ac67b43b91f3",
+      "prompt_sha256": "9478fab5636391d232fb98c48151e2247af4bf940531f2270fe3ce65d4aeed05",
+      "response_sha256": "09da42af145e3f708db6ad6ad3e117414373c97df3290b474591a528d86b61a4",
+      "output_sha256": "e9a7635894ad737dfcf11bf79280d58d52474c6c92f9343615ae8c3fb6023231",
+      "wrapper": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1595,
+        "response_sha256": "db2bc618780b533dfcee1348a294227bf4b067da57849198804ce398e3a11727",
+        "output_text_sha256": "40e3f5f88da1d01b44ef3baf2550b0ffbf4b9c8441690280aecfdad4e460828e",
+        "stderr_sha256": "19a1db9e54e032aa82254fd1e46818953e3577c67934633d5d1825bad713a1c0",
+        "cli_reported_tokens": 4007,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      }
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133140.961748,
+      "event": "agency_response",
+      "duration_seconds": 13.419,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "bulletin-market-brief/r1/summarize/2835baac84374966/1",
+      "operation": "digest.summarize",
+      "inputs_sha256": "c4bd86de580a8b4e601ce4879967b5d6c0671a41f42008390dbd3eaef6b56898"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133141.018401,
+      "event": "dispatch_attempt",
+      "attempt": 2,
+      "invocation_id": "bulletin-market-brief/r1/product/2835baac84374966/1",
+      "operation": "research.product",
+      "inputs_sha256": "6895294abde97314027104743ebbf0e0ce6445e286376a588f406b155f214bca",
+      "request_sha256": "03a726dd32637634ac5565f6d607d98fbdaacbb9379f46374e3c604249128dd9",
+      "prompt_sha256": "c3fa5097151d81f47fb5c101bc1c5c2b555e4290f479cc0068cb8c07e573280b"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133149.890132,
+      "event": "completion",
+      "attempt": 2,
+      "invocation_id": "bulletin-market-brief/r1/product/2835baac84374966/1",
+      "operation": "research.product",
+      "inputs_sha256": "6895294abde97314027104743ebbf0e0ce6445e286376a588f406b155f214bca",
+      "request_sha256": "03a726dd32637634ac5565f6d607d98fbdaacbb9379f46374e3c604249128dd9",
+      "prompt_sha256": "c3fa5097151d81f47fb5c101bc1c5c2b555e4290f479cc0068cb8c07e573280b",
+      "response_sha256": "92171aa5dbe7d6aa90b06cfc65c4730c389042cda655989c08ec29070b21a40b",
+      "output_sha256": "e29debdc17d1c20ce8dd1abb641c6569c8cfa921db9666c5e91cc485990aa41a",
+      "wrapper": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1673,
+        "response_sha256": "74c3311a2704194a36a3d208a07f499a2acec15be82f702e088b54a1bd53b3da",
+        "output_text_sha256": "57b1eb460f609b0a39130e53973f024cd14acd1302297be46892ad341d9221e4",
+        "stderr_sha256": "11314e7607e0722134d1ae0f3395395f16e5a8aeea9377fd80e86b105139ebbd",
+        "cli_reported_tokens": 3987,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      }
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133149.890683,
+      "event": "agency_response",
+      "duration_seconds": 8.873,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "bulletin-market-brief/r1/product/2835baac84374966/1",
+      "operation": "research.product",
+      "inputs_sha256": "6895294abde97314027104743ebbf0e0ce6445e286376a588f406b155f214bca"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133149.9303732,
+      "event": "dispatch_attempt",
+      "attempt": 3,
+      "invocation_id": "bulletin-market-brief/r1/marketing/2835baac84374966/1",
+      "operation": "research.marketing",
+      "inputs_sha256": "8202349252f86e8d21290068e6d0311a03627a3340a7439312052e1b82777d83",
+      "request_sha256": "d759fe2a1fb611ae0d9657f54734c56aa10ed7f26b0bfd7d8cc1c159ca53ad5b",
+      "prompt_sha256": "a0d067b0c9f278f01f95de6481030dff13c4ff44db86780d46cf8ef7489b666f"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133160.604852,
+      "event": "completion",
+      "attempt": 3,
+      "invocation_id": "bulletin-market-brief/r1/marketing/2835baac84374966/1",
+      "operation": "research.marketing",
+      "inputs_sha256": "8202349252f86e8d21290068e6d0311a03627a3340a7439312052e1b82777d83",
+      "request_sha256": "d759fe2a1fb611ae0d9657f54734c56aa10ed7f26b0bfd7d8cc1c159ca53ad5b",
+      "prompt_sha256": "a0d067b0c9f278f01f95de6481030dff13c4ff44db86780d46cf8ef7489b666f",
+      "response_sha256": "1147c35b748c6af11c55b2c47277f4eb192555a6fbfa72ed5e68854c055c63be",
+      "output_sha256": "0d335941bbb28bede11a6c68c876477255b6c9dc63007bb2a1b602e6f1cd6e47",
+      "wrapper": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1780,
+        "response_sha256": "7c57e84201d84b44f20ce609107c2f4b0cbb8812925976bb412c94b04673627c",
+        "output_text_sha256": "5e87076f4df939711efa103cb3594b17c4056d6c19fb9f582125ee259c019e49",
+        "stderr_sha256": "ffe9b3517e64d48312bff2c8829e725c3b5e0caf76e6b125450f22ffd196c5f4",
+        "cli_reported_tokens": 1456,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      }
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133160.6055691,
+      "event": "agency_response",
+      "duration_seconds": 10.676,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "bulletin-market-brief/r1/marketing/2835baac84374966/1",
+      "operation": "research.marketing",
+      "inputs_sha256": "8202349252f86e8d21290068e6d0311a03627a3340a7439312052e1b82777d83"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133160.684486,
+      "event": "dispatch_attempt",
+      "attempt": 4,
+      "invocation_id": "bulletin-market-brief/r1/write/2835baac84374966/1",
+      "operation": "research.write",
+      "inputs_sha256": "4ba88583ddd999b13fc3afe17eff9b7edc28286f506d7919a078b7cd87e1ca07",
+      "request_sha256": "14b9646d4f67fa943870d64ee8a6f487a8898ba55c846ea1c5fd2a4095731078",
+      "prompt_sha256": "50343b2e371b32e3c27d312cb601608b3e16d55bbe2d4d3ad313c22d527cd993"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133172.300249,
+      "event": "completion",
+      "attempt": 4,
+      "invocation_id": "bulletin-market-brief/r1/write/2835baac84374966/1",
+      "operation": "research.write",
+      "inputs_sha256": "4ba88583ddd999b13fc3afe17eff9b7edc28286f506d7919a078b7cd87e1ca07",
+      "request_sha256": "14b9646d4f67fa943870d64ee8a6f487a8898ba55c846ea1c5fd2a4095731078",
+      "prompt_sha256": "50343b2e371b32e3c27d312cb601608b3e16d55bbe2d4d3ad313c22d527cd993",
+      "response_sha256": "4034ac79f9d9b8bd2cdc1bf5a56eafeccf44eb7778f948a1218315b65d73db38",
+      "output_sha256": "65b28a70534ee250fc9086b68c888f4fb07a33027aaa0cc466d3a3017273e37d",
+      "wrapper": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 2255,
+        "response_sha256": "d8e8a457f44c5eca9f0e4d4db15a08e57e33b002d4b6e5a25bbd4d6ca7cddb8d",
+        "output_text_sha256": "f75ca375d58426c92aec3c0d072e8994ef657482816bc4861f095dd2c9028df1",
+        "stderr_sha256": "9341552871a8a5903dc2b2249fa497c7c509527e98d28b64eb46c986e56e9a3f",
+        "cli_reported_tokens": 4055,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      }
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133172.300405,
+      "event": "agency_response",
+      "duration_seconds": 11.617,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "bulletin-market-brief/r1/write/2835baac84374966/1",
+      "operation": "research.write",
+      "inputs_sha256": "4ba88583ddd999b13fc3afe17eff9b7edc28286f506d7919a078b7cd87e1ca07"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133194.0912268,
+      "event": "dispatch_attempt",
+      "attempt": 1,
+      "invocation_id": "bulletin-market-brief/r1/summarize/dcd3d1ab840a42af/1",
+      "operation": "digest.summarize",
+      "inputs_sha256": "5c3a05bba2ffa187e946b8a34d0e2c8b52803a6715422525ede418baf8b884ab",
+      "request_sha256": "735b5f025dc573c046d7a06fd78f0de027716cb6827535330ff15e7f664fa54f",
+      "prompt_sha256": "1cba85fadd1a90f3cd17a8ac5bdaf85cff7edcc5bf35cbcc0dc2ef8c77f38bd9"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133204.984836,
+      "event": "completion",
+      "attempt": 1,
+      "invocation_id": "bulletin-market-brief/r1/summarize/dcd3d1ab840a42af/1",
+      "operation": "digest.summarize",
+      "inputs_sha256": "5c3a05bba2ffa187e946b8a34d0e2c8b52803a6715422525ede418baf8b884ab",
+      "request_sha256": "735b5f025dc573c046d7a06fd78f0de027716cb6827535330ff15e7f664fa54f",
+      "prompt_sha256": "1cba85fadd1a90f3cd17a8ac5bdaf85cff7edcc5bf35cbcc0dc2ef8c77f38bd9",
+      "response_sha256": "59298347d93fac2da38477a63f3a278e6b79de2e93a18ac658c33228b6c185d5",
+      "output_sha256": "0a0bfe9d52ba6d57ea15acc64929c6767a941b4d32ff98f4efd16e7f7fc50ab2",
+      "wrapper": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1621,
+        "response_sha256": "a1b48d85fff7a45b915b989fbf4f047bab1e810998d434c96be5fea97c8c9dac",
+        "output_text_sha256": "73d976b69d2b1ec8952f3a9ae3957c0e1ed5024e9d7203248b5fdc6a7624e4a2",
+        "stderr_sha256": "4f1661760ee802140edc3f3ff2b5635a92c2a920cd7624a19d300115cbc32e56",
+        "cli_reported_tokens": 1408,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      }
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133204.985148,
+      "event": "agency_response",
+      "duration_seconds": 10.896,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "bulletin-market-brief/r1/summarize/dcd3d1ab840a42af/1",
+      "operation": "digest.summarize",
+      "inputs_sha256": "5c3a05bba2ffa187e946b8a34d0e2c8b52803a6715422525ede418baf8b884ab"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133205.03951,
+      "event": "dispatch_attempt",
+      "attempt": 2,
+      "invocation_id": "bulletin-market-brief/r1/product/dcd3d1ab840a42af/1",
+      "operation": "research.product",
+      "inputs_sha256": "e302f09f0f5ef770063d8f78cbe08bcf419d4704ba1a28060b2b3f781e04a751",
+      "request_sha256": "1503c75fa1f4f490bbe039a9fbafc70a89da176bbbeb003d755fdb2f877bda8e",
+      "prompt_sha256": "f3526d1f714ebaafbcb62e6626107b88d1170d8366afcbac0be4479fa9a07c90"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133216.9219398,
+      "event": "completion",
+      "attempt": 2,
+      "invocation_id": "bulletin-market-brief/r1/product/dcd3d1ab840a42af/1",
+      "operation": "research.product",
+      "inputs_sha256": "e302f09f0f5ef770063d8f78cbe08bcf419d4704ba1a28060b2b3f781e04a751",
+      "request_sha256": "1503c75fa1f4f490bbe039a9fbafc70a89da176bbbeb003d755fdb2f877bda8e",
+      "prompt_sha256": "f3526d1f714ebaafbcb62e6626107b88d1170d8366afcbac0be4479fa9a07c90",
+      "response_sha256": "38ec5549b518fea7490c70ee64eaba7dd388c3b1aefeeada563f71fdce368d3a",
+      "output_sha256": "b7e586a798c8b261182e60ddb7a9aaf02425506cc02fce38f6221b3b5ee8d71d",
+      "wrapper": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1674,
+        "response_sha256": "7da2498d51a97e9e7a2226b959e6b4829e4be56218beb12fe9c90c25b2a30048",
+        "output_text_sha256": "7be629039cacec8afc807f3bbb72722e7a42df2ca51a27a7ac4d3dbfd08e877c",
+        "stderr_sha256": "9532f355f7c0807d72c428402c17138a52774d36bb47371fac8ce2dcac9f973d",
+        "cli_reported_tokens": 1410,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      }
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133216.9222121,
+      "event": "agency_response",
+      "duration_seconds": 11.883,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "bulletin-market-brief/r1/product/dcd3d1ab840a42af/1",
+      "operation": "research.product",
+      "inputs_sha256": "e302f09f0f5ef770063d8f78cbe08bcf419d4704ba1a28060b2b3f781e04a751"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133216.971828,
+      "event": "dispatch_attempt",
+      "attempt": 3,
+      "invocation_id": "bulletin-market-brief/r1/marketing/dcd3d1ab840a42af/1",
+      "operation": "research.marketing",
+      "inputs_sha256": "cef0776b3534e5e44055049f60a4d552357b47967c695ce777a7d38cabc5456c",
+      "request_sha256": "30214a28676c9233feec7b6c49840154c9685b5ea073d820e9dbe612483910c8",
+      "prompt_sha256": "b15702cd2e3b5efdb66014a13ed4239a2c08a6ba8808a99b19b4ed4c2820ec17"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133227.4396842,
+      "event": "completion",
+      "attempt": 3,
+      "invocation_id": "bulletin-market-brief/r1/marketing/dcd3d1ab840a42af/1",
+      "operation": "research.marketing",
+      "inputs_sha256": "cef0776b3534e5e44055049f60a4d552357b47967c695ce777a7d38cabc5456c",
+      "request_sha256": "30214a28676c9233feec7b6c49840154c9685b5ea073d820e9dbe612483910c8",
+      "prompt_sha256": "b15702cd2e3b5efdb66014a13ed4239a2c08a6ba8808a99b19b4ed4c2820ec17",
+      "response_sha256": "37d9f52e28136119131a8b81ec5802ef768fe007990236f25d514d247ea56814",
+      "output_sha256": "1edbf90f6432157cb024de315930629b7eb7530b411e6a5f666f5411048b8079",
+      "wrapper": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1733,
+        "response_sha256": "f9a48dae602ef49a04d5cfb2a3ec6692e7d392f24582c7033b5494faa08d58ce",
+        "output_text_sha256": "5cc90bcb70aafab23ea4cadd981500a9457a26615746bdb53a1bddc2b98e0fee",
+        "stderr_sha256": "5cc6c4e509807be49444f86edf9772c1f39a18a2b7319c3f9d6c24e84a893b95",
+        "cli_reported_tokens": 280,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      }
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133227.440539,
+      "event": "agency_response",
+      "duration_seconds": 10.47,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "bulletin-market-brief/r1/marketing/dcd3d1ab840a42af/1",
+      "operation": "research.marketing",
+      "inputs_sha256": "cef0776b3534e5e44055049f60a4d552357b47967c695ce777a7d38cabc5456c"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133227.511111,
+      "event": "dispatch_attempt",
+      "attempt": 4,
+      "invocation_id": "bulletin-market-brief/r1/write/dcd3d1ab840a42af/1",
+      "operation": "research.write",
+      "inputs_sha256": "0ee3a3dc608fa3110a545f995885d76f6ac460853229c54392be0e98c2fdafd4",
+      "request_sha256": "282bd6d55f798250c66a7e85b905fa50690b3e269fedb44f0ec06b7952275f95",
+      "prompt_sha256": "64af01201179d8b50e0acb70a83247f3982c6bfa1a9a02a9d39d97955a2cb8db"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133238.247833,
+      "event": "completion",
+      "attempt": 4,
+      "invocation_id": "bulletin-market-brief/r1/write/dcd3d1ab840a42af/1",
+      "operation": "research.write",
+      "inputs_sha256": "0ee3a3dc608fa3110a545f995885d76f6ac460853229c54392be0e98c2fdafd4",
+      "request_sha256": "282bd6d55f798250c66a7e85b905fa50690b3e269fedb44f0ec06b7952275f95",
+      "prompt_sha256": "64af01201179d8b50e0acb70a83247f3982c6bfa1a9a02a9d39d97955a2cb8db",
+      "response_sha256": "b306603957302b031112f157c8eabc59c79e44b655b114d6364c7cf36ad3ca04",
+      "output_sha256": "974d828afac5c636b1dae8796bd98f401696fc5dd940ce100eb4f85298d911d7",
+      "wrapper": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 2219,
+        "response_sha256": "b08995c0e8e1f244c43dfc8485feaeccf2246eb486d4aa8a4cfa69f4ce6520f5",
+        "output_text_sha256": "7fc020a496089b9364ef87cf32a0afd951f063893f657be7ebcfd5866fa68eab",
+        "stderr_sha256": "359e1b61c1f285b54c4c1d2bf94dbc8314241592d12dd76b8f0bc047266182c6",
+        "cli_reported_tokens": 4065,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      }
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791133238.2481952,
+      "event": "agency_response",
+      "duration_seconds": 10.738,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "bulletin-market-brief/r1/write/dcd3d1ab840a42af/1",
+      "operation": "research.write",
+      "inputs_sha256": "0ee3a3dc608fa3110a545f995885d76f6ac460853229c54392be0e98c2fdafd4"
+    }
+  ],
+  "source_unchanged": true,
+  "existing_container_identities_preserved": true,
+  "finished_at": "2026-10-04T17:00:50.997440+00:00"
+}

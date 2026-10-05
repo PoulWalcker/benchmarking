@@ -1,0 +1,620 @@
+{
+  "schema": "sapi-lab-refinement-live/v1",
+  "experiment_kind": "bounded_refinement",
+  "scenario": "revise-answer",
+  "mode": "live",
+  "status": "passed",
+  "source_manifest": "source-manifest.json",
+  "started_at": "2026-10-04T18:56:54.046586+00:00",
+  "trials": [
+    {
+      "task_name": "revise-answer",
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/refinement-evaluation-2/live/jobs/live-revise-answer-valid-reply/revise-answer__WcEcMLm/result.json",
+      "acceptance": {
+        "scenario": "revise-answer",
+        "mode": "live",
+        "passed": true,
+        "report_schema": "sapi-lab-verification/v1",
+        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+        "cases": [
+          {
+            "name": "valid-reply",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "c5c76627c57b4f58",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/valid-reply",
+            "deadline_seconds": 600,
+            "config_sha256": "7abd8e63301fd0a61eaed42762127ec1d38271a9d08fa0ff9728f14d2686fd72",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "live",
+              "agency_http_call_count": 1,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "accepted_attempt": 1,
+            "attempt_count": 1,
+            "maximum_attempts": 3,
+            "output": {
+              "text": "I don’t have the current status of order A7842. If you’ve received a shipping confirmation, its tracking link should show the latest delivery update. Share that update here and I can help explain it."
+            },
+            "exhausted": false,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "missing-native-draft",
+              "invented-initial-carry"
+            ]
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ],
+        "submission_sha256": "15ea95f0e12b7b3cd2df541a8e59619087d1d2bd4a92028e286a99278afaa29b",
+        "config_transformations": [
+          "workflow.inputs replaced by case fixture",
+          "execution.deadline_seconds set to 600"
+        ]
+      }
+    },
+    {
+      "task_name": "revise-answer",
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/refinement-evaluation-2/live/jobs/live-revise-answer-impossible-limit/revise-answer__HgkAuiN/result.json",
+      "acceptance": {
+        "scenario": "revise-answer",
+        "mode": "live",
+        "passed": true,
+        "report_schema": "sapi-lab-verification/v1",
+        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+        "cases": [
+          {
+            "name": "impossible-limit",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "d7329d53076546c1",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/impossible-limit",
+            "deadline_seconds": 600,
+            "config_sha256": "a0c74a83f28d1972484897593d306bca4cd14025407e7864a62f12919318230c",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "live",
+              "agency_http_call_count": 3,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "accepted_attempt": null,
+            "attempt_count": 3,
+            "maximum_attempts": 3,
+            "output": null,
+            "exhausted": true,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected refinement exhaustion; no accepted reply"
+            },
+            "verifier_corruptions_rejected": [
+              "missing-native-draft",
+              "invented-initial-carry"
+            ]
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ],
+        "submission_sha256": "15ea95f0e12b7b3cd2df541a8e59619087d1d2bd4a92028e286a99278afaa29b",
+        "config_transformations": [
+          "workflow.inputs replaced by case fixture",
+          "execution.deadline_seconds set to 600"
+        ]
+      }
+    }
+  ],
+  "not_run": [],
+  "correlation": [
+    {
+      "scenario": "revise-answer",
+      "case": "valid-reply",
+      "submission_sha256": "15ea95f0e12b7b3cd2df541a8e59619087d1d2bd4a92028e286a99278afaa29b",
+      "workflow_id": "c5c76627c57b4f58",
+      "execution_id": "1",
+      "step_id": "draft_reply",
+      "http_node": "Attempt 1 / Agency draft_reply",
+      "attempt": 1,
+      "invocation_id": "revise-answer/r1/draft_reply/attempt1/c5c76627c57b4f58/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "3691ea10536972eaa1d9e9657e3281bf4e5c0fca174e91ec847d65900e776dd3",
+      "request_sha256": "dcf3f16b87bd71ced427fc93a7311ab1858bd27b203ca89733b7099e5d3a4002",
+      "prompt_sha256": "e1f20b944dcc4edca9a384cf9ed05730d7ccee8ac50895a5b99a98ca94794653",
+      "response_sha256": "0b55c0e5b12f2c7cccedd6ab39a077c0195bc052a6bdf38e00689280c84c182c",
+      "dispatch_confirmed": true,
+      "wrapper_completion": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1544,
+        "response_sha256": "92855095a85522b88e2a7d00a2685ab25389a96b386c132802e8e86d76cbbcfb",
+        "output_text_sha256": "122f868ce3fb6c717df0fc39e5fe378146729180ec2ba47bd7c82697ad916bc7",
+        "stderr_sha256": "d911fab5378636a63ae139a02f2d5066518d36ae3d7dafdf415cc8e904b07582",
+        "cli_reported_tokens": 5082,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      },
+      "provider_call_count": null
+    },
+    {
+      "scenario": "revise-answer",
+      "case": "impossible-limit",
+      "submission_sha256": "15ea95f0e12b7b3cd2df541a8e59619087d1d2bd4a92028e286a99278afaa29b",
+      "workflow_id": "d7329d53076546c1",
+      "execution_id": "1",
+      "step_id": "draft_reply",
+      "http_node": "Attempt 1 / Agency draft_reply",
+      "attempt": 1,
+      "invocation_id": "revise-answer/r1/draft_reply/attempt1/d7329d53076546c1/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "3691ea10536972eaa1d9e9657e3281bf4e5c0fca174e91ec847d65900e776dd3",
+      "request_sha256": "11beeb7674dce785e717c5c53ff26ee8223f91b758a671acf121f6f33bd55207",
+      "prompt_sha256": "e1f20b944dcc4edca9a384cf9ed05730d7ccee8ac50895a5b99a98ca94794653",
+      "response_sha256": "d97c12d047b27e6686faae7ddec7e8a8a94096f56179da9365864f4c664f439b",
+      "dispatch_confirmed": true,
+      "wrapper_completion": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1538,
+        "response_sha256": "c3ac086ff6e5a7bf8506edfbaab6b71ef5bc374d49dac53447c175f3f0b72e5e",
+        "output_text_sha256": "5abf3b054ce6dd40368826e236fd51cddc2e692a40b9e4e04e59810974aeda8e",
+        "stderr_sha256": "4f14296bedad7448c97d3de2dea35d5e887fabcdee408cab0306b1d6c02f371a",
+        "cli_reported_tokens": 475,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      },
+      "provider_call_count": null
+    },
+    {
+      "scenario": "revise-answer",
+      "case": "impossible-limit",
+      "submission_sha256": "15ea95f0e12b7b3cd2df541a8e59619087d1d2bd4a92028e286a99278afaa29b",
+      "workflow_id": "d7329d53076546c1",
+      "execution_id": "1",
+      "step_id": "draft_reply",
+      "http_node": "Attempt 2 / Agency draft_reply",
+      "attempt": 2,
+      "invocation_id": "revise-answer/r1/draft_reply/attempt2/d7329d53076546c1/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "7833e690dd65c9ff83bcbeb3d4578a8f3ec44ec09805018ebcc5a6c14b99874e",
+      "request_sha256": "eb1cdce8e29eea4a2d1a3c21761463c0468614b91d512fd5533ffb1fdd693072",
+      "prompt_sha256": "f2521b1ac6c26fbf202692ad287b5e29b69b36c5c31aa9b3f97a59d7fb03f4ac",
+      "response_sha256": "9825b61542ea4c898e70f4287013860ec053e804650be7f6e2d40631a19a62b5",
+      "dispatch_confirmed": true,
+      "wrapper_completion": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1604,
+        "response_sha256": "1514902a64d9853d9ec5dd44e79e5f74a65ecfe49559b5de73cd0e6683f12159",
+        "output_text_sha256": "a5bd76cdda8c819b53c3a91a080363de793081df2ec7b79a85f4d42df928a2b5",
+        "stderr_sha256": "de069cbb8bc4583910d884700d8464e4f80de8bfa1106502dc683323460bb790",
+        "cli_reported_tokens": 1498,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      },
+      "provider_call_count": null
+    },
+    {
+      "scenario": "revise-answer",
+      "case": "impossible-limit",
+      "submission_sha256": "15ea95f0e12b7b3cd2df541a8e59619087d1d2bd4a92028e286a99278afaa29b",
+      "workflow_id": "d7329d53076546c1",
+      "execution_id": "1",
+      "step_id": "draft_reply",
+      "http_node": "Attempt 3 / Agency draft_reply",
+      "attempt": 3,
+      "invocation_id": "revise-answer/r1/draft_reply/attempt3/d7329d53076546c1/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "2e6a27d0af19bd1b28127257a241703716a04e3f9a726606025f64ee6a22f5bc",
+      "request_sha256": "2ea6b506f4420d9e8ebbb73e09360ea05d01d63c3ba651b025e72ed8b716b83c",
+      "prompt_sha256": "c88d42ed3c9ca8efd15d470396f8b455edc44bd9f2ac511687a6e63a38d7e998",
+      "response_sha256": "505304a90b18d5df13227c8d772c1076f4700dd5d7f9f01d97273cbb0be44107",
+      "dispatch_confirmed": true,
+      "wrapper_completion": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1476,
+        "response_sha256": "0b44420a439786c8802ef965b562617758973924fba71824a4d9691130f20410",
+        "output_text_sha256": "20d8d0b042009c5fc3e700537463009e4c67e0679e63f7e20ed9d9ee1163dbf3",
+        "stderr_sha256": "0f923db33077591faa3a2cba032b32e8c30f8c155f8e55b20ef9efe653541ef4",
+        "cli_reported_tokens": 3918,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      },
+      "provider_call_count": null
+    }
+  ],
+  "phases": [
+    {
+      "phase": "before-live",
+      "source_unchanged": true,
+      "packages_unchanged": true
+    },
+    {
+      "phase": "before-valid-reply",
+      "source_unchanged": true,
+      "packages_unchanged": true
+    },
+    {
+      "phase": "after-valid-reply",
+      "source_unchanged": true,
+      "packages_unchanged": true
+    },
+    {
+      "phase": "before-impossible-limit",
+      "source_unchanged": true,
+      "packages_unchanged": true
+    },
+    {
+      "phase": "after-impossible-limit",
+      "source_unchanged": true,
+      "packages_unchanged": true
+    }
+  ],
+  "generation_calls": 0,
+  "budget": {
+    "max_attempts": 6,
+    "cases": {
+      "valid-reply": 3,
+      "impossible-limit": 3
+    },
+    "counts_are_upper_bounds": true,
+    "series_max_attempts": 6
+  },
+  "counts": {
+    "agency_http_attempts": 4,
+    "wrapper_attempts": 4,
+    "wrapper_completions": 4,
+    "provider_call_count": null
+  },
+  "human_review": "not_applicable",
+  "limitations": [
+    "Call/time caps are enforced; currency cost and provider-internal retries remain unknown.",
+    "Lexical and citation checks are bounded; they are separate from human text review.",
+    "Authoring tool restrictions are cooperative prompt/audit controls, not a secure sandbox."
+  ],
+  "series_ledger": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-open-tasks-integration/refinement-evaluation-2/series/series.json",
+  "series_scenarios": [
+    "revise-answer"
+  ],
+  "series_ceilings": {
+    "authoring": 3,
+    "runtime": 6
+  },
+  "stub_report_sha256": "e3925d45873624acca494cb2c0d1c1b5e68dc8679ee4a8895139e1c84c9607bf",
+  "image_id": "sha256:a05e2dc97f328553555fc251bc2099c26344dc001b96f094a81a7589d8a62da3",
+  "selection_sha256": "c32db81b05e91a22033ced5cd0cc49c673ef9011c9583eb8d01ae42e82c36b3f",
+  "private_cases_sha256": "c282334106638ab627e9718446307699dda8152aab309ec263c876c3703a40e4",
+  "wrapper_identity": {
+    "schema": "sapi-lab-wrapper-identity/v1",
+    "endpoint": "http://127.0.0.1:8765/run",
+    "dispatch": "codex-exec",
+    "response_substitution": false,
+    "wrapper_retries": 0,
+    "provider_internal_retries": "unknown",
+    "model": "gpt-6-astra",
+    "files": [
+      {
+        "path": "/Users/pashvel/n8n/codex_bridge.py",
+        "sha256": "bab6f6726380950ed81ad240e2ea9aa144598c550ec5f784bcfa20e280206f36"
+      },
+      {
+        "path": "/Users/pashvel/.codex/config.toml",
+        "sha256": "d437459890b35c019b65f9e88ce608066d0f5d56b2b5e317316a3af01d1ec751"
+      }
+    ],
+    "inspection_note": "Read-only source inspection confirms POST /run dispatches codex exec --skip-git-repo-check with the supplied prompt, captures stdout/stderr, and returns ok/exit_code from subprocess completion. No wrapper retry or response substitution. Runtime listener PID 4210 invokes this exact script. Subprocess timeout 180 seconds. CLI version 0.160.0. CLI/provider internal retries remain unknown without receipts. No provider dispatch was performed during inspection."
+  },
+  "preflight": {
+    "passed": true,
+    "source": "3 preserved generated stub trials",
+    "source_report_sha256": "97c22549f05ac75a6d6fdf1c533a1697c6e86d3acbdad815d6cd212e7c3182df"
+  },
+  "commands": [
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-lab-expansion-35sm5asv/tasks/revise-answer",
+      "--agent",
+      "oracle",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-lab-expansion-35sm5asv/jobs",
+      "--job-name",
+      "live-revise-answer-valid-reply",
+      "--verifier-env",
+      "SAPI_LLM_MODE=live",
+      "--verifier-env",
+      "SAPI_CASE_NAME=valid-reply",
+      "--verifier-env",
+      "SAPI_BRIDGE_URL=http://host.docker.internal:18765",
+      "--force-build"
+    ],
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-lab-expansion-35sm5asv/tasks/revise-answer",
+      "--agent",
+      "oracle",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-lab-expansion-35sm5asv/jobs",
+      "--job-name",
+      "live-revise-answer-impossible-limit",
+      "--verifier-env",
+      "SAPI_LLM_MODE=live",
+      "--verifier-env",
+      "SAPI_CASE_NAME=impossible-limit",
+      "--verifier-env",
+      "SAPI_BRIDGE_URL=http://host.docker.internal:18765",
+      "--force-build"
+    ]
+  ],
+  "audit": [
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791140224.931796,
+      "event": "dispatch_attempt",
+      "attempt": 1,
+      "invocation_id": "revise-answer/r1/draft_reply/attempt1/c5c76627c57b4f58/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "3691ea10536972eaa1d9e9657e3281bf4e5c0fca174e91ec847d65900e776dd3",
+      "request_sha256": "dcf3f16b87bd71ced427fc93a7311ab1858bd27b203ca89733b7099e5d3a4002",
+      "prompt_sha256": "e1f20b944dcc4edca9a384cf9ed05730d7ccee8ac50895a5b99a98ca94794653"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791140238.027234,
+      "event": "completion",
+      "attempt": 1,
+      "invocation_id": "revise-answer/r1/draft_reply/attempt1/c5c76627c57b4f58/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "3691ea10536972eaa1d9e9657e3281bf4e5c0fca174e91ec847d65900e776dd3",
+      "request_sha256": "dcf3f16b87bd71ced427fc93a7311ab1858bd27b203ca89733b7099e5d3a4002",
+      "prompt_sha256": "e1f20b944dcc4edca9a384cf9ed05730d7ccee8ac50895a5b99a98ca94794653",
+      "response_sha256": "0b55c0e5b12f2c7cccedd6ab39a077c0195bc052a6bdf38e00689280c84c182c",
+      "output_sha256": "122f868ce3fb6c717df0fc39e5fe378146729180ec2ba47bd7c82697ad916bc7",
+      "wrapper": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1544,
+        "response_sha256": "92855095a85522b88e2a7d00a2685ab25389a96b386c132802e8e86d76cbbcfb",
+        "output_text_sha256": "122f868ce3fb6c717df0fc39e5fe378146729180ec2ba47bd7c82697ad916bc7",
+        "stderr_sha256": "d911fab5378636a63ae139a02f2d5066518d36ae3d7dafdf415cc8e904b07582",
+        "cli_reported_tokens": 5082,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      }
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791140238.027384,
+      "event": "agency_response",
+      "duration_seconds": 13.099,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "revise-answer/r1/draft_reply/attempt1/c5c76627c57b4f58/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "3691ea10536972eaa1d9e9657e3281bf4e5c0fca174e91ec847d65900e776dd3"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791140259.873894,
+      "event": "dispatch_attempt",
+      "attempt": 1,
+      "invocation_id": "revise-answer/r1/draft_reply/attempt1/d7329d53076546c1/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "3691ea10536972eaa1d9e9657e3281bf4e5c0fca174e91ec847d65900e776dd3",
+      "request_sha256": "11beeb7674dce785e717c5c53ff26ee8223f91b758a671acf121f6f33bd55207",
+      "prompt_sha256": "e1f20b944dcc4edca9a384cf9ed05730d7ccee8ac50895a5b99a98ca94794653"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791140278.312469,
+      "event": "completion",
+      "attempt": 1,
+      "invocation_id": "revise-answer/r1/draft_reply/attempt1/d7329d53076546c1/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "3691ea10536972eaa1d9e9657e3281bf4e5c0fca174e91ec847d65900e776dd3",
+      "request_sha256": "11beeb7674dce785e717c5c53ff26ee8223f91b758a671acf121f6f33bd55207",
+      "prompt_sha256": "e1f20b944dcc4edca9a384cf9ed05730d7ccee8ac50895a5b99a98ca94794653",
+      "response_sha256": "d97c12d047b27e6686faae7ddec7e8a8a94096f56179da9365864f4c664f439b",
+      "output_sha256": "5abf3b054ce6dd40368826e236fd51cddc2e692a40b9e4e04e59810974aeda8e",
+      "wrapper": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1538,
+        "response_sha256": "c3ac086ff6e5a7bf8506edfbaab6b71ef5bc374d49dac53447c175f3f0b72e5e",
+        "output_text_sha256": "5abf3b054ce6dd40368826e236fd51cddc2e692a40b9e4e04e59810974aeda8e",
+        "stderr_sha256": "4f14296bedad7448c97d3de2dea35d5e887fabcdee408cab0306b1d6c02f371a",
+        "cli_reported_tokens": 475,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      }
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791140278.312714,
+      "event": "agency_response",
+      "duration_seconds": 18.442,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "revise-answer/r1/draft_reply/attempt1/d7329d53076546c1/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "3691ea10536972eaa1d9e9657e3281bf4e5c0fca174e91ec847d65900e776dd3"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791140278.407819,
+      "event": "dispatch_attempt",
+      "attempt": 2,
+      "invocation_id": "revise-answer/r1/draft_reply/attempt2/d7329d53076546c1/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "7833e690dd65c9ff83bcbeb3d4578a8f3ec44ec09805018ebcc5a6c14b99874e",
+      "request_sha256": "eb1cdce8e29eea4a2d1a3c21761463c0468614b91d512fd5533ffb1fdd693072",
+      "prompt_sha256": "f2521b1ac6c26fbf202692ad287b5e29b69b36c5c31aa9b3f97a59d7fb03f4ac"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791140289.655933,
+      "event": "completion",
+      "attempt": 2,
+      "invocation_id": "revise-answer/r1/draft_reply/attempt2/d7329d53076546c1/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "7833e690dd65c9ff83bcbeb3d4578a8f3ec44ec09805018ebcc5a6c14b99874e",
+      "request_sha256": "eb1cdce8e29eea4a2d1a3c21761463c0468614b91d512fd5533ffb1fdd693072",
+      "prompt_sha256": "f2521b1ac6c26fbf202692ad287b5e29b69b36c5c31aa9b3f97a59d7fb03f4ac",
+      "response_sha256": "9825b61542ea4c898e70f4287013860ec053e804650be7f6e2d40631a19a62b5",
+      "output_sha256": "a5bd76cdda8c819b53c3a91a080363de793081df2ec7b79a85f4d42df928a2b5",
+      "wrapper": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1604,
+        "response_sha256": "1514902a64d9853d9ec5dd44e79e5f74a65ecfe49559b5de73cd0e6683f12159",
+        "output_text_sha256": "a5bd76cdda8c819b53c3a91a080363de793081df2ec7b79a85f4d42df928a2b5",
+        "stderr_sha256": "de069cbb8bc4583910d884700d8464e4f80de8bfa1106502dc683323460bb790",
+        "cli_reported_tokens": 1498,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      }
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791140289.656289,
+      "event": "agency_response",
+      "duration_seconds": 11.249,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "revise-answer/r1/draft_reply/attempt2/d7329d53076546c1/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "7833e690dd65c9ff83bcbeb3d4578a8f3ec44ec09805018ebcc5a6c14b99874e"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791140289.978038,
+      "event": "dispatch_attempt",
+      "attempt": 3,
+      "invocation_id": "revise-answer/r1/draft_reply/attempt3/d7329d53076546c1/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "2e6a27d0af19bd1b28127257a241703716a04e3f9a726606025f64ee6a22f5bc",
+      "request_sha256": "2ea6b506f4420d9e8ebbb73e09360ea05d01d63c3ba651b025e72ed8b716b83c",
+      "prompt_sha256": "c88d42ed3c9ca8efd15d470396f8b455edc44bd9f2ac511687a6e63a38d7e998"
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791140297.753249,
+      "event": "completion",
+      "attempt": 3,
+      "invocation_id": "revise-answer/r1/draft_reply/attempt3/d7329d53076546c1/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "2e6a27d0af19bd1b28127257a241703716a04e3f9a726606025f64ee6a22f5bc",
+      "request_sha256": "2ea6b506f4420d9e8ebbb73e09360ea05d01d63c3ba651b025e72ed8b716b83c",
+      "prompt_sha256": "c88d42ed3c9ca8efd15d470396f8b455edc44bd9f2ac511687a6e63a38d7e998",
+      "response_sha256": "505304a90b18d5df13227c8d772c1076f4700dd5d7f9f01d97273cbb0be44107",
+      "output_sha256": "20d8d0b042009c5fc3e700537463009e4c67e0679e63f7e20ed9d9ee1163dbf3",
+      "wrapper": {
+        "ok": true,
+        "exit_code": 0,
+        "model": "gpt-6-astra",
+        "response_bytes": 1476,
+        "response_sha256": "0b44420a439786c8802ef965b562617758973924fba71824a4d9691130f20410",
+        "output_text_sha256": "20d8d0b042009c5fc3e700537463009e4c67e0679e63f7e20ed9d9ee1163dbf3",
+        "stderr_sha256": "0f923db33077591faa3a2cba032b32e8c30f8c155f8e55b20ef9efe653541ef4",
+        "cli_reported_tokens": 3918,
+        "observed_retry_markers": 0,
+        "provider_call_count": null
+      }
+    },
+    {
+      "schema": "sapi-lab-dispatch/v1",
+      "timestamp_unix": 1791140297.7541142,
+      "event": "agency_response",
+      "duration_seconds": 7.777,
+      "http_status": 200,
+      "status": "completed",
+      "error": null,
+      "detail": null,
+      "model": "gpt-6-astra",
+      "invocation_id": "revise-answer/r1/draft_reply/attempt3/d7329d53076546c1/1",
+      "operation": "reply.generate",
+      "inputs_sha256": "2e6a27d0af19bd1b28127257a241703716a04e3f9a726606025f64ee6a22f5bc"
+    }
+  ],
+  "source_unchanged": true,
+  "existing_container_identities_preserved": true,
+  "finished_at": "2026-10-04T18:58:30.879170+00:00"
+}

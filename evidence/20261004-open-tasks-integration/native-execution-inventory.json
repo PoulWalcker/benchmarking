@@ -1,0 +1,1358 @@
+{
+  "unique_native_executions": 113,
+  "status_counts": {
+    "success": 77,
+    "error": 36
+  },
+  "scope": "All fresh observed native executions in this open-task report, including unpaid controls, transport probes, expected negatives and live runs; duplicated checkpoints deduplicated by workflow/execution/start identity and exact metadata hash",
+  "executions": [
+    {
+      "workflow_id": "9abdc0e561a44064",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:13:59.439",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "adc237f6b049009492cb2982b601fbd86c9f29a83fe66bdc72f5bc380f3c3a87",
+      "copies": [
+        "refinement-native-probe-3/artifacts/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "a306069acac34f50",
+      "execution_id": "61",
+      "started_at": "2026-10-04 18:34:48.586",
+      "status": "success",
+      "mode": "manual",
+      "sha256": "c20841a5604b1ff00b4971249914f58266473f66d1211fb36bd70a56a804b732",
+      "copies": [
+        "ui-demo/run/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "47325e8529a64fd1",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:44:35.456",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "21bc9c98de3904f0fbb49835395ea644eac536dd7af0bba65dbd1ccea5a090a1",
+      "copies": [
+        "refinement-evaluation/generation/control/transport/valid/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "a1f960aa2ec44d19",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:44:40.354",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "7ccddfda10ca01565d44f436e30b7883aa5dd9b33fcd480ce639736d1026f01d",
+      "copies": [
+        "refinement-evaluation/generation/control/transport/guard_false/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "466fc0cdd471444c",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:44:44.540",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "616e719a0d860221053f0dc98136783e3fd24633e441b58ce2a7e2284afe8c58",
+      "copies": [
+        "refinement-evaluation/generation/control/transport/guard_false_invalid_inputs/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "beec9f09c5404fc3",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:44:48.409",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "3b1e5cd86d023d1d1b0d7bf04c63a02cf1a55bc7a4b7d5483dfc6217472fcee8",
+      "copies": [
+        "refinement-evaluation/generation/control/transport/invalid_inputs/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "9d0bd09fc62b4916",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:44:52.233",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "1b82e68c3819781a80b39067c6134936ff3d14f41cd0779fb67bf855314a0425",
+      "copies": [
+        "refinement-evaluation/generation/control/transport/wrong_invocation/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "e23929a4ce5b4c32",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:44:57.050",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "3d46c112428a49509981d13df451576f95613ffeb4476a38b61ccba2e460c937",
+      "copies": [
+        "refinement-evaluation/generation/control/transport/wrong_schema/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "f88b6c875b844d1b",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:45:01.878",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "764c0a2ae92a897966c857699440f986005e03b99c177508e70b9f8a86addd9e",
+      "copies": [
+        "refinement-evaluation/generation/control/transport/failed_status/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "9d8abee142634220",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:45:05.934",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "c16843656acf238a8c665b7c411ae038050ce2bafb8c7c88f00bbb56c042b9e9",
+      "copies": [
+        "refinement-evaluation/generation/control/transport/extra_field/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "fc89340c07814206",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:45:09.754",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "fb0cf15d5fff8218ec3027e2f1b9f8e77384a364494060083514d1bd90b1a2c2",
+      "copies": [
+        "refinement-evaluation/generation/control/transport/malformed_json/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "0bd92ebe466c462c",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:45:13.534",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "d842044240d8f40a1ad05b1499be26f665b4dfd05e0ae98270a67a7c524605a6",
+      "copies": [
+        "refinement-evaluation/generation/control/transport/http_error/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "27b902e543074775",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:45:17.234",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "ac08ae55f74b70d17e3b336cca7b31c7d0c39bab187e769a7e9f8a2b59a81f85",
+      "copies": [
+        "refinement-evaluation/generation/control/transport/array_response/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "6620ff42dbd348e1",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:45:20.949",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "08b5f8a6569ddd42fa13babee34515a8cc2d6c023c35bca3492bdde2474a0dbf",
+      "copies": [
+        "refinement-evaluation/generation/control/transport/timeout/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "f6bc683726fb4997",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:45:31.372",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "7f4ebcb8d3b8de72769508b82f019c7489f18405333eeebc248ab5d7bc2139a3",
+      "copies": [
+        "refinement-evaluation/generation/control/jobs/oracle/revise-answer__NKFPmWa/verifier/cases/valid-reply/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "c75ad62f6cd7470e",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:45:36.459",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "a7bac3940ae19df1777b01929ce88ee001cb92fd81d3c82acd42090ba9301d35",
+      "copies": [
+        "refinement-evaluation/generation/control/jobs/oracle/revise-answer__NKFPmWa/verifier/cases/impossible-limit/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "7b26b5e3109f4fdc",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:51:09.230",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "931d6ffeb28b0ab2fa1e5b6c9587e8ce52d23b4ed5fcd463940173d00b1e858f",
+      "copies": [
+        "refinement-evaluation-2/generation/control/transport/valid/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "e516a6a16c89438d",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:51:13.572",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "862e9e9186a4d0612c1b6bf67be299a2b3f1e5aa74dc2c17c1636da27280649d",
+      "copies": [
+        "refinement-evaluation-2/generation/control/transport/guard_false/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "9be82f5006c849c0",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:51:17.707",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "5f82048edb76f32e3e81fd113ad16045d7915aba18460e2f5a53b46ee2d77279",
+      "copies": [
+        "refinement-evaluation-2/generation/control/transport/guard_false_invalid_inputs/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "cd627dce956a4bc1",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:51:21.449",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "fb25328ef9b770957bc2d97366063d91b4adff04bf7356a96a7e7165ab8d0855",
+      "copies": [
+        "refinement-evaluation-2/generation/control/transport/invalid_inputs/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "6b95daa8062a44f5",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:51:25.436",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "ad2f545763bf64e962ef0963429a4d1561288da57936b07127da74b1efdfb37d",
+      "copies": [
+        "refinement-evaluation-2/generation/control/transport/wrong_invocation/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "d3f6eed1ba1f4fcf",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:51:29.571",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "57d684b3dedfc03078d4139872cc78fe4df14fa4feb27a54462677a74f8e1012",
+      "copies": [
+        "refinement-evaluation-2/generation/control/transport/wrong_schema/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "d0fd26bc7bf44c11",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:51:33.487",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "60e39fe4c6769ac24975acb7a196d3078821a9f9aba37bb21d8036996f1d4da9",
+      "copies": [
+        "refinement-evaluation-2/generation/control/transport/failed_status/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "791fcb7cd71d49c9",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:51:37.355",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "1e4d8ce7cdb13e5ef62cbd8fa168209b894bd80a3e75361fa321ec0eeb3b555d",
+      "copies": [
+        "refinement-evaluation-2/generation/control/transport/extra_field/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "1c588a48881e453c",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:51:41.207",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "2dad3cb4f6cafb2757e87a45db0689b0296c30d4cff8299f614cd620e3d2aaeb",
+      "copies": [
+        "refinement-evaluation-2/generation/control/transport/malformed_json/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "7173b5549c2a4661",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:51:44.877",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "b01a4e86f45c0c3f58e134c6a5c36c8c10b47a25df5bcf42344d9febdd52f537",
+      "copies": [
+        "refinement-evaluation-2/generation/control/transport/http_error/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "7572cea1b45f4b43",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:51:48.611",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "6a2488244c9c70df1ba2609c764c66239ca6dd417a547e0668eb3cddce0880b2",
+      "copies": [
+        "refinement-evaluation-2/generation/control/transport/array_response/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "6e6a70f45291468c",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:51:52.385",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "f59302a2deb8fa2e45361bd12797ea01c7a6d83db921cc21aea1366852726690",
+      "copies": [
+        "refinement-evaluation-2/generation/control/transport/timeout/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "3796c197863c417e",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:52:01.355",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "1d27a4a01c02958fac6a0809808bc9a53e366e2cc45357a475dd3c7e1dbeb6ff",
+      "copies": [
+        "refinement-evaluation-2/generation/control/jobs/oracle/revise-answer__gUnwwLd/verifier/cases/valid-reply/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "7d3c47ab16ed4648",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:52:06.142",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "dfcb52df15781ceee763e4ee171e897be28c1fdaa1dac3dda141bf8379e34f6a",
+      "copies": [
+        "refinement-evaluation-2/generation/control/jobs/oracle/revise-answer__gUnwwLd/verifier/cases/impossible-limit/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "62bdc25b32b74370",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:52:11.668",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "f6003538a9674321e392af538bcfe9cd51e4ec6d7aa7b3b2f7b7267d35ad0d04",
+      "copies": [
+        "refinement-evaluation-2/generation/control/jobs/oracle/revise-answer__gUnwwLd/verifier/cases/mutated-generated-result/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "e92862cc8e74465d",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:53:06.575",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "7f63bae1ca57d7a023b64fca2a9a2e02fb117c8f116f05541c88bbe0d95b6afa",
+      "copies": [
+        "static-regression/artifacts/invoice-total/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "b0e4bd8e8e2a4be5",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:53:10.775",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "4ca7bfc760aabc2acb01d2301c22482d195e30a9e725720464053fd29865f2a6",
+      "copies": [
+        "static-regression/artifacts/ticket-routing/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "8cb2f480bee34592",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:53:18.255",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "4c1caca23be25889a2d41ca1ca0de927ce4a51b33b49f9b96e076477eaace640",
+      "copies": [
+        "static-regression/artifacts/competitor-report/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "5f4da5e964204bc8",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:53:22.313",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "645017f5a76164732759d91c1c92ca06fe82977543c4fc5d31f39748e0285d28",
+      "copies": [
+        "refinement-evaluation-2/generation/jobs/generated/revise-answer__potobY3/verifier/cases/valid-reply/execution.metadata.json",
+        "refinement-evaluation-2/generation/jobs/generated-attempt-1/revise-answer__potobY3/verifier/cases/valid-reply/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "a60e0d8a65324c84",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:53:27.517",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "9b0096ead4ddc8850a9d88db6b4b9ebb6c4b0ae541e6ca9d610dc3ab20dfacd8",
+      "copies": [
+        "refinement-evaluation-2/generation/jobs/generated/revise-answer__potobY3/verifier/cases/impossible-limit/execution.metadata.json",
+        "refinement-evaluation-2/generation/jobs/generated-attempt-1/revise-answer__potobY3/verifier/cases/impossible-limit/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "18ba301b8fbe4d52",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:53:32.901",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "d199002346b9ca749ebe90d75a3ad252d7dd0af7ccbd74612403a3a9521d988f",
+      "copies": [
+        "refinement-evaluation-2/generation/jobs/generated/revise-answer__potobY3/verifier/cases/mutated-generated-result/execution.metadata.json",
+        "refinement-evaluation-2/generation/jobs/generated-attempt-1/revise-answer__potobY3/verifier/cases/mutated-generated-result/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "81f832dd011a4293",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:54:24.920",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "89c9298d90071064c47055091d4d259bcff89888a41fb52eb71df218d0b34b21",
+      "copies": [
+        "refinement-evaluation-2/generation/jobs/generated/revise-answer__SGNjK3y/verifier/cases/valid-reply/execution.metadata.json",
+        "refinement-evaluation-2/generation/jobs/generated-attempt-2/revise-answer__SGNjK3y/verifier/cases/valid-reply/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "a9e0d34d30244090",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:54:29.917",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "e59676bf949dbf11ad160b344038cb6da1c25d1d25228c5115c744ccf78a2260",
+      "copies": [
+        "refinement-evaluation-2/generation/jobs/generated/revise-answer__SGNjK3y/verifier/cases/impossible-limit/execution.metadata.json",
+        "refinement-evaluation-2/generation/jobs/generated-attempt-2/revise-answer__SGNjK3y/verifier/cases/impossible-limit/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "c0e4bf02cb084c93",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:54:34.729",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "def9272386a2cd6cc1d54384529f30793eb6e80b4fb56b0f37cec460e70f4f5e",
+      "copies": [
+        "refinement-evaluation-2/generation/jobs/generated/revise-answer__SGNjK3y/verifier/cases/mutated-generated-result/execution.metadata.json",
+        "refinement-evaluation-2/generation/jobs/generated-attempt-2/revise-answer__SGNjK3y/verifier/cases/mutated-generated-result/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "e3ba75fe006e4abf",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:55:21.719",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "f73a6ec5ace0cb04dfcc0f5748b492f9dc5dc344c646cc82bd5daa754aca16e7",
+      "copies": [
+        "refinement-evaluation-2/generation/jobs/generated/revise-answer__KVNbMkv/verifier/cases/valid-reply/execution.metadata.json",
+        "refinement-evaluation-2/generation/jobs/generated-attempt-3/revise-answer__KVNbMkv/verifier/cases/valid-reply/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "3de2c214e7154e2c",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:55:26.636",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "2a8ef47bbd8d5f717be565f4b126371a259ba96a1ddbaaf403aa42b671db843b",
+      "copies": [
+        "refinement-evaluation-2/generation/jobs/generated/revise-answer__KVNbMkv/verifier/cases/impossible-limit/execution.metadata.json",
+        "refinement-evaluation-2/generation/jobs/generated-attempt-3/revise-answer__KVNbMkv/verifier/cases/impossible-limit/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "e0f012ca5005413e",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:55:31.546",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "af8a81468c0d29bbd439099727fc310a413a122bede352eef204347829375a85",
+      "copies": [
+        "refinement-evaluation-2/generation/jobs/generated/revise-answer__KVNbMkv/verifier/cases/mutated-generated-result/execution.metadata.json",
+        "refinement-evaluation-2/generation/jobs/generated-attempt-3/revise-answer__KVNbMkv/verifier/cases/mutated-generated-result/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "c5c76627c57b4f58",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:57:03.901",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "969a7319fed2b30f2dcc996bc030de5bcb73d59e744ab643cc4903fcd5c5cb74",
+      "copies": [
+        "refinement-evaluation-2/live/jobs/live-revise-answer-valid-reply/revise-answer__WcEcMLm/verifier/cases/valid-reply/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "d7329d53076546c1",
+      "execution_id": "1",
+      "started_at": "2026-10-04 18:57:38.862",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "54312b99223fda274d3722c2fbbd55122eb31713bdc40608314854aea78ac172",
+      "copies": [
+        "refinement-evaluation-2/live/jobs/live-revise-answer-impossible-limit/revise-answer__HgkAuiN/verifier/cases/impossible-limit/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "20f96e44805b4f54",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:13:37.407",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "f36936a236b26899ba837a23cb824d8980139f92f3f0e10b25425611c080c356",
+      "copies": [
+        "lifecycle-evaluation-2/series/authoring/controls/jobs/oracle/daily-digest__4wgfP7U/verifier/cases/supplied-articles/events/332af2acb49e55c43a758b4b62a9700251006adfe01a4b22ee0e65d45c7ae7ff/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "4604311b2c4e432b",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:13:42.072",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "03c5ec24ce38d43326d3463ea81095557442faebcd19702fe50519976b0465d8",
+      "copies": [
+        "lifecycle-evaluation-2/series/authoring/controls/jobs/oracle/daily-digest__4wgfP7U/verifier/cases/supplied-articles/events/d5393f6c934f6ec806d95fb096dd13f3549b4b371a0d51d97fce942f34bafb96/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "e2fb47ee099c42e9",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:13:46.721",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "98fe2f616633d24170ed473ca29918d0f6bff84468ea28798483d4b162725a04",
+      "copies": [
+        "lifecycle-evaluation-2/series/authoring/controls/jobs/oracle/daily-digest__4wgfP7U/verifier/cases/alternate-articles/events/332af2acb49e55c43a758b4b62a9700251006adfe01a4b22ee0e65d45c7ae7ff/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "4645e30dd0754fe8",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:13:51.592",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "2486275c912fad964e0af7ead8dd4a8cdb3b4b977745c1bdb7bc6935dbbd2e7b",
+      "copies": [
+        "lifecycle-evaluation-2/series/authoring/controls/jobs/oracle/daily-digest__4wgfP7U/verifier/cases/alternate-articles/events/d5393f6c934f6ec806d95fb096dd13f3549b4b371a0d51d97fce942f34bafb96/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "c03c98c032524679",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:13:56.410",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "7855781047561708d485dab00e94fe35faaca170f1e00974e003d0b8187e5e38",
+      "copies": [
+        "lifecycle-evaluation-2/series/authoring/controls/jobs/oracle/daily-digest__4wgfP7U/verifier/cases/intentional-output-mutation/events/abe9826feffb603c5bc183e34783a17cee01f9bcb8e8a239b0cc4e2643c71bc6/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "4c8d43e244d74c88",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:18:32.623",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "907a3adf617ef5f83ce32cc84f55d1e8015aed675140da8a28ab88ef2dc5fb93",
+      "copies": [
+        "lifecycle-evaluation-3/series/authoring/controls/jobs/oracle/daily-digest__Y6USmea/verifier/cases/supplied-articles/events/332af2acb49e55c43a758b4b62a9700251006adfe01a4b22ee0e65d45c7ae7ff/execution.metadata.json",
+        "lifecycle-evaluation-3/after-authored/authoring/controls/jobs/oracle/daily-digest__Y6USmea/verifier/cases/supplied-articles/events/332af2acb49e55c43a758b4b62a9700251006adfe01a4b22ee0e65d45c7ae7ff/execution.metadata.json",
+        "lifecycle-evaluation-3/after-mutation/authoring/controls/jobs/oracle/daily-digest__Y6USmea/verifier/cases/supplied-articles/events/332af2acb49e55c43a758b4b62a9700251006adfe01a4b22ee0e65d45c7ae7ff/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "09e9f46eaf304fe1",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:18:37.640",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "b5f5c58ee906009e44997231b1fa20eac68169ac9480cca43533e276b0ab8d08",
+      "copies": [
+        "lifecycle-evaluation-3/series/authoring/controls/jobs/oracle/daily-digest__Y6USmea/verifier/cases/supplied-articles/events/d5393f6c934f6ec806d95fb096dd13f3549b4b371a0d51d97fce942f34bafb96/execution.metadata.json",
+        "lifecycle-evaluation-3/after-authored/authoring/controls/jobs/oracle/daily-digest__Y6USmea/verifier/cases/supplied-articles/events/d5393f6c934f6ec806d95fb096dd13f3549b4b371a0d51d97fce942f34bafb96/execution.metadata.json",
+        "lifecycle-evaluation-3/after-mutation/authoring/controls/jobs/oracle/daily-digest__Y6USmea/verifier/cases/supplied-articles/events/d5393f6c934f6ec806d95fb096dd13f3549b4b371a0d51d97fce942f34bafb96/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "c2d8cb369968459e",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:18:42.419",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "61cd0a137baf05239675577eadec54a032c508d888a5d936a70e2aad774d72d7",
+      "copies": [
+        "lifecycle-evaluation-3/series/authoring/controls/jobs/oracle/daily-digest__Y6USmea/verifier/cases/alternate-articles/events/332af2acb49e55c43a758b4b62a9700251006adfe01a4b22ee0e65d45c7ae7ff/execution.metadata.json",
+        "lifecycle-evaluation-3/after-authored/authoring/controls/jobs/oracle/daily-digest__Y6USmea/verifier/cases/alternate-articles/events/332af2acb49e55c43a758b4b62a9700251006adfe01a4b22ee0e65d45c7ae7ff/execution.metadata.json",
+        "lifecycle-evaluation-3/after-mutation/authoring/controls/jobs/oracle/daily-digest__Y6USmea/verifier/cases/alternate-articles/events/332af2acb49e55c43a758b4b62a9700251006adfe01a4b22ee0e65d45c7ae7ff/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "f4a4fa3bff5641f2",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:18:47.126",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "521a7a3de677d288e5e69518e2980ff9088a7983f5059629728c3c5ad30a747c",
+      "copies": [
+        "lifecycle-evaluation-3/series/authoring/controls/jobs/oracle/daily-digest__Y6USmea/verifier/cases/alternate-articles/events/d5393f6c934f6ec806d95fb096dd13f3549b4b371a0d51d97fce942f34bafb96/execution.metadata.json",
+        "lifecycle-evaluation-3/after-authored/authoring/controls/jobs/oracle/daily-digest__Y6USmea/verifier/cases/alternate-articles/events/d5393f6c934f6ec806d95fb096dd13f3549b4b371a0d51d97fce942f34bafb96/execution.metadata.json",
+        "lifecycle-evaluation-3/after-mutation/authoring/controls/jobs/oracle/daily-digest__Y6USmea/verifier/cases/alternate-articles/events/d5393f6c934f6ec806d95fb096dd13f3549b4b371a0d51d97fce942f34bafb96/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "f76d6916f8774e4e",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:18:51.954",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "030b9689d07b68766fe304ba450dc0d777a2eb27da4ce3ae7185a60959941d91",
+      "copies": [
+        "lifecycle-evaluation-3/series/authoring/controls/jobs/oracle/daily-digest__Y6USmea/verifier/cases/intentional-output-mutation/events/abe9826feffb603c5bc183e34783a17cee01f9bcb8e8a239b0cc4e2643c71bc6/execution.metadata.json",
+        "lifecycle-evaluation-3/after-authored/authoring/controls/jobs/oracle/daily-digest__Y6USmea/verifier/cases/intentional-output-mutation/events/abe9826feffb603c5bc183e34783a17cee01f9bcb8e8a239b0cc4e2643c71bc6/execution.metadata.json",
+        "lifecycle-evaluation-3/after-mutation/authoring/controls/jobs/oracle/daily-digest__Y6USmea/verifier/cases/intentional-output-mutation/events/abe9826feffb603c5bc183e34783a17cee01f9bcb8e8a239b0cc4e2643c71bc6/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "4ac4ffbb13e24138",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:20:00.517",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "e2e02faa3b1e0b52c7bce4a42727f6c6548b68b1ecc60e4e6b47f17c9e6e1b9a",
+      "copies": [
+        "lifecycle-evaluation-3/series/authoring/jobs/generated/daily-digest__CzwFHai/verifier/cases/supplied-articles/events/332af2acb49e55c43a758b4b62a9700251006adfe01a4b22ee0e65d45c7ae7ff/execution.metadata.json",
+        "lifecycle-evaluation-3/after-authored/authoring/jobs/generated/daily-digest__CzwFHai/verifier/cases/supplied-articles/events/332af2acb49e55c43a758b4b62a9700251006adfe01a4b22ee0e65d45c7ae7ff/execution.metadata.json",
+        "lifecycle-evaluation-3/after-mutation/authoring/jobs/generated/daily-digest__CzwFHai/verifier/cases/supplied-articles/events/332af2acb49e55c43a758b4b62a9700251006adfe01a4b22ee0e65d45c7ae7ff/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "b40487145d0641f3",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:20:05.525",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "f113ebb528833e5ce583573e8f8b8de25a187af192a42f6a0f071a9a183f3967",
+      "copies": [
+        "lifecycle-evaluation-3/series/authoring/jobs/generated/daily-digest__CzwFHai/verifier/cases/supplied-articles/events/d5393f6c934f6ec806d95fb096dd13f3549b4b371a0d51d97fce942f34bafb96/execution.metadata.json",
+        "lifecycle-evaluation-3/after-authored/authoring/jobs/generated/daily-digest__CzwFHai/verifier/cases/supplied-articles/events/d5393f6c934f6ec806d95fb096dd13f3549b4b371a0d51d97fce942f34bafb96/execution.metadata.json",
+        "lifecycle-evaluation-3/after-mutation/authoring/jobs/generated/daily-digest__CzwFHai/verifier/cases/supplied-articles/events/d5393f6c934f6ec806d95fb096dd13f3549b4b371a0d51d97fce942f34bafb96/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "ce084fa1715648cc",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:20:10.292",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "66ff5dc184642e0f97f54d5dfbfdaeae9bd645ee64cb862459d70f295e64eb03",
+      "copies": [
+        "lifecycle-evaluation-3/series/authoring/jobs/generated/daily-digest__CzwFHai/verifier/cases/alternate-articles/events/332af2acb49e55c43a758b4b62a9700251006adfe01a4b22ee0e65d45c7ae7ff/execution.metadata.json",
+        "lifecycle-evaluation-3/after-authored/authoring/jobs/generated/daily-digest__CzwFHai/verifier/cases/alternate-articles/events/332af2acb49e55c43a758b4b62a9700251006adfe01a4b22ee0e65d45c7ae7ff/execution.metadata.json",
+        "lifecycle-evaluation-3/after-mutation/authoring/jobs/generated/daily-digest__CzwFHai/verifier/cases/alternate-articles/events/332af2acb49e55c43a758b4b62a9700251006adfe01a4b22ee0e65d45c7ae7ff/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "c87f1206d79f4d51",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:20:15.139",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "79b978334a9d4b0b1c37df253c038810be0cdb22f1600cbbb7d5c4203455673b",
+      "copies": [
+        "lifecycle-evaluation-3/series/authoring/jobs/generated/daily-digest__CzwFHai/verifier/cases/alternate-articles/events/d5393f6c934f6ec806d95fb096dd13f3549b4b371a0d51d97fce942f34bafb96/execution.metadata.json",
+        "lifecycle-evaluation-3/after-authored/authoring/jobs/generated/daily-digest__CzwFHai/verifier/cases/alternate-articles/events/d5393f6c934f6ec806d95fb096dd13f3549b4b371a0d51d97fce942f34bafb96/execution.metadata.json",
+        "lifecycle-evaluation-3/after-mutation/authoring/jobs/generated/daily-digest__CzwFHai/verifier/cases/alternate-articles/events/d5393f6c934f6ec806d95fb096dd13f3549b4b371a0d51d97fce942f34bafb96/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "9bcd5d83354c4e6d",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:20:20.217",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "89cd53dc9c88a499e83c4b98c23dc52572a51796e8224ab893c7b681f5ae588e",
+      "copies": [
+        "lifecycle-evaluation-3/series/authoring/jobs/generated/daily-digest__CzwFHai/verifier/cases/intentional-output-mutation/events/abe9826feffb603c5bc183e34783a17cee01f9bcb8e8a239b0cc4e2643c71bc6/execution.metadata.json",
+        "lifecycle-evaluation-3/after-authored/authoring/jobs/generated/daily-digest__CzwFHai/verifier/cases/intentional-output-mutation/events/abe9826feffb603c5bc183e34783a17cee01f9bcb8e8a239b0cc4e2643c71bc6/execution.metadata.json",
+        "lifecycle-evaluation-3/after-mutation/authoring/jobs/generated/daily-digest__CzwFHai/verifier/cases/intentional-output-mutation/events/abe9826feffb603c5bc183e34783a17cee01f9bcb8e8a239b0cc4e2643c71bc6/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "10fe3507b9a94f4a",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:21:23.607",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "41fe63b213378b33651eeee3fb980aaded5a17e2e48d9d52591f192e3730a80e",
+      "copies": [
+        "lifecycle-evaluation-3/after-authored/authored/registry/events/7dc1d396760ee873134c5e9debaf7cd11fb7868e9136200dfd2c19dcdc4394a9/execution.metadata.json",
+        "lifecycle-evaluation-3/after-mutation/authored/registry/events/7dc1d396760ee873134c5e9debaf7cd11fb7868e9136200dfd2c19dcdc4394a9/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "514bdd55360e4d57",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:24:03.313",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "ac7a0f1cadd79dfe5e8262ede75c2a89bea7c2cbcf7f27193bae76b3c6224996",
+      "copies": [
+        "lifecycle-evaluation-3/after-authored/authored/registry/events/b0eb915fe9bf9b7ccbdfbda3bb024ddcf7b2e8e09545ddd3b01272583ed349fd/execution.metadata.json",
+        "lifecycle-evaluation-3/after-mutation/authored/registry/events/b0eb915fe9bf9b7ccbdfbda3bb024ddcf7b2e8e09545ddd3b01272583ed349fd/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "ed302e3924a04172",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:25:20.370",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "3034120cf1425541608d5815e5be3d65caca383b5bf4c0daaae4cb508344d1ca",
+      "copies": [
+        "lifecycle-evaluation-3/after-mutation/mutation/registry/events/7dc1d396760ee873134c5e9debaf7cd11fb7868e9136200dfd2c19dcdc4394a9/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "4dd2fd56c9ea430c",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:26:08.012",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "d8ebfba8a6248c862978506eb5e7b65705eecbf906456ee517df345156540fd9",
+      "copies": [
+        "lifecycle-evaluation-3/after-mutation/mutation/registry/events/344a385bd1cf93dcadc0ab9e5f9a1cd4683cf109101af401621bc06929e906d7/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "bac017159f114ec3",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:40:03.470",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "d652e3269b803a479b1f42cd689b5dcd969f091f7aa3fa3617a120026352c143",
+      "copies": [
+        "lifecycle-evaluation-3/after-mutation/mutation/registry/events/6e26ee5a8197c9b750ea4cdaca7d76b2d91d644208ee2bc63d507169a90e421c/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "dd358c0b59834a91",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:41:22.319",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "a91513c0ca8ee709926ddc9754d31ac1e90c7358e09eef4a681f48e2b2d631c0",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/base/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/base/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/base/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "adb6e346766345e4",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:41:27.209",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "665638fd49dfeb68a33deb0a86adefa7ce8e90e57ced19164bc77bddc8b57450",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/alternate/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/alternate/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/alternate/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "0cdb3119d6e4408a",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:41:31.807",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "303c06e5981bd90a5ba0291903e03ce614db98dc55231ce8aaa152323a9f075c",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/literal-output/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/literal-output/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/literal-output/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "0c708a5727884ce9",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:41:36.420",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "78e83f3f1acf556c9200385b2e508e5cf2ef3c784bafe4d5ca9637d40899368f",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/bypassed-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/bypassed-source/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/bypassed-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "179eda1ab1ac4cbc",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:41:41.031",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "2b6420354c5c679985b34f11b62b19412b3d6966ad1dc1cceba1465fd1fe739d",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/empty-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/empty-source/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/empty-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "c2e0335b792e43f7",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:41:45.725",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "6a53228005e77071ca80adad902dae0207861aae9b400a9690847877d6167e94",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/mixed-currency-invoices/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/mixed-currency-invoices/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-branches__eNC6Uqg/verifier/cases/mixed-currency-invoices/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "f7f09e24997b4a69",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:42:05.666",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "fd3f55f1c4e24b62c974c539da27d67c0cf81a77d55129008032f0a917d08446",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/base/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/base/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/base/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "3a64059fdc644c1d",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:42:10.668",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "80c4ad14fff1f4ae357c15239d737b4c8b6aa9b6f9425e344e6b7155a9a0ae96",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/alternate/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/alternate/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/alternate/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "775e604d7af241af",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:42:15.501",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "f60b1b22a5ebf9472c3e9fddc9ea8bd2cfc0845c778ff8ccf7d27e16b7a1bbec",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/literal-output/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/literal-output/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/literal-output/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "9542c6c02d924cb2",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:42:20.291",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "4e09fd3bf9b4b915e03eeeed3e74e38d1d8c29b8dd948eba7f9bafe15dcbc87e",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/bypassed-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/bypassed-source/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/bypassed-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "2accb2500526441f",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:42:25.366",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "929325b0e067edbb4e20b29c2a2cf9fe71ae885db9fb5ceefddccd50b8d7be81",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/empty-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/empty-source/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/empty-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "7afe552fca974c73",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:42:30.193",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "47cf16ed07b06ee35191bdaea723f9263bd4fda1254a8eb69a9a4a71d3d9cdf4",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/mixed-currency-invoices/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/mixed-currency-invoices/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/controls/jobs/oracle/billing-bulletin-packet-inline__5zZJu8r/verifier/cases/mixed-currency-invoices/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "edeecc9592054c5c",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:44:11.034",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "0aadd7c54f7a555fbd02cc95f111ced0ed633d7a930f6aa59d01623db64104c8",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/base/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/base/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/base/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "2bc6a6d0ad63448b",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:44:15.845",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "f9ba10dd53219a062ef9a2ebb6e636041a9e537de281173929c8cebf5d65b7c2",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/alternate/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/alternate/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/alternate/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "eb759c9aa4a84dbf",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:44:20.827",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "81bfa817de9c0aef165c82a9070e23fb2802ad741254d0beaf449c0d5735b981",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/literal-output/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/literal-output/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/literal-output/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "c23ea69fd8f945c2",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:44:25.794",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "0ebc7e01e5d66814e491dafdfd83d19ffb53143b4b3da1393d36fcf4cf22444f",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/bypassed-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/bypassed-source/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/bypassed-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "f247283c314b4ebe",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:44:30.438",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "eeb610f72c4c920fd3d6c085009e1bf54fd8a6755992ee3c54ed34540b179fbd",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/empty-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/empty-source/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/empty-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "3af3a4b843de4042",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:44:35.319",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "e74af59faf2032b8bd3ef751809c9639fc39b48f0371d3f0b95001777a2b35b2",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/mixed-currency-invoices/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/mixed-currency-invoices/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/jobs/attempt-1/billing-bulletin-packet__gLwBznn/verifier/cases/mixed-currency-invoices/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "c612863001d44ef0",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:45:43.513",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "c7486fd18e746d1f9412e2cff575399cd0746c38b34aea4a4c8592be136de73a",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/base/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/base/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/base/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "fc7088c0fdfd49e3",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:45:48.422",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "eb1ce6237a528c84f332f024df62470b0ba60cb5944b0f5ac963939e3a54cb91",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/alternate/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/alternate/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/alternate/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "3fee6cd31f3b457e",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:45:53.342",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "6106317035817e793fcaa258221f414bc68d944dde68d13eac09d780fd01117b",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/literal-output/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/literal-output/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/literal-output/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "9392310e44054f96",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:45:58.146",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "aba550c66c54d1e789bd96ffe7e274f91d8f68c3bf8c0a46e46963bbbd05bfc9",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/bypassed-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/bypassed-source/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/bypassed-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "1b5624540a16465b",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:46:02.930",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "8e4a6ea2276e23a7cec4c55f7646a728db7ca9d4e0787ac417bcbf12e05dd0f7",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/empty-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/empty-source/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/empty-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "fef71afd712e4b70",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:46:07.729",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "74374404591b585061bc38052f0fb9a4a2039720cd9a91207655d0727e3cb6b0",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/mixed-currency-invoices/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/mixed-currency-invoices/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/authoring/jobs/attempt-2/billing-bulletin-packet__3WTcSnd/verifier/cases/mixed-currency-invoices/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "0972b058d24549fa",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:47:54.290",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "fc276cfcb93f7311213e3c20888794023b9a179236e46b7021be679d79385f6e",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/live/base/native/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/live/base/native/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/live/base/native/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "97caf5a91fa546b5",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:48:09.997",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "573a87ab43059f1fda9697ddcf0f3ca07d033d14fd94e74dde1cbd4b80a52a04",
+      "copies": [
+        "generalization-evaluation/series/billing-bulletin-packet/live/alternate/native/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/billing-bulletin-packet/live/alternate/native/execution.metadata.json",
+        "generalization-evaluation/g1-after-live/billing-bulletin-packet/live/alternate/native/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "e1431168717f468e",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:49:17.490",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "89df4d2a65dd98fc27cb791996fc2dab66853a86cc11c8e1ac63fd23a06e627d",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-shared__44hpud8/verifier/cases/base/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-shared__44hpud8/verifier/cases/base/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "759a07c4c2da4886",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:49:22.673",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "ce6bdc39cbf7b686561a66172daaec8a1a380caa19c98f1aedbe76b0d8883f91",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-shared__44hpud8/verifier/cases/alternate/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-shared__44hpud8/verifier/cases/alternate/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "725252bc6f76439e",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:49:27.682",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "373b075c0a0b0003a2aae249d55af3b1708d2351023ba36604a39b339c1bd449",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-shared__44hpud8/verifier/cases/literal-output/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-shared__44hpud8/verifier/cases/literal-output/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "667c8d77291f4b09",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:49:32.688",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "5d28b7e05044f38eeca178c51320941426534766020d208f18cfde5b29b340ab",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-shared__44hpud8/verifier/cases/bypassed-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-shared__44hpud8/verifier/cases/bypassed-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "a4b7d9015d894b3b",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:49:37.776",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "8c719f28d487876db7075d0d9bd57cee52d75b9ce94ac0f2919ff54851679d28",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-shared__44hpud8/verifier/cases/empty-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-shared__44hpud8/verifier/cases/empty-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "6b1c4cbfe8eb450d",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:49:57.377",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "d9c285b9fe94ec35e8d8dc59298f08f8f5280dd23f072de3a29934303a901a08",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-separate__R6mXnZg/verifier/cases/base/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-separate__R6mXnZg/verifier/cases/base/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "72b055a498bd4b29",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:50:02.207",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "62a23b44dc6d65f860d9a122f68b9980fca42300db86a5fc7c7fc9175e045a12",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-separate__R6mXnZg/verifier/cases/alternate/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-separate__R6mXnZg/verifier/cases/alternate/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "84af7af704314f07",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:50:07.177",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "69ec287fdbcbd2b939ba7878c024ce42bb28a5eba7df2f7103a107a3cc29cc60",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-separate__R6mXnZg/verifier/cases/literal-output/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-separate__R6mXnZg/verifier/cases/literal-output/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "c9101e86882a4059",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:50:11.793",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "76c11713f2d4c45e960821a3b004011b24e2ac335dd0b9b3b0a71188629460b9",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-separate__R6mXnZg/verifier/cases/bypassed-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-separate__R6mXnZg/verifier/cases/bypassed-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "6b7d669941d74361",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:50:16.683",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "4dab4572066d60a413277e416328027594f238e4dfff04928182ecd6096662cc",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-separate__R6mXnZg/verifier/cases/empty-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/controls/jobs/oracle/two-audience-briefs-separate__R6mXnZg/verifier/cases/empty-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "504231f010ae43c4",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:51:52.222",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "d577617c8537a06a96b48537206de0e5cf59537ffd74788265ddefe7b5b010c2",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/jobs/attempt-1/two-audience-briefs__RYRXafX/verifier/cases/base/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/jobs/attempt-1/two-audience-briefs__RYRXafX/verifier/cases/base/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "3ee9afd70fe9466c",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:51:57.234",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "9a6b3c9e0d40519f9b95deff02fc8ef0967bb0db59bab60a67bd29ac61684c39",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/jobs/attempt-1/two-audience-briefs__RYRXafX/verifier/cases/alternate/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/jobs/attempt-1/two-audience-briefs__RYRXafX/verifier/cases/alternate/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "c09cdb85c4fb4301",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:52:02.037",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "000673a5961d8dbec4efe3f7734657cfde5de935e7a495b9672a592576bb718b",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/jobs/attempt-1/two-audience-briefs__RYRXafX/verifier/cases/literal-output/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/jobs/attempt-1/two-audience-briefs__RYRXafX/verifier/cases/literal-output/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "3297a75d4e304b59",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:52:07.048",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "18d014a90dda3396173e12fadcf82b1725e58164b9c99999be23c874977525e3",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/jobs/attempt-1/two-audience-briefs__RYRXafX/verifier/cases/bypassed-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/jobs/attempt-1/two-audience-briefs__RYRXafX/verifier/cases/bypassed-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "0d34a7321d0b4e8c",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:52:12.025",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "3ae8dd36c92f8110782656c8ebf6e6497a9098728905039e45c7fc8f29ffe009",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/jobs/attempt-1/two-audience-briefs__RYRXafX/verifier/cases/empty-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/jobs/attempt-1/two-audience-briefs__RYRXafX/verifier/cases/empty-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "123e370faf084ec2",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:53:15.476",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "faf71efffb647155ada33e26ef8faad329e134e1f121eee18707afb289e3b5fe",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/jobs/attempt-2/two-audience-briefs__i2LcUi4/verifier/cases/base/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/jobs/attempt-2/two-audience-briefs__i2LcUi4/verifier/cases/base/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "d0c1f54e1698407f",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:53:20.704",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "c7ac2c7938924a538e42c0d660e47b9eb55e914169dd32e8a70f7f857b7cd349",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/jobs/attempt-2/two-audience-briefs__i2LcUi4/verifier/cases/alternate/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/jobs/attempt-2/two-audience-briefs__i2LcUi4/verifier/cases/alternate/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "dd83ada6e7f24967",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:53:25.688",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "6b25decc1e3206307924a54d89ab1e3f3113844bf68cf75ca7a09f77d73b3e88",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/jobs/attempt-2/two-audience-briefs__i2LcUi4/verifier/cases/literal-output/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/jobs/attempt-2/two-audience-briefs__i2LcUi4/verifier/cases/literal-output/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "084cfab85134481b",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:53:30.501",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "57deca237a58217068e7ed50671e3962b643c2368c76f4160a586debf9f15366",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/jobs/attempt-2/two-audience-briefs__i2LcUi4/verifier/cases/bypassed-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/jobs/attempt-2/two-audience-briefs__i2LcUi4/verifier/cases/bypassed-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "b11fe247a5014438",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:53:35.395",
+      "status": "error",
+      "mode": "cli",
+      "sha256": "aac2822b5e654fa64557a7ca1532f65c9ac7220d47baad13ca450c2c2ad02fb6",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/authoring/jobs/attempt-2/two-audience-briefs__i2LcUi4/verifier/cases/empty-source/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/authoring/jobs/attempt-2/two-audience-briefs__i2LcUi4/verifier/cases/empty-source/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "5b89d06625f94ea3",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:54:50.259",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "43236509aebcde446ab6ef3ce5261f242a77e146758561f97a100d9ba6bd923d",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/live/base/native/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/live/base/native/execution.metadata.json"
+      ]
+    },
+    {
+      "workflow_id": "cdca75fd56054fa0",
+      "execution_id": "1",
+      "started_at": "2026-10-04 19:55:46.746",
+      "status": "success",
+      "mode": "cli",
+      "sha256": "bd837a1f63d8d25d74d4da2fea25c26c5dea61705516b00ebe71aa52e84f7b9f",
+      "copies": [
+        "generalization-evaluation/series/two-audience-briefs/live/alternate/native/execution.metadata.json",
+        "generalization-evaluation/g2-after-live/two-audience-briefs/live/alternate/native/execution.metadata.json"
+      ]
+    }
+  ]
+}

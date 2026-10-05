@@ -1,0 +1,83 @@
+{
+  "phases": [
+    {
+      "phase": "original-three control",
+      "native": 35
+    },
+    {
+      "phase": "topology probes",
+      "native": 4
+    },
+    {
+      "phase": "sc01 prepared control",
+      "status": "passed",
+      "native": 24
+    },
+    {
+      "phase": "sc01 authored stub trials",
+      "status": "passed",
+      "native": 24,
+      "submitted": 2,
+      "accepted": 2
+    },
+    {
+      "phase": "sc01 generated live",
+      "status": "passed",
+      "native": 2,
+      "wrapper_attempts": 0,
+      "wrapper_completions": 0
+    },
+    {
+      "phase": "sc02 prepared control",
+      "status": "passed",
+      "native": 22
+    },
+    {
+      "phase": "sc02 authored stub trials",
+      "status": "passed",
+      "native": 20,
+      "submitted": 2,
+      "accepted": 2
+    },
+    {
+      "phase": "sc02 generated live",
+      "status": "passed",
+      "native": 2,
+      "wrapper_attempts": 4,
+      "wrapper_completions": 4
+    },
+    {
+      "phase": "sc03 prepared control",
+      "status": "passed",
+      "native": 22
+    },
+    {
+      "phase": "sc03 authored stub trials",
+      "status": "failed",
+      "native": 1,
+      "submitted": 1,
+      "accepted": 0
+    },
+    {
+      "phase": "SC04 separate unpaid prepared control",
+      "status": "passed",
+      "native": 20,
+      "outside_stopped_paid_series": true
+    }
+  ],
+  "native_executions": 176,
+  "authoring_reserved": 5,
+  "runtime_reserved": 4,
+  "series_failed": true,
+  "unrun": [
+    "SC03 authoring attempt2",
+    "SC03 live base-bulletins",
+    "SC03 live alternate-bulletins",
+    "SC04 authoring attempts1,2",
+    "SC04 live high-brief",
+    "SC04 live normal-empty"
+  ],
+  "unused_authoring_ceiling": 3,
+  "unused_runtime_ceiling": 13,
+  "unused_slots_may_not_resume_failed_series": true
+}

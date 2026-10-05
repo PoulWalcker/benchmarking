@@ -163,15 +163,15 @@ arbitrary workflow generation.
 
 | Config | Exact reference config: recorded native n8n coverage | Model-authored YAML: recorded native live coverage |
 | --- | --- | --- |
-| [01-invoice-total.yaml](configs/01-invoice-total.yaml) | Positive/negative controls; live-mode reference cases passed | [3 cases passed; 0 runtime model calls](reports/20261004-generated-live-integration/SUMMARY.md) — Script-only |
-| [02-ticket-routing.yaml](configs/02-ticket-routing.yaml) | Positive/negative controls; reference live classification passed | [2 cases passed; 2 runtime model calls](reports/20261004-generated-live-integration/SUMMARY.md) |
-| [03-competitor-report.yaml](configs/03-competitor-report.yaml) | Positive/negative controls; reference live research passed | [2 cases passed; 6 runtime model calls](reports/20261004-generated-live-integration/SUMMARY.md) |
-| [04-revise-answer.yaml](configs/04-revise-answer.yaml) | One bounded native graph; stub controls show rejection, feedback, later acceptance and exhaustion | [3 one-shot YAMLs accepted; selected original used 4 runtime calls](reports/20261004-open-tasks-integration/refinement-evaluation-2/SUMMARY.md): positive accepted first draft; impossible-limit case exhausted 3 attempts with no accepted output |
-| [05-digest-lifecycle.yaml](configs/05-digest-lifecycle.yaml) | Candidate execution and an explicit durable controller; native controls use an injected clock | 1 one-shot authoring, 5 runtime and 1 WBS repair call. [Unchanged authored revision passed Callback and actual-clock Cron](reports/20261004-open-tasks-integration/lifecycle-evaluation-3/after-authored/authored/report.json); [separate deliberate mutation was rejected, then model repair passed a new Callback and actual-clock Cron](reports/20261004-open-tasks-integration/lifecycle-evaluation-3/after-mutation/mutation/report.json) |
-| [06-dual-ledger-closeout.yaml](configs/06-dual-ledger-closeout.yaml) | Positive/negative native controls; Script-only | [2 cases passed; 0 runtime model calls](reports/20261004-scenario-expansion-integration/sc01-live/report.json) — Script-only |
-| [07-support-review-packet.yaml](configs/07-support-review-packet.yaml) | Positive/negative native controls with stub LLM; exact reference not separately live-replayed | [2 cases passed; 4 runtime model calls](reports/20261004-scenario-expansion-integration/sc02-live/report.json) |
-| [08-bulletin-market-brief.yaml](configs/08-bulletin-market-brief.yaml) | Positive/negative native controls with stub LLM; exact reference not separately live-replayed | [2 corrected-task cases passed; 8 runtime model calls](reports/20261004-corrected-expansion-integration/sc03-live/report.json) |
-| [09-priority-support-brief.yaml](configs/09-priority-support-brief.yaml) | Positive/negative native controls with stub LLM; exact reference not separately live-replayed | [2 corrected-task cases passed; 5 runtime model calls](reports/20261004-corrected-expansion-integration/sc04-live/report.json) |
+| [01-invoice-total.yaml](configs/01-invoice-total.yaml) | Positive/negative controls; live-mode reference cases passed | [3 cases passed; 0 runtime model calls](evidence/20261004-generated-live-integration/SUMMARY.md) — Script-only |
+| [02-ticket-routing.yaml](configs/02-ticket-routing.yaml) | Positive/negative controls; reference live classification passed | [2 cases passed; 2 runtime model calls](evidence/20261004-generated-live-integration/SUMMARY.md) |
+| [03-competitor-report.yaml](configs/03-competitor-report.yaml) | Positive/negative controls; reference live research passed | [2 cases passed; 6 runtime model calls](evidence/20261004-generated-live-integration/SUMMARY.md) |
+| [04-revise-answer.yaml](configs/04-revise-answer.yaml) | One bounded native graph; stub controls show rejection, feedback, later acceptance and exhaustion | [3 one-shot YAMLs accepted; selected original used 4 runtime calls](evidence/20261004-open-tasks-integration/refinement-evaluation-2/SUMMARY.md): positive accepted first draft; impossible-limit case exhausted 3 attempts with no accepted output |
+| [05-digest-lifecycle.yaml](configs/05-digest-lifecycle.yaml) | Candidate execution and an explicit durable controller; native controls use an injected clock | 1 one-shot authoring, 5 runtime and 1 WBS repair call. [Unchanged authored revision passed Callback and actual-clock Cron](evidence/20261004-open-tasks-integration/lifecycle-evaluation-3/after-authored/authored/report.json); [separate deliberate mutation was rejected, then model repair passed a new Callback and actual-clock Cron](evidence/20261004-open-tasks-integration/lifecycle-evaluation-3/after-mutation/mutation/report.json) |
+| [06-dual-ledger-closeout.yaml](configs/06-dual-ledger-closeout.yaml) | Positive/negative native controls; Script-only | [2 cases passed; 0 runtime model calls](evidence/20261004-scenario-expansion-integration/sc01-live/report.json) — Script-only |
+| [07-support-review-packet.yaml](configs/07-support-review-packet.yaml) | Positive/negative native controls with stub LLM; exact reference not separately live-replayed | [2 cases passed; 4 runtime model calls](evidence/20261004-scenario-expansion-integration/sc02-live/report.json) |
+| [08-bulletin-market-brief.yaml](configs/08-bulletin-market-brief.yaml) | Positive/negative native controls with stub LLM; exact reference not separately live-replayed | [2 corrected-task cases passed; 8 runtime model calls](evidence/20261004-corrected-expansion-integration/sc03-live/report.json) |
+| [09-priority-support-brief.yaml](configs/09-priority-support-brief.yaml) | Positive/negative native controls with stub LLM; exact reference not separately live-replayed | [2 corrected-task cases passed; 5 runtime model calls](evidence/20261004-corrected-expansion-integration/sc04-live/report.json) |
 
 Runtime call counts exclude YAML-authoring and WBS repair calls. Zero calls for invoice-only
 workflows are expected, not missing LLM coverage. Negative controls pass when
@@ -181,24 +181,24 @@ fixture-input and, for live execution, deadline overlays.
 The 05 actual-clock runs use recorded fixed-minute evaluation schedule overlays;
 they do not install a persistent scheduling service.
 
-Reference evidence: [01–03 controls](reports/20261004-scenario-expansion-integration/baseline-control/report.json)
-and [01–03 live](reports/20261004-verified-2/live/report.json),
-[06 controls](reports/20261004-scenario-expansion-integration/sc01-generation/control/report.json),
-[07 controls](reports/20261004-scenario-expansion-integration/sc02-generation/control/report.json),
-[08 controls](reports/20261004-corrected-expansion-integration/sc03-generation/control/report.json),
-and [09 controls](reports/20261004-corrected-expansion-integration/sc04-generation/control/report.json).
+Reference evidence: [01–03 controls](evidence/20261004-scenario-expansion-integration/baseline-control/report.json)
+and [01–03 live](evidence/20261004-verified-2/live/report.json),
+[06 controls](evidence/20261004-scenario-expansion-integration/sc01-generation/control/report.json),
+[07 controls](evidence/20261004-scenario-expansion-integration/sc02-generation/control/report.json),
+[08 controls](evidence/20261004-corrected-expansion-integration/sc03-generation/control/report.json),
+and [09 controls](evidence/20261004-corrected-expansion-integration/sc04-generation/control/report.json).
 These links target local ignored reports. The historical generated-live report's
 container-preservation failure is preserved and explained by the user-confirmed
 service stop in its summary; all seven workflow cases passed their business gates.
 The initial SC-03 rejection also remains preserved; the later corrected-task
-series is separate evidence. [Independent agent content review](reports/20261004-open-tasks-integration/AGENT-QUALITY-REVIEW.md)
+series is separate evidence. [Independent agent content review](evidence/20261004-open-tasks-integration/AGENT-QUALITY-REVIEW.md)
 found the SC-03/04 briefs concise and supported by these short fixtures. SC-02
 correctly reports its overlong support drafts as rejected; packet acceptance does
 not make those drafts ready to send. Human review is separate and is not claimed.
 The earlier third-authoring gate is a proposed team-pilot policy, not a specification
 or statistical rule. These bounded results do not establish team-pilot readiness.
 
-The [04 evidence review](reports/20261004-open-tasks-integration/INDEPENDENT-REVIEW.md)
+The [04 evidence review](evidence/20261004-open-tasks-integration/INDEPENDENT-REVIEW.md)
 also assessed its accepted reply as cautious and useful. Live rejection followed
 by acceptance was not observed: that path was established with native stub controls.
 The [lifecycle guide](docs/LIFECYCLE.md) explains why 05 needs a controller outside
@@ -207,8 +207,8 @@ separates original authoring from a deliberate mutation and model-authored repai
 
 Two [composition experiments](docs/GENERALIZATION-EVALUATION.md) completed four
 unchanged one-shot authorings and four native live cases with 12 runtime calls:
-[billing plus a digest](reports/20261004-open-tasks-integration/generalization-evaluation/series/billing-bulletin-packet/live/report.json)
-and [two audience briefs](reports/20261004-open-tasks-integration/generalization-evaluation/series/two-audience-briefs/live/report.json).
+[billing plus a digest](evidence/20261004-open-tasks-integration/generalization-evaluation/series/billing-bulletin-packet/live/report.json)
+and [two audience briefs](evidence/20261004-open-tasks-integration/generalization-evaluation/series/two-audience-briefs/live/report.json).
 Both answers per task used the same graph shape. For the briefs, the models shared
 one product analysis and supplied writer inputs as inline objects; the two manual
 native controls instead used shared analysis with combine steps or separate product
@@ -219,7 +219,7 @@ the independent agent read found the short outputs faithful to their supplied fa
 This does not establish new business implementations or arbitrary workflow generation.
 See the [runtime limitations](docs/PROFILE.md#research-harness-transport-modes).
 
-The [local UI demonstration](reports/20261004-open-tasks-integration/ui-demo/run/verification.json)
+The [local UI demonstration](evidence/20261004-open-tasks-integration/ui-demo/run/verification.json)
 manually executed a new inactive workflow (`a306069acac34f50`, execution `61`)
 with four correlated runtime model calls. The six pre-existing workflow hashes
 were preserved. Its foreground helper is stopped; use the [UI guide](docs/N8N-UI.md)

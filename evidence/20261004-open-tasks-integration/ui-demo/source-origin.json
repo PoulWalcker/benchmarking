@@ -1,0 +1,16 @@
+{
+  "source_origin": "model_authored_original_with_explicit_execution_overlay",
+  "original_path": "reports/20261004-corrected-expansion-integration/sc04-generation/jobs/generated/priority-support-brief__8nKfTih/agent/submission.yaml",
+  "original_sha256": "4542af50e2ea3891c5f4272123787ac61bc1165eb942e9e755e74527754f16ad",
+  "overlay": {
+    "execution.deadline_seconds": {
+      "before": 120,
+      "after": 600
+    }
+  },
+  "supplied_sha256": "7a056c334160ba0223fc8a8f985508d369095379abb2294efd593014433a2c5f",
+  "other_semantic_changes": [],
+  "authoring_calls": 0,
+  "runtime_attempt_cap": 4,
+  "protected_existing_workflow": "haUQEcB818FQjfkH"
+}

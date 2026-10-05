@@ -1,0 +1,28 @@
+{
+  "kind": "read-only diagnostic, not acceptance override",
+  "engine_status": "success",
+  "recorded_acceptance": {
+    "status": "rejected",
+    "passed": false,
+    "reason": "Missing, ambiguous, or incorrect occurrence role/input lineage"
+  },
+  "workflow_id": "559a6bab21a54b7d",
+  "execution_id": "1",
+  "digest_text_equals_preview_text": true,
+  "digest_ids_equal_preview_ids": true,
+  "product_evidence_equals_digest_text": true,
+  "product_summary_uses_unchanged_digest": true,
+  "marketing_evidence_equals_input": true,
+  "writer_preserves_evidence": true,
+  "output_digest_equals_preview": true,
+  "actual_terminal_roles": [
+    "write"
+  ],
+  "planned_terminal_roles": [
+    "preview",
+    "write"
+  ],
+  "actual_product_ref": "steps.retain_preview.text",
+  "planned_product_ref": "steps.summarize.text",
+  "source_yaml_sha256": "124fda0fe69701a8b9115671a39e2bbf8bae4325e07f28e16497707b08791e97"
+}

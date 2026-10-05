@@ -1,0 +1,955 @@
+{
+  "unique_native_executions": 82,
+  "by_phase": {
+    "sc03-generation": 42,
+    "sc03-live": 2,
+    "sc04-generation": 36,
+    "sc04-live": 2
+  },
+  "duplicate_metadata_copies": 36,
+  "deduplication_key": [
+    "workflowId",
+    "id",
+    "startedAt"
+  ],
+  "executions": [
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "b2a83b55340f4481",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:52:27.788",
+      "status": "success",
+      "metadata_sha256": "b6ef0a23542d0f337ab15b8df07444d1565d7b8def199bd4a30ef1cec79a50e3",
+      "copies": [
+        "sc03-generation/control/jobs/oracle/bulletin-market-brief__ucb6QC2/verifier/cases/changed-marketing/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "db83914f02154f06",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:52:42.290",
+      "status": "error",
+      "metadata_sha256": "1630edec7680d81eece72317981ca78cfa9f8ddeba96b93ec0da416fd2d34841",
+      "copies": [
+        "sc03-generation/control/jobs/oracle/bulletin-market-brief__ucb6QC2/verifier/cases/malformed-article-title/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "29498b30ac954a11",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:52:08.106",
+      "status": "success",
+      "metadata_sha256": "2870650899b01f64d28018e9586dfc52cc367807ae5c7440e73af76920d8e1dd",
+      "copies": [
+        "sc03-generation/control/jobs/oracle/bulletin-market-brief__ucb6QC2/verifier/cases/base-bulletins/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "6ba9a2a8e9a74b21",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:52:46.978",
+      "status": "error",
+      "metadata_sha256": "75a6cbd0328fdc5ccbc5c079d6e8ac56ce9590abd7a6d58530cc39dbe2c383ed",
+      "copies": [
+        "sc03-generation/control/jobs/oracle/bulletin-market-brief__ucb6QC2/verifier/cases/empty-marketing/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "562a9f7cd7074878",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:52:13.009",
+      "status": "success",
+      "metadata_sha256": "db59f94553f97aac08bb368cd2282d034b993e80f940554751221a92f11ca15e",
+      "copies": [
+        "sc03-generation/control/jobs/oracle/bulletin-market-brief__ucb6QC2/verifier/cases/alternate-bulletins/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "720fb2767a9140a5",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:52:22.772",
+      "status": "success",
+      "metadata_sha256": "12d4117779f541c85a56c9cdf8eaa3df4a2ea8550076ac43fb294c34bb2250d3",
+      "copies": [
+        "sc03-generation/control/jobs/oracle/bulletin-market-brief__ucb6QC2/verifier/cases/replaced-capability/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "acd8a87ce3d44bbe",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:52:17.982",
+      "status": "success",
+      "metadata_sha256": "bfd90699254d9c59e2902146218736490c465162a9fb35b08b6a9ca12ee4ebfc",
+      "copies": [
+        "sc03-generation/control/jobs/oracle/bulletin-market-brief__ucb6QC2/verifier/cases/reordered-bulletins/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "9f9ad9a026d34cef",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:52:32.701",
+      "status": "error",
+      "metadata_sha256": "445484f23d4f6dcc2ac439f91b2dbab89f9929d3b57ffb9a7416ad0067f4d772",
+      "copies": [
+        "sc03-generation/control/jobs/oracle/bulletin-market-brief__ucb6QC2/verifier/cases/empty-articles/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "8c698c0b3b364efe",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:52:37.500",
+      "status": "error",
+      "metadata_sha256": "671b196214fbc3b34269267e3c821f284c88da1324c0f1f2adaba448e0932a42",
+      "copies": [
+        "sc03-generation/control/jobs/oracle/bulletin-market-brief__ucb6QC2/verifier/cases/duplicate-articles/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "290e8ab7dc5b4345",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:52:51.871",
+      "status": "success",
+      "metadata_sha256": "e9226b49f6c51f7ccdf57ec8e2740cceaf61185a50326765213dfcf41d5ee20c",
+      "copies": [
+        "sc03-generation/control/jobs/oracle/bulletin-market-brief__ucb6QC2/verifier/cases/mutated-generated-result/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "3986d54d97774b68",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:51:17.117",
+      "status": "success",
+      "metadata_sha256": "5b281e09341ec1e73a370b5e36e3b24e166c51441c00c31789e4da3f4205177a",
+      "copies": [
+        "sc03-generation/control/transport/valid/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "929b027c8ce640c1",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:51:28.521",
+      "status": "error",
+      "metadata_sha256": "890b6293e7c0f9e0ad0e67e41dbec2ef1e1a4ba2bb986f3e776e90fc507019f7",
+      "copies": [
+        "sc03-generation/control/transport/invalid_inputs/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "b04289028eb44124",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:51:36.179",
+      "status": "error",
+      "metadata_sha256": "e8a31b9c6c75fe03f6e59826b28f04b2814794618f694280395c1b7ba6e814fd",
+      "copies": [
+        "sc03-generation/control/transport/wrong_schema/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "c4aa9e7b2f844e6c",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:51:58.458",
+      "status": "error",
+      "metadata_sha256": "fbde4e37de11653d484cea2bcaf655ff0b0fe16556c790dae89a81fd9c320d00",
+      "copies": [
+        "sc03-generation/control/transport/timeout/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "02628bed66804140",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:51:51.226",
+      "status": "error",
+      "metadata_sha256": "73d95fbe586b74bb87cf947875b39e7b261fc247de16f414187f33f2ff67be82",
+      "copies": [
+        "sc03-generation/control/transport/http_error/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "239dac783e97425b",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:51:39.915",
+      "status": "error",
+      "metadata_sha256": "7f34de30fc2f355f580c9afc0a62de72a44565f5234e529ff686af9f077b7a2c",
+      "copies": [
+        "sc03-generation/control/transport/failed_status/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "845a22205f7c4ee8",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:51:54.886",
+      "status": "error",
+      "metadata_sha256": "536f84b67cf9ae22e890dcfebf3d51e034cb603f2e4c06c6e55ac307e194e01e",
+      "copies": [
+        "sc03-generation/control/transport/array_response/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "76181127b079443a",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:51:47.426",
+      "status": "error",
+      "metadata_sha256": "210c324f84f9788620025b805cfa501a5b399a69d68fe2846d9dd69d93faac34",
+      "copies": [
+        "sc03-generation/control/transport/malformed_json/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "445aabe0aeaa4f04",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:51:32.215",
+      "status": "error",
+      "metadata_sha256": "dd2ca5542d41589a6fec0bde93008b8ff444408f0a5b581fdf500b14ab4d7dd7",
+      "copies": [
+        "sc03-generation/control/transport/wrong_invocation/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "ae95812a50884469",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:51:20.903",
+      "status": "success",
+      "metadata_sha256": "420762a1c67e52371e00eed841f35a59696686cb784c79ba242bec59c77958d3",
+      "copies": [
+        "sc03-generation/control/transport/guard_false/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "05cca492708946ed",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:51:43.609",
+      "status": "error",
+      "metadata_sha256": "771a7ea9145b530152267755d8a9e61eae2561bd5f05866f6b274b3686d3c2bb",
+      "copies": [
+        "sc03-generation/control/transport/extra_field/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "137aea006c17474e",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:51:24.696",
+      "status": "success",
+      "metadata_sha256": "ec121e0ebf2dc92ddf5f933349bb0b5a9ecd6857062ebfdb3ae88e79b5d4c696",
+      "copies": [
+        "sc03-generation/control/transport/guard_false_invalid_inputs/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "de168cad346041a3",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:56:33.011",
+      "status": "success",
+      "metadata_sha256": "48b938d35bb650c48ecd9af85994e26e4f0b0a66e40e38e07cfd3fcd8c5f7a9a",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-2/bulletin-market-brief__ctx7enZ/verifier/cases/changed-marketing/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__ctx7enZ/verifier/cases/changed-marketing/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "78ae2de5bbf6408e",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:56:47.734",
+      "status": "error",
+      "metadata_sha256": "9bccbd9313bc10a89b5df7eab3f23a28aaedf777fd610995a160dd7c1a8b0293",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-2/bulletin-market-brief__ctx7enZ/verifier/cases/malformed-article-title/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__ctx7enZ/verifier/cases/malformed-article-title/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "ba7ee98efd014d9d",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:56:12.942",
+      "status": "success",
+      "metadata_sha256": "4f90f489c50e4be8b533f16d3d4781685fd8c3313094010a99cd85031d5f5fdc",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-2/bulletin-market-brief__ctx7enZ/verifier/cases/base-bulletins/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__ctx7enZ/verifier/cases/base-bulletins/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "646d00bf1354463f",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:56:52.492",
+      "status": "error",
+      "metadata_sha256": "f15a6d2e9ad9379d7b7cb83decf33f42d1b003f499ab7a9534269a32cb671eb5",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-2/bulletin-market-brief__ctx7enZ/verifier/cases/empty-marketing/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__ctx7enZ/verifier/cases/empty-marketing/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "7f9d17e77c964066",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:56:18.040",
+      "status": "success",
+      "metadata_sha256": "e0badf786915c7ec3f527dcf96e90c0376fc59814ac42e89756aa7cc6026f831",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-2/bulletin-market-brief__ctx7enZ/verifier/cases/alternate-bulletins/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__ctx7enZ/verifier/cases/alternate-bulletins/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "06db4e8f85ba41a0",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:56:27.923",
+      "status": "success",
+      "metadata_sha256": "d64abdbee32274097f2d32d2d68dfb6cb937bfa9e1a66f4a4a381cdde6e2fd07",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-2/bulletin-market-brief__ctx7enZ/verifier/cases/replaced-capability/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__ctx7enZ/verifier/cases/replaced-capability/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "ce19212b13bc4c1b",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:56:23.116",
+      "status": "success",
+      "metadata_sha256": "2fcdbe2a5a8be142a0444941f622a43bf90b54ff2952bf1ea8bff605df1cbfa0",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-2/bulletin-market-brief__ctx7enZ/verifier/cases/reordered-bulletins/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__ctx7enZ/verifier/cases/reordered-bulletins/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "26e91c14ff0d4e98",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:56:38.207",
+      "status": "error",
+      "metadata_sha256": "ee5aa97b3322cf2ebda90a33184aa2c6f333835047c25e743e532b5dc2d0d19f",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-2/bulletin-market-brief__ctx7enZ/verifier/cases/empty-articles/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__ctx7enZ/verifier/cases/empty-articles/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "7c8db85bad804d59",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:56:42.933",
+      "status": "error",
+      "metadata_sha256": "eeb20792d35a4e2e13283276730d613d78f746f0e54e44470321812220ba2d3f",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-2/bulletin-market-brief__ctx7enZ/verifier/cases/duplicate-articles/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__ctx7enZ/verifier/cases/duplicate-articles/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "9c567ecacc334332",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:56:57.322",
+      "status": "success",
+      "metadata_sha256": "ca7f9086cab64aca123f48765bc96968bd192f239e4308940841a92478c7c408",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-2/bulletin-market-brief__ctx7enZ/verifier/cases/mutated-generated-result/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__ctx7enZ/verifier/cases/mutated-generated-result/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "5d4a11e1b43c448b",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:54:35.799",
+      "status": "success",
+      "metadata_sha256": "822144a413cdb35277392a4640d8e78539f48d6dd4b9d43d539f25d9a4380ec4",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-1/bulletin-market-brief__Avem5eg/verifier/cases/changed-marketing/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__Avem5eg/verifier/cases/changed-marketing/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "322322fb3ace4022",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:54:50.494",
+      "status": "error",
+      "metadata_sha256": "66442c2947222386b8ab63b78c3424333560b8a05ec48500dcc12e3e780dcb7a",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-1/bulletin-market-brief__Avem5eg/verifier/cases/malformed-article-title/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__Avem5eg/verifier/cases/malformed-article-title/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "ebf6f4ab8cf2471c",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:54:14.924",
+      "status": "success",
+      "metadata_sha256": "386103194680b1fd522f42aea352210dc48c076f5ed718da18f045ba35332f65",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-1/bulletin-market-brief__Avem5eg/verifier/cases/base-bulletins/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__Avem5eg/verifier/cases/base-bulletins/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "7bf0139da63c4525",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:54:55.404",
+      "status": "error",
+      "metadata_sha256": "4b817329097564f1dfb7fac4a0ae53105975c3dc5a8ae33f13d733eb104b4444",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-1/bulletin-market-brief__Avem5eg/verifier/cases/empty-marketing/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__Avem5eg/verifier/cases/empty-marketing/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "660526824e134c4f",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:54:20.014",
+      "status": "success",
+      "metadata_sha256": "7bb3bd50044c68aa30bd4b983131ea9162957925fbab94656b4190803554b667",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-1/bulletin-market-brief__Avem5eg/verifier/cases/alternate-bulletins/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__Avem5eg/verifier/cases/alternate-bulletins/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "238f5abc9ed642ed",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:54:30.504",
+      "status": "success",
+      "metadata_sha256": "76b2cdec0babb6b02a00471533b7fe2f7dc5c8358ad94cd94f66c86ef04ced4a",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-1/bulletin-market-brief__Avem5eg/verifier/cases/replaced-capability/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__Avem5eg/verifier/cases/replaced-capability/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "f811e5eabef84575",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:54:25.205",
+      "status": "success",
+      "metadata_sha256": "ad6c9e01677d1e5d186eda76dfef7046d338b96877a3fdb7b0161ccac98b2143",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-1/bulletin-market-brief__Avem5eg/verifier/cases/reordered-bulletins/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__Avem5eg/verifier/cases/reordered-bulletins/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "d6ea703c72d447b1",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:54:40.714",
+      "status": "error",
+      "metadata_sha256": "037568f153ea169359e814c2f8caa6032e1a10c84336c1c49c0e80a82b5ddb8e",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-1/bulletin-market-brief__Avem5eg/verifier/cases/empty-articles/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__Avem5eg/verifier/cases/empty-articles/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "f52eec2866ad4d64",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:54:45.525",
+      "status": "error",
+      "metadata_sha256": "34345dfd063d0323588bad9012bd79bd1a222c997b305552357ff9770304217f",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-1/bulletin-market-brief__Avem5eg/verifier/cases/duplicate-articles/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__Avem5eg/verifier/cases/duplicate-articles/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-generation",
+      "workflow_id": "ef27ed884afa41f0",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:55:00.299",
+      "status": "success",
+      "metadata_sha256": "ff5e7d92a2f8ec6951778a96b68db53b62f47c0e44fea02e975f4852e4b4548c",
+      "copies": [
+        "sc03-generation/jobs/generated-attempt-1/bulletin-market-brief__Avem5eg/verifier/cases/mutated-generated-result/execution.metadata.json",
+        "sc03-generation/jobs/generated/bulletin-market-brief__Avem5eg/verifier/cases/mutated-generated-result/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-live",
+      "workflow_id": "2835baac84374966",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:58:46.317",
+      "status": "success",
+      "metadata_sha256": "27469cdecd0199bbb6c69453b66f483285949218d0d98e56d4e87b51901d51a3",
+      "copies": [
+        "sc03-live/jobs/live-bulletin-market-brief-base-bulletins/bulletin-market-brief__9EvUws2/verifier/cases/base-bulletins/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc03-live",
+      "workflow_id": "dcd3d1ab840a42af",
+      "execution_id": "1",
+      "started_at": "2026-10-04 16:59:52.768",
+      "status": "success",
+      "metadata_sha256": "33a87902cdf1c0ba25a95beb6281ae8d47164d49cbddf14706e6159d3ca69f19",
+      "copies": [
+        "sc03-live/jobs/live-bulletin-market-brief-alternate-bulletins/bulletin-market-brief__zF2bD6A/verifier/cases/alternate-bulletins/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "0ccfe7f1ea1d4ecb",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:02:52.506",
+      "status": "success",
+      "metadata_sha256": "9af29e519fddb7cc59c0d1f2a99c7a15ff0b9385d97a40f43bc84ae7951737ee",
+      "copies": [
+        "sc04-generation/control/jobs/oracle/priority-support-brief__vea2m9x/verifier/cases/normal-empty/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "bfa217b67ea34e28",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:03:12.623",
+      "status": "error",
+      "metadata_sha256": "a5e4889a698e5462822b3ee9e92b75c9d017054e7d7b32ee3af10d8ea35b88ba",
+      "copies": [
+        "sc04-generation/control/jobs/oracle/priority-support-brief__vea2m9x/verifier/cases/high-empty-product/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "c3b240331532492f",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:02:57.304",
+      "status": "success",
+      "metadata_sha256": "cb0e0c4956bf1114c11c66f15f0d812752903b8cf1a4e612565500fbdcaaa351",
+      "copies": [
+        "sc04-generation/control/jobs/oracle/priority-support-brief__vea2m9x/verifier/cases/normal-zero/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "ebcd9738d1ab4cb4",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:03:02.222",
+      "status": "success",
+      "metadata_sha256": "764e1648385301c18b864404f840ad81b7e6617991b392153f3f94dcb7da53aa",
+      "copies": [
+        "sc04-generation/control/jobs/oracle/priority-support-brief__vea2m9x/verifier/cases/normal-valid/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "11a871062bba450b",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:03:07.589",
+      "status": "success",
+      "metadata_sha256": "531f7586e11274da7749aa67af93f3b02a0c678ff45bc3564132c7f5090a0156",
+      "copies": [
+        "sc04-generation/control/jobs/oracle/priority-support-brief__vea2m9x/verifier/cases/boundary-high/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "44d6361e433d4432",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:03:17.587",
+      "status": "error",
+      "metadata_sha256": "84b4f3cfd6b7d8751667876ca52346a1d63e3ae9e39bafd21a6504ff4e1d3736",
+      "copies": [
+        "sc04-generation/control/jobs/oracle/priority-support-brief__vea2m9x/verifier/cases/high-empty-marketing/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "2590a31e35b54787",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:02:47.497",
+      "status": "success",
+      "metadata_sha256": "9003b86ef21b4716269c114eab6d1e37e1c9c89eb860ca7a256f114b757d62fa",
+      "copies": [
+        "sc04-generation/control/jobs/oracle/priority-support-brief__vea2m9x/verifier/cases/high-brief/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "7afcb044fafd457b",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:03:22.801",
+      "status": "success",
+      "metadata_sha256": "02ac211fd3ce3be974a5f81ac3b88a0c0f61efe25484f42f447a0fc2397cd28b",
+      "copies": [
+        "sc04-generation/control/jobs/oracle/priority-support-brief__vea2m9x/verifier/cases/mutated-generated-result/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "3d737bf12de141b9",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:01:56.693",
+      "status": "success",
+      "metadata_sha256": "556d73f29f6c3717d8baee748bfd3a5ab4869c45103b5b957d8a3855d860f229",
+      "copies": [
+        "sc04-generation/control/transport/valid/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "4b966461aa384cd6",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:02:08.411",
+      "status": "error",
+      "metadata_sha256": "dbc01fd53a995cfdfa0f5eea7fa784c578ca5d7a8b0eb65232d6d7b311943e6f",
+      "copies": [
+        "sc04-generation/control/transport/invalid_inputs/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "f0d825d33ebb4afe",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:02:15.965",
+      "status": "error",
+      "metadata_sha256": "757e8e6584761c34de2d04c07d3cb59e03d6d205303e6efda95fc2c446f2ef3b",
+      "copies": [
+        "sc04-generation/control/transport/wrong_schema/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "889f105ba7e84711",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:02:38.329",
+      "status": "error",
+      "metadata_sha256": "7043716c712b45f878f75fce9bf2a5c23c0d64f216bf8b44b300e9adde6657a1",
+      "copies": [
+        "sc04-generation/control/transport/timeout/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "3f743b5c0a3b4049",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:02:30.899",
+      "status": "error",
+      "metadata_sha256": "3f01867a79e262c8b68e2be02af3f6b1203aca9698766c40b34f34eca9197627",
+      "copies": [
+        "sc04-generation/control/transport/http_error/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "5aee15261f7d467d",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:02:19.735",
+      "status": "error",
+      "metadata_sha256": "7d2906caf48e0a5b587a4a392906823b14d7721e87ef5b14a12b8a4eee1f3194",
+      "copies": [
+        "sc04-generation/control/transport/failed_status/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "0d265ff069814838",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:02:34.591",
+      "status": "error",
+      "metadata_sha256": "2c990bdf85dadb7b1ec3d526f2a90d648b5ca6193de510dbd21b4fcb56001659",
+      "copies": [
+        "sc04-generation/control/transport/array_response/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "5bef43e096e6433e",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:02:27.165",
+      "status": "error",
+      "metadata_sha256": "541973cf11b600cd9d86c3be0b723bd903b19c7e7f464198fc180b30250631f0",
+      "copies": [
+        "sc04-generation/control/transport/malformed_json/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "d33773ebe2d645cb",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:02:12.206",
+      "status": "error",
+      "metadata_sha256": "e0d6d56bd0b8ccb8ab9584859f650447413075ea7d93c8384078d67af6fdc03e",
+      "copies": [
+        "sc04-generation/control/transport/wrong_invocation/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "11963f47494e449d",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:02:00.481",
+      "status": "success",
+      "metadata_sha256": "a87b1243399423f7ef09ea39910aedbd221cb183c22e0943500fd4de990bbdae",
+      "copies": [
+        "sc04-generation/control/transport/guard_false/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "1803f844db7f4ae6",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:02:23.454",
+      "status": "error",
+      "metadata_sha256": "f3c50c558aa8d673b095e8cda067b7524ad415c82e41adb6478aedd3dd8eb15c",
+      "copies": [
+        "sc04-generation/control/transport/extra_field/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "a3157c0886ed4751",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:02:04.281",
+      "status": "success",
+      "metadata_sha256": "2b48fe4bea55cbb642efcfe56fe709cf82246a802c0d8db965d75c8f0b70bfec",
+      "copies": [
+        "sc04-generation/control/transport/guard_false_invalid_inputs/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "34e4f2b7e77a43f7",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:06:22.882",
+      "status": "success",
+      "metadata_sha256": "779c0d592bee2117ce6c1fd9c90db076f0200f4826b612c1bfea68cfdab3b795",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-2/priority-support-brief__o9HUwsR/verifier/cases/normal-empty/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__o9HUwsR/verifier/cases/normal-empty/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "9792f9903d064bf7",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:06:42.684",
+      "status": "error",
+      "metadata_sha256": "ce6606207f2a3dbbcc84d803b0b90844ef19ef03e384f02973d017b0983ece5f",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-2/priority-support-brief__o9HUwsR/verifier/cases/high-empty-product/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__o9HUwsR/verifier/cases/high-empty-product/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "a77e0d1a59ff460d",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:06:27.987",
+      "status": "success",
+      "metadata_sha256": "7d057fd934e66c2bbc368cdc40af77fb1c37304a168935292484a0a32b3e4415",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-2/priority-support-brief__o9HUwsR/verifier/cases/normal-zero/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__o9HUwsR/verifier/cases/normal-zero/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "778dee88898b4cd2",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:06:32.866",
+      "status": "success",
+      "metadata_sha256": "b623b3da41e19de064212a08773bc58087d46bc22e9b6eb96e425c2508d09ccf",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-2/priority-support-brief__o9HUwsR/verifier/cases/normal-valid/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__o9HUwsR/verifier/cases/normal-valid/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "9504d59f76a54e71",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:06:37.590",
+      "status": "success",
+      "metadata_sha256": "9463295e2f8773f6f731f51e59e7bda8e0aa850904058e5083bed687ea62081e",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-2/priority-support-brief__o9HUwsR/verifier/cases/boundary-high/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__o9HUwsR/verifier/cases/boundary-high/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "fb9d3adb89334e72",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:06:47.863",
+      "status": "error",
+      "metadata_sha256": "a53082c07eda1964e60ec0cd7de99745c7911c82f8ff45facaec95e860b2d7d8",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-2/priority-support-brief__o9HUwsR/verifier/cases/high-empty-marketing/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__o9HUwsR/verifier/cases/high-empty-marketing/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "4c213eb2adf64600",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:06:17.652",
+      "status": "success",
+      "metadata_sha256": "ec4194b791bb7f1430b470c8e773d70dc7b76776cd5a9bdbf20f4943b9a435aa",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-2/priority-support-brief__o9HUwsR/verifier/cases/high-brief/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__o9HUwsR/verifier/cases/high-brief/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "0712aabe5cbf475f",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:06:52.669",
+      "status": "success",
+      "metadata_sha256": "7b8a7cffe0102da431086dcb329df01288bd52f1f2cd1733b20840134303acd5",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-2/priority-support-brief__o9HUwsR/verifier/cases/mutated-generated-result/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__o9HUwsR/verifier/cases/mutated-generated-result/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "3673b20742a349ba",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:04:43.646",
+      "status": "success",
+      "metadata_sha256": "b2d8ce94c1b6bf378d292af09e20f7da13fbd6f00d0f3541c8597aa1d0aeef41",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-1/priority-support-brief__8nKfTih/verifier/cases/normal-empty/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__8nKfTih/verifier/cases/normal-empty/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "f962196c7e264260",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:05:02.958",
+      "status": "error",
+      "metadata_sha256": "826cab74b74906bd5a81dfeea588f2bf195f4ce59f79f0db5834b1323d5cc767",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-1/priority-support-brief__8nKfTih/verifier/cases/high-empty-product/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__8nKfTih/verifier/cases/high-empty-product/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "3e06702ccf8048f1",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:04:48.548",
+      "status": "success",
+      "metadata_sha256": "4d7e25c20a30e82d53fd7fa6dbfe8501dabe197842d7d4872699b31f022b774e",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-1/priority-support-brief__8nKfTih/verifier/cases/normal-zero/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__8nKfTih/verifier/cases/normal-zero/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "85090a7314484d67",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:04:53.451",
+      "status": "success",
+      "metadata_sha256": "4a7f24396303378506b1f5e74cfbd1903633eb74be78d546004f44767ee8a187",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-1/priority-support-brief__8nKfTih/verifier/cases/normal-valid/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__8nKfTih/verifier/cases/normal-valid/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "7e1ca0bb4faa4d4e",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:04:58.140",
+      "status": "success",
+      "metadata_sha256": "139f72bbf6513c529e904780e43b0ca3cc3bcbd4fa4197a136847ba7d93f3ae2",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-1/priority-support-brief__8nKfTih/verifier/cases/boundary-high/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__8nKfTih/verifier/cases/boundary-high/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "d59af00929bf48dd",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:05:07.934",
+      "status": "error",
+      "metadata_sha256": "d4ceac23a771dba29d669fec4f982b9f847ee9629e0eb45d669960850d194cf8",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-1/priority-support-brief__8nKfTih/verifier/cases/high-empty-marketing/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__8nKfTih/verifier/cases/high-empty-marketing/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "72a6b40beeae439e",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:04:38.846",
+      "status": "success",
+      "metadata_sha256": "3043178c499755de49ff4e8b140a54b7ce2058bd667db45b0142fde3ef79f578",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-1/priority-support-brief__8nKfTih/verifier/cases/high-brief/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__8nKfTih/verifier/cases/high-brief/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-generation",
+      "workflow_id": "474ceb2cb6854313",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:05:12.655",
+      "status": "success",
+      "metadata_sha256": "046b212a985660406640bd8f7396e12e21044322e6528a9cf65262b364f1dbd4",
+      "copies": [
+        "sc04-generation/jobs/generated-attempt-1/priority-support-brief__8nKfTih/verifier/cases/mutated-generated-result/execution.metadata.json",
+        "sc04-generation/jobs/generated/priority-support-brief__8nKfTih/verifier/cases/mutated-generated-result/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-live",
+      "workflow_id": "781d3679d73c4acd",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:09:13.126",
+      "status": "success",
+      "metadata_sha256": "7a18bfbe93b6e14cfb8531b1a7f0625ec9e022558484bedf92dae9ec0b5a7e2d",
+      "copies": [
+        "sc04-live/jobs/live-priority-support-brief-normal-empty/priority-support-brief__pn7jSwH/verifier/cases/normal-empty/execution.metadata.json"
+      ]
+    },
+    {
+      "phase": "sc04-live",
+      "workflow_id": "f224e6b8948b4b3d",
+      "execution_id": "1",
+      "started_at": "2026-10-04 17:08:10.759",
+      "status": "success",
+      "metadata_sha256": "7c1a8833d3d305bb3f5c25bb6c0fa70016d8f8ba0b3d6962c8e472ea41387d20",
+      "copies": [
+        "sc04-live/jobs/live-priority-support-brief-high-brief/priority-support-brief__sxBSFrw/verifier/cases/high-brief/execution.metadata.json"
+      ]
+    }
+  ]
+}

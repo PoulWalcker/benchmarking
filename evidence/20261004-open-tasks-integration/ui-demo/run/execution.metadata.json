@@ -1,0 +1,21 @@
+{
+  "id": 61,
+  "workflowId": "a306069acac34f50",
+  "finished": 1,
+  "mode": "manual",
+  "retryOf": null,
+  "retrySuccessId": null,
+  "startedAt": "2026-10-04 18:34:48.586",
+  "stoppedAt": "2026-10-04 18:35:31.233",
+  "waitTill": null,
+  "status": "success",
+  "deletedAt": null,
+  "createdAt": "2026-10-04 18:34:48.569",
+  "storedAt": "db",
+  "tracingContext": null,
+  "deduplicationKey": null,
+  "jsonSizeBytes": 190139,
+  "workflowVersionId": "850f364f-b612-4259-a666-bbccee4df30f",
+  "binaryDataSizeBytes": 0,
+  "usedPrivateCredentials": 0
+}

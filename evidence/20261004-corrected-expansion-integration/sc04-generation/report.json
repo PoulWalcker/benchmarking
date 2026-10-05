@@ -1,0 +1,1156 @@
+{
+  "schema": "sapi-lab-generation/v1",
+  "status": "passed",
+  "experiment_completed": true,
+  "attempts_per_task": 2,
+  "scenarios": [
+    "priority-support-brief"
+  ],
+  "authoring_attempt_ceiling": 2,
+  "runtime_llm_mode": "stub",
+  "started_at": "2026-10-04T17:01:44.229373+00:00",
+  "trials": [
+    {
+      "scenario": "priority-support-brief",
+      "passed": true,
+      "failure_stage": null,
+      "generation": {
+        "status": "submitted",
+        "provider": "existing-codex-exec-wrapper",
+        "prompt_sha256": "81e4faa2b71ebea4c02a4f7b2f29995ee70c16f8364425ee0c77eb32ce3b3ef6",
+        "generation_calls": 1,
+        "repairs": 0,
+        "runtime_llm_mode": "stub",
+        "failure_reason": null,
+        "model": "gpt-6-astra",
+        "cli_reported_tokens": 9412,
+        "observed_tool_markers": [],
+        "stderr_sha256": "78597a28adf4451f2e67bdadb27dd6d6eaa47f78f4989545050b3033c0e7be9c",
+        "tool_isolation": "prompt restriction plus stderr audit; not enforced by wrapper",
+        "submission_sha256": "4542af50e2ea3891c5f4272123787ac61bc1165eb942e9e755e74527754f16ad",
+        "duration_seconds": 39.891
+      },
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "acceptance": {
+        "scenario": "priority-support-brief",
+        "mode": "stub",
+        "passed": true,
+        "report_schema": "sapi-lab-verification/v1",
+        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+        "cases": [
+          {
+            "name": "high-brief",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "72a6b40beeae439e",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/high-brief",
+            "deadline_seconds": 120,
+            "config_sha256": "acb131286854f82fdadc673e5281e6b7f762a55a354160a726ec44fac8727290",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 8,
+            "llm_mode": "stub",
+            "n8n_node_count": 13,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "action": {
+                "ticket_id": "4E55FBF215B8-P-72",
+                "action": "escalate",
+                "mode": "draft"
+              },
+              "brief": {
+                "report": "Product: Fixture 4E55FBF215B8: The product supports barcode scanning and offline inventory.\n\nMarketing: Fixture 4E55FBF215B8: The service targets local shops through partner referrals.",
+                "evidence": [
+                  "Fixture 4E55FBF215B8: The product supports barcode scanning and offline inventory.",
+                  "Fixture 4E55FBF215B8: The service targets local shops through partner referrals."
+                ]
+              }
+            }
+          },
+          {
+            "name": "normal-empty",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "3673b20742a349ba",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/normal-empty",
+            "deadline_seconds": 120,
+            "config_sha256": "ea7c1895fa3ea8c7a135ea6f24a06d836a8b1cfc7ddd1dd44f820363cdc75fc1",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 8,
+            "llm_mode": "stub",
+            "n8n_node_count": 13,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "action": {
+                "ticket_id": "4E55FBF215B8-P-72",
+                "action": "normal_reply",
+                "mode": "draft"
+              },
+              "brief": null
+            }
+          },
+          {
+            "name": "normal-zero",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "3e06702ccf8048f1",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/normal-zero",
+            "deadline_seconds": 120,
+            "config_sha256": "e4a5322d68044bd8deab8d798ef0f930ef7b5059b3da2ad699a473de93fba2d1",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 8,
+            "llm_mode": "stub",
+            "n8n_node_count": 13,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "action": {
+                "ticket_id": "4E55FBF215B8-P-72",
+                "action": "normal_reply",
+                "mode": "draft"
+              },
+              "brief": null
+            }
+          },
+          {
+            "name": "normal-valid",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "85090a7314484d67",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/normal-valid",
+            "deadline_seconds": 120,
+            "config_sha256": "fab38c91572bf3dcaa19aaafd4f2d7d3faf2337b5b550870b90702e486b8c468",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 8,
+            "llm_mode": "stub",
+            "n8n_node_count": 13,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "action": {
+                "ticket_id": "4E55FBF215B8-P-72",
+                "action": "normal_reply",
+                "mode": "draft"
+              },
+              "brief": null
+            }
+          },
+          {
+            "name": "boundary-high",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "7e1ca0bb4faa4d4e",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/boundary-high",
+            "deadline_seconds": 120,
+            "config_sha256": "acb131286854f82fdadc673e5281e6b7f762a55a354160a726ec44fac8727290",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 8,
+            "llm_mode": "stub",
+            "n8n_node_count": 13,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "action": {
+                "ticket_id": "4E55FBF215B8-P-72",
+                "action": "escalate",
+                "mode": "draft"
+              },
+              "brief": {
+                "report": "Product: Fixture 4E55FBF215B8: The product supports barcode scanning and offline inventory.\n\nMarketing: Fixture 4E55FBF215B8: The service targets local shops through partner referrals.",
+                "evidence": [
+                  "Fixture 4E55FBF215B8: The product supports barcode scanning and offline inventory.",
+                  "Fixture 4E55FBF215B8: The service targets local shops through partner referrals."
+                ]
+              }
+            }
+          },
+          {
+            "name": "high-empty-product",
+            "kind": "negative",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "f962196c7e264260",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/high-empty-product",
+            "deadline_seconds": 120,
+            "config_sha256": "46ad8fbb66d8dbaf5932bacd9643f72b36d4923f7c24b6b4b239850d03549d65",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected invalid input rejection"
+            },
+            "expected_error": "Missing product material"
+          },
+          {
+            "name": "high-empty-marketing",
+            "kind": "negative",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "d59af00929bf48dd",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/high-empty-marketing",
+            "deadline_seconds": 120,
+            "config_sha256": "4c1f5fb1a1572efc8e7fb7374b100753c7a95f4d3b7307ef2ee236e90f5bd8e7",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected invalid input rejection"
+            },
+            "expected_error": "Missing marketing material"
+          },
+          {
+            "name": "wrong-result-in-generated-json",
+            "kind": "mutated-generated-workflow",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "474ceb2cb6854313",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/mutated-generated-result",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "rejection": "Result differs from submitted output lineage (keys)",
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Result differs from submitted output lineage (keys)"
+            }
+          },
+          {
+            "name": "unknown-operation",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-unknown-operation",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          },
+          {
+            "name": "cycle",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-cycle",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          },
+          {
+            "name": "unsupported-required-parallel",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-unsupported-required-parallel",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ],
+        "submission_sha256": "4542af50e2ea3891c5f4272123787ac61bc1165eb942e9e755e74527754f16ad",
+        "config_transformations": [
+          "workflow.inputs replaced by case fixture"
+        ]
+      },
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc04-generation/jobs/generated/priority-support-brief__8nKfTih/result.json"
+    },
+    {
+      "scenario": "priority-support-brief",
+      "passed": true,
+      "failure_stage": null,
+      "generation": {
+        "status": "submitted",
+        "provider": "existing-codex-exec-wrapper",
+        "prompt_sha256": "81e4faa2b71ebea4c02a4f7b2f29995ee70c16f8364425ee0c77eb32ce3b3ef6",
+        "generation_calls": 1,
+        "repairs": 0,
+        "runtime_llm_mode": "stub",
+        "failure_reason": null,
+        "model": "gpt-6-astra",
+        "cli_reported_tokens": 10427,
+        "observed_tool_markers": [],
+        "stderr_sha256": "10b908777810c66c1655582718d404bcb184048307b624b9c0388a271a6dc406",
+        "tool_isolation": "prompt restriction plus stderr audit; not enforced by wrapper",
+        "submission_sha256": "7590ef65afae62edade7c843df6589d1ea3c6ef7953e7ded5b67e4f19210c191",
+        "duration_seconds": 44.067
+      },
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "acceptance": {
+        "scenario": "priority-support-brief",
+        "mode": "stub",
+        "passed": true,
+        "report_schema": "sapi-lab-verification/v1",
+        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+        "cases": [
+          {
+            "name": "high-brief",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "4c213eb2adf64600",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/high-brief",
+            "deadline_seconds": 120,
+            "config_sha256": "9cb4f2eac6dd392ea2c806be8be3d434ceb24bebbdbb7fe3cce26a5a32ac63f7",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 8,
+            "llm_mode": "stub",
+            "n8n_node_count": 13,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "action": {
+                "ticket_id": "4E55FBF215B8-P-72",
+                "action": "escalate",
+                "mode": "draft"
+              },
+              "brief": {
+                "report": "Product: Fixture 4E55FBF215B8: The product supports barcode scanning and offline inventory.\n\nMarketing: Fixture 4E55FBF215B8: The service targets local shops through partner referrals.",
+                "evidence": [
+                  "Fixture 4E55FBF215B8: The product supports barcode scanning and offline inventory.",
+                  "Fixture 4E55FBF215B8: The service targets local shops through partner referrals."
+                ]
+              }
+            }
+          },
+          {
+            "name": "normal-empty",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "34e4f2b7e77a43f7",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/normal-empty",
+            "deadline_seconds": 120,
+            "config_sha256": "9e3d5d19977f656f715d750ed94a25358fce1617692b354f0192dc6829cff704",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 8,
+            "llm_mode": "stub",
+            "n8n_node_count": 13,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "action": {
+                "ticket_id": "4E55FBF215B8-P-72",
+                "action": "normal_reply",
+                "mode": "draft"
+              },
+              "brief": null
+            }
+          },
+          {
+            "name": "normal-zero",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "a77e0d1a59ff460d",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/normal-zero",
+            "deadline_seconds": 120,
+            "config_sha256": "ec4f0f44679a5290125b681bca7d40dd1b082d73767d7ca5d907fbba262798dd",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 8,
+            "llm_mode": "stub",
+            "n8n_node_count": 13,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "action": {
+                "ticket_id": "4E55FBF215B8-P-72",
+                "action": "normal_reply",
+                "mode": "draft"
+              },
+              "brief": null
+            }
+          },
+          {
+            "name": "normal-valid",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "778dee88898b4cd2",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/normal-valid",
+            "deadline_seconds": 120,
+            "config_sha256": "2f1f7464feded66aa909fa9e009616edbae639361830dfacda74f9a108032b43",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 8,
+            "llm_mode": "stub",
+            "n8n_node_count": 13,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "action": {
+                "ticket_id": "4E55FBF215B8-P-72",
+                "action": "normal_reply",
+                "mode": "draft"
+              },
+              "brief": null
+            }
+          },
+          {
+            "name": "boundary-high",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "9504d59f76a54e71",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/boundary-high",
+            "deadline_seconds": 120,
+            "config_sha256": "9cb4f2eac6dd392ea2c806be8be3d434ceb24bebbdbb7fe3cce26a5a32ac63f7",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 8,
+            "llm_mode": "stub",
+            "n8n_node_count": 13,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "action": {
+                "ticket_id": "4E55FBF215B8-P-72",
+                "action": "escalate",
+                "mode": "draft"
+              },
+              "brief": {
+                "report": "Product: Fixture 4E55FBF215B8: The product supports barcode scanning and offline inventory.\n\nMarketing: Fixture 4E55FBF215B8: The service targets local shops through partner referrals.",
+                "evidence": [
+                  "Fixture 4E55FBF215B8: The product supports barcode scanning and offline inventory.",
+                  "Fixture 4E55FBF215B8: The service targets local shops through partner referrals."
+                ]
+              }
+            }
+          },
+          {
+            "name": "high-empty-product",
+            "kind": "negative",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "9792f9903d064bf7",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/high-empty-product",
+            "deadline_seconds": 120,
+            "config_sha256": "52963692cb1ca93dd87d396c59e859ddee2c264e8148e8423da5e2b01b1bcc34",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected invalid input rejection"
+            },
+            "expected_error": "Missing product material"
+          },
+          {
+            "name": "high-empty-marketing",
+            "kind": "negative",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "fb9d3adb89334e72",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/high-empty-marketing",
+            "deadline_seconds": 120,
+            "config_sha256": "dc2fb3620ccfbce3677a850add7cec8b1d50f8e4e883bbb94c4af3a3bc96bfc3",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected invalid input rejection"
+            },
+            "expected_error": "Missing marketing material"
+          },
+          {
+            "name": "wrong-result-in-generated-json",
+            "kind": "mutated-generated-workflow",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "0712aabe5cbf475f",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/mutated-generated-result",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "rejection": "Result differs from submitted output lineage (keys)",
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Result differs from submitted output lineage (keys)"
+            }
+          },
+          {
+            "name": "unknown-operation",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-unknown-operation",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          },
+          {
+            "name": "cycle",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-cycle",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          },
+          {
+            "name": "unsupported-required-parallel",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-unsupported-required-parallel",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ],
+        "submission_sha256": "7590ef65afae62edade7c843df6589d1ea3c6ef7953e7ded5b67e4f19210c191",
+        "config_transformations": [
+          "workflow.inputs replaced by case fixture"
+        ]
+      },
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc04-generation/jobs/generated/priority-support-brief__o9HUwsR/result.json"
+    }
+  ],
+  "limitations": [
+    "Explicitly selected task families with a fixed specialized catalog; not held-out generalization.",
+    "Single-shot YAML output; no tools, retries or repair requested.",
+    "Wrapper tool restrictions are prompt-only, audited from CLI stderr, not a filesystem sandbox.",
+    "Runtime model steps are deterministic stubs; only YAML generation calls the live model.",
+    "Verifier checks exact task role/source obligations while permitting renamed step IDs.",
+    "The wrapper does not provide reliable token/cost breakdowns; costs remain unknown."
+  ],
+  "series_ledger": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/series/series.json",
+  "series_scenarios": [
+    "bulletin-market-brief",
+    "priority-support-brief"
+  ],
+  "series_ceilings": {
+    "authoring": 4,
+    "runtime": 13
+  },
+  "base_image_id": "sha256:5b1c3178ad0d8acc8f941f0a2d087e0bfdc60dc5f5dd3c69de334f3fd1c87dcf",
+  "frozen_image": "sapi-config-lab-generation-base:5b1c3178ad0d8acc",
+  "prompt_sha256": {
+    "priority-support-brief": "81e4faa2b71ebea4c02a4f7b2f29995ee70c16f8364425ee0c77eb32ce3b3ef6"
+  },
+  "private_cases_sha256": {
+    "priority-support-brief": "283201e633c258654cc9c68152126c18fd4b8edb18fe962a4237ecf22a534a03"
+  },
+  "command": [
+    "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+    "-c",
+    "from harbor.cli.main import app; app()",
+    "run",
+    "--path",
+    "/private/tmp/sapi-yaml-generation-9u96wia4/tasks",
+    "--agent",
+    "sapi_config_lab.experiments.generation.agent:WrapperYamlAgent",
+    "--ak",
+    "upstream=http://127.0.0.1:8765/run",
+    "--n-attempts",
+    "2",
+    "--n-concurrent",
+    "1",
+    "--max-retries",
+    "0",
+    "--jobs-dir",
+    "/private/tmp/sapi-yaml-generation-9u96wia4/jobs",
+    "--job-name",
+    "generated",
+    "--force-build"
+  ],
+  "commands": [
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-yaml-generation-9u96wia4/tasks",
+      "--agent",
+      "sapi_config_lab.experiments.generation.agent:WrapperYamlAgent",
+      "--ak",
+      "upstream=http://127.0.0.1:8765/run",
+      "--n-attempts",
+      "1",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-yaml-generation-9u96wia4/jobs",
+      "--job-name",
+      "generated-attempt-1",
+      "--force-build"
+    ],
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-yaml-generation-9u96wia4/tasks",
+      "--agent",
+      "sapi_config_lab.experiments.generation.agent:WrapperYamlAgent",
+      "--ak",
+      "upstream=http://127.0.0.1:8765/run",
+      "--n-attempts",
+      "1",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-yaml-generation-9u96wia4/jobs",
+      "--job-name",
+      "generated-attempt-2",
+      "--force-build"
+    ]
+  ],
+  "harbor_exit_code": 0,
+  "frozen_core_unchanged": true,
+  "passed_trials": 2,
+  "total_trials": 2,
+  "authoring_attempts_spent": 2,
+  "attempt_outcomes": [
+    {
+      "scenario": "priority-support-brief",
+      "phase": "authoring",
+      "name": "1",
+      "count": 1,
+      "status": "passed",
+      "report": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc04-generation/report.json"
+    },
+    {
+      "scenario": "priority-support-brief",
+      "phase": "authoring",
+      "name": "2",
+      "count": 1,
+      "status": "passed",
+      "report": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc04-generation/report.json"
+    }
+  ],
+  "finished_at": "2026-10-04T17:07:06.356716+00:00"
+}

@@ -186,9 +186,9 @@ diagnostic rows comprise 27 positive cases, 33 invalid runtime cases, nine
 corrupted-workflow controls and 27 invalid definitions. A separate control series
 records oracle 3/3 and nop 0/3. These are existing artifacts, not runs performed
 for this review.
-[Harbor result](../reports/20261004-yaml-generation-1/jobs/generated/result.json),
-[authoring report](../reports/20261004-yaml-generation-1/report.json),
-[controls](../reports/20261004-scenario-expansion-integration/baseline-control/report.json).
+[Harbor result](../../evidence/20261004-yaml-generation-1/jobs/generated/result.json),
+[authoring report](../../evidence/20261004-yaml-generation-1/report.json),
+[controls](../../evidence/20261004-scenario-expansion-integration/baseline-control/report.json).
 
 Do not invent a fractional local score by dividing passed rows by observed rows:
 the verifier can stop on the first failing case. A future rubric must freeze
@@ -196,8 +196,8 @@ the full planned denominator and distinguish not-run from failure. Also retain
 historical failed series: the original SC-03 0/1 and separately corrected 2/2
 are different conditions, not a silently cleaned-up success rate.
 [Verifier exception path](../verification/verify.py),
-[original SC-03](../reports/20261004-scenario-expansion-integration/sc03-generation/report.json),
-[corrected SC-03](../reports/20261004-corrected-expansion-integration/sc03-generation/report.json).
+[original SC-03](../../evidence/20261004-scenario-expansion-integration/sc03-generation/report.json),
+[corrected SC-03](../../evidence/20261004-corrected-expansion-integration/sc03-generation/report.json).
 
 ## Concrete transfer plan
 

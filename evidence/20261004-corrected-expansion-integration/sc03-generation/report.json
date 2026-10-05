@@ -1,0 +1,1366 @@
+{
+  "schema": "sapi-lab-generation/v1",
+  "status": "passed",
+  "experiment_completed": true,
+  "attempts_per_task": 2,
+  "scenarios": [
+    "bulletin-market-brief"
+  ],
+  "authoring_attempt_ceiling": 2,
+  "runtime_llm_mode": "stub",
+  "started_at": "2026-10-04T16:51:02.551907+00:00",
+  "trials": [
+    {
+      "scenario": "bulletin-market-brief",
+      "passed": true,
+      "failure_stage": null,
+      "generation": {
+        "status": "submitted",
+        "provider": "existing-codex-exec-wrapper",
+        "prompt_sha256": "3a4417f5cfde766899eb1f73b382c21832fb8c97e7c1f6cbc40eefa19b587538",
+        "generation_calls": 1,
+        "repairs": 0,
+        "runtime_llm_mode": "stub",
+        "failure_reason": null,
+        "model": "gpt-6-astra",
+        "cli_reported_tokens": 9482,
+        "observed_tool_markers": [],
+        "stderr_sha256": "a0f33d2f6dca5f99eaa516219871a37702b618cf51c69de02aa7e3bd34622f96",
+        "tool_isolation": "prompt restriction plus stderr audit; not enforced by wrapper",
+        "submission_sha256": "a9e11cbc3c7649c5d2cd6c5824f0bf21dd04c0c24027ff6193779f0f8ac7691b",
+        "duration_seconds": 44.468
+      },
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "acceptance": {
+        "scenario": "bulletin-market-brief",
+        "mode": "stub",
+        "passed": true,
+        "report_schema": "sapi-lab-verification/v1",
+        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+        "cases": [
+          {
+            "name": "base-bulletins",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "ebf6f4ab8cf2471c",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/base-bulletins",
+            "deadline_seconds": 120,
+            "config_sha256": "0fa54b6f2fd43a04ba5ba3b83f2ce4de10e3be3028b1bc42a305a5647d066d29",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 7,
+            "llm_mode": "stub",
+            "n8n_node_count": 12,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "digest": {
+                "mode": "preview",
+                "text": "Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nCSV export: Fixture 319929BB5149: The product supports CSV export.",
+                "article_ids": [
+                  "319929BB5149-BL-1",
+                  "319929BB5149-BL-2"
+                ]
+              },
+              "brief": {
+                "report": "Product: Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nCSV export: Fixture 319929BB5149: The product supports CSV export.\n\nMarketing: Fixture 319929BB5149: The service targets rural cooperatives through printed catalogues.",
+                "evidence": [
+                  "Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nCSV export: Fixture 319929BB5149: The product supports CSV export.",
+                  "Fixture 319929BB5149: The service targets rural cooperatives through printed catalogues."
+                ]
+              }
+            }
+          },
+          {
+            "name": "alternate-bulletins",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "660526824e134c4f",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/alternate-bulletins",
+            "deadline_seconds": 120,
+            "config_sha256": "0f2d55549a2a531b35371574300b378741c09e1691259a44812414ca71d619fb",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 7,
+            "llm_mode": "stub",
+            "n8n_node_count": 12,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "digest": {
+                "mode": "preview",
+                "text": "Appointment booking: Fixture 319929BB5149: The product supports appointment booking.\nSMS reminders: Fixture 319929BB5149: The product supports SMS reminders.",
+                "article_ids": [
+                  "319929BB5149-ALT-7",
+                  "319929BB5149-ALT-9"
+                ]
+              },
+              "brief": {
+                "report": "Product: Appointment booking: Fixture 319929BB5149: The product supports appointment booking.\nSMS reminders: Fixture 319929BB5149: The product supports SMS reminders.\n\nMarketing: Fixture 319929BB5149: The service targets dental clinics through radio adverts.",
+                "evidence": [
+                  "Appointment booking: Fixture 319929BB5149: The product supports appointment booking.\nSMS reminders: Fixture 319929BB5149: The product supports SMS reminders.",
+                  "Fixture 319929BB5149: The service targets dental clinics through radio adverts."
+                ]
+              }
+            }
+          },
+          {
+            "name": "reordered-bulletins",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "f811e5eabef84575",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/reordered-bulletins",
+            "deadline_seconds": 120,
+            "config_sha256": "205085a17755d56ca91b8851eb93e71dffad81eafa8e7de59d5810fa158da2e8",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 7,
+            "llm_mode": "stub",
+            "n8n_node_count": 12,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "digest": {
+                "mode": "preview",
+                "text": "CSV export: Fixture 319929BB5149: The product supports CSV export.\nOffline inventory: Fixture 319929BB5149: The product supports offline inventory.",
+                "article_ids": [
+                  "319929BB5149-BL-2",
+                  "319929BB5149-BL-1"
+                ]
+              },
+              "brief": {
+                "report": "Product: CSV export: Fixture 319929BB5149: The product supports CSV export.\nOffline inventory: Fixture 319929BB5149: The product supports offline inventory.\n\nMarketing: Fixture 319929BB5149: The service targets rural cooperatives through printed catalogues.",
+                "evidence": [
+                  "CSV export: Fixture 319929BB5149: The product supports CSV export.\nOffline inventory: Fixture 319929BB5149: The product supports offline inventory.",
+                  "Fixture 319929BB5149: The service targets rural cooperatives through printed catalogues."
+                ]
+              }
+            }
+          },
+          {
+            "name": "replaced-capability",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "238f5abc9ed642ed",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/replaced-capability",
+            "deadline_seconds": 120,
+            "config_sha256": "8ab60fc1760f29d8ef2d5da54ff4b2539dafc4dbcf44ba54eb654b566c34a91e",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 7,
+            "llm_mode": "stub",
+            "n8n_node_count": 12,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "digest": {
+                "mode": "preview",
+                "text": "Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nBarcode scanning: Fixture 319929BB5149: The product supports barcode scanning.",
+                "article_ids": [
+                  "319929BB5149-BL-1",
+                  "319929BB5149-BL-NEW"
+                ]
+              },
+              "brief": {
+                "report": "Product: Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nBarcode scanning: Fixture 319929BB5149: The product supports barcode scanning.\n\nMarketing: Fixture 319929BB5149: The service targets rural cooperatives through printed catalogues.",
+                "evidence": [
+                  "Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nBarcode scanning: Fixture 319929BB5149: The product supports barcode scanning.",
+                  "Fixture 319929BB5149: The service targets rural cooperatives through printed catalogues."
+                ]
+              }
+            }
+          },
+          {
+            "name": "changed-marketing",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "5d4a11e1b43c448b",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/changed-marketing",
+            "deadline_seconds": 120,
+            "config_sha256": "a14759155132333cf063b19785348a6280e2f3f7f85b490b129192631545b56b",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 7,
+            "llm_mode": "stub",
+            "n8n_node_count": 12,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "digest": {
+                "mode": "preview",
+                "text": "Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nCSV export: Fixture 319929BB5149: The product supports CSV export.",
+                "article_ids": [
+                  "319929BB5149-BL-1",
+                  "319929BB5149-BL-2"
+                ]
+              },
+              "brief": {
+                "report": "Product: Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nCSV export: Fixture 319929BB5149: The product supports CSV export.\n\nMarketing: Fixture 319929BB5149: The service targets dental clinics through radio adverts.",
+                "evidence": [
+                  "Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nCSV export: Fixture 319929BB5149: The product supports CSV export.",
+                  "Fixture 319929BB5149: The service targets dental clinics through radio adverts."
+                ]
+              }
+            }
+          },
+          {
+            "name": "empty-articles",
+            "kind": "negative",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "d6ea703c72d447b1",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/empty-articles",
+            "deadline_seconds": 120,
+            "config_sha256": "c3634fc9afd2347fda5bcb7f869ad76cda511578db99f2e20ab6cf5fcfbdc7ad",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected invalid input rejection"
+            },
+            "expected_error": "No articles"
+          },
+          {
+            "name": "duplicate-articles",
+            "kind": "negative",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "f52eec2866ad4d64",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/duplicate-articles",
+            "deadline_seconds": 120,
+            "config_sha256": "64e0ad866cb11dc1d93f92f6c13bd69125cbd5b154769d682b037a61f940d115",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected invalid input rejection"
+            },
+            "expected_error": "Duplicate article ID"
+          },
+          {
+            "name": "malformed-article-title",
+            "kind": "negative",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "322322fb3ace4022",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/malformed-article-title",
+            "deadline_seconds": 120,
+            "config_sha256": "ec0140519662ed780c99d89c82c1c568ff6798365c99f957fe3862f0c4ceb1fb",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected invalid input rejection"
+            },
+            "expected_error": "Schema violation at inputs.articles[0].title"
+          },
+          {
+            "name": "empty-marketing",
+            "kind": "negative",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "7bf0139da63c4525",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/empty-marketing",
+            "deadline_seconds": 120,
+            "config_sha256": "b98b0002864fba118645e66b7b35ef4f93b1842f9e91897e1c2060e8b58836eb",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected invalid input rejection"
+            },
+            "expected_error": "Missing marketing material"
+          },
+          {
+            "name": "wrong-result-in-generated-json",
+            "kind": "mutated-generated-workflow",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "ef27ed884afa41f0",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/mutated-generated-result",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "rejection": "Result differs from submitted output lineage (keys)",
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Result differs from submitted output lineage (keys)"
+            }
+          },
+          {
+            "name": "unknown-operation",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-unknown-operation",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          },
+          {
+            "name": "cycle",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-cycle",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          },
+          {
+            "name": "unsupported-required-parallel",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-unsupported-required-parallel",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ],
+        "submission_sha256": "a9e11cbc3c7649c5d2cd6c5824f0bf21dd04c0c24027ff6193779f0f8ac7691b",
+        "config_transformations": [
+          "workflow.inputs replaced by case fixture"
+        ]
+      },
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-generation/jobs/generated/bulletin-market-brief__Avem5eg/result.json"
+    },
+    {
+      "scenario": "bulletin-market-brief",
+      "passed": true,
+      "failure_stage": null,
+      "generation": {
+        "status": "submitted",
+        "provider": "existing-codex-exec-wrapper",
+        "prompt_sha256": "3a4417f5cfde766899eb1f73b382c21832fb8c97e7c1f6cbc40eefa19b587538",
+        "generation_calls": 1,
+        "repairs": 0,
+        "runtime_llm_mode": "stub",
+        "failure_reason": null,
+        "model": "gpt-6-astra",
+        "cli_reported_tokens": 10550,
+        "observed_tool_markers": [],
+        "stderr_sha256": "2650783e32b57ad3583bb3bca1b6afb99a822ac41aa2c774c4f3482b07ea9a69",
+        "tool_isolation": "prompt restriction plus stderr audit; not enforced by wrapper",
+        "submission_sha256": "94cf1a90dfbb29ab9c7a0b062a61cc5a288c455c131738bcfc27d6845f417711",
+        "duration_seconds": 51.532
+      },
+      "rewards": {
+        "reward": 1.0
+      },
+      "exception": null,
+      "acceptance": {
+        "scenario": "bulletin-market-brief",
+        "mode": "stub",
+        "passed": true,
+        "report_schema": "sapi-lab-verification/v1",
+        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+        "cases": [
+          {
+            "name": "base-bulletins",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "ba7ee98efd014d9d",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/base-bulletins",
+            "deadline_seconds": 120,
+            "config_sha256": "802c4fe8929b372abc6094888527c1129d3bed586e5f872f5cbfe9473a0ac0af",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 7,
+            "llm_mode": "stub",
+            "n8n_node_count": 12,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "digest": {
+                "mode": "preview",
+                "text": "Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nCSV export: Fixture 319929BB5149: The product supports CSV export.",
+                "article_ids": [
+                  "319929BB5149-BL-1",
+                  "319929BB5149-BL-2"
+                ]
+              },
+              "brief": {
+                "report": "Product: Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nCSV export: Fixture 319929BB5149: The product supports CSV export.\n\nMarketing: Fixture 319929BB5149: The service targets rural cooperatives through printed catalogues.",
+                "evidence": [
+                  "Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nCSV export: Fixture 319929BB5149: The product supports CSV export.",
+                  "Fixture 319929BB5149: The service targets rural cooperatives through printed catalogues."
+                ]
+              }
+            }
+          },
+          {
+            "name": "alternate-bulletins",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "7f9d17e77c964066",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/alternate-bulletins",
+            "deadline_seconds": 120,
+            "config_sha256": "1187b05953181435a86bd8112e5fcd8c8a30234a910542e031ea436b4699c76d",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 7,
+            "llm_mode": "stub",
+            "n8n_node_count": 12,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "digest": {
+                "mode": "preview",
+                "text": "Appointment booking: Fixture 319929BB5149: The product supports appointment booking.\nSMS reminders: Fixture 319929BB5149: The product supports SMS reminders.",
+                "article_ids": [
+                  "319929BB5149-ALT-7",
+                  "319929BB5149-ALT-9"
+                ]
+              },
+              "brief": {
+                "report": "Product: Appointment booking: Fixture 319929BB5149: The product supports appointment booking.\nSMS reminders: Fixture 319929BB5149: The product supports SMS reminders.\n\nMarketing: Fixture 319929BB5149: The service targets dental clinics through radio adverts.",
+                "evidence": [
+                  "Appointment booking: Fixture 319929BB5149: The product supports appointment booking.\nSMS reminders: Fixture 319929BB5149: The product supports SMS reminders.",
+                  "Fixture 319929BB5149: The service targets dental clinics through radio adverts."
+                ]
+              }
+            }
+          },
+          {
+            "name": "reordered-bulletins",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "ce19212b13bc4c1b",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/reordered-bulletins",
+            "deadline_seconds": 120,
+            "config_sha256": "5c39edd80003672a8b416f5f18c77d711bebda1b77ab181e25822950ee30c900",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 7,
+            "llm_mode": "stub",
+            "n8n_node_count": 12,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "digest": {
+                "mode": "preview",
+                "text": "CSV export: Fixture 319929BB5149: The product supports CSV export.\nOffline inventory: Fixture 319929BB5149: The product supports offline inventory.",
+                "article_ids": [
+                  "319929BB5149-BL-2",
+                  "319929BB5149-BL-1"
+                ]
+              },
+              "brief": {
+                "report": "Product: CSV export: Fixture 319929BB5149: The product supports CSV export.\nOffline inventory: Fixture 319929BB5149: The product supports offline inventory.\n\nMarketing: Fixture 319929BB5149: The service targets rural cooperatives through printed catalogues.",
+                "evidence": [
+                  "CSV export: Fixture 319929BB5149: The product supports CSV export.\nOffline inventory: Fixture 319929BB5149: The product supports offline inventory.",
+                  "Fixture 319929BB5149: The service targets rural cooperatives through printed catalogues."
+                ]
+              }
+            }
+          },
+          {
+            "name": "replaced-capability",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "06db4e8f85ba41a0",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/replaced-capability",
+            "deadline_seconds": 120,
+            "config_sha256": "23f8566bbfca19c4bf0480f8966ae49490a0e151b1a0f334e12a0c4256475ff7",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 7,
+            "llm_mode": "stub",
+            "n8n_node_count": 12,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "digest": {
+                "mode": "preview",
+                "text": "Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nBarcode scanning: Fixture 319929BB5149: The product supports barcode scanning.",
+                "article_ids": [
+                  "319929BB5149-BL-1",
+                  "319929BB5149-BL-NEW"
+                ]
+              },
+              "brief": {
+                "report": "Product: Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nBarcode scanning: Fixture 319929BB5149: The product supports barcode scanning.\n\nMarketing: Fixture 319929BB5149: The service targets rural cooperatives through printed catalogues.",
+                "evidence": [
+                  "Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nBarcode scanning: Fixture 319929BB5149: The product supports barcode scanning.",
+                  "Fixture 319929BB5149: The service targets rural cooperatives through printed catalogues."
+                ]
+              }
+            }
+          },
+          {
+            "name": "changed-marketing",
+            "kind": "positive",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "de168cad346041a3",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/changed-marketing",
+            "deadline_seconds": 120,
+            "config_sha256": "b303142be77ecde3e1615a69ea72545eea29fcedacea49f9b5bab445685195f2",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "output_verified": true,
+            "operation_count": 7,
+            "llm_mode": "stub",
+            "n8n_node_count": 12,
+            "engine_provenance_verified": true,
+            "acceptance": {
+              "status": "accepted",
+              "passed": true
+            },
+            "verifier_corruptions_rejected": [
+              "wrong-final-output",
+              "output-without-real-result-node",
+              "falsified-step-trace"
+            ],
+            "output": {
+              "digest": {
+                "mode": "preview",
+                "text": "Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nCSV export: Fixture 319929BB5149: The product supports CSV export.",
+                "article_ids": [
+                  "319929BB5149-BL-1",
+                  "319929BB5149-BL-2"
+                ]
+              },
+              "brief": {
+                "report": "Product: Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nCSV export: Fixture 319929BB5149: The product supports CSV export.\n\nMarketing: Fixture 319929BB5149: The service targets dental clinics through radio adverts.",
+                "evidence": [
+                  "Offline inventory: Fixture 319929BB5149: The product supports offline inventory.\nCSV export: Fixture 319929BB5149: The product supports CSV export.",
+                  "Fixture 319929BB5149: The service targets dental clinics through radio adverts."
+                ]
+              }
+            }
+          },
+          {
+            "name": "empty-articles",
+            "kind": "negative",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "26e91c14ff0d4e98",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/empty-articles",
+            "deadline_seconds": 120,
+            "config_sha256": "367270410471d9c46356b7def8ab53f414ddbf790e89bfc3f3afb0cc301e70ee",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected invalid input rejection"
+            },
+            "expected_error": "No articles"
+          },
+          {
+            "name": "duplicate-articles",
+            "kind": "negative",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "7c8db85bad804d59",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/duplicate-articles",
+            "deadline_seconds": 120,
+            "config_sha256": "2463bc902520fdef07b94fca8368567ff7e0460728339772ae577691d15684fa",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected invalid input rejection"
+            },
+            "expected_error": "Duplicate article ID"
+          },
+          {
+            "name": "malformed-article-title",
+            "kind": "negative",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "78ae2de5bbf6408e",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/malformed-article-title",
+            "deadline_seconds": 120,
+            "config_sha256": "5af08e24e1009d12ed66ea7b4fde062db99729b2b6230702748f62591f76009e",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected invalid input rejection"
+            },
+            "expected_error": "Schema violation at inputs.articles[0].title"
+          },
+          {
+            "name": "empty-marketing",
+            "kind": "negative",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "646d00bf1354463f",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/empty-marketing",
+            "deadline_seconds": 120,
+            "config_sha256": "9642d4da0cd868dcd7975bd34f48535146fb842bd7f9838ad1c66dac054d5c85",
+            "execution": {
+              "status": "error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Expected invalid input rejection"
+            },
+            "expected_error": "Missing marketing material"
+          },
+          {
+            "name": "wrong-result-in-generated-json",
+            "kind": "mutated-generated-workflow",
+            "passed": true,
+            "execution_id": "1",
+            "workflow_id": "9c567ecacc334332",
+            "n8n_version": "2.41.5",
+            "artifacts": "/logs/verifier/cases/mutated-generated-result",
+            "execution": {
+              "status": "success",
+              "succeeded": true,
+              "engine": {
+                "name": "n8n",
+                "version": "2.41.5"
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "n8n_agency_http_node_executions",
+              "provider_call_count": null
+            },
+            "rejection": "Result differs from submitted output lineage (keys)",
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Result differs from submitted output lineage (keys)"
+            }
+          },
+          {
+            "name": "unknown-operation",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-unknown-operation",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          },
+          {
+            "name": "cycle",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-cycle",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          },
+          {
+            "name": "unsupported-required-parallel",
+            "kind": "invalid-definition",
+            "passed": true,
+            "artifacts": "/logs/verifier/cases/invalid-yaml-unsupported-required-parallel",
+            "execution": {
+              "status": "compile_error",
+              "succeeded": false,
+              "engine": {
+                "name": "n8n",
+                "version": null
+              }
+            },
+            "input": {
+              "source": "fixture",
+              "activation": "injected",
+              "config_artifact": "config.json"
+            },
+            "llm": {
+              "selected_mode": "stub",
+              "agency_http_call_count": 0,
+              "count_source": "not_executed",
+              "provider_call_count": 0
+            },
+            "acceptance": {
+              "status": "rejected",
+              "passed": false,
+              "reason": "Definition rejected before execution"
+            }
+          }
+        ],
+        "limits": [
+          "Checks the supported static sapi-lab/v0 profile only.",
+          "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+        ],
+        "submission_sha256": "94cf1a90dfbb29ab9c7a0b062a61cc5a288c455c131738bcfc27d6845f417711",
+        "config_transformations": [
+          "workflow.inputs replaced by case fixture"
+        ]
+      },
+      "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-generation/jobs/generated/bulletin-market-brief__ctx7enZ/result.json"
+    }
+  ],
+  "limitations": [
+    "Explicitly selected task families with a fixed specialized catalog; not held-out generalization.",
+    "Single-shot YAML output; no tools, retries or repair requested.",
+    "Wrapper tool restrictions are prompt-only, audited from CLI stderr, not a filesystem sandbox.",
+    "Runtime model steps are deterministic stubs; only YAML generation calls the live model.",
+    "Verifier checks exact task role/source obligations while permitting renamed step IDs.",
+    "The wrapper does not provide reliable token/cost breakdowns; costs remain unknown."
+  ],
+  "series_ledger": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/series/series.json",
+  "series_scenarios": [
+    "bulletin-market-brief",
+    "priority-support-brief"
+  ],
+  "series_ceilings": {
+    "authoring": 4,
+    "runtime": 13
+  },
+  "base_image_id": "sha256:91fb223b6b04578857d4dd4458780f15a5bb16b15838c196f1c079a06cf96cdc",
+  "frozen_image": "sapi-config-lab-generation-base:91fb223b6b045788",
+  "prompt_sha256": {
+    "bulletin-market-brief": "3a4417f5cfde766899eb1f73b382c21832fb8c97e7c1f6cbc40eefa19b587538"
+  },
+  "private_cases_sha256": {
+    "bulletin-market-brief": "97b545ee92de35efa1552b3e9756656b34bf1abd78f7d880d77c75fd29a4c42f"
+  },
+  "command": [
+    "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+    "-c",
+    "from harbor.cli.main import app; app()",
+    "run",
+    "--path",
+    "/private/tmp/sapi-yaml-generation-re4eyjys/tasks",
+    "--agent",
+    "sapi_config_lab.experiments.generation.agent:WrapperYamlAgent",
+    "--ak",
+    "upstream=http://127.0.0.1:8765/run",
+    "--n-attempts",
+    "2",
+    "--n-concurrent",
+    "1",
+    "--max-retries",
+    "0",
+    "--jobs-dir",
+    "/private/tmp/sapi-yaml-generation-re4eyjys/jobs",
+    "--job-name",
+    "generated",
+    "--force-build"
+  ],
+  "commands": [
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-yaml-generation-re4eyjys/tasks",
+      "--agent",
+      "sapi_config_lab.experiments.generation.agent:WrapperYamlAgent",
+      "--ak",
+      "upstream=http://127.0.0.1:8765/run",
+      "--n-attempts",
+      "1",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-yaml-generation-re4eyjys/jobs",
+      "--job-name",
+      "generated-attempt-1",
+      "--force-build"
+    ],
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-yaml-generation-re4eyjys/tasks",
+      "--agent",
+      "sapi_config_lab.experiments.generation.agent:WrapperYamlAgent",
+      "--ak",
+      "upstream=http://127.0.0.1:8765/run",
+      "--n-attempts",
+      "1",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-yaml-generation-re4eyjys/jobs",
+      "--job-name",
+      "generated-attempt-2",
+      "--force-build"
+    ]
+  ],
+  "harbor_exit_code": 0,
+  "frozen_core_unchanged": true,
+  "passed_trials": 2,
+  "total_trials": 2,
+  "authoring_attempts_spent": 2,
+  "attempt_outcomes": [
+    {
+      "scenario": "bulletin-market-brief",
+      "phase": "authoring",
+      "name": "1",
+      "count": 1,
+      "status": "passed",
+      "report": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-generation/report.json"
+    },
+    {
+      "scenario": "bulletin-market-brief",
+      "phase": "authoring",
+      "name": "2",
+      "count": 1,
+      "status": "passed",
+      "report": "/Users/pashvel/Desktop/sapi-config-lab/reports/20261004-corrected-expansion-integration/sc03-generation/report.json"
+    }
+  ],
+  "finished_at": "2026-10-04T16:57:11.001825+00:00"
+}

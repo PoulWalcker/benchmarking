@@ -108,14 +108,14 @@ keep their original format and are not retroactively rewritten.
 | [Two new composition tasks](GENERALIZATION-EVALUATION.md) | Four untouched one-shot YAMLs and four selected native live cases passed, using 12 runtime calls under the 14-call cap. Manual controls and the model-authored two-audience graph demonstrate specific accepted alternatives; both model attempts per task used the same shape. Catalog and compiler were unchanged. |
 | [Sapiens harness feasibility](history/sapiens-harness-feasibility.md) | Investigation prepared; no harness integration or Sapiens workflow executor demonstrated. Computer use and an alternative executor remain outside these experiments. |
 
-The [independent agent review](../reports/20261004-open-tasks-integration/INDEPENDENT-REVIEW.md)
-separates technical evidence from prose quality. The [content review](../reports/20261004-open-tasks-integration/AGENT-QUALITY-REVIEW.md)
+The [independent agent review](../evidence/20261004-open-tasks-integration/INDEPENDENT-REVIEW.md)
+separates technical evidence from prose quality. The [content review](../evidence/20261004-open-tasks-integration/AGENT-QUALITY-REVIEW.md)
 found the earlier short research outputs supported, while SC-02 correctly rejected
 overlong support drafts. It is agent review, not human sign-off. The earlier
 third-authoring and human-review criteria belong to a proposed team pilot;
 they are not specification requirements or proof of a statistical success rate.
 
-The original [missing-adapter diagnosis](../reports/20261004-imported-workflow-diagnosis/SUMMARY.md)
+The original [missing-adapter diagnosis](../evidence/20261004-imported-workflow-diagnosis/SUMMARY.md)
 and dated planning documents remain historical evidence. Their preparation-time
 status does not override the results above. Every new run still needs its own
 frozen sources, acceptance checks and bounded evidence.

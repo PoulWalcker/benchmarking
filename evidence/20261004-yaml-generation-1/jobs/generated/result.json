@@ -1,0 +1,49 @@
+{
+    "id": "d348d5a2-1e8c-45a3-8304-612b10e54662",
+    "started_at": "2026-10-04T16:03:39.118836",
+    "updated_at": "2026-10-04T16:15:09.224463",
+    "finished_at": "2026-10-04T16:15:09.224463",
+    "n_total_trials": 9,
+    "stats": {
+        "n_completed_trials": 9,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "existing-wrapper-yaml__tasks": {
+                "n_trials": 9,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "mean": 1.0
+                    }
+                ],
+                "pass_at_k": {
+                    "2": 1.0
+                },
+                "reward_stats": {
+                    "reward": {
+                        "1.0": [
+                            "competitor-report__SfEWsWK",
+                            "ticket-routing__HmLivij",
+                            "invoice-total__83VHojk",
+                            "competitor-report__vgU5CnS",
+                            "ticket-routing__qUYEQtm",
+                            "invoice-total__UyF2Sxq",
+                            "competitor-report__VaCcs9U",
+                            "ticket-routing__yRKqzom",
+                            "invoice-total__BExKDEc"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

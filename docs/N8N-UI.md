@@ -45,7 +45,7 @@ LLM workflows require the existing Codex wrapper at `http://127.0.0.1:8765/run`.
 If no wrapper identity is saved, add `--wrapper-evidence PATH` pointing to an
 inspected identity record; the validated path is saved locally and reused.
 This checkout has its previously validated record saved:
-`reports/20261004-open-tasks-integration/wrapper-identity.json`.
+`evidence/20261004-open-tasks-integration/wrapper-identity.json`.
 The final check found that the Codex configuration has changed since that
 inspection. Live preparation currently stops with `Wrapper/config identity
 changed` before importing a copy. A fresh inspection and matching identity

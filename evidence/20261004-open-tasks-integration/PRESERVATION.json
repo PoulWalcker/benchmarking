@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "historical_files_checked": 11200,
+  "historical_changed": [],
+  "protected_source_files_checked": [
+    "configs/01-invoice-total.yaml",
+    "configs/02-ticket-routing.yaml",
+    "configs/03-competitor-report.yaml",
+    "configs/04-revise-answer.yaml",
+    "configs/05-digest-lifecycle.yaml",
+    "configs/06-dual-ledger-closeout.yaml",
+    "configs/07-support-review-packet.yaml",
+    "configs/08-bulletin-market-brief.yaml",
+    "configs/09-priority-support-brief.yaml",
+    "provenance/SapiensSpecNotation.hs",
+    "src/sapi_config_lab/workflow/bindings.yaml"
+  ],
+  "protected_source_changed": [],
+  "wrapper_and_cli_config_unchanged": true,
+  "original_containers_unchanged": true,
+  "original_container_count": 12,
+  "extra_containers": [],
+  "original_workflows_checked": 6,
+  "original_workflows_changed": [],
+  "added_owned_workflow": [
+    {
+      "id": "a306069acac34f50",
+      "name": "Sapi lab / priority-support-brief / a306069acac34f50",
+      "active": false,
+      "sha256": "a52e6a9436232bc66d535e95331517d932d279d49c6f9f30c299e7a373738d34"
+    }
+  ],
+  "protected_workflow": "haUQEcB818FQjfkH",
+  "ui_helper_stopped": true,
+  "no_commits_or_push": true
+}
