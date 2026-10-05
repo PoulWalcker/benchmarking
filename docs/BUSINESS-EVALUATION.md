@@ -17,7 +17,10 @@ unpaid reference/nop controls before dispatching models. CRM admits one authorin
 one runtime planning call and one independent original judge call, with no model
 retry or YAML repair. The original 120-second runtime and 40-tool budget remain.
 `--seed` selects original seeded inputs; it does not create a new task.
-The earlier `sapi-lab checkout` command remains supported with its original caps.
+`--task checkout` runs the Checkout Recovery task from the same command with its
+original caps. `sapi-lab checkout` is a deprecated hidden alias of this command:
+it still works and prints a deprecation line to stderr, but it names only one of
+the two tasks the module serves. Use `sapi-lab benchmark --task checkout`.
 
 CRM's generated graph can gather facts, clarify with the synthetic customer,
 consult policies, propose structured actions, update the existing lead, create a

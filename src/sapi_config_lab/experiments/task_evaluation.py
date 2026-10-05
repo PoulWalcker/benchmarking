@@ -9,6 +9,7 @@ is verified before and after every upstream invocation.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import ROUND_HALF_UP, Decimal
 import hashlib
 import json
 import os
@@ -28,6 +29,20 @@ def digest(value: Any) -> str:
     return hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
     ).hexdigest()
+
+
+def normalized_reward(score_0_10: float) -> float:
+    """Divide the upstream score by ten in Decimal, never in binary float.
+
+    Upstream quantizes `score_0_10` to two decimals before returning a float, so
+    `Decimal(str(...))` recovers that exact value. Plain `score_0_10 / 10`
+    disagrees with the Decimal quotient for 289 of the 1001 reachable scores
+    (0.07 becomes 0.007000000000000001), and 127 of them do not round-trip.
+    This matches upstream `autowfbench/core/scoring.py`, which keeps the score
+    itself in Decimal for the same reason.
+    """
+    exact = Decimal(str(score_0_10)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return float((exact / Decimal(10)).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP))
 
 
 _WORKER = """
@@ -400,7 +415,7 @@ def evaluate(
         "run_log_digest": digest(run_log),
         "evaluation_mode": contract.judge_mode,
         **score,
-        "normalized_reward": score["score_0_10"] / 10 if score["status"] == "complete" else None,
+        "normalized_reward": normalized_reward(score["score_0_10"]) if score["status"] == "complete" else None,
         "project_acceptance": project_acceptance,
     }
 
@@ -414,11 +429,13 @@ def write_evaluation(report_dir: Path, report: Document) -> None:
         raise ValueError("Choose a fresh evaluation directory; prior scores are immutable")
     reward = report.get("normalized_reward")
     if reward is not None:
+        total: Any = report.get("score_0_10")
         if (
             report.get("status") != "complete"
             or type(reward) not in (float, int)
             or not 0 <= reward <= 1
-            or reward != report.get("score_0_10", -1) / 10
+            or type(total) not in (float, int)
+            or reward != normalized_reward(total)
         ):
             raise ValueError("Invalid or incomplete normalized reward")
     elif report.get("status") == "complete":

@@ -1,9 +1,14 @@
 """Compare a separate semantic judge with predefined evaluator-only controls.
 
-No model call is made here. A fixture swaps candidate prose in an already
-recorded, trusted environment trace; it does not claim the replacement text was
-produced by a solver. Expectations are frozen before judging and never modify
-the original scorecard or the candidate's official score.
+A run of this module COSTS ONE REAL, PAID JUDGE CALL unless --prepare-only is
+passed. `main()` is the `sapi-lab benchmark-calibrate` entry point; it writes
+the contract and fixture, then dispatches the judge.
+
+`calibration_fixture()` alone makes no model call: it swaps candidate prose in
+an already recorded, trusted environment trace, and does not claim the
+replacement text was produced by a solver. Expectations are frozen before
+judging and never modify the original scorecard or the candidate's official
+score.
 """
 
 from __future__ import annotations
@@ -115,12 +120,16 @@ def compare_calibration(fixture: Document, evaluation: Document | None) -> Docum
 
 
 def main():
-    """One explicit independent judge dispatch; no repairs or hidden retries."""
+    """One explicit independent judge dispatch; no repairs or hidden retries.
+
+    Paid unless --prepare-only is passed; see the module docstring.
+    """
     import argparse
+    import sys
     from datetime import datetime, timezone
     from sapi_config_lab.experiments.task_evaluation import freeze_contract, judge, evaluate, write_evaluation
 
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--base-run", type=Path, required=True)
     parser.add_argument("--case", choices=["supported-good", "contentless", "misleading-success"], required=True)
@@ -140,6 +149,9 @@ def main():
     save("fixture.json", fixture)
     if args.prepare_only:
         return 0
+    # Everything above is unpaid; --prepare-only returns before this point.
+    # From here one real judge call is billed against args.judge_model.
+    print(f"Dispatching one paid judge call to {args.judge_model}.", file=sys.stderr)
     save(
         "dispatch.json",
         {"attempts": 1, "model": args.judge_model, "started_at": datetime.now(timezone.utc).isoformat()},
