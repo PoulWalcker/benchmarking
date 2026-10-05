@@ -4,7 +4,7 @@ The first integration uses AutoWFBench Production Checkout Recovery at
 `970bbc8645c4d503d35cb5df05363fb9de132519`. The Sapiens specification pin is
 unchanged. This module provides trusted source verification and a fresh original
 simulator for each attempt; it neither solves the task nor calculates a score.
-See [the source investigation](RESEARCH-AUTOWFBENCH.md) for the case and rubric.
+See [the source investigation](history/RESEARCH-AUTOWFBENCH.md) for the case and rubric.
 
 ## Source dependency
 

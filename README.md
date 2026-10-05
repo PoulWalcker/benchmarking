@@ -16,20 +16,21 @@ future prompt hashes; saved prompts and previous results are never rewritten.
 
 Start with the guide for your task:
 
+- [Learn the vocabulary first](docs/GLOSSARY.md): *admission*, *case*, *task*, *control*, *candidate* and *reward* each name several different things in this tree. The glossary fixes which one each document means, and states plainly why execution success, acceptance and quality are three separate facts.
 - [Run the complete single-case Checkout Recovery evaluation](docs/CHECKOUT-EVALUATION.md): generated YAML, real n8n, original simulator and rubric. The first public synthetic case scored 9.33/10; this is not a general benchmark performance claim.
 - [View workflow graphs and prepare manual runs in local n8n](docs/N8N-UI.md).
 - [Understand the supported YAML profile](docs/PROFILE.md) and [author YAML](generation/README.md).
 - [Read the recorded evidence and its limits](#evidence-and-limits).
 - [Verify or compare the pinned specification](docs/SPEC-SOURCE.md).
 
-For the local n8n UI, start with `uv run --frozen sapi-lab ui open --all`: it imports
+For the local n8n UI, start with `uv run --locked sapi-lab ui open --all`: it imports
 the eight standalone examples as inactive graphs, prints their editor links and
 opens n8n without running them. Config 05 is explicitly reported as requiring its
 lifecycle controller.
 Repeating the command reuses existing links and preserves edits made in n8n;
 `--new-copy` creates a fresh copy from YAML.
 To prepare one manual live session, use
-`uv run --frozen sapi-lab ui open configs/09-priority-support-brief.yaml --live`, then
+`uv run --locked sapi-lab ui open configs/09-priority-support-brief.yaml --live`, then
 press **Execute workflow** in n8n. The [UI guide](docs/N8N-UI.md) covers login,
 the first-use wrapper identity, execution limits and result inspection.
 
@@ -107,7 +108,8 @@ harbor/              scenario instructions and shared task templates
 generation/          model tasks and format description, without reference YAML
 tests/              local tests; support/ contains the JS driver
 infra/               pinned Docker image containing real n8n
-docs/                profile, architecture, and research questions
+docs/                glossary, profile, architecture, and research questions
+docs/history/        frozen records of past runs; not current instructions
 provenance/          pinned public specification and comparison hashes
 reports/             local experiment evidence (ignored, not distributed)
 ```
@@ -115,7 +117,7 @@ reports/             local experiment evidence (ignored, not distributed)
 `generated/` and `validation/` contain local prototype artifacts. Raw reports,
 review dumps, environment snapshots, and generated exports stay in the working
 checkout and are excluded from Git, Docker build context, and distributions.
-The public [results summary](docs/RESULTS.md) records selected outcomes and hashes;
+The public [results summary](docs/history/RESULTS.md) records selected outcomes and hashes;
 reproduction does not require the historical private output directories.
 
 Each source directory `harbor/tasks/<scenario>/` now contains only an instruction.
@@ -229,7 +231,7 @@ Provenance checks also depend on n8n; another
 executor will need its own evidence checks.
 
 These are historical outcomes, not claims that live calls were repeated for the
-current sources. See [curated results and evidence hashes](docs/RESULTS.md).
+current sources. See [curated results and evidence hashes](docs/history/RESULTS.md).
 Every new control run saves source hashes, host/runtime versions, and verifies
 that public sources stayed unchanged during execution.
 
@@ -237,12 +239,18 @@ CI runs Ruff, mypy, local behavioral tests, and distribution checks. The separat
 Docker/Harbor job runs only when selected in a manual workflow dispatch. It uses
 stubbed model operations and never enables live calls or uploads raw artifacts.
 
-Further reading: [architecture and commands](docs/ARCHITECTURE.md),
+Further reading: [glossary](docs/GLOSSARY.md),
+[architecture and commands](docs/ARCHITECTURE.md),
 [execution and acceptance reports](docs/REPORTS.md),
 [profile](docs/PROFILE.md), [YAML generation](generation/README.md),
-[verification](verification/README.md), [research questions](docs/RESEARCH-QUESTIONS.md),
-and [original analysis](docs/ANALYSIS.md). Historical reports retain their old
-paths; see the [file migration map](docs/MIGRATION-PATHS.json).
+[verification](verification/README.md), and
+[research questions](docs/RESEARCH-QUESTIONS.md). Dated records of individual
+runs, including the [original analysis](docs/history/ANALYSIS.md), are frozen
+under [docs/history/](docs/history/README.md) and are not current instructions.
+Historical reports retain their old paths; see the
+[file migration map](docs/MIGRATION-PATHS.json), which records the 2026-10-04
+refactor and is not updated afterwards: its `ANALYSIS.md` entry now resolves to
+`docs/history/ANALYSIS.md`.
 
 The bounded historical generated-YAML/live replay command and its unpaid gate are
 documented in [Frozen generated YAML with live operations](docs/GENERATED-LIVE.md).

@@ -44,7 +44,7 @@ means the complete task suite passed; nop controls are expected to receive 0.
 New control runs create `reports/<timestamp>/report.json`, a public-source hash
 manifest, host and container versions, task packages, and per-case evidence.
 These outputs remain local and are excluded from Git and distributions. The
-[curated results](RESULTS.md) explain what historical series established.
+[curated results](history/RESULTS.md) explain what historical series established.
 
 Source fingerprints cover runtime, verifier, prompt/catalog data, lockfiles,
 and reproduction code. New modules are discovered automatically. They exclude

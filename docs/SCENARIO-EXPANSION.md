@@ -30,14 +30,14 @@ SERIES=reports/my-expansion-series
 SCENARIO=dual-ledger-closeout
 RUN=reports/my-expansion-dual-ledger
 
-uv run --locked python -m sapi_config_lab.experiments.generation.run \
+uv run --locked --extra harbor python -m sapi_config_lab.experiments.generation.run \
   --scenario "$SCENARIO" --attempts 2 --series-dir "$SERIES" --report-dir "$RUN-generation"
 
 uv run --locked python -m sapi_config_lab.experiments.replay \
   --scenario "$SCENARIO" --source-report "$RUN-generation/report.json" \
   --output "$RUN-selection.json"
 
-uv run --locked python -m sapi_config_lab.experiments.live \
+uv run --locked --extra harbor python -m sapi_config_lab.experiments.live \
   --scenario "$SCENARIO" --series-dir "$SERIES" \
   --stub-report "$RUN-generation/control/report.json" \
   --submissions-manifest "$RUN-selection.json" \
@@ -45,10 +45,14 @@ uv run --locked python -m sapi_config_lab.experiments.live \
   --report-dir "$RUN-live"
 ```
 
+The generation and live commands start Harbor, so they need the `harbor` extra;
+without it `experiments/host.py` stops with `Run uv sync --extra harbor`. The
+replay command only validates recorded artifacts and does not need that extra.
+
 Choose new `SCENARIO` and `RUN` values for the next row only after the preceding
 live report passes. Keep the same `SERIES`. `--preflight-only` on the live command
 checks the frozen selection without dispatching. For unpaid prepared controls
-alone, use `uv run --locked sapi-lab harbor --scenario NAME --report-dir NEW`.
+alone, use `uv run --locked --extra harbor sapi-lab harbor --scenario NAME --report-dir NEW`.
 The [generated/live guide](GENERATED-LIVE.md) describes wrapper inspection and
 the cooperative tool-access limitation.
 
