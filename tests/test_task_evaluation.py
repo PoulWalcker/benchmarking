@@ -2,6 +2,7 @@
 
 import copy
 from dataclasses import replace
+from decimal import Decimal
 import importlib.util
 import json
 import os
@@ -17,6 +18,7 @@ from sapi_config_lab.experiments.task_evaluation import (
     digest,
     evaluate,
     freeze_contract,
+    normalized_reward,
     seed_variation,
     summarize_evaluations,
     summarize_stages,
@@ -84,6 +86,21 @@ class RewardArtifactTests(unittest.TestCase):
             self.assertIsNone(json.loads((path / "evaluation.json").read_text())["score_0_10"])
             with self.assertRaises(ValueError):
                 write_evaluation(path, {"status": "complete", "score_0_10": 10, "normalized_reward": 1})
+
+    def test_the_reward_comes_off_the_same_decimal_as_the_score(self):
+        # 0.07 / 10 is 0.007000000000000001 in binary float; the quotient is not.
+        self.assertNotEqual(0.07 / 10, 0.007)
+        self.assertEqual(normalized_reward(0.07), 0.007)
+        for step in range(1001):
+            total = float(Decimal(step) / 100)
+            with self.subTest(score_0_10=total):
+                reward = normalized_reward(total)
+                self.assertEqual(Decimal(str(reward)), Decimal(str(total)) / 10)
+                self.assertEqual(Decimal(str(reward)) * 10, Decimal(str(total)))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            write_evaluation(path, {"status": "complete", "score_0_10": 0.07, "normalized_reward": 0.007})
+            self.assertEqual((path / "reward.txt").read_text(), "0.007\n")
 
     def test_fractional_reward_requires_a_complete_matching_total(self):
         for status, total, reward in [
