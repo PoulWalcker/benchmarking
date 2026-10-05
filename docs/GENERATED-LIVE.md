@@ -1,10 +1,10 @@
 # Frozen generated YAML with live operations
 
-This command implements the prepared [execution task](planning/generated-yaml-live-execution.md).
+This command implements the prepared [execution task](history/generated-yaml-live-execution.md).
 It replays the three preselected historical submissions unchanged, first through
 all stub verifier cases and then through seven live cases. It makes zero new
 YAML-generation requests. This implementation is separate from recorded
-[historical results](RESULTS.md); a successful fresh run is required for a live claim.
+[historical results](history/RESULTS.md); a successful fresh run is required for a live claim.
 
 Keep sources unchanged from the control run through final execution. Every output
 directory must be new. The source manifest covers implementation, tests, prompts,

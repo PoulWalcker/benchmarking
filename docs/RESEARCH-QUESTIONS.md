@@ -8,7 +8,7 @@ separate live replays and four bounded catalog-composition tasks. Refinement and
 both the unchanged and separately repaired digest's Callback/Cron paths also have
 native live evidence. Two further composition tasks passed all four one-shot
 authorings and four live cases with 12 runtime calls.
-See [recorded results](RESULTS.md) and the [current evidence table](../README.md#evidence-and-limits)
+See [recorded results](history/RESULTS.md) and the [current evidence table](../README.md#evidence-and-limits)
 for the exact scope. Arbitrary workflow generation and compatibility with a
 Sapiens executor remain open.
 
@@ -99,14 +99,14 @@ keep their original format and are not retroactively rewritten.
 
 | Work | Current evidence and next question |
 | --- | --- |
-| [Generated YAML with live operations](planning/generated-yaml-live-execution.md) | Seven frozen-replay cases accepted with eight runtime wrapper calls. The immutable overall report retains its container-preservation failure; the user-confirmed service stop is documented separately. |
-| [Four-task expansion](planning/scenario-expansion.md) | All four selected families have native live evidence across the original and corrected series. The original SC-03 rejection remains preserved. This measures bounded use of existing operations. |
+| [Generated YAML with live operations](history/generated-yaml-live-execution.md) | Seven frozen-replay cases accepted with eight runtime wrapper calls. The immutable overall report retains its container-preservation failure; the user-confirmed service stop is documented separately. |
+| [Four-task expansion](history/scenario-expansion.md) | All four selected families have native live evidence across the original and corrected series. The original SC-03 rejection remains preserved. This measures bounded use of existing operations. |
 | [Bounded refinement (04)](EXTENSION-ACCEPTANCE.md#reply-refinement-04) | Three one-shot YAMLs accepted. Selected live positive passed its first draft; three real attempts exhausted the impossible limit with no accepted output. Rejection then acceptance was observed only with native stub controls. |
 | [Digest lifecycle (05)](LIFECYCLE-EVALUATION.md) | Completed with one authoring, five runtime and one WBS repair call. Unchanged authored revision passed Callback/actual-clock Cron; a separate intentional mutation was rejected, then model repair passed new Callback/actual-clock Cron. Fixed-minute evaluation schedules and an external durable controller were explicit. |
 | [Local n8n UI](N8N-UI.md) | Implemented and manually demonstrated: new inactive workflow, execution 61, four correlated runtime calls, six existing workflow hashes preserved. Foreground helper stopped; another execution requires a fresh grant. |
 | [Pinned-source maintenance](SPEC-SOURCE.md) | Offline verification and explicit fetch/diff are implemented. The recorded pinned-revision fetch matches vendored bytes; the specification pin is unchanged. |
 | [Two new composition tasks](GENERALIZATION-EVALUATION.md) | Four untouched one-shot YAMLs and four selected native live cases passed, using 12 runtime calls under the 14-call cap. Manual controls and the model-authored two-audience graph demonstrate specific accepted alternatives; both model attempts per task used the same shape. Catalog and compiler were unchanged. |
-| [Sapiens harness feasibility](planning/sapiens-harness-feasibility.md) | Investigation prepared; no harness integration or Sapiens workflow executor demonstrated. Computer use and an alternative executor remain outside these experiments. |
+| [Sapiens harness feasibility](history/sapiens-harness-feasibility.md) | Investigation prepared; no harness integration or Sapiens workflow executor demonstrated. Computer use and an alternative executor remain outside these experiments. |
 
 The [independent agent review](../reports/20261004-open-tasks-integration/INDEPENDENT-REVIEW.md)
 separates technical evidence from prose quality. The [content review](../reports/20261004-open-tasks-integration/AGENT-QUALITY-REVIEW.md)
