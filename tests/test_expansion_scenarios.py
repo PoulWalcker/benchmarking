@@ -251,7 +251,7 @@ class ExpansionLocalGraphTests(unittest.TestCase):
                     )
 
     def test_fresh_private_overlay_keeps_all_positive_and_negative_obligations(self):
-        from sapi_config_lab.experiments.expansion import fresh_case_overlay
+        from sapi_config_lab.interfaces.expansion import fresh_case_overlay
 
         self.cases = {scenario: fresh_case_overlay(scenario)[scenario] for scenario in self.configs}
         self.test_all_positive_fixtures_satisfy_independent_business_obligations()

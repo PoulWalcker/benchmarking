@@ -7,8 +7,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.experiments.tasks import stage_tasks
-from sapi_config_lab.experiments.replay import expansion_selection, load_selection
+from sapi_config_lab.interfaces.tasks import stage_tasks
+from sapi_config_lab.interfaces.replay import expansion_selection, load_selection
 from sapi_config_lab.paths import workspace_root
 
 ROOT = workspace_root()

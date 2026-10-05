@@ -8,10 +8,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.experiments.live import BUDGET, audit_records, finalize_report, main, validate_control
+from sapi_config_lab.interfaces.live import BUDGET, audit_records, finalize_report, main, validate_control
 from sapi_config_lab.core.provenance import source_manifest
-from sapi_config_lab.experiments.live_evidence import reconcile_dispatches
-from sapi_config_lab.experiments.replay import load_selection
+from sapi_config_lab.interfaces.live_evidence import reconcile_dispatches
+from sapi_config_lab.interfaces.replay import load_selection
 from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.runtime.agency import DispatchAudit, canonical_hash, execute
 from sapi_config_lab.core.profile import read_bindings
@@ -115,7 +115,7 @@ class LiveEvidenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             path = root / "selection.json"
-            with patch("sapi_config_lab.experiments.live.subprocess.Popen") as dispatch:
+            with patch("sapi_config_lab.interfaces.live.subprocess.Popen") as dispatch:
                 for manifest in (
                     {},
                     {"schema": "fake", "entries": []},
@@ -146,7 +146,7 @@ class LiveEvidenceTests(unittest.TestCase):
             (root / "existing-containers.txt").write_text("existing")
             report = {"status": "passed", "counts": {"provider_call_count": None}}
             with patch(
-                "sapi_config_lab.experiments.live.subprocess.check_output", side_effect=OSError("Docker unavailable")
+                "sapi_config_lab.interfaces.live.subprocess.check_output", side_effect=OSError("Docker unavailable")
             ):
                 finalize_report(report, root, None, None, source_manifest())
             saved = json.loads((root / "report.json").read_text())

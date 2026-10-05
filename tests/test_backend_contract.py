@@ -120,7 +120,7 @@ class BackendContractTests(unittest.TestCase):
     def test_cli_deprecated_checkout_alias_still_reaches_benchmark(self):
         stderr = io.StringIO()
         with (
-            patch("sapi_config_lab.experiments.checkout.main", return_value=0) as entry,
+            patch("sapi_config_lab.interfaces.checkout.main", return_value=0) as entry,
             contextlib.redirect_stderr(stderr),
         ):
             self.assertEqual(cli.main(["checkout", "--mode", "prepare"]), 0)

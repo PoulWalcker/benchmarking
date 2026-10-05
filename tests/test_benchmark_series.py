@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 import tempfile
 import unittest
-from sapi_config_lab.experiments.benchmark_series import collect_series
+from sapi_config_lab.interfaces.benchmark_series import collect_series
 
 
 class SeriesTests(unittest.TestCase):

@@ -4,7 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import unittest
 from sapi_config_lab.core.benchmark_tasks import TASKS, task_definition
-from sapi_config_lab.experiments.checkout import oracle_config, terminal_submission
+from sapi_config_lab.interfaces.checkout import oracle_config, terminal_submission
 from sapi_config_lab.core.contracts import CompileOptions
 from sapi_config_lab.runtime.n8n.adapter import N8nBackend
 from sapi_config_lab.core.profile import read_bindings

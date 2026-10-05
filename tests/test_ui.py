@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.experiments.ui import main, open_workflow, prepare
+from sapi_config_lab.interfaces.ui import main, open_workflow, prepare
 from sapi_config_lab.paths import workspace_root
 
 
@@ -43,8 +43,8 @@ class UiTests(unittest.TestCase):
             for raw in ("workflow: {}\n", "null\n", "workflow: [\n"):
                 source.write_text(raw)
                 with (
-                    patch("sapi_config_lab.experiments.ui.DockerUi") as docker,
-                    patch("sapi_config_lab.experiments.ui.wrapper_preference") as wrapper,
+                    patch("sapi_config_lab.interfaces.ui.DockerUi") as docker,
+                    patch("sapi_config_lab.interfaces.ui.wrapper_preference") as wrapper,
                     contextlib.redirect_stderr(io.StringIO()) as errors,
                 ):
                     with self.assertRaises(SystemExit) as caught:
@@ -58,10 +58,10 @@ class UiTests(unittest.TestCase):
         adapter = FakeN8n()
         with tempfile.TemporaryDirectory() as temporary:
             with (
-                patch("sapi_config_lab.experiments.ui.DockerUi", return_value=adapter),
-                patch("sapi_config_lab.experiments.ui.wrapper_preference", return_value=Path("identity.json")),
-                patch("sapi_config_lab.experiments.ui.webbrowser.open") as browser,
-                patch("sapi_config_lab.experiments.ui.serve") as bridge,
+                patch("sapi_config_lab.interfaces.ui.DockerUi", return_value=adapter),
+                patch("sapi_config_lab.interfaces.ui.wrapper_preference", return_value=Path("identity.json")),
+                patch("sapi_config_lab.interfaces.ui.webbrowser.open") as browser,
+                patch("sapi_config_lab.interfaces.ui.serve") as bridge,
                 contextlib.redirect_stdout(io.StringIO()),
             ):
 
@@ -129,8 +129,8 @@ class UiTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             output = io.StringIO()
             with (
-                patch("sapi_config_lab.experiments.ui.DockerUi", return_value=adapter),
-                patch("sapi_config_lab.experiments.ui.serve") as bridge,
+                patch("sapi_config_lab.interfaces.ui.DockerUi", return_value=adapter),
+                patch("sapi_config_lab.interfaces.ui.serve") as bridge,
                 contextlib.redirect_stdout(output),
             ):
                 self.assertEqual(main(["open", "--all", "--no-browser", "--state-dir", temporary]), 0)
@@ -148,9 +148,9 @@ class UiTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             state = Path(temporary)
             with (
-                patch("sapi_config_lab.experiments.ui.DockerUi", return_value=adapter),
-                patch("sapi_config_lab.experiments.ui.wrapper_preference", return_value=Path("identity.json")),
-                patch("sapi_config_lab.experiments.ui.serve") as bridge,
+                patch("sapi_config_lab.interfaces.ui.DockerUi", return_value=adapter),
+                patch("sapi_config_lab.interfaces.ui.wrapper_preference", return_value=Path("identity.json")),
+                patch("sapi_config_lab.interfaces.ui.serve") as bridge,
                 contextlib.redirect_stdout(io.StringIO()),
             ):
                 for _ in range(2):
@@ -171,13 +171,13 @@ class UiTests(unittest.TestCase):
             self.assertFalse((directory / "budget.json").exists())
 
     def test_missing_preparation_is_actionable_before_any_network_request(self):
-        from sapi_config_lab.experiments.ui import main
+        from sapi_config_lab.interfaces.ui import main
 
         with tempfile.TemporaryDirectory() as directory:
             missing = Path(directory) / "ui-priority-01"
             errors = io.StringIO()
             with (
-                patch("sapi_config_lab.experiments.live.wrapper_identity", return_value={"model": "gpt-6-astra"}),
+                patch("sapi_config_lab.interfaces.live.wrapper_identity", return_value={"model": "gpt-6-astra"}),
                 patch("sapi_config_lab.runtime.agency.urlopen") as request,
                 contextlib.redirect_stderr(errors),
             ):
@@ -227,7 +227,7 @@ class UiTests(unittest.TestCase):
                 prepare(source, output, port=18766)
 
     def test_admission_requires_explicit_cap_and_unmodified_files_and_cannot_resume(self):
-        from sapi_config_lab.experiments.ui import admit
+        from sapi_config_lab.interfaces.ui import admit
 
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "run"

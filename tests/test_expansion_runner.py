@@ -5,10 +5,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from sapi_config_lab.experiments.expansion import ExpansionSeries, RUNTIME_CAPS, fresh_case_overlay
-from sapi_config_lab.experiments.generation.run import main as generate
-from sapi_config_lab.experiments.live import main as live
-from sapi_config_lab.experiments.replay import read_json
+from sapi_config_lab.interfaces.expansion import ExpansionSeries, RUNTIME_CAPS, fresh_case_overlay
+from sapi_config_lab.interfaces.generation.run import main as generate
+from sapi_config_lab.interfaces.live import main as live
+from sapi_config_lab.interfaces.replay import read_json
 from sapi_config_lab.paths import workspace_root
 
 
@@ -55,7 +55,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
             self.assertEqual(len(read_json(series.path)["events"]), 1)
 
     def test_expansion_cli_cannot_start_without_named_caps_and_shared_series(self):
-        with patch("sapi_config_lab.experiments.generation.run.subprocess.run") as outgoing:
+        with patch("sapi_config_lab.interfaces.generation.run.subprocess.run") as outgoing:
             for args in (
                 ["--scenario", "dual-ledger-closeout"],
                 ["--scenario", "dual-ledger-closeout", "--attempts", "2"],
@@ -64,7 +64,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
                 with self.assertRaises(SystemExit):
                     generate(args)
             outgoing.assert_not_called()
-        with patch("sapi_config_lab.experiments.live.subprocess.run") as outgoing:
+        with patch("sapi_config_lab.interfaces.live.subprocess.run") as outgoing:
             with self.assertRaises(SystemExit):
                 live(["--scenario", "dual-ledger-closeout", "--stub-report", "/unused.json"])
             outgoing.assert_not_called()
@@ -142,8 +142,8 @@ class ExpansionAdmissionTests(unittest.TestCase):
             self.assertEqual(len(read_json(first.path)["events"]), 1)
 
     def test_two_distinct_generated_answers_keep_independent_stub_byte_identities(self):
-        from sapi_config_lab.experiments.live import check_generated_stub_gates
-        from sapi_config_lab.experiments.replay import sha256
+        from sapi_config_lab.interfaces.live import check_generated_stub_gates
+        from sapi_config_lab.interfaces.replay import sha256
 
         with tempfile.TemporaryDirectory() as tmp:
             trials = []
@@ -175,7 +175,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
                 check_generated_stub_gates(trials, "dual-ledger-closeout", 1)
 
     def test_malformed_partial_trial_still_produces_a_failed_generation_report(self):
-        from sapi_config_lab.experiments.generation.run import finalize_generation
+        from sapi_config_lab.interfaces.generation.run import finalize_generation
 
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp) / "report"
@@ -194,7 +194,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
 
     def test_failed_audit_aggregation_still_finalizes_the_live_report(self):
         from types import SimpleNamespace
-        from sapi_config_lab.experiments.live import run_expansion
+        from sapi_config_lab.interfaces.live import run_expansion
 
         original_write = Path.write_text
 
@@ -212,7 +212,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
                 series_dir=Path(tmp) / "series",
             )
             with (
-                patch("sapi_config_lab.experiments.live.ExpansionSeries", side_effect=ValueError("preflight failure")),
+                patch("sapi_config_lab.interfaces.live.ExpansionSeries", side_effect=ValueError("preflight failure")),
                 patch.object(Path, "write_text", fail_combined_audit),
             ):
                 self.assertEqual(run_expansion(args), 1)
@@ -300,7 +300,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
             for changed in (None, (selected[0],)):
                 with self.assertRaisesRegex(ValueError, "selection changed"):
                     ExpansionSeries(Path(tmp), scenarios=changed)
-            with patch("sapi_config_lab.experiments.expansion.source_manifest", return_value={"changed.py": "changed"}):
+            with patch("sapi_config_lab.interfaces.expansion.source_manifest", return_value={"changed.py": "changed"}):
                 with self.assertRaisesRegex(ValueError, "sources changed"):
                     series.reserve(selected[0], "authoring", "1", Path(tmp) / "drift.json")
             self.assertEqual(read_json(series.path)["events"], [])
@@ -334,7 +334,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
     def test_cli_passes_canonical_subset_and_rejects_bad_selection_before_any_runtime(self):
         selected = ("bulletin-market-brief", "priority-support-brief")
         flags = [arg for name in selected for arg in ("--series-scenario", name)]
-        with patch("sapi_config_lab.experiments.live.run_expansion", return_value=0) as launch:
+        with patch("sapi_config_lab.interfaces.live.run_expansion", return_value=0) as launch:
             self.assertEqual(
                 live(
                     [
@@ -356,12 +356,12 @@ class ExpansionAdmissionTests(unittest.TestCase):
             flags = [arg for name in entry for arg in ("--series-scenario", name)]
             with (
                 self.subTest(entry=entry),
-                patch("sapi_config_lab.experiments.generation.run.subprocess.run") as outgoing,
+                patch("sapi_config_lab.interfaces.generation.run.subprocess.run") as outgoing,
             ):
                 with self.assertRaises(SystemExit):
                     generate(["--scenario", selected[0], "--attempts", "2", "--series-dir", "/unused", *flags])
                 outgoing.assert_not_called()
-            with patch("sapi_config_lab.experiments.live.run_expansion") as launch:
+            with patch("sapi_config_lab.interfaces.live.run_expansion") as launch:
                 with self.assertRaises(SystemExit):
                     live(
                         [
@@ -384,7 +384,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             with patch(
-                "sapi_config_lab.experiments.generation.run.subprocess.run",
+                "sapi_config_lab.interfaces.generation.run.subprocess.run",
                 side_effect=RuntimeError("unpaid control unavailable"),
             ):
                 self.assertEqual(
@@ -404,7 +404,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
                     1,
                 )
             with patch(
-                "sapi_config_lab.experiments.live.harbor_command",
+                "sapi_config_lab.interfaces.live.harbor_command",
                 side_effect=RuntimeError("unpaid preflight unavailable"),
             ):
                 self.assertEqual(

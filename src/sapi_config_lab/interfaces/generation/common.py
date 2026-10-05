@@ -24,7 +24,7 @@ def fingerprints() -> dict[str, str]:
 
 def prepare_tasks(destination: Path, image: str, *, scenarios: tuple[str, ...] | None = None) -> dict:
     """Generation entry into the shared packager; no reference YAML or solutions."""
-    from sapi_config_lab.experiments.tasks import stage_tasks
+    from sapi_config_lab.interfaces.tasks import stage_tasks
 
     return stage_tasks(destination, mode="generation", image=image, scenarios=scenarios)
 

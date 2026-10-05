@@ -15,14 +15,14 @@ import threading
 import time
 from typing import Any
 
-from sapi_config_lab.experiments.expansion import ExpansionSeries
-from sapi_config_lab.experiments.generation.common import summarize_trials
-from sapi_config_lab.experiments.harbor import load_trials
+from sapi_config_lab.interfaces.expansion import ExpansionSeries
+from sapi_config_lab.interfaces.generation.common import summarize_trials
+from sapi_config_lab.interfaces.harbor import load_trials
 from sapi_config_lab.core.host import harbor_command
-from sapi_config_lab.experiments.lifecycle_run import bind_authoring_evidence, file_hash, read_json, MODEL
-from sapi_config_lab.experiments.live_evidence import load_verifier, reconcile_dispatches
+from sapi_config_lab.interfaces.lifecycle_run import bind_authoring_evidence, file_hash, read_json, MODEL
+from sapi_config_lab.interfaces.live_evidence import load_verifier, reconcile_dispatches
 from sapi_config_lab.core.provenance import source_manifest
-from sapi_config_lab.experiments.replay import require
+from sapi_config_lab.interfaces.replay import require
 from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.runtime.agency import make_handler
 from sapi_config_lab.runtime.execution import run_case
@@ -230,7 +230,7 @@ def author(series, scenario, *, image, upstream):
                 directory / "tasks",
                 directory / "jobs",
                 f"attempt-{attempt}",
-                "sapi_config_lab.experiments.generation.agent:WrapperYamlAgent",
+                "sapi_config_lab.interfaces.generation.agent:WrapperYamlAgent",
             )
             args += ["--ak", "upstream=" + upstream]
             rc = command(args, directory / f"author-{attempt}.log")

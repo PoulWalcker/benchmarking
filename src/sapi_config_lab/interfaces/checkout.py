@@ -25,8 +25,8 @@ import uuid
 import yaml
 
 from sapi_config_lab.core.benchmark_tasks import TASKS, task_definition
-from sapi_config_lab.experiments.generation.common import audit_stderr
-from sapi_config_lab.experiments.harbor import command, load_trials
+from sapi_config_lab.interfaces.generation.common import audit_stderr
+from sapi_config_lab.interfaces.harbor import command, load_trials
 from sapi_config_lab.core.host import harbor_command
 from sapi_config_lab.core.provenance import source_manifest, host_environment
 from sapi_config_lab.runtime.task_evaluation import (
@@ -54,9 +54,9 @@ CATALOG = ROOT / "generation/checkout-bindings.yaml"
 # stale entry here silently removes nothing and leaves the oracle in place; a test in
 # tests/test_packaging.py asserts every path below still exists under src/.
 ORACLE_MODULES = (
-    "sapi_config_lab/experiments/checkout.py",
+    "sapi_config_lab/interfaces/checkout.py",
     "sapi_config_lab/runtime/task_evaluation.py",
-    "sapi_config_lab/experiments/judge_calibration.py",
+    "sapi_config_lab/interfaces/judge_calibration.py",
     "sapi_config_lab/runtime/autowfbench.py",
     "sapi_config_lab/runtime/autowfbench-source.json",
 )
@@ -375,7 +375,7 @@ def native_trial(directory, source, contract, mode, wrapper, config, *, seed=0):
             {"url": f"http://host.docker.internal:{server.server_port}", "token": server.token},
         )
         (task / "tests/test.sh").write_text(
-            "#!/bin/bash\nset -euo pipefail\npython3 -m sapi_config_lab.experiments.checkout_worker\n"
+            "#!/bin/bash\nset -euo pipefail\npython3 -m sapi_config_lab.interfaces.checkout_worker\n"
         )
         shutil.copytree(task, directory / "task-package")
         save(directory / "task-package/tests/connection.json", {"url": "runtime-local", "token": "REDACTED"})
@@ -534,7 +534,7 @@ def main():
                 [
                     sys.executable,
                     "-m",
-                    "sapi_config_lab.experiments.checkout",
+                    "sapi_config_lab.interfaces.checkout",
                     "--mode",
                     "controls",
                     "--task",
@@ -657,7 +657,7 @@ def main():
                 for p in output.glob("*/runtime-dispatch.jsonl")
             )
         )
-        from sapi_config_lab.experiments.benchmark_series import stage_summary
+        from sapi_config_lab.interfaces.benchmark_series import stage_summary
 
         report["stage_summary"] = stage_summary(output)
         save(output / "report.json", report)

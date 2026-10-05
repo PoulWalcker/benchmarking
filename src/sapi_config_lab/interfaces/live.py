@@ -20,19 +20,19 @@ from urllib.request import urlopen
 
 from sapi_config_lab.runtime.agency import strict_json
 from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.experiments.tasks import SCENARIOS, stage_tasks
+from sapi_config_lab.interfaces.tasks import SCENARIOS, stage_tasks
 from sapi_config_lab.core.host import harbor_command
-from sapi_config_lab.experiments.harbor import IMAGE, load_trials
+from sapi_config_lab.interfaces.harbor import IMAGE, load_trials
 from sapi_config_lab.core.provenance import host_environment, source_manifest
-from sapi_config_lab.experiments.replay import load_selection, read_json, require, sha256
-from sapi_config_lab.experiments.live_evidence import LIVE_CASES, OPERATIONS, collect_native, reconcile_dispatches
-from sapi_config_lab.experiments.expansion import (
+from sapi_config_lab.interfaces.replay import load_selection, read_json, require, sha256
+from sapi_config_lab.interfaces.live_evidence import LIVE_CASES, OPERATIONS, collect_native, reconcile_dispatches
+from sapi_config_lab.interfaces.expansion import (
     ExpansionSeries,
     RefinementSeries,
     RUNTIME_CAPS,
     select_series_scenarios,
 )
-from sapi_config_lab.experiments.live_evidence import case_budget
+from sapi_config_lab.interfaces.live_evidence import case_budget
 from sapi_config_lab.core.scenarios import EXPANSION_SCENARIOS, EXTENSION_SCENARIOS
 from sapi_config_lab.core.profile import read
 

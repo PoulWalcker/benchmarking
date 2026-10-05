@@ -59,7 +59,7 @@ class OccurrenceBudgetTests(unittest.TestCase):
 
     def test_named_case_admission_covers_all_seventeen_expected_occurrences(self):
         import json
-        from sapi_config_lab.experiments.live_evidence import case_budget
+        from sapi_config_lab.interfaces.live_evidence import case_budget
         from sapi_config_lab.paths import workspace_root
         from sapi_config_lab.core.scenarios import EXPANSION_SCENARIOS
         from sapi_config_lab.core.profile import read
