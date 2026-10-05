@@ -18,7 +18,7 @@ from pathlib import Path
 
 import yaml
 
-from sapi_config_lab.scenarios import SCENARIOS
+from sapi_config_lab.core.scenarios import SCENARIOS
 
 if TYPE_CHECKING or __package__:
     from .business import check_business_result

@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch
 
 from sapi_config_lab.experiments.live import BUDGET, audit_records, finalize_report, main, validate_control
-from sapi_config_lab.experiments.provenance import source_manifest
+from sapi_config_lab.core.provenance import source_manifest
 from sapi_config_lab.experiments.live_evidence import reconcile_dispatches
 from sapi_config_lab.experiments.replay import load_selection
 from sapi_config_lab.paths import CATALOG

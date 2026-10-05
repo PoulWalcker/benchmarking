@@ -7,7 +7,7 @@ import shutil
 
 from sapi_config_lab.paths import CATALOG, workspace_root
 
-from sapi_config_lab.scenarios import BASELINE_SCENARIOS, select_scenarios
+from sapi_config_lab.core.scenarios import BASELINE_SCENARIOS, select_scenarios
 
 SCENARIOS = BASELINE_SCENARIOS
 

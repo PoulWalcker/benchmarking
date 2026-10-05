@@ -108,7 +108,7 @@ class ExpansionPackagingTests(unittest.TestCase):
                 "private_cases_sha256": {SCENARIO: hashlib.sha256(case_path.read_bytes()).hexdigest()},
             }
             save(root / "report.json", report)
-            with patch("sapi_config_lab.experiments.provenance.source_manifest", return_value=frozen):
+            with patch("sapi_config_lab.core.provenance.source_manifest", return_value=frozen):
                 manifest = expansion_selection(root / "report.json", SCENARIO)
                 self.assertEqual(manifest["entries"][0]["source_trial"], "z-first")
                 save(root / "selection.json", manifest)

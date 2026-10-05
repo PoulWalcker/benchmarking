@@ -11,7 +11,7 @@ import tarfile
 import tempfile
 import zipfile
 
-from sapi_config_lab.experiments.provenance import source_manifest
+from sapi_config_lab.core.provenance import source_manifest
 from sapi_config_lab.paths import workspace_root
 
 PRIVATE_PATHS = (

@@ -24,10 +24,10 @@ import threading
 import time
 
 from sapi_config_lab.experiments.generation.common import summarize_trials
-from sapi_config_lab.experiments.host import harbor_command
+from sapi_config_lab.core.host import harbor_command
 from sapi_config_lab.experiments.harbor import load_trials
 from sapi_config_lab.experiments.live_evidence import load_verifier, reconcile_dispatches
-from sapi_config_lab.experiments.provenance import source_manifest
+from sapi_config_lab.core.provenance import source_manifest
 from sapi_config_lab.experiments.replay import require
 from sapi_config_lab.experiments.tasks import stage_tasks
 from sapi_config_lab.paths import workspace_root
