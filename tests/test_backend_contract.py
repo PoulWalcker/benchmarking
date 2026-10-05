@@ -101,6 +101,32 @@ class BackendContractTests(unittest.TestCase):
         self.assertEqual(len(backend.compiled), 2)
         self.assertEqual(len(backend.executed), 1)
 
+    def test_cli_help_separates_the_two_command_tiers(self):
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout), self.assertRaises(SystemExit):
+            cli.main(["--help"])
+        text = stdout.getvalue()
+        self.assertLess(text.index("commands you run:"), text.index("internal commands"))
+        for name in cli.PUBLIC:
+            self.assertLess(text.index("  " + name + " "), text.index("internal commands"))
+        for name in cli.INTERNAL:
+            self.assertGreater(text.index("  " + name + " "), text.index("internal commands"))
+        # A deprecated alias stays invocable but is never advertised.
+        for name in cli.DEPRECATED:
+            self.assertNotIn("  " + name + " ", text)
+        self.assertEqual(set(cli.PUBLIC) & set(cli.INTERNAL), set())
+        self.assertEqual(set(cli.MODULES) - set(cli.PUBLIC) - set(cli.INTERNAL), set())
+
+    def test_cli_deprecated_checkout_alias_still_reaches_benchmark(self):
+        stderr = io.StringIO()
+        with (
+            patch("sapi_config_lab.experiments.checkout.main", return_value=0) as entry,
+            contextlib.redirect_stderr(stderr),
+        ):
+            self.assertEqual(cli.main(["checkout", "--mode", "prepare"]), 0)
+        entry.assert_called_once_with()
+        self.assertEqual(stderr.getvalue(), "sapi-lab checkout is deprecated; use sapi-lab benchmark.\n")
+
     def test_cli_invalid_shape_has_field_error_without_traceback(self):
         with tempfile.TemporaryDirectory() as directory:
             config = Path(directory) / "bad.yaml"
