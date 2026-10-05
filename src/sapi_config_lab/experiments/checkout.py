@@ -49,6 +49,23 @@ UPSTREAM = "http://127.0.0.1:8765/run"
 IMAGE = "sapi-config-lab-checkout:2.41.5"
 CATALOG = ROOT / "generation/checkout-bindings.yaml"
 
+# The benchmark agent's container must not be able to read the scoring oracle, so its
+# image deletes these modules. `rm -rf` exits 0 on a path that does not exist, so a
+# stale entry here silently removes nothing and leaves the oracle in place; a test in
+# tests/test_packaging.py asserts every path below still exists under src/.
+ORACLE_MODULES = (
+    "sapi_config_lab/experiments/checkout.py",
+    "sapi_config_lab/experiments/task_evaluation.py",
+    "sapi_config_lab/experiments/judge_calibration.py",
+    "sapi_config_lab/runtime/autowfbench.py",
+    "sapi_config_lab/runtime/autowfbench-source.json",
+)
+
+
+def oracle_scrub() -> str:
+    """The rm -rf operands that strip the scoring oracle out of the agent's image."""
+    return " ".join(f"/app/lab/src/{relative}" for relative in ORACLE_MODULES)
+
 
 def save(path, data):
     Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -343,12 +360,7 @@ def native_trial(directory, source, contract, mode, wrapper, config, *, seed=0):
         )
         (task / "environment/Dockerfile").write_text(
             f"FROM {IMAGE}\nUSER root\nRUN rm -rf /app/lab/configs /app/scenario "
-            "/app/lab/src/sapi_config_lab/experiments/checkout.py "
-            "/app/lab/src/sapi_config_lab/experiments/task_evaluation.py "
-            "/app/lab/src/sapi_config_lab/experiments/judge_calibration.py "
-            "/app/lab/src/sapi_config_lab/runtime/autowfbench.py "
-            "/app/lab/src/sapi_config_lab/runtime/autowfbench-source.json "
-            "&& mkdir -p /app/submission\n"
+            f"{oracle_scrub()} && mkdir -p /app/submission\n"
         )
         if config is not None:
             (task / "solution/config.yaml").write_text(config)
