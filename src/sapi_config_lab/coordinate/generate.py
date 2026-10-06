@@ -141,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as error:
         parser.error(str(error))
     if "daily-digest" in scenarios:
-        parser.error("daily-digest authoring needs the retired lifecycle series runner; see docs/RETIRED.md")
+        parser.error("daily-digest authoring needs the retired lifecycle series runner (see Git history)")
     if not 1 <= args.attempts <= 10:
         parser.error("--attempts must be between 1 and 10")
     capped = [s for s in scenarios if args.attempts > SCENARIOS[s].budgets.get("authoring_attempts", 10)]
