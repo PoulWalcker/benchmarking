@@ -7,8 +7,9 @@ import subprocess
 import unittest
 
 from sapi_config_lab.paths import CATALOG
-from sapi_config_lab.contracts import CompileOptions
+from sapi_config_lab.contracts import CompileOptions, RunBinding
 from sapi_config_lab.coordinate.backend import N8nBackend
+from sapi_config_lab.execute.n8n import binding_environment
 from sapi_config_lab.profile import Invalid, read, read_bindings
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,9 +72,7 @@ class OperationTransportTests(unittest.TestCase):
                 "additionalProperties": False,
             },
         }
-        options = CompileOptions(
-            operation_url="http://tools:123/tools", operation_token="session-secret-never-in-artifact"
-        )
+        options = CompileOptions(operation_url="http://tools:123/tools")
         return cfg, {"inventory.inspect": binding}, options
 
     def probe(self, responses, *, enabled=True):
@@ -97,9 +96,7 @@ class OperationTransportTests(unittest.TestCase):
         bindings = read_bindings(ROOT / "generation/checkout-bindings.yaml")
         with self.assertRaises(Invalid):
             N8nBackend().compile(cfg, bindings, CompileOptions())
-        built = N8nBackend().compile(
-            cfg, bindings, CompileOptions(operation_url="http://tools:123/tools", operation_token="test")
-        )
+        built = N8nBackend().compile(cfg, bindings, CompileOptions(operation_url="http://tools:123/tools"))
         http = [n for n in built.document["nodes"] if n["type"] == "n8n-nodes-base.httpRequest"]
         self.assertEqual(len(http), 1)
         self.assertEqual(http[0]["parameters"]["url"], "http://tools:123/tools")
@@ -166,10 +163,16 @@ class OperationTransportTests(unittest.TestCase):
 
     def test_secrets_are_deployment_data_and_untrusted_urls_are_rejected(self):
         cfg, catalog, options = self.generic_tool()
-        graph = N8nBackend().compile(cfg, catalog, options).document
-        self.assertNotIn(options.operation_token, json.dumps(graph))
+        compiled = N8nBackend().compile(cfg, catalog, options)
+        graph = compiled.document
         http = next(node for node in graph["nodes"] if node["name"] == "Tool read")
         self.assertIn("$env.SAPI_OPERATION_TOKEN", json.dumps(http["parameters"]["headerParameters"]))
+        # The secret arrives only with the run, as an environment variable.
+        secret = RunBinding(operation_token="session-secret-never-in-artifact")
+        self.assertEqual(binding_environment(compiled, secret)["SAPI_OPERATION_TOKEN"], secret.operation_token)
+        self.assertNotIn(secret.operation_token, json.dumps(compiled.document))
+        with self.assertRaisesRegex(RuntimeError, "need an access token"):
+            binding_environment(compiled, RunBinding())
         for url in (
             "file:///tmp/tools",
             "http://user:password@tools/tools",
@@ -177,7 +180,7 @@ class OperationTransportTests(unittest.TestCase):
             "http://tools/#fragment",
         ):
             with self.subTest(url=url), self.assertRaises(Invalid):
-                N8nBackend().compile(cfg, catalog, CompileOptions(operation_url=url, operation_token="test"))
+                N8nBackend().compile(cfg, catalog, CompileOptions(operation_url=url))
 
     def test_tools_do_not_acquire_scenario_specific_compiler_rules(self):
         cfg, catalog, options = self.generic_tool()

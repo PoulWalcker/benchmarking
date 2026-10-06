@@ -18,6 +18,7 @@ from sapi_config_lab.contracts import (
     Document,
     ExecutionRecord,
     LlmMode,
+    RunBinding,
     WorkflowBackend,
 )
 from sapi_config_lab import profile
@@ -47,6 +48,8 @@ def run_case(
     artifact_dir = Path(artifact_dir).resolve()
     artifact_dir.mkdir(parents=True, exist_ok=True)
     config = copy.deepcopy(config)
+    # A malformed binding is the caller's error, raised before anything is recorded.
+    binding = RunBinding(deadline_at, admission, operation_token)
     started = time.monotonic()
     record: ExecutionRecord = {
         "status": "compile_error",
@@ -66,10 +69,9 @@ def run_case(
             CompileOptions(
                 llm_mode,
                 bridge_url,
-                admission=admission,
-                deadline_at=deadline_at,
                 operation_url=operation_url,
-                operation_token=operation_token,
+                activation="event" if admission is not None else "fixture",
+                bound_deadline=deadline_at is not None,
             ),
         )
         if artifact_transform:
@@ -78,7 +80,7 @@ def run_case(
         record["error"] = {"category": "compile_error", "type": type(error).__name__, "message": str(error)}
     else:
         try:
-            record = selected.execute(compiled, artifact_dir)
+            record = selected.execute(compiled, artifact_dir, binding)
         except (OSError, RuntimeError) as error:
             record.update(
                 {

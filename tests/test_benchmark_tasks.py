@@ -19,7 +19,7 @@ class CommonTaskTests(unittest.TestCase):
             compiled = N8nBackend().compile(
                 oracle_config(contract),
                 read_bindings(ROOT / task.catalog),
-                CompileOptions(operation_url="http://tools/tools", operation_token="not-persisted"),
+                CompileOptions(operation_url="http://tools/tools"),
             )
             self.assertEqual(compiled.engine, "n8n")
             self.assertNotIn("not-persisted", str(compiled.document))

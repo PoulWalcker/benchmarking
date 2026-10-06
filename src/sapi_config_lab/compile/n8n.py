@@ -1,7 +1,6 @@
 """Compile the supported profile to n8n JSON; never execute workflows."""
 
 import json
-import math
 import uuid
 from pathlib import Path
 from urllib.parse import urlparse
@@ -22,6 +21,41 @@ def capability_errors(cfg: Document, *, admitted: bool = False) -> list[str]:
     return reasons
 
 
+def bind_run(cfg: Document, activation: str) -> str:
+    """Fixture statements that read this run's binding from the environment.
+
+    The execution step supplies SAPI_RUN_BINDING; the artifact itself holds only
+    the definition's rules, so it is the same for every run. A missing deadline
+    or an event this definition does not admit fails the execution natively.
+    """
+    source = (
+        "const binding = JSON.parse($env.SAPI_RUN_BINDING || 'null');\n"
+        "if (!binding || !Number.isFinite(binding.deadline_at_ms)) throw new Error('Run binding needs an absolute deadline');\n"
+        "ctx.deadline_at_ms = Math.min(ctx.deadline_at_ms ?? Infinity, binding.deadline_at_ms);\n"
+    )
+    if activation == "event":
+        rules = {
+            "Callback": {"rule_id": cfg["lifecycle"]["test"]["rule_id"], "purpose": "test"},
+            "Cron": {"rule_id": cfg["activation"]["rule_id"], "purpose": "scheduled"},
+        }
+        ref = cfg["activation"]["workflow_ref"]
+        source += (
+            "const admission = binding.admission, rule = admission && "
+            + json.dumps(rules)
+            + "[admission.kind], ref = "
+            + json.dumps(ref)
+            + ";\n"
+            "if (!rule || Object.keys(admission).sort().join() !== 'event_id,kind,purpose,rule_id,workflow_ref'"
+            " || admission.rule_id !== rule.rule_id || admission.purpose !== rule.purpose"
+            " || typeof admission.event_id !== 'string' || !admission.event_id) throw new Error('Invalid lifecycle admission');\n"
+            "const admitted = admission.workflow_ref || {};\n"
+            "if (Object.keys(admitted).length !== 2 || admitted.id !== ref.id || admitted.revision !== ref.revision)"
+            " throw new Error('Admission revision differs');\n"
+            "Object.assign(ctx, {simulation: false, input_source: 'event', admission});\n"
+        )
+    return source
+
+
 def compile_n8n(
     cfg: Document,
     bindings: Document,
@@ -30,10 +64,9 @@ def compile_n8n(
     bridge_url: str | None = None,
     request_timeout_seconds: int = 190,
     _refinement_attempt: int | None = None,
-    admission: Document | None = None,
-    deadline_at: float | None = None,
     operation_url: str | None = None,
-    operation_token: str | None = None,
+    activation: str = "fixture",
+    bound_deadline: bool = False,
 ) -> tuple[Document, dict[str, str]]:
     """Compile the closed DAG profile to n8n; compilation does not execute it.
 
@@ -62,21 +95,11 @@ def compile_n8n(
         if not parsed.path.rstrip("/"):
             endpoint += "/v1/agency/execute"
     order, deps = validate(cfg, bindings)
-    if admission is not None:
+    check(activation in ("fixture", "event"), "activation must be fixture or event")
+    if activation == "event":
         check("lifecycle" in cfg, "Event admission requires a lifecycle definition")
-        check(set(admission) == {"kind", "rule_id", "event_id", "workflow_ref", "purpose"}, "Invalid admission fields")
-        check(admission["workflow_ref"] == cfg["activation"]["workflow_ref"], "Admission revision differs")
-        check(isinstance(admission["event_id"], str) and bool(admission["event_id"]), "Invalid event ID")
-        rule = cfg["lifecycle"]["test"]["rule_id"] if admission["kind"] == "Callback" else cfg["activation"]["rule_id"]
-        purpose = "test" if admission["kind"] == "Callback" else "scheduled"
-        check(
-            admission["kind"] in ("Callback", "Cron")
-            and admission["rule_id"] == rule
-            and admission["purpose"] == purpose,
-            "Invalid lifecycle admission",
-        )
-        check(deadline_at is not None and math.isfinite(deadline_at), "Lifecycle admission needs a deadline")
-    reasons = capability_errors(cfg, admitted=admission is not None)
+        check(bound_deadline, "Lifecycle admission needs a deadline")
+    reasons = capability_errors(cfg, admitted=activation == "event")
     if reasons:
         raise Unsupported("; ".join(reasons))
     used_bindings = [bindings[step["uses"]] for step in cfg["workflow"]["steps"]]
@@ -85,8 +108,11 @@ def compile_n8n(
     if "refinement" in cfg["execution"] and _refinement_attempt is None:
         from sapi_config_lab.compile.refinement import compile_refinement
 
-        return compile_refinement(cfg, bindings, llm_mode, bridge_url, request_timeout_seconds, admission, deadline_at)
-    if any(binding.get("transport") == "http" for binding in used_bindings):
+        return compile_refinement(
+            cfg, bindings, llm_mode, bridge_url, request_timeout_seconds, activation, bound_deadline
+        )
+    uses_tools = any(binding.get("transport") == "http" for binding in used_bindings)
+    if uses_tools:
         parsed_tool = urlparse(operation_url or "")
         check(
             parsed_tool.scheme in ("http", "https")
@@ -97,7 +123,6 @@ def compile_n8n(
             and not parsed_tool.fragment,
             "HTTP operations need a credential-free operation_url",
         )
-        check(isinstance(operation_token, str) and bool(operation_token), "HTTP operations need an access token")
     w = cfg["workflow"]
     nodes: list[Document] = []
     connections: Document = {}
@@ -140,13 +165,10 @@ def compile_n8n(
         "input_source": "fixture",
         "llm_mode": llm_mode,
     }
-    if deadline_at is not None:
-        check(math.isfinite(deadline_at), "Invalid absolute deadline")
-        initial["deadline_at_ms"] = deadline_at * 1000
-    if admission is not None:
-        assert deadline_at is not None
-        initial.update(simulation=False, input_source="event", admission=admission, deadline_at_ms=deadline_at * 1000)
-    code("Fixture", "return [{json: " + json.dumps(initial, ensure_ascii=False) + "}];", 220)
+    fixture = "const ctx = " + json.dumps(initial, ensure_ascii=False) + ";\n"
+    if bound_deadline:
+        fixture += bind_run(cfg, activation)
+    code("Fixture", fixture + "return [{json: ctx}];", 220)
     connect("Demo start", "Fixture")
     levels: dict[str, int] = {}
     for sid in order:
@@ -210,7 +232,7 @@ def compile_n8n(
                                 ]
                             },
                         }
-                        if operation_token is not None
+                        if uses_tools
                         else {}
                     ),
                     "sendBody": True,
@@ -221,7 +243,7 @@ def compile_n8n(
                             "={{ Math.max(1, Math.min("
                             + str(min(request_timeout_seconds, 185) * 1000)
                             + ", $json.envelope.deadline_at_ms - Date.now())) }}"
-                            if _refinement_attempt is not None or deadline_at is not None
+                            if _refinement_attempt is not None or bound_deadline
                             else min(request_timeout_seconds, cfg["execution"]["deadline_seconds"]) * 1000
                         ),
                         "redirect": {"redirect": {"followRedirects": False}},
@@ -274,11 +296,12 @@ def compile_n8n(
         "spec_revision": SPEC,
         "workflow_ref": {"id": w["id"], "revision": w["revision"]},
     }
-    if admission is not None:
-        metadata.update(simulation=False, input_source="event", admission=admission)
+    if activation == "event":
+        metadata.update(simulation=False, input_source="event")
     source += (
         "return [{json: {..."
         + json.dumps(metadata)
+        + (", admission: ctx.admission" if activation == "event" else "")
         + ", output: resolveValue("
         + json.dumps(w["output"])
         + ", ctx), trace: Object.values(ctx.events), steps: ctx.steps, statuses: ctx.statuses}}];"
