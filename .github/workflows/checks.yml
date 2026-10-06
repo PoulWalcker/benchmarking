@@ -38,6 +38,53 @@ jobs:
       - name: Distribution privacy and resources
         run: uv run --locked python infra/check_distribution.py
 
+  pinned-simulator:
+    # The `local` job runs without the benchmark extra and without the pinned
+    # AutoWFBench checkout, so the 23 tests below skip there. No Docker, no
+    # model call and no judge dispatch: the simulator and the evaluator run
+    # locally against fixed replies.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.4"
+      - name: Install the locked project environment with the benchmark extra
+        run: uv sync --locked --extra benchmark
+      - name: Reuse the pinned source cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/autowfbench
+          # Keyed on the manifest, so a repin or an edited hash misses the cache.
+          key: autowfbench-${{ hashFiles('src/sapi_config_lab/runtime/autowfbench-source.json') }}
+      - name: Fetch the pinned AutoWFBench source
+        # The project's own fetch_source: pinned raw URLs, every file verified
+        # against the SHA-256 manifest, nothing vendored. An unreachable URL or
+        # a changed byte fails here rather than skipping the suite.
+        run: uv run --locked --extra benchmark python -c "from pathlib import Path; from sapi_config_lab.runtime.autowfbench import fetch_source; print(fetch_source(Path('.cache/autowfbench')))"
+      - name: Pinned-simulator contract suite
+        # A skip is a failure here: silently skipping is the bug this job fixes.
+        run: |
+          uv run --locked --extra benchmark python - <<'PY'
+          import sys
+          import unittest
+
+          modules = [
+              "tests.test_autowfbench_environment",
+              "tests.test_task_evaluation",
+              "tests.test_judge_calibration",
+          ]
+          result = unittest.TextTestRunner(verbosity=2).run(
+              unittest.defaultTestLoader.loadTestsFromNames(modules)
+          )
+          for case, reason in result.skipped:
+              print(f"SKIPPED {case.id()}: {reason}", file=sys.stderr)
+          if result.skipped:
+              print("The pinned contract surface must run in CI, not skip.", file=sys.stderr)
+          sys.exit(1 if result.skipped or not result.wasSuccessful() else 0)
+          PY
+
   harbor:
     if: github.event_name == 'workflow_dispatch' && inputs.harbor
     needs: local
