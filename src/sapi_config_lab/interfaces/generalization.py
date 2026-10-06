@@ -123,10 +123,6 @@ def fresh_cases(scenario):
     return {scenario: cases}
 
 
-def harbor_args(tasks, jobs, name, agent):
-    return harbor_run_args(harbor_command(), tasks, jobs, name, agent, attempts="1")
-
-
 def command(args, log):
     with log.open("w") as stream:
         return subprocess.run(
@@ -143,7 +139,9 @@ def controls(directory, scenario, image, frozen):
     report: dict[str, Any] = {"status": "failed", "image": tag, "image_id": identity, "checks": []}
     try:
         for agent in ("oracle", "nop"):
-            args = harbor_args(directory / "tasks", directory / "jobs", agent, agent)
+            args = harbor_run_args(
+                harbor_command(), directory / "tasks", directory / "jobs", agent, agent, attempts="1"
+            )
             rc = command(args, directory / (agent + ".log"))
             trials = load_trials(directory / "jobs" / agent)
             passed = (
@@ -208,11 +206,13 @@ def author(series, scenario, *, image, upstream):
         report["private_cases_sha256"] = sha256(private)
         for attempt in (1, 2):
             reservation = series.reserve(scenario, "authoring", str(attempt), directory / "report.json")
-            args = harbor_args(
+            args = harbor_run_args(
+                harbor_command(),
                 directory / "tasks",
                 directory / "jobs",
                 f"attempt-{attempt}",
                 "sapi_config_lab.interfaces.generation.agent:WrapperYamlAgent",
+                attempts="1",
             )
             args += ["--ak", "upstream=" + upstream]
             rc = command(args, directory / f"author-{attempt}.log")
