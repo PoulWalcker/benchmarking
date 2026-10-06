@@ -17,7 +17,7 @@ from sapi_config_lab.core.evidence import write_json
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.interfaces.tasks import stage_tasks
 from sapi_config_lab.core.scenarios import SCENARIOS, select_scenarios
-from sapi_config_lab.core.host import harbor_command
+from sapi_config_lab.core.host import harbor_command, image_id, running_containers
 from sapi_config_lab.core.provenance import host_environment, source_manifest
 
 ROOT = workspace_root()
@@ -92,7 +92,7 @@ def main():
             ["docker", "version", "--format", "{{.Server.Version}}"], text=True
         ).strip()
         # Metadata only: never docker inspect environment or read existing volumes.
-        before = subprocess.check_output(["docker", "ps", "--format", "{{.ID}} {{.Names}} {{.Image}}"], text=True)
+        before = running_containers()
         (output / "existing-containers.txt").write_text(before)
         print(f"Local regression tests; report directory: {output}", flush=True)
         rc = command(
@@ -110,9 +110,7 @@ def main():
             )
             if rc:
                 raise RuntimeError("Image build failed; see image-build.log")
-        report["image_id"] = subprocess.check_output(
-            ["docker", "image", "inspect", IMAGE, "--format", "{{.Id}}"], text=True
-        ).strip()
+        report["image_id"] = image_id(IMAGE)
         versions = subprocess.check_output(
             [
                 "docker",

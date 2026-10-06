@@ -22,7 +22,7 @@ from sapi_config_lab.runtime.agency import strict_json
 from sapi_config_lab.core.evidence import sha256, write_json
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.interfaces.tasks import SCENARIOS, stage_tasks
-from sapi_config_lab.core.host import harbor_command
+from sapi_config_lab.core.host import harbor_command, image_id, pin_base_image, running_containers
 from sapi_config_lab.interfaces.harbor import IMAGE, load_trials
 from sapi_config_lab.core.provenance import host_environment, source_manifest
 from sapi_config_lab.interfaces.replay import load_selection, read_json, require
@@ -45,7 +45,7 @@ def tree_hashes(path: Path) -> dict[str, str]:
     return {str(item.relative_to(path)): sha256(item) for item in sorted(path.rglob("*")) if item.is_file()}
 
 
-def validate_control(path: Path, current: dict[str, str], image_id: str) -> dict:
+def validate_control(path: Path, current: dict[str, str], identity: str) -> dict:
     gate = read_json(path)
     require(
         gate.get("schema") == "sapi-lab-harbor/v1" and gate.get("status") == "passed" and gate.get("mode") == "stub",
@@ -55,7 +55,7 @@ def validate_control(path: Path, current: dict[str, str], image_id: str) -> dict
         gate.get("source_unchanged") is True and read_json(path.parent / gate["source_manifest"]) == current,
         "Control report does not match current sources",
     )
-    require(gate.get("image_id") == image_id and image_id.startswith("sha256:"), "Control report image mismatch")
+    require(gate.get("image_id") == identity and identity.startswith("sha256:"), "Control report image mismatch")
     require(
         gate.get("transport", {}).get("passed") is True
         and gate.get("oracle", {}).get("passed") is True
@@ -264,7 +264,7 @@ def finalize_report(report: dict, output: Path, staging: Path | None, adapter, o
     if (output / "existing-containers.txt").exists():
 
         def preserve_containers():
-            after = subprocess.check_output(["docker", "ps", "--format", "{{.ID}} {{.Names}} {{.Image}}"], text=True)
+            after = running_containers()
             (output / "existing-containers-after.txt").write_text(after)
             return set((output / "existing-containers.txt").read_text().splitlines()) <= set(after.splitlines())
 
@@ -338,16 +338,14 @@ def run_expansion(args) -> int:
         require(
             subprocess.check_output([*harbor, "--version"], text=True).strip() == "0.21.0", "Expected Harbor 0.21.0"
         )
-        image_id = subprocess.check_output(
-            ["docker", "image", "inspect", IMAGE, "--format", "{{.Id}}"], text=True
-        ).strip()
-        gate = validate_control(args.stub_report.resolve(), sources, image_id)
+        identity = image_id(IMAGE)
+        gate = validate_control(args.stub_report.resolve(), sources, identity)
         controlled = {trial["task_name"] for trial in gate["oracle"]["trials"]}
         require(scenario in controlled, "Prepared control report does not cover this scenario")
         report["stub_report_sha256"] = sha256(args.stub_report)
-        report["image_id"] = image_id
+        report["image_id"] = identity
         shutil.copyfile(args.stub_report, output / "control-report.json")
-        before = subprocess.check_output(["docker", "ps", "--format", "{{.ID}} {{.Names}} {{.Image}}"], text=True)
+        before = running_containers()
         (output / "existing-containers.txt").write_text(before)
         submissions = load_selection(args.submissions_manifest, copy_to=output / "selection", scenarios=(scenario,))
         selected = submissions[scenario]
@@ -361,8 +359,7 @@ def run_expansion(args) -> int:
         if args.wrapper_evidence:
             report["wrapper_identity"] = wrapper_identity(args.wrapper_evidence, args.upstream)
             shutil.copyfile(args.wrapper_evidence, output / "wrapper-identity.json")
-        frozen_image = "sapi-config-lab-expansion-base:" + image_id.split(":")[-1][:16]
-        subprocess.check_call(["docker", "tag", image_id, frozen_image])
+        frozen_image = pin_base_image(identity, "sapi-config-lab-expansion")
         staging = Path(
             tempfile.mkdtemp(
                 prefix="sapi-lab-expansion-", dir="/private/tmp" if Path("/private/tmp").exists() else None
@@ -389,13 +386,7 @@ def run_expansion(args) -> int:
                 load_selection(args.submissions_manifest, scenarios=(scenario,)) == submissions,
                 "Selected evidence changed",
             )
-            require(
-                subprocess.check_output(
-                    ["docker", "image", "inspect", frozen_image, "--format", "{{.Id}}"], text=True
-                ).strip()
-                == image_id,
-                "Expansion image changed",
-            )
+            require(image_id(frozen_image) == identity, "Expansion image changed")
             if args.wrapper_evidence:
                 require(
                     wrapper_identity(args.wrapper_evidence, args.upstream) == report.get("wrapper_identity"),
@@ -651,15 +642,13 @@ def main(argv: list[str] | None = None):
         version = subprocess.check_output([*harbor, "--version"], text=True).strip()
         require(version == "0.21.0", "Expected Harbor 0.21.0")
         report["harbor_version"] = version
-        image_id = subprocess.check_output(
-            ["docker", "image", "inspect", IMAGE, "--format", "{{.Id}}"], text=True
-        ).strip()
-        gate = validate_control(args.stub_report.resolve(), original_sources, image_id)
-        report["image_id"] = image_id
+        identity = image_id(IMAGE)
+        gate = validate_control(args.stub_report.resolve(), original_sources, identity)
+        report["image_id"] = identity
         shutil.copyfile(args.stub_report, output / "control-report.json")
         shutil.copyfile(args.stub_report.parent / gate["source_manifest"], output / "control-source-manifest.json")
         shutil.copyfile(args.stub_report.parent / "runtime-versions.txt", output / "runtime-versions.txt")
-        before = subprocess.check_output(["docker", "ps", "--format", "{{.ID}} {{.Names}} {{.Image}}"], text=True)
+        before = running_containers()
         (output / "existing-containers.txt").write_text(before)
         if args.submissions_manifest:
             submissions = load_selection(args.submissions_manifest, copy_to=output / "selection")
@@ -677,8 +666,7 @@ def main(argv: list[str] | None = None):
                 args.wrapper_evidence is not None,
                 "Generated live dispatch requires read-only wrapper inspection evidence",
             )
-        frozen_image = "sapi-config-lab-live-base:" + image_id.split(":")[-1][:16]
-        subprocess.check_call(["docker", "tag", image_id, frozen_image])
+        frozen_image = pin_base_image(identity, "sapi-config-lab-live")
         report["frozen_image"] = frozen_image
         staging = Path(
             tempfile.mkdtemp(prefix="sapi-lab-live-", dir="/private/tmp" if Path("/private/tmp").exists() else None)
@@ -704,13 +692,7 @@ def main(argv: list[str] | None = None):
                 tree_hashes(staging / "tasks") == package_hashes == tree_hashes(output / "task-packages"),
                 "Task package changed during experiment",
             )
-            require(
-                subprocess.check_output(
-                    ["docker", "image", "inspect", frozen_image, "--format", "{{.Id}}"], text=True
-                ).strip()
-                == image_id,
-                "Frozen image changed",
-            )
+            require(image_id(frozen_image) == identity, "Frozen image changed")
             require(read_json(output / "budget.json") == BUDGET, "Outgoing budget file changed")
             if args.submissions_manifest:
                 require(tree_hashes(output / "selection") == selection_hashes, "Preserved selection artifacts changed")
@@ -722,7 +704,7 @@ def main(argv: list[str] | None = None):
                     "Wrapper inspection changed",
                 )
             report["phases"].append(
-                {"phase": phase, "source_unchanged": True, "packages_unchanged": True, "image_id": image_id}
+                {"phase": phase, "source_unchanged": True, "packages_unchanged": True, "image_id": identity}
             )
 
         def run_harbor(name: str, task_path: Path, mode: str, timeout: float = 2400):

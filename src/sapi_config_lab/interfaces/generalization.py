@@ -19,7 +19,7 @@ from sapi_config_lab.core.evidence import sha256, write_json
 from sapi_config_lab.interfaces.expansion import ExpansionSeries
 from sapi_config_lab.interfaces.generation.common import summarize_trials
 from sapi_config_lab.interfaces.harbor import load_trials
-from sapi_config_lab.core.host import harbor_command
+from sapi_config_lab.core.host import harbor_command, image_id, pin_base_image
 from sapi_config_lab.interfaces.lifecycle_run import bind_authoring_evidence, read_json, MODEL
 from sapi_config_lab.interfaces.live_evidence import load_verifier, reconcile_dispatches
 from sapi_config_lab.core.provenance import source_manifest
@@ -154,12 +154,11 @@ def command(args, log):
 
 def controls(directory, scenario, image, frozen):
     directory.mkdir()
-    image_id = subprocess.check_output(["docker", "image", "inspect", image, "--format", "{{.Id}}"], text=True).strip()
-    tag = "sapi-config-lab-generalization-base:" + image_id.split(":")[-1][:16]
-    subprocess.check_call(["docker", "tag", image_id, tag])
+    identity = image_id(image)
+    tag = pin_base_image(identity, "sapi-config-lab-generalization")
     stage(directory / "tasks", scenario, tag, controls=True)
     expected_sources = {path.parent.parent.name: path for path in (directory / "tasks").glob("*/environment/base.yaml")}
-    report: dict[str, Any] = {"status": "failed", "image": tag, "image_id": image_id, "checks": []}
+    report: dict[str, Any] = {"status": "failed", "image": tag, "image_id": identity, "checks": []}
     try:
         for agent in ("oracle", "nop"):
             args = harbor_args(directory / "tasks", directory / "jobs", agent, agent)

@@ -25,7 +25,7 @@ import time
 
 from sapi_config_lab.core.evidence import sha256
 from sapi_config_lab.interfaces.generation.common import summarize_trials
-from sapi_config_lab.core.host import harbor_command
+from sapi_config_lab.core.host import harbor_command, image_id, pin_base_image
 from sapi_config_lab.interfaces.harbor import load_trials
 from sapi_config_lab.interfaces.live_evidence import load_verifier, reconcile_dispatches
 from sapi_config_lab.core.provenance import source_manifest
@@ -249,12 +249,11 @@ class LifecycleSeries:
 
 def native_controls(directory, image, frozen):
     """Fresh oracle+nop prove this image and copied verifier before paid authoring."""
-    image_id = subprocess.check_output(["docker", "image", "inspect", image, "--format", "{{.Id}}"], text=True).strip()
-    pinned_image = "sapi-config-lab-lifecycle-base:" + image_id.split(":")[-1][:16]
-    subprocess.check_call(["docker", "tag", image_id, pinned_image])
+    identity = image_id(image)
+    pinned_image = pin_base_image(identity, "sapi-config-lab-lifecycle")
     directory.mkdir()
     stage_tasks(directory / "tasks", image=pinned_image, scenarios=("daily-digest",))
-    report: dict[str, Any] = {"status": "failed", "image_id": image_id, "image": pinned_image, "checks": []}
+    report: dict[str, Any] = {"status": "failed", "image_id": identity, "image": pinned_image, "checks": []}
     try:
         for agent in ("oracle", "nop"):
             args = [
