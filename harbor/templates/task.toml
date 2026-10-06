@@ -11,6 +11,7 @@ tags = ["sapi-lab", "n8n", "yaml", "runtime"]
 timeout_sec = 600
 
 [verifier]
+# Shared container is safe only while the candidate is an uploaded YAML; an agent with a shell needs environment_mode = "separate".
 timeout_sec = 1800
 
 [environment]
