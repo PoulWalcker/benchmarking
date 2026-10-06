@@ -17,7 +17,8 @@ from typing import Any
 
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.core import profile
-from sapi_config_lab.runtime.execution import run_case, write_json
+from sapi_config_lab.core.evidence import write_record_json
+from sapi_config_lab.runtime.execution import run_case
 
 ROOT = workspace_root()
 
@@ -168,7 +169,7 @@ def run_probes(artifacts: Path):
                 }
                 error_text = json.dumps(result.get("error"), default=str).lower()
                 checks["expected_error_detected"] = any(fragment in error_text for fragment in expected_errors[name])
-            write_json(artifacts / name / "fake-bridge-requests.json", calls)
+            write_record_json(artifacts / name / "fake-bridge-requests.json", calls)
             row = {
                 "case": name,
                 "passed": all(checks.values()),
@@ -192,7 +193,7 @@ def run_probes(artifacts: Path):
         "engine": "real n8n",
         "llm": "deterministic fake HTTP bridge; no model calls",
     }
-    write_json(artifacts / "summary.json", summary)
+    write_record_json(artifacts / "summary.json", summary)
     return summary
 
 

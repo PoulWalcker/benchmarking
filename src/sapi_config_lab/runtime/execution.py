@@ -8,8 +8,8 @@ from dataclasses import replace
 import json
 from pathlib import Path
 import time
-from typing import Any
 
+from sapi_config_lab.core.evidence import write_record_json
 from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.runtime.composition import default_backend
 from sapi_config_lab.core.contracts import (
@@ -21,10 +21,6 @@ from sapi_config_lab.core.contracts import (
     WorkflowBackend,
 )
 from sapi_config_lab.core import profile
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=False, default=str) + "\n")
 
 
 def run_case(
@@ -63,7 +59,7 @@ def run_case(
     }
     try:
         profile.json_value(config, "config")
-        write_json(artifact_dir / "config.json", config)
+        write_record_json(artifact_dir / "config.json", config)
         compiled = selected.compile(
             config,
             bindings if bindings is not None else profile.read_bindings(CATALOG),
@@ -120,7 +116,7 @@ def run_case(
         },
     )
     record.setdefault("evidence", {"engine": None, "workflow_trace": None})
-    write_json(artifact_dir / "case.json", record)
+    write_record_json(artifact_dir / "case.json", record)
     return record
 
 

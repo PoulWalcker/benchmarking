@@ -17,6 +17,7 @@ import copy
 import json
 from pathlib import Path
 
+from sapi_config_lab.core.evidence import write_json
 from sapi_config_lab.runtime.task_evaluation import Document, FrozenTaskContract, digest
 from sapi_config_lab.paths import workspace_root
 
@@ -143,7 +144,7 @@ def main():
     fixture = calibration_fixture(contract, base, args.case)
 
     def save(name, value):
-        (args.output / name).write_text(json.dumps(value, indent=2) + "\n")
+        write_json(args.output / name, value, ensure_ascii=True)
 
     save("task-contract.json", contract.as_dict())
     save("fixture.json", fixture)

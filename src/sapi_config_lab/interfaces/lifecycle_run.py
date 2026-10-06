@@ -23,8 +23,9 @@ import subprocess
 import threading
 import time
 
+from sapi_config_lab.core.evidence import sha256
 from sapi_config_lab.interfaces.generation.common import summarize_trials
-from sapi_config_lab.core.host import harbor_command
+from sapi_config_lab.core.host import harbor_command, harbor_run_args, image_id, pin_base_image
 from sapi_config_lab.interfaces.harbor import load_trials
 from sapi_config_lab.interfaces.live_evidence import load_verifier, reconcile_dispatches
 from sapi_config_lab.core.provenance import source_manifest
@@ -46,11 +47,9 @@ MODEL = "gpt-6-astra"
 
 
 def read_json(path):
+    # Not interfaces/replay.read_json, which rejects duplicate keys and non-finite
+    # constants. The two accept different documents; merging them changes both.
     return json.loads(Path(path).read_text())
-
-
-def file_hash(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 class LifecycleSeries:
@@ -124,7 +123,7 @@ class LifecycleSeries:
                 require(all(g["status"] == "passed" for g in row["grants"]), "Passed phase has unknown dispatch")
                 self.check_completed_counts(row)
                 report_path = self.directory / row["name"] / "report.json"
-                require(file_hash(report_path) == row["report_sha256"], "Final phase report changed")
+                require(sha256(report_path) == row["report_sha256"], "Final phase report changed")
                 report = read_json(report_path)
                 require(
                     report.get("status") == "passed" and report.get("source_unchanged") is True, "Final gate failed"
@@ -132,7 +131,7 @@ class LifecycleSeries:
         if len(phases) > 1 or (phases and phases[0]["status"] == "passed"):
             authored = read_json(self.directory / "authoring/report.json")
             require(
-                file_hash(self.directory / "submission.yaml") == authored["submission_sha256"], "Original YAML changed"
+                sha256(self.directory / "submission.yaml") == authored["submission_sha256"], "Original YAML changed"
             )
 
     def begin(self, name):
@@ -245,40 +244,23 @@ class LifecycleSeries:
         durable_json(path, report)
         row = self.data["phases"][-1]
         row["status"] = report["status"]
-        row["report_sha256"] = file_hash(path)
+        row["report_sha256"] = sha256(path)
         self.save()
         self.active = None
 
 
 def native_controls(directory, image, frozen):
     """Fresh oracle+nop prove this image and copied verifier before paid authoring."""
-    image_id = subprocess.check_output(["docker", "image", "inspect", image, "--format", "{{.Id}}"], text=True).strip()
-    pinned_image = "sapi-config-lab-lifecycle-base:" + image_id.split(":")[-1][:16]
-    subprocess.check_call(["docker", "tag", image_id, pinned_image])
+    identity = image_id(image)
+    pinned_image = pin_base_image(identity, "sapi-config-lab-lifecycle")
     directory.mkdir()
     stage_tasks(directory / "tasks", image=pinned_image, scenarios=("daily-digest",))
-    report: dict[str, Any] = {"status": "failed", "image_id": image_id, "image": pinned_image, "checks": []}
+    report: dict[str, Any] = {"status": "failed", "image_id": identity, "image": pinned_image, "checks": []}
     try:
         for agent in ("oracle", "nop"):
-            args = [
-                *harbor_command(),
-                "run",
-                "--path",
-                str(directory / "tasks"),
-                "--agent",
-                agent,
-                "--n-attempts",
-                "1",
-                "--n-concurrent",
-                "1",
-                "--max-retries",
-                "0",
-                "--jobs-dir",
-                str(directory / "jobs"),
-                "--job-name",
-                agent,
-                "--force-build",
-            ]
+            args = harbor_run_args(
+                harbor_command(), directory / "tasks", directory / "jobs", agent, agent, attempts="1"
+            )
             with (directory / (agent + ".log")).open("w") as log:
                 done = subprocess.run(args, cwd=workspace_root(), stdout=log, stderr=subprocess.STDOUT, timeout=1800)
             trials = load_trials(directory / "jobs" / agent)
@@ -319,28 +301,16 @@ def author(series, *, upstream, image):
             for article in case["inputs"]["articles"]:
                 article["id"] = marker + "-" + article["id"]
         durable_json(path, corpus)
-        report["private_cases_sha256"] = file_hash(path)
-        args = [
-            *harbor_command(),
-            "run",
-            "--path",
-            str(directory / "tasks"),
-            "--agent",
-            "sapi_config_lab.interfaces.generation.agent:WrapperYamlAgent",
-            "--ak",
-            "upstream=" + upstream,
-            "--n-attempts",
-            "1",
-            "--n-concurrent",
-            "1",
-            "--max-retries",
-            "0",
-            "--jobs-dir",
-            str(directory / "jobs"),
-            "--job-name",
+        report["private_cases_sha256"] = sha256(path)
+        args = harbor_run_args(
+            harbor_command(),
+            directory / "tasks",
+            directory / "jobs",
             "generated",
-            "--force-build",
-        ]
+            "sapi_config_lab.interfaces.generation.agent:WrapperYamlAgent",
+            agent_key="upstream=" + upstream,
+            attempts="1",
+        )
         report["command"] = args
         grant = series.grant("authoring", {"prompt_sha256": report["prompt_sha256"]})
         with (directory / "harbor.log").open("w") as log:
@@ -382,7 +352,7 @@ def bind_authoring_evidence(trial, prompt_hash, fixture_hash, frozen):
     require(generation == trial["generation"] and acceptance == trial["acceptance"], "Trial evidence changed")
     require(generation.get("submission_sha256") == actual_hash, "Generated response hash changed")
     require(
-        generation.get("prompt_sha256") == prompt_hash and file_hash(directory / "agent/prompt.txt") == prompt_hash,
+        generation.get("prompt_sha256") == prompt_hash and sha256(directory / "agent/prompt.txt") == prompt_hash,
         "Authoring used another prompt",
     )
     require(
@@ -479,7 +449,7 @@ def live(series, *, phase, upstream, cron_delay_seconds=300):
 
         original = profile.read(series.directory / "submission.yaml")
         validate_task(original)
-        report["original_submission_sha256"] = file_hash(series.directory / "submission.yaml")
+        report["original_submission_sha256"] = sha256(series.directory / "submission.yaml")
         config = copy.deepcopy(original)
         if phase == "mutation":
             config["workflow"]["output"] = {
@@ -502,7 +472,7 @@ def live(series, *, phase, upstream, cron_delay_seconds=300):
             candidate = builder(source, findings, target, artifacts)
             audit = read_json(artifacts / "dispatch.json")
             require(audit["status"] == "returned" and audit["model"] == MODEL, "Rebuild model completion missing")
-            require(audit["candidate_yaml_sha256"] == file_hash(artifacts / "candidate.yaml"), "Rebuild bytes changed")
+            require(audit["candidate_yaml_sha256"] == sha256(artifacts / "candidate.yaml"), "Rebuild bytes changed")
             series.complete(number)
             return candidate
 
