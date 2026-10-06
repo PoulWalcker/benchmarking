@@ -49,6 +49,24 @@ def load_trials(job):
     return trials
 
 
+CONTROL_REWARDS = {"oracle": {"reward": 1.0}, "nop": {"reward": 0.0}}
+
+
+def control_rewards_met(agent: str, trials: list[dict]) -> bool:
+    """The oracle/nop reward gate, which is the lab's measuring instrument.
+
+    A control run means exactly this: the reference solution scores 1.0, the
+    empty agent scores 0.0, and neither raised. Nothing else may reach this
+    comparison -- a rubric score in particular is a separate document and must
+    never be read as a reward. The literal lives here so that the three
+    experiments that run controls cannot drift apart on what "passed" means.
+
+    Trial count, task names and verifier acceptance stay with each experiment:
+    they differ per experiment, and a shared check could only guess at them.
+    """
+    return all(not row["exception"] and row["rewards"] == CONTROL_REWARDS[agent] for row in trials)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report-dir", type=Path)
@@ -161,12 +179,11 @@ def main():
             rc = command(argv, output / f"harbor-{agent}.log")
             shutil.copytree(staging / "jobs" / agent, output / "jobs" / agent)
             trials = load_trials(output / "jobs" / agent)
-            expected = 1.0 if agent == "oracle" else 0.0
             passed = (
                 rc == 0
                 and len(trials) == len(selected)
                 and {x["task_name"] for x in trials} == set(selected)
-                and all(x["rewards"] == {"reward": expected} and not x["exception"] for x in trials)
+                and control_rewards_met(agent, trials)
             )
             if agent == "oracle":
                 passed = passed and all(x["acceptance"] and x["acceptance"].get("passed") for x in trials)

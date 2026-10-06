@@ -18,7 +18,7 @@ from typing import Any
 from sapi_config_lab.core.evidence import sha256, write_json
 from sapi_config_lab.interfaces.expansion import ExpansionSeries
 from sapi_config_lab.interfaces.generation.common import summarize_trials
-from sapi_config_lab.interfaces.harbor import load_trials
+from sapi_config_lab.interfaces.harbor import control_rewards_met, load_trials
 from sapi_config_lab.core.host import harbor_command, harbor_run_args, image_id, pin_base_image
 from sapi_config_lab.interfaces.lifecycle_run import bind_authoring_evidence, read_json, MODEL
 from sapi_config_lab.interfaces.live_evidence import load_verifier, reconcile_dispatches
@@ -147,10 +147,7 @@ def controls(directory, scenario, image, frozen):
             passed = (
                 rc == 0
                 and len(trials) == 2
-                and all(
-                    not row["exception"] and row["rewards"] == {"reward": 1.0 if agent == "oracle" else 0.0}
-                    for row in trials
-                )
+                and control_rewards_met(agent, trials)
                 and {row["task_name"] for row in trials} == set(expected_sources)
             )
             if agent == "oracle" and passed:
