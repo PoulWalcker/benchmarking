@@ -3,13 +3,21 @@
 import copy
 import hashlib
 import json
+import os
 from pathlib import Path
+import tempfile
 import unittest
+from unittest.mock import patch
 
 import yaml
 
+from sapi_config_lab.core import profile
+from sapi_config_lab.core.scenarios import select_scenarios
+from sapi_config_lab.interfaces.tasks import stage_tasks
+from sapi_config_lab.paths import workspace_root
 from verification.contracts import Rejected
 from verification.lifecycle import digest_native, verify_lifecycle
+from verification.lifecycle_submission import validate_task, verify_submission
 
 
 def hash_json(value):
@@ -297,6 +305,45 @@ class LifecycleVerificationTests(unittest.TestCase):
                 mutate(state)
                 with self.assertRaises(Rejected):
                     verify_lifecycle(state, mode="stub")
+
+
+class LifecycleSubmissionTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+
+    def test_task_extension_is_scoped_and_has_no_reference_solution(self):
+        path = Path(self.temporary.name) / "tasks"
+        stage_tasks(path, mode="generation", scenarios=("daily-digest", "invoice-total"))
+        digest = (path / "daily-digest/instruction.md").read_text()
+        invoice = (path / "invoice-total/instruction.md").read_text()
+        self.assertIn("TASK-SPECIFIC LIFECYCLE EXTENSION", digest)
+        self.assertNotIn("TASK-SPECIFIC LIFECYCLE EXTENSION", invoice)
+        self.assertFalse((path / "daily-digest/solution").exists())
+        self.assertFalse((path / "daily-digest/environment/base.yaml").exists())
+        self.assertEqual(tuple(select_scenarios()), ("invoice-total", "ticket-routing", "competitor-report"))
+
+    def test_task_constraints_are_enforced(self):
+        config = profile.read(workspace_root() / "configs/05-digest-lifecycle.yaml")
+        validate_task(config)
+        config["lifecycle"]["on_test_fail"]["max_rebuilds"] = 3
+        with self.assertRaises(AssertionError):
+            validate_task(config)
+
+    def test_harbor_report_does_not_require_opening_the_shared_log_mount(self):
+        report_dir = Path(self.temporary.name) / "shared-verifier-log"
+        original_open = os.open
+
+        def mount_open(path, flags, *args, **kwargs):
+            if Path(path) == report_dir:
+                raise PermissionError("Harbor log mount cannot be opened for directory fsync")
+            return original_open(path, flags, *args, **kwargs)
+
+        with patch("sapi_config_lab.runtime.lifecycle.os.open", side_effect=mount_open):
+            report = verify_submission(Path(self.temporary.name) / "missing.yaml", report_dir)
+        self.assertFalse(report["passed"])
+        self.assertEqual(report["error_type"], "FileNotFoundError")
+        self.assertEqual(json.loads((report_dir / "report.json").read_text()), report)
 
 
 if __name__ == "__main__":

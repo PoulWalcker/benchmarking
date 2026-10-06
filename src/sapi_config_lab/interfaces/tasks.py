@@ -26,12 +26,6 @@ def stage_tasks(
     Oracle/live packages contain reference YAML and solve.sh. Generation packages
     contain only prompts and hidden verifier inputs; no reference or solution.
     Copies here are Harbor's distribution format, not independently maintained code.
-
-    generalization.stage writes the same five file names and is deliberately not
-    folded in here: it points test.sh at another verifier, escapes cases.json to
-    ASCII under a hash that is already recorded, names tasks after control
-    variants rather than scenarios, and builds its instruction from another
-    corpus. Only the Dockerfile comes out byte-identical.
     """
     selected = select_scenarios(scenarios)
     if mode not in {"oracle", "generation", "replay"}:

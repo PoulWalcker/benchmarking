@@ -324,6 +324,9 @@ nothing about the current tree:
 [checkout evaluation](docs/CHECKOUT-EVALUATION.md),
 [two-task business evaluation](docs/BUSINESS-EVALUATION.md), and
 [research questions](docs/RESEARCH-QUESTIONS.md), which is dated October 4, 2026.
+The runners for the composition and lifecycle series were retired after those
+experiments finished; [docs/RETIRED.md](docs/RETIRED.md) names the revision that
+reruns them.
 
 **Frozen.** Dated records of individual runs, including the
 [original analysis](docs/history/ANALYSIS.md) and the

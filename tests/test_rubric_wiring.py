@@ -362,14 +362,8 @@ class VerifierSeamTests(unittest.TestCase):
             for intruder in (0.732, 1.0 - reward, None, "1.0"):
                 self.assertFalse(control_rewards_met(agent, [{"rewards": {"reward": intruder}, "exception": None}]))
             self.assertFalse(control_rewards_met(agent, [{"rewards": {"reward": reward}, "exception": "boom"}]))
-        sources = {
-            name: (ROOT / "src/sapi_config_lab/interfaces" / name).read_text()
-            for name in ("harbor.py", "generalization.py", "lifecycle_run.py")
-        }
-        self.assertEqual(sources["harbor.py"].count('{"reward": 1.0}'), 1)
-        for name in ("generalization.py", "lifecycle_run.py"):
-            self.assertNotIn('"reward"', sources[name])
-            self.assertIn("control_rewards_met", sources[name])
+        source = (ROOT / "src/sapi_config_lab/interfaces/harbor.py").read_text()
+        self.assertEqual(source.count('{"reward": 1.0}'), 1)
 
 
 class StandaloneDistributionTests(unittest.TestCase):
