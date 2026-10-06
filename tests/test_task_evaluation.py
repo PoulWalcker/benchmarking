@@ -13,11 +13,13 @@ import tempfile
 import unittest
 
 from sapi_config_lab.runtime.task_evaluation import (
+    SCHEMA,
     build_run_log,
     configured_contracts,
     digest,
     evaluate,
     freeze_contract,
+    is_evaluation,
     normalized_reward,
     seed_variation,
     summarize_evaluations,
@@ -58,9 +60,22 @@ class RewardArtifactTests(unittest.TestCase):
     def test_summary_keeps_failures_and_unscored_attempts_in_denominators(self):
         summary = summarize_evaluations(
             [
-                {"status": "complete", "normalized_reward": 0.8, "execution_pass": True, "evaluation_mode": "codex"},
-                {"status": "complete", "normalized_reward": 0.1, "execution_pass": False, "evaluation_mode": "codex"},
                 {
+                    "schema": SCHEMA,
+                    "status": "complete",
+                    "normalized_reward": 0.8,
+                    "execution_pass": True,
+                    "evaluation_mode": "codex",
+                },
+                {
+                    "schema": SCHEMA,
+                    "status": "complete",
+                    "normalized_reward": 0.1,
+                    "execution_pass": False,
+                    "evaluation_mode": "codex",
+                },
+                {
+                    "schema": SCHEMA,
                     "status": "judge_failed",
                     "normalized_reward": None,
                     "execution_pass": True,
@@ -73,10 +88,46 @@ class RewardArtifactTests(unittest.TestCase):
         self.assertEqual(summary["scored"], 2)
         self.assertEqual(summary["unscored"], 2)
         self.assertEqual(summary["evaluation_missing"], 1)
+        self.assertEqual(summary["foreign_schema"], 0)
         self.assertEqual(summary["judge_failed"], 1)
         self.assertEqual(summary["execution_passed"], 2)
         self.assertEqual(summary["mean_reward_scored"], 0.45)
         self.assertIsNone(summarize_evaluations([])["mean_reward_scored"])
+
+    def test_a_rubric_document_is_never_counted_as_a_business_evaluation(self):
+        # A sapi-lab-rubric-evaluation/v1 document carries status,
+        # normalized_reward and execution_pass too, so only the schema tag
+        # separates the two. It must neither be scored nor crash the summary.
+        rubric = {
+            "schema": "sapi-lab-rubric-evaluation/v1",
+            "status": "complete",
+            "score_0_10": 10.0,
+            "normalized_reward": 1.0,
+            "execution_pass": True,
+        }
+        task = {
+            "schema": SCHEMA,
+            "status": "complete",
+            "normalized_reward": 0.5,
+            "execution_pass": True,
+            "evaluation_mode": "codex",
+        }
+        summary = summarize_evaluations([task, rubric])
+        self.assertEqual(summary["attempted"], 2)
+        self.assertEqual(summary["scored"], 1)
+        self.assertEqual(summary["unscored"], 1)
+        self.assertEqual(summary["foreign_schema"], 1)
+        self.assertEqual(summary["evaluation_missing"], 0)
+        self.assertEqual(summary["execution_passed"], 1)
+        self.assertEqual(summary["mean_reward_scored"], 0.5)
+        self.assertEqual(summary["evaluation_modes"], ["codex"])
+        alone = summarize_evaluations([rubric])
+        self.assertEqual((alone["scored"], alone["foreign_schema"]), (0, 1))
+        self.assertIsNone(alone["mean_reward_scored"])
+        self.assertEqual(alone["evaluation_modes"], [])
+        self.assertFalse(is_evaluation(rubric))
+        self.assertTrue(is_evaluation(task))
+        self.assertFalse(is_evaluation(None))
 
     def test_missing_judge_stays_unscored_and_cannot_reuse_a_prior_reward(self):
         with tempfile.TemporaryDirectory() as directory:

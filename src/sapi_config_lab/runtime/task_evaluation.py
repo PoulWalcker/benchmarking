@@ -16,7 +16,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
-from typing import Any
+from typing import Any, TypeIs
 
 Document = dict[str, Any]
 SCHEMA = "sapi-lab-task-evaluation/v1"
@@ -445,14 +445,28 @@ def write_evaluation(report_dir: Path, report: Document) -> None:
         (destination / "reward.txt").write_text(str(reward) + "\n")
 
 
+def is_evaluation(report: Any) -> TypeIs[Document]:
+    """Accept one `sapi-lab-task-evaluation/v1` document and nothing else.
+
+    `sapi-lab-rubric-evaluation/v1` also carries `status`, `normalized_reward`
+    and `execution_pass`, so no field test separates the two. The schemas were
+    split so they could not be confused; only the tag decides which this is.
+    """
+    return isinstance(report, dict) and report.get("schema") == SCHEMA
+
+
 def summarize_evaluations(attempts: list[Document | None]) -> Document:
     """Summarize every dispatched attempt; None preserves an absent evaluation.
 
     A scored-only mean explicitly names its denominator. Missing judgement is
     never a zero business score, even if Harbor's generic job metric substitutes
     zero for absent rewards. Caller records planned-but-undispatched work apart.
+    A document of any other schema is reported under `foreign_schema` and
+    contributes no reward, status, mode or execution flag.
     """
-    scored = [report for report in attempts if report and report.get("status") == "complete"]
+    recognized = [report for report in attempts if is_evaluation(report)]
+    missing = sum(report is None for report in attempts)
+    scored = [report for report in recognized if report.get("status") == "complete"]
     rewards = [report["normalized_reward"] for report in scored]
     if any(type(value) not in (int, float) or not 0 <= value <= 1 for value in rewards):
         raise ValueError("Complete attempt lacks a valid normalized reward")
@@ -460,12 +474,13 @@ def summarize_evaluations(attempts: list[Document | None]) -> Document:
         "attempted": len(attempts),
         "scored": len(scored),
         "unscored": len(attempts) - len(scored),
-        "evaluation_missing": sum(report is None for report in attempts),
-        "judge_failed": sum(bool(report and report.get("status") == "judge_failed") for report in attempts),
-        "execution_passed": sum(bool(report and report.get("execution_pass") is True) for report in attempts),
+        "evaluation_missing": missing,
+        "foreign_schema": len(attempts) - missing - len(recognized),
+        "judge_failed": sum(report.get("status") == "judge_failed" for report in recognized),
+        "execution_passed": sum(report.get("execution_pass") is True for report in recognized),
         "mean_reward_scored": sum(rewards) / len(rewards) if rewards else None,
         "mean_denominator": "scored attempts only; unscored attempts remain reported",
-        "evaluation_modes": sorted({report["evaluation_mode"] for report in attempts if report}),
+        "evaluation_modes": sorted({report["evaluation_mode"] for report in recognized}),
     }
 
 
