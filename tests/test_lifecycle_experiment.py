@@ -10,11 +10,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from sapi_config_lab.core.evidence import sha256
 from sapi_config_lab.interfaces.lifecycle_run import (
     LifecycleSeries,
     AdmittedNativeBackend,
     author,
-    file_hash,
     bind_authoring_evidence,
 )
 from sapi_config_lab.interfaces.tasks import stage_tasks
@@ -41,7 +41,7 @@ class LifecycleExperimentTests(unittest.TestCase):
         number = series.grant("authoring", {"prompt_sha256": "fixed"})
         (self.directory / "submission.yaml").write_text("original authored bytes\n")
         series.complete(number)
-        series.finish({"status": "passed", "submission_sha256": file_hash(self.directory / "submission.yaml")})
+        series.finish({"status": "passed", "submission_sha256": sha256(self.directory / "submission.yaml")})
 
     def test_reservation_is_durable_before_dispatch_and_unknown_cannot_resume(self):
         with LifecycleSeries(self.directory) as series:

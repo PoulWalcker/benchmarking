@@ -11,6 +11,7 @@ already recorded. Do not route it through here.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Callable
 from pathlib import Path
@@ -33,3 +34,8 @@ def write_record_json(path: Path | str, value: Any) -> None:
     (paths, deadlines). Those are recorded as str() rather than failing the run
     that produced them; no other artifact gets that latitude."""
     Path(path).write_text(json_text(value, default=str))
+
+
+def sha256(path: Path | str) -> str:
+    """The identity recorded for a file, wherever one is recorded."""
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
