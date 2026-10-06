@@ -25,7 +25,7 @@ import uuid
 import yaml
 
 from sapi_config_lab.core.benchmark_tasks import TASKS, task_definition
-from sapi_config_lab.core.evidence import write_json
+from sapi_config_lab.core.evidence import sha256, write_json
 from sapi_config_lab.interfaces.generation.common import audit_stderr
 from sapi_config_lab.interfaces.harbor import command, load_trials
 from sapi_config_lab.core.host import harbor_command
@@ -79,10 +79,6 @@ def now():
     return datetime.now(timezone.utc).isoformat()
 
 
-def sha(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-
-
 def inspect_wrapper():
     """Inspect known wrapper and effective model without dispatch or secret output."""
     wrapper = Path.home() / "n8n/codex_bridge.py"
@@ -117,7 +113,7 @@ def inspect_wrapper():
         "wrapper_retries": 0,
         "provider_internal_retries": "unknown",
         "readiness_http_status": status,
-        "files": [{"path": str(p), "sha256": sha(p)} for p in (wrapper, config)],
+        "files": [{"path": str(p), "sha256": sha256(p)} for p in (wrapper, config)],
     }
 
 
@@ -427,7 +423,7 @@ def author(prompt, directory, identity, task=None):
     directory.mkdir(parents=True, exist_ok=False)
     (directory / "prompt.txt").write_text(prompt)
     save(directory / "dispatch.json", {"attempts": 1, "started_at": now(), "requested_model": identity["model"]})
-    if any(sha(row["path"]) != row["sha256"] for row in identity["files"]):
+    if any(sha256(row["path"]) != row["sha256"] for row in identity["files"]):
         raise ValueError("Wrapper identity changed before dispatch")
     started = time.monotonic()
     record: dict[str, Any] = {"eligible": False, "repairs": 0}
@@ -567,7 +563,7 @@ def main():
             or gate.get("image_id") != image_id
         ):
             raise ValueError("Live dispatch requires fresh source/image-matched unpaid controls")
-        save(output / "controls-gate.json", {"report": str(controls.resolve()), "sha256": sha(controls)})
+        save(output / "controls-gate.json", {"report": str(controls.resolve()), "sha256": sha256(controls)})
     report = {
         "mode": args.mode,
         "task": task.key,

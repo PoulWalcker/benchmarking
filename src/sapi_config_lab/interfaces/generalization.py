@@ -15,12 +15,12 @@ import threading
 import time
 from typing import Any
 
-from sapi_config_lab.core.evidence import write_json
+from sapi_config_lab.core.evidence import sha256, write_json
 from sapi_config_lab.interfaces.expansion import ExpansionSeries
 from sapi_config_lab.interfaces.generation.common import summarize_trials
 from sapi_config_lab.interfaces.harbor import load_trials
 from sapi_config_lab.core.host import harbor_command
-from sapi_config_lab.interfaces.lifecycle_run import bind_authoring_evidence, file_hash, read_json, MODEL
+from sapi_config_lab.interfaces.lifecycle_run import bind_authoring_evidence, read_json, MODEL
 from sapi_config_lab.interfaces.live_evidence import load_verifier, reconcile_dispatches
 from sapi_config_lab.core.provenance import source_manifest
 from sapi_config_lab.interfaces.replay import require
@@ -77,7 +77,7 @@ def stage(destination, scenario, image, *, controls=False):
             + CATALOG.read_text()
         )
         (task / "instruction.md").write_text(instruction)
-        hashes[name] = file_hash(task / "instruction.md")
+        hashes[name] = sha256(task / "instruction.md")
         dockerfile = f"FROM {image}\nUSER root\nWORKDIR /app\n"
         if reference:
             shutil.copyfile(reference, task / "environment/base.yaml")
@@ -177,7 +177,7 @@ def controls(directory, scenario, image, frozen):
             if agent == "oracle" and passed:
                 passed = all(
                     row["acceptance"].get("passed") is True
-                    and row["acceptance"].get("submission_sha256") == file_hash(expected_sources[row["task_name"]])
+                    and row["acceptance"].get("submission_sha256") == sha256(expected_sources[row["task_name"]])
                     and (Path(row["result_path"]).parent / "verifier/submission.yaml").read_bytes()
                     == expected_sources[row["task_name"]].read_bytes()
                     and row["acceptance"].get("runtime_source_manifest")
@@ -224,7 +224,7 @@ def author(series, scenario, *, image, upstream):
         report["prompt_sha256"] = prompts[scenario]
         private = directory / "tasks" / scenario / "tests/cases.json"
         durable_json(private, fresh_cases(scenario))
-        report["private_cases_sha256"] = file_hash(private)
+        report["private_cases_sha256"] = sha256(private)
         for attempt in (1, 2):
             reservation = series.reserve(scenario, "authoring", str(attempt), directory / "report.json")
             args = harbor_args(
@@ -251,7 +251,7 @@ def author(series, scenario, *, image, upstream):
             if attempt == 1:
                 selected = series.directory / scenario / "submission.yaml"
                 selected.write_bytes(raw)
-                report["submission_sha256"] = file_hash(selected)
+                report["submission_sha256"] = sha256(selected)
             series.finish(reservation, True)
             reservation = None
         report["status"] = "passed"
@@ -281,16 +281,16 @@ def live(series, scenario, *, upstream):
         authored = read_json(series.directory / scenario / "authoring/report.json")
         require(authored["status"] == "passed" and authored["source_unchanged"] is True, "Authoring gate failed")
         source = series.directory / scenario / "submission.yaml"
-        require(file_hash(source) == authored["submission_sha256"], "Selected original YAML changed")
+        require(sha256(source) == authored["submission_sha256"], "Selected original YAML changed")
         private = series.directory / scenario / "authoring/tasks" / scenario / "tests/cases.json"
-        require(file_hash(private) == authored["private_cases_sha256"], "Private cases changed")
+        require(sha256(private) == authored["private_cases_sha256"], "Private cases changed")
         original = profile.read(source)
         verification, _ = load_verifier()
         checker = importlib.import_module(verification.__package__ + ".generalization")
         cases = read_json(private)[scenario]
         require([case["name"] for case in cases] == list(CAPS[scenario]), "Frozen case order changed")
-        report["submission_sha256"] = file_hash(source)
-        report["private_cases_sha256"] = file_hash(private)
+        report["submission_sha256"] = sha256(source)
+        report["private_cases_sha256"] = sha256(private)
         report["config_transformations"] = [
             "workflow.inputs replaced by frozen private fixture",
             "execution.deadline_seconds set to 600",

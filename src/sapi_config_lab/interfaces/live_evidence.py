@@ -9,7 +9,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
-from sapi_config_lab.interfaces.replay import read_json, require, sha256
+from sapi_config_lab.core.evidence import sha256
+from sapi_config_lab.interfaces.replay import read_json, require
 from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.runtime.agency import MAX_BODY, build_prompt, canonical_hash
 from sapi_config_lab.runtime.composition import default_backend
