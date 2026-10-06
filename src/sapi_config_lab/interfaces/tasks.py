@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import shutil
 
-from sapi_config_lab.core.evidence import write_json
+from sapi_config_lab.core.evidence import sha256, write_json
 from sapi_config_lab.paths import CATALOG, workspace_root
 
 from sapi_config_lab.core.scenarios import BASELINE_SCENARIOS, select_scenarios
@@ -26,6 +26,12 @@ def stage_tasks(
     Oracle/live packages contain reference YAML and solve.sh. Generation packages
     contain only prompts and hidden verifier inputs; no reference or solution.
     Copies here are Harbor's distribution format, not independently maintained code.
+
+    generalization.stage writes the same five file names and is deliberately not
+    folded in here: it points test.sh at another verifier, escapes cases.json to
+    ASCII under a hash that is already recorded, names tasks after control
+    variants rather than scenarios, and builds its instruction from another
+    corpus. Only the Dockerfile comes out byte-identical.
     """
     selected = select_scenarios(scenarios)
     if mode not in {"oracle", "generation", "replay"}:
@@ -36,13 +42,10 @@ def stage_tasks(
         for item in submissions.values():
             if (
                 set(item) not in ({"path", "sha256"}, {"path", "sha256", "cases_path", "cases_sha256"})
-                or hashlib.sha256(Path(item["path"]).read_bytes()).hexdigest() != item["sha256"]
+                or sha256(item["path"]) != item["sha256"]
             ):
                 raise ValueError("Replay submission hash mismatch")
-            if (
-                "cases_path" in item
-                and hashlib.sha256(Path(item["cases_path"]).read_bytes()).hexdigest() != item["cases_sha256"]
-            ):
+            if "cases_path" in item and sha256(item["cases_path"]) != item["cases_sha256"]:
                 raise ValueError("Replay fixture hash mismatch")
     elif submissions is not None:
         raise ValueError("Submissions require replay mode")
@@ -91,11 +94,7 @@ def stage_tasks(
             shutil.copyfile(templates / "solve.sh", task / "solution/solve.sh")
             source = Path(submissions[scenario]["path"]) if mode == "replay" else root / "configs" / filename
             shutil.copyfile(source, task / "environment/base.yaml")
-            if (
-                mode == "replay"
-                and hashlib.sha256((task / "environment/base.yaml").read_bytes()).hexdigest()
-                != submissions[scenario]["sha256"]
-            ):
+            if mode == "replay" and sha256(task / "environment/base.yaml") != submissions[scenario]["sha256"]:
                 raise ValueError("Staged replay submission hash mismatch")
             dockerfile = (
                 f"FROM {image}\nUSER root\nWORKDIR /app\n"
@@ -122,7 +121,7 @@ def stage_tasks(
             if set(json.loads(private_cases.read_text())) != {scenario}:
                 raise ValueError("Replay fixture scenario mismatch")
             shutil.copyfile(private_cases, case_path)
-            if hashlib.sha256(case_path.read_bytes()).hexdigest() != submissions[scenario]["cases_sha256"]:
+            if sha256(case_path) != submissions[scenario]["cases_sha256"]:
                 raise ValueError("Staged replay fixture hash mismatch")
         else:
             write_json(case_path, {scenario: cases[scenario]})
