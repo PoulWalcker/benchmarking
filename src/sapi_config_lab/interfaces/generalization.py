@@ -19,7 +19,7 @@ from sapi_config_lab.core.evidence import sha256, write_json
 from sapi_config_lab.interfaces.expansion import ExpansionSeries
 from sapi_config_lab.interfaces.generation.common import summarize_trials
 from sapi_config_lab.interfaces.harbor import load_trials
-from sapi_config_lab.core.host import harbor_command, image_id, pin_base_image
+from sapi_config_lab.core.host import harbor_command, harbor_run_args, image_id, pin_base_image
 from sapi_config_lab.interfaces.lifecycle_run import bind_authoring_evidence, read_json, MODEL
 from sapi_config_lab.interfaces.live_evidence import load_verifier, reconcile_dispatches
 from sapi_config_lab.core.provenance import source_manifest
@@ -124,25 +124,7 @@ def fresh_cases(scenario):
 
 
 def harbor_args(tasks, jobs, name, agent):
-    return [
-        *harbor_command(),
-        "run",
-        "--path",
-        str(tasks),
-        "--agent",
-        agent,
-        "--n-attempts",
-        "1",
-        "--n-concurrent",
-        "1",
-        "--max-retries",
-        "0",
-        "--jobs-dir",
-        str(jobs),
-        "--job-name",
-        name,
-        "--force-build",
-    ]
+    return harbor_run_args(harbor_command(), tasks, jobs, name, agent, attempts="1")
 
 
 def command(args, log):

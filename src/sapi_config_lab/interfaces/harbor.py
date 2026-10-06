@@ -17,7 +17,7 @@ from sapi_config_lab.core.evidence import write_json
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.interfaces.tasks import stage_tasks
 from sapi_config_lab.core.scenarios import SCENARIOS, select_scenarios
-from sapi_config_lab.core.host import harbor_command, image_id, running_containers
+from sapi_config_lab.core.host import harbor_command, harbor_run_args, image_id, running_containers
 from sapi_config_lab.core.provenance import host_environment, source_manifest
 
 ROOT = workspace_root()
@@ -157,23 +157,7 @@ def main():
         shutil.copytree(staging / "tasks", output / "task-packages")
         for agent in ("oracle", "nop"):
             print(f"Harbor {agent}: {len(selected)} tasks through real n8n", flush=True)
-            argv = [
-                *harbor,
-                "run",
-                "--path",
-                str(staging / "tasks"),
-                "--agent",
-                agent,
-                "--n-concurrent",
-                "1",
-                "--max-retries",
-                "0",
-                "--jobs-dir",
-                str(staging / "jobs"),
-                "--job-name",
-                agent,
-                "--force-build",
-            ]
+            argv = harbor_run_args(harbor, staging / "tasks", staging / "jobs", agent, agent)
             rc = command(argv, output / f"harbor-{agent}.log")
             shutil.copytree(staging / "jobs" / agent, output / "jobs" / agent)
             trials = load_trials(output / "jobs" / agent)
