@@ -239,7 +239,7 @@ your scenario twice in the same run: once as `oracle` and once as `nop`. It
 writes `reports/<timestamp>/report.json` and exits 0 only if every check passed.
 
 Success looks like: the oracle trial scoring reward 1 **and** recording
-`acceptance.passed: true`, the nop trial scoring reward 0, both with no
+`passed: true` in each positive case's `acceptance.json`, the nop trial scoring reward 0, both with no
 exception, and the corruption probes reporting that each deliberately broken
 result was rejected.
 
@@ -271,7 +271,7 @@ whole point of the verifier's structure.
 | Fact | Who decides | Where it is recorded |
 | --- | --- | --- |
 | **Engine success** | The runtime: n8n imported the graph, executed it, and a `Result` node produced data | `execution.succeeded` in `sapi-lab-execution/v1` |
-| **Acceptance** | The independent verifier: business criteria **and** native provenance both held | `acceptance.passed`, and the verifier's `report.json`; it is what writes `reward.txt` |
+| **Acceptance** | The independent verifier: business criteria **and** native provenance both held | `acceptance.json` beside each case, and the verifier's `report.json`; it is what writes `reward.txt` |
 | **Rubric quality** | The rubric layer, scoring a weighted card — if the scenario has one, and only as far as it can | `evaluation.json`, schema `sapi-lab-rubric-evaluation/v1` |
 
 They do not imply each other in either direction. A deliberately corrupted

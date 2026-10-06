@@ -17,7 +17,9 @@ from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.paths import workspace_root
 from verification.contracts import Rejected
 from verification.lifecycle import digest_native, verify_lifecycle
-from verification.lifecycle_submission import validate_task, verify_submission
+from verification.lifecycle_submission import validate_task
+from verification.verify import evaluate
+from sapi_config_lab.coordinate.scenarios import all_cases
 
 
 def hash_json(value):
@@ -340,7 +342,9 @@ class LifecycleSubmissionTests(unittest.TestCase):
             return original_open(path, flags, *args, **kwargs)
 
         with patch("sapi_config_lab.evidence.os.open", side_effect=mount_open):
-            report = verify_submission(Path(self.temporary.name) / "missing.yaml", report_dir)
+            report = evaluate(
+                "daily-digest", Path(self.temporary.name) / "missing.yaml", report_dir, all_cases()["daily-digest"]
+            )
         self.assertFalse(report["passed"])
         self.assertEqual(report["error_type"], "FileNotFoundError")
         self.assertEqual(json.loads((report_dir / "report.json").read_text()), report)

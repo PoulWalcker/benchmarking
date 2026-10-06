@@ -48,9 +48,13 @@ the table and the test together, never one alone.
   when explicitly requested, or from a saved judgement.
 - **Three separate facts**: execution status, acceptance, quality score. Missing
   evaluation (`not_evaluated`, null score) is never a failure and never a zero.
-- **Evidence is immutable once written.** Evaluation writes its own files
-  (`acceptance.json`, `evaluation.json`, `report.json`) beside it, naming the
-  evidence it read; corruption probes mutate copies.
+- **Evidence is immutable once written.** In a task container `test.sh` runs
+  `verify.py plan` (what must run), `coordinate/observe.py` (runs it, records
+  evidence and `observation.json`), then `verify.py evaluate` (checks the record
+  is complete and unaltered, then judges). Evaluation writes its own files
+  (`acceptance.json`, `evaluation.json`, `report.json`) naming the evidence it
+  read; corruption probes mutate copies. Tests compose the three steps with a
+  fake runner through `tests/support/verifying.py`.
 - **Evaluator-only material** (`benchmarks/*/cases.json`, reference
   `config.yaml`, verifier code) never reaches a candidate agent's container:
   `.dockerignore` keeps fixtures out of the image, and generation packages

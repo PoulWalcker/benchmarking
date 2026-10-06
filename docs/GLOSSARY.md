@@ -27,8 +27,10 @@ one "it worked".
   It says nothing about the business answer.
 - **Acceptance** means the independent verifier, which the runtime never
   imports, checked business criteria *and* native execution provenance and
-  recorded a decision. It is `acceptance.passed`, which stays `null` until that
-  decision exists (`runtime/execution.py:104`, `verification/verify.py:63`). A
+  recorded a decision about the recorded evidence, without executing anything
+  itself. It is `passed` in the `acceptance.json` written beside each
+  `case.json` (`verification/verify.py::write_acceptance`); the execution
+  record's own `acceptance.passed` stays `null`. A
   deliberately corrupted workflow can have `execution.succeeded: true` and
   rejected acceptance; the negative test then passes because rejection was the
   expected behavior.

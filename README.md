@@ -180,16 +180,24 @@ its own scenario's test inputs. There is no manual synchronization step.
 1. Our experiment runner assembles the packages and invokes Harbor.
 2. Harbor creates a container with real n8n. Oracle copies reference YAML to
    `/app/submission/config.yaml`; the generation agent writes the model's answer instead.
-3. Harbor runs the packaged `tests/test.sh`. It invokes the independent
-   `verification/verify.py`, mounted as `/tests/verify.py`.
-4. The verifier substitutes inputs from its `cases.json` and calls the n8n adapter.
-   The adapter validates YAML, compiles JSON, imports it, and executes it by ID.
-5. The adapter saves `case.json`, the generated graph, the step-to-node mapping,
-   logs, and raw n8n execution data. The verifier independently checks the total,
-   selected branch, or combined sources, together with node execution evidence.
-6. The verifier writes `/logs/verifier/report.json`. `test.sh` writes reward 1/0
-   to `/logs/verifier/reward.txt`. Harbor collects these files; the experiment
-   runner copies them to `reports/<run>/jobs/` and writes the overall `report.json`.
+3. Harbor runs the packaged `tests/test.sh`, in three steps. First the
+   independent verifier (`/tests/verify.py plan`) states every definition that
+   must run: the submission with each fixture's inputs, the negative inputs, a
+   deliberately corrupted artifact and three invalid definitions.
+4. The lab runtime (`sapi_config_lab.coordinate.observe`) runs exactly that plan
+   through the n8n adapter, which validates YAML, compiles JSON, imports it and
+   executes it by ID. It saves `case.json`, the generated graph, the step-to-node
+   mapping, logs and raw n8n execution data, then `observation.json` with the
+   plan's hash and the hash of every recorded file. It decides nothing.
+5. `verify.py evaluate` recomputes the plan, rejects a record that is missing,
+   partial, edited or of other inputs, checks the packaged runtime was the one
+   that ran, and only then checks the total, selected branch or combined
+   sources together with native node evidence. It never runs n8n itself.
+6. Each decision is written to `acceptance.json` beside the untouched
+   `case.json`, and the summary to `/logs/verifier/report.json`. `test.sh`
+   writes reward 1/0 to `/logs/verifier/reward.txt`. Harbor collects these
+   files; the experiment runner copies them to `reports/<run>/jobs/` and writes
+   the overall `report.json`.
 
 Separate Python code in the verifier computes expected totals from input invoices.
 Routing checks cover the threshold and selected branch; research checks cover

@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Task acceptance, deliberately independent from compiler/operation helpers.
 
-Business assertions consume engine-neutral observations. The n8n evidence adapter
-separately establishes native execution provenance. The common runtime runner
-receives definitions, never expected answers.
+The verifier never executes anything. `plan` states exactly which definitions
+the trusted execution step must run for a submission; `evaluate` reads what
+that step recorded, checks the record is complete and is the plan it was
+given, and only then judges it. Business assertions consume engine-neutral
+observations; the n8n evidence adapter separately establishes native
+execution provenance. Recorded evidence is never modified: each decision is
+written to its own acceptance.json beside the evidence it read.
 """
 
 from __future__ import annotations
@@ -24,7 +28,7 @@ if TYPE_CHECKING or __package__:
     from .contracts import Rejected, require
     from .n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
     from .rubric import SCHEMA, Judge
-    from .rubric_facts import NOT_EVALUATED, evaluate, observe
+    from .rubric_facts import NOT_EVALUATED, evaluate as score_rubric, observe
 else:  # Harbor executes its copied verifier directly.
     import sys
 
@@ -34,7 +38,14 @@ else:  # Harbor executes its copied verifier directly.
     from contracts import Rejected, require
     from n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
     from rubric import SCHEMA, Judge
-    from rubric_facts import NOT_EVALUATED, evaluate, observe
+    from rubric_facts import NOT_EVALUATED, evaluate as score_rubric, observe
+
+PLAN_SCHEMA = "sapi-lab-observation-plan/v1"
+OBSERVATION_SCHEMA = "sapi-lab-observation/v1"
+ACCEPTANCE_SCHEMA = "sapi-lab-acceptance/v1"
+# The corrupted-artifact probe: compiled code is altered after compilation, so
+# n8n succeeds and only independent acceptance can notice the wrong result.
+WRONG_RESULT = "wrong-result"
 
 
 def check_execution(
@@ -70,17 +81,6 @@ def check_execution(
     result = check_business_result(scenario, inputs, observation, mode, case=case)
     check_operation_order(scenario, inputs, records, observation.roles)
     return {**result, "n8n_node_count": len(run["run_data"]), "engine_provenance_verified": True}
-
-
-def record_acceptance(run: dict, artifact_dir: Path, passed: bool, reason: str | None = None) -> dict:
-    """Attach an independent acceptance decision to a newly executed case."""
-    decision: dict[str, Any] = {"status": "accepted" if passed else "rejected", "passed": passed}
-    if reason:
-        decision["reason"] = reason
-    run["acceptance"] = decision
-    artifact_dir.mkdir(parents=True, exist_ok=True)
-    (artifact_dir / "case.json").write_text(json.dumps(run, ensure_ascii=False, indent=2) + "\n")
-    return decision
 
 
 def execution_summary(run: dict) -> dict:
@@ -197,65 +197,54 @@ def unique_mapping(loader: UniqueLoader, node, deep=False):
 UniqueLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, unique_mapping)
 
 
-def verify_submission(
+def sha256_bytes(raw: bytes) -> str:
+    return hashlib.sha256(raw).hexdigest()
+
+
+def canonical(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def evaluator_identity() -> dict:
+    """Which verifier judged: the hash of every module it was built from."""
+    here = Path(__file__).resolve().parent
+    sources = {path.name: sha256_bytes(path.read_bytes()) for path in sorted(here.glob("*.py"))}
+    return {"name": "sapi-lab-independent-verifier", "sources_sha256": sha256_bytes(canonical(sources).encode())}
+
+
+def read_submission(config_path: Path) -> tuple[bytes, dict]:
+    raw = config_path.read_bytes()
+    expected = os.environ.get("SAPI_EXPECTED_SUBMISSION_SHA256")
+    require(not expected or sha256_bytes(raw) == expected, "Container submission hash mismatch")
+    config = yaml.load(raw, Loader=UniqueLoader)
+    require(isinstance(config, dict), "Submission must be a YAML object")
+    return raw, config
+
+
+def plan(
     scenario: str,
     config_path: Path,
-    report_dir: Path,
+    cases: dict | None,
     mode: str = "stub",
-    bridge_url: str | None = None,
     selected_case: str | None = None,
-    *,
-    runner=None,
-    judge: Judge | None = None,
-    cases: dict | None = None,
 ) -> dict:
-    """`cases` is this scenario's fixture set; in a task package it is the
-    cases.json staged beside this file, which holds only this scenario."""
-    if cases is None:
-        cases = json.loads((Path(__file__).parent / "cases.json").read_text()).get(scenario)
+    """Every definition the trusted execution step must run, and nothing else.
+
+    Each entry is a complete config: the submission with fixture inputs applied,
+    a deliberately corrupted artifact, or a deliberately invalid definition.
+    """
+    require(isinstance(cases, dict), "Unknown acceptance scenario")
+    assert cases is not None
+    raw, config = read_submission(config_path)
     if scenario == "daily-digest":
         if TYPE_CHECKING or __package__:
-            from .lifecycle_submission import verify_submission as verify_digest
+            from .lifecycle_submission import plan_lifecycle
         else:
-            from lifecycle_submission import verify_submission as verify_digest
-        return verify_digest(config_path, report_dir, mode=mode, cases=cases)
-    report_dir.mkdir(parents=True, exist_ok=True)
-    # Declared outside the try: a submission that is rejected part way through
-    # still says how far the engine got and which obligations were measured.
-    rubric_runs: list[dict] = []
-    executions = 0
-    report: dict[str, Any] = {
-        "scenario": scenario,
-        "mode": mode,
-        "passed": False,
-        "report_schema": "sapi-lab-verification/v1",
-        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
-        "cases": [],
-        "limits": [
-            "Checks the supported static sapi-lab/v0 profile only.",
-            "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven.",
-        ],
-    }
-    try:
-        require(isinstance(cases, dict), "Unknown acceptance scenario")
-        assert cases is not None
-        submission = config_path.read_bytes()
-        report["submission_sha256"] = hashlib.sha256(submission).hexdigest()
-        (report_dir / "submission.yaml").write_bytes(submission)
-        expected_submission = os.environ.get("SAPI_EXPECTED_SUBMISSION_SHA256")
-        require(
-            not expected_submission or report["submission_sha256"] == expected_submission,
-            "Container submission hash mismatch",
-        )
-        report["config_transformations"] = ["workflow.inputs replaced by case fixture"] + (
-            ["execution.deadline_seconds set to 600"] if mode == "live" else []
-        )
-        config = yaml.load(submission, Loader=UniqueLoader)
-        require(isinstance(config, dict), "Submission must be a YAML object")
-        if runner is None:
-            from sapi_config_lab.coordinate.cases import run_case
-
-            runner = run_case
+            from lifecycle_submission import plan_lifecycle
+        require(mode == "stub", "Live lifecycle requires the bounded lifecycle experiment driver")
+        entries = plan_lifecycle(config, cases)
+    else:
+        entries = []
         for kind in ("positive", "negative"):
             if mode == "live" and kind == "negative":
                 continue  # live schema failures are a separate bridge test, not this stub diagnostic contract
@@ -274,161 +263,340 @@ def verify_submission(
                 candidate["workflow"]["inputs"] = case["inputs"]
                 if mode == "live":
                     candidate["execution"]["deadline_seconds"] = 600
-                artifact_dir = report_dir / "cases" / case["name"]
-                run = runner(candidate, artifact_dir, llm_mode=mode, bridge_url=bridge_url)
-                if "mapping" not in run and (artifact_dir / "mapping.json").exists():
-                    run["mapping"] = json.loads((artifact_dir / "mapping.json").read_text())
-                row = {
-                    "name": case["name"],
-                    "kind": kind,
-                    "passed": False,
-                    "execution_id": run.get("execution_id"),
-                    "workflow_id": run.get("workflow_id"),
-                    "n8n_version": run.get("n8n_version"),
-                    "artifacts": str(artifact_dir),
-                }
-                row["deadline_seconds"] = candidate["execution"]["deadline_seconds"]
-                if (artifact_dir / "config.json").exists():
-                    row["config_sha256"] = hashlib.sha256((artifact_dir / "config.json").read_bytes()).hexdigest()
-                report["cases"].append(row)
-                row.update(execution_summary(run))
-                try:
-                    if kind == "positive":
-                        executions += 1
-                        row.update(
-                            check_execution(
-                                scenario,
-                                case["inputs"],
-                                run,
-                                mode,
-                                config=candidate,
-                                case=case,
-                                rubric_runs=rubric_runs,
-                            )
-                        )
-                        row["acceptance"] = record_acceptance(
-                            run,
-                            artifact_dir,
-                            not row.get("exhausted", False),
-                            "Expected refinement exhaustion; no accepted reply" if row.get("exhausted") else None,
-                        )
-                        row["verifier_corruptions_rejected"] = (
-                            refinement_corruptions(candidate, run, mode=mode)
-                            if scenario == "revise-answer"
-                            else corruption_checks(scenario, case["inputs"], run, mode, config=candidate, case=case)
-                        )
-                        row["output"] = run["output"]
-                    else:
-                        check_rejection(run, case, candidate)
-                        row["acceptance"] = record_acceptance(
-                            run, artifact_dir, False, "Expected invalid input rejection"
-                        )
-                        row["expected_error"] = case["error"]
-                except Rejected as error:
-                    row["acceptance"] = record_acceptance(run, artifact_dir, False, str(error))
-                    raise
-                row["passed"] = True
+                entries.append({"name": case["name"], "kind": kind, "procedure": "case", "config": candidate})
         if mode == "stub" and not selected_case:
-            # Mutate compiled code, import and execute it successfully in n8n,
-            # then require independent acceptance to reject its wrong data.
-            def wrong_result(artifact):
-                for node in artifact["nodes"]:
-                    if node["name"] == "Result":
-                        original = node["parameters"]["jsCode"]
-                        node["parameters"]["jsCode"] = (
-                            "const result = await (async () => {\n"
-                            + original
-                            + "\n})();\nresult[0].json.output = {deliberately_wrong: true};\nreturn result;"
-                        )
-                return artifact
-
-            artifact_dir = report_dir / "cases" / "mutated-generated-result"
             candidate = copy.deepcopy(config)
             candidate["workflow"]["inputs"] = cases["positive"][0]["inputs"]
-            run = runner(candidate, artifact_dir, llm_mode=mode, artifact_transform=wrong_result)
-            row = {
-                "name": "wrong-result-in-generated-json",
-                "kind": "mutated-generated-workflow",
-                "passed": False,
-                "execution_id": run.get("execution_id"),
-                "workflow_id": run.get("workflow_id"),
-                "n8n_version": run.get("n8n_version"),
-                "artifacts": str(artifact_dir),
-            }
-            row.update(execution_summary(run))
-            report["cases"].append(row)
-            check_provenance(run)
-            require(run.get("status") == "success", "Broken-output probe did not complete n8n execution")
-            try:
-                check_execution(
-                    scenario, candidate["workflow"]["inputs"], run, mode, config=candidate, case=cases["positive"][0]
-                )
-            except Rejected as error:
-                row["rejection"] = str(error)
-                row["acceptance"] = record_acceptance(run, artifact_dir, False, str(error))
-                row["passed"] = True
-            else:
-                raise Rejected("Verifier accepted deliberately wrong generated workflow output")
-            for name, bad in invalid_configs(config):
-                artifact_dir = report_dir / "cases" / ("invalid-yaml-" + name)
-                run = runner(bad, artifact_dir, llm_mode=mode, bridge_url=bridge_url)
-                row = {
-                    "name": name,
-                    "kind": "invalid-definition",
-                    "passed": False,
-                    "artifacts": str(artifact_dir),
-                    **execution_summary(run),
+            entries.append(
+                {
+                    "name": "mutated-generated-result",
+                    "kind": "mutated-generated-workflow",
+                    "procedure": "case",
+                    "config": candidate,
+                    "artifact_transform": WRONG_RESULT,
                 }
-                row["acceptance"] = record_acceptance(run, artifact_dir, False, "Definition rejected before execution")
-                report["cases"].append(row)
+            )
+            for name, bad in invalid_configs(config):
+                entries.append(
+                    {"name": "invalid-yaml-" + name, "kind": "invalid-definition", "procedure": "case", "config": bad}
+                )
+    require(bool(entries), "No test cases selected")
+    return {
+        "schema": PLAN_SCHEMA,
+        "scenario": scenario,
+        "mode": mode,
+        "submission_sha256": sha256_bytes(raw),
+        "fixture_sha256": sha256_bytes(canonical(cases).encode()),
+        "entries": entries,
+    }
+
+
+def read_evidence(evidence: Path, expected_plan: dict) -> dict:
+    """The observation manifest, after checking it records exactly this plan.
+
+    A missing, partial, reordered or edited record is rejected here, before any
+    business check could be satisfied by whatever files happen to exist.
+    """
+    manifest_path = evidence / "observation.json"
+    require(manifest_path.is_file(), "No recorded observation; the execution step did not complete")
+    manifest = json.loads(manifest_path.read_text())
+    require(manifest.get("schema") == OBSERVATION_SCHEMA, "Unknown observation schema")
+    require(
+        manifest.get("plan_sha256") == sha256_bytes(canonical(expected_plan).encode()),
+        "Recorded observation is not the plan this verifier issued",
+    )
+    require(
+        (evidence / "submission.yaml").is_file()
+        and sha256_bytes((evidence / "submission.yaml").read_bytes()) == expected_plan["submission_sha256"],
+        "Recorded submission differs from the evaluated submission",
+    )
+    recorded = manifest.get("entries")
+    require(
+        isinstance(recorded, list)
+        and [row.get("name") for row in recorded] == [e["name"] for e in expected_plan["entries"]],
+        "Recorded observation is incomplete or out of order",
+    )
+    for entry, row in zip(expected_plan["entries"], recorded):
+        directory = evidence / "cases" / entry["name"]
+        files = row.get("files")
+        required = {"case.json", "config.json"} if entry["procedure"] == "case" else {"snapshot.json", "event.json"}
+        require(isinstance(files, dict) and required <= set(files), "Recorded case is incomplete: " + entry["name"])
+        for name, digest in files.items():
+            require(
+                (directory / name).is_file() and sha256_bytes((directory / name).read_bytes()) == digest,
+                "Recorded evidence changed after collection: " + entry["name"] + "/" + name,
+            )
+        if entry["procedure"] == "case":
+            require(
+                json.loads((directory / "config.json").read_text()) == entry["config"],
+                "Executed definition differs from the planned fixture: " + entry["name"],
+            )
+    return manifest
+
+
+def check_runtime_sources(runtime_src: Path, manifest_path: Path) -> None:
+    """The runtime that executed is the one packaged with these tests.
+
+    A candidate may write anywhere in its container; this detects edits to the
+    compiler and runtime sources. It is not a sandbox (see README).
+    """
+    expected = json.loads(manifest_path.read_text())
+    suffixes = set(expected["suffixes"])
+    present = {
+        str(path.relative_to(runtime_src)): sha256_bytes(path.read_bytes())
+        for path in sorted(runtime_src.rglob("*"))
+        if path.is_file() and "__pycache__" not in path.parts and path.suffix in suffixes
+    }
+    require(present == expected["files"], "Runtime sources differ from the packaged runtime")
+
+
+def write_acceptance(directory: Path, passed: bool, reason: str | None, identity: dict) -> dict:
+    """One decision about one recorded case, naming the evidence it read."""
+    decision: dict[str, Any] = {"status": "accepted" if passed else "rejected", "passed": passed}
+    if reason:
+        decision["reason"] = reason
+    evidence = {
+        name: sha256_bytes((directory / name).read_bytes())
+        for name in ("case.json", "config.json")
+        if (directory / name).is_file()
+    }
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "acceptance.json").write_text(
+        json.dumps(
+            {"schema": ACCEPTANCE_SCHEMA, **decision, "evidence": evidence, "evaluator": identity["name"]},
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n"
+    )
+    return decision
+
+
+def judge_entries(
+    scenario: str,
+    entries: list[dict],
+    evidence: Path,
+    cases: dict,
+    mode: str,
+    identity: dict,
+    report: dict,
+    rubric_runs: list[dict],
+) -> None:
+    """Judge each recorded plan entry, appending its row to the report.
+
+    Rows are appended before judging, so a rejected submission still reports
+    how far the engine got. The first rejection raises.
+    """
+    fixtures = {case["name"]: case for kind in ("positive", "negative") for case in cases[kind]}
+    for entry in entries:
+        artifact_dir = evidence / "cases" / entry["name"]
+        run = json.loads((artifact_dir / "case.json").read_text())
+        if "mapping" not in run and (artifact_dir / "mapping.json").exists():
+            run["mapping"] = json.loads((artifact_dir / "mapping.json").read_text())
+        candidate = entry["config"]
+        row: dict[str, Any] = {
+            "name": entry["name"],
+            "kind": entry["kind"],
+            "passed": False,
+            "execution_id": run.get("execution_id"),
+            "workflow_id": run.get("workflow_id"),
+            "n8n_version": run.get("n8n_version"),
+            "artifacts": str(artifact_dir),
+        }
+        if entry["kind"] in ("positive", "negative"):
+            row["deadline_seconds"] = candidate["execution"]["deadline_seconds"]
+            row["config_sha256"] = sha256_bytes((artifact_dir / "config.json").read_bytes())
+        row.update(execution_summary(run))
+        report["cases"].append(row)
+        try:
+            if entry["kind"] == "positive":
+                case = fixtures[entry["name"]]
+                row.update(
+                    check_execution(
+                        scenario, case["inputs"], run, mode, config=candidate, case=case, rubric_runs=rubric_runs
+                    )
+                )
+                row["acceptance"] = write_acceptance(
+                    artifact_dir,
+                    not row.get("exhausted", False),
+                    "Expected refinement exhaustion; no accepted reply" if row.get("exhausted") else None,
+                    identity,
+                )
+                row["verifier_corruptions_rejected"] = (
+                    refinement_corruptions(candidate, run, mode=mode)
+                    if scenario == "revise-answer"
+                    else corruption_checks(scenario, case["inputs"], run, mode, config=candidate, case=case)
+                )
+                row["output"] = run["output"]
+            elif entry["kind"] == "negative":
+                case = fixtures[entry["name"]]
+                check_rejection(run, case, candidate)
+                row["acceptance"] = write_acceptance(artifact_dir, False, "Expected invalid input rejection", identity)
+                row["expected_error"] = case["error"]
+            elif entry["kind"] == "mutated-generated-workflow":
+                row["name"] = "wrong-result-in-generated-json"
+                check_provenance(run)
+                require(run.get("status") == "success", "Broken-output probe did not complete n8n execution")
+                try:
+                    check_execution(
+                        scenario,
+                        candidate["workflow"]["inputs"],
+                        run,
+                        mode,
+                        config=candidate,
+                        case=cases["positive"][0],
+                    )
+                except Rejected as error:
+                    row["rejection"] = str(error)
+                    row["acceptance"] = write_acceptance(artifact_dir, False, str(error), identity)
+                else:
+                    raise Rejected("Verifier accepted deliberately wrong generated workflow output")
+            else:
+                row["name"] = entry["name"].removeprefix("invalid-yaml-")
+                row["acceptance"] = write_acceptance(
+                    artifact_dir, False, "Definition rejected before execution", identity
+                )
                 require(
-                    run.get("status") == "compile_error", "Compiler accepted invalid/unsupported definition: " + name
+                    run.get("status") == "compile_error",
+                    "Compiler accepted invalid/unsupported definition: " + row["name"],
                 )
                 require(
                     not run.get("workflow_id") and not run.get("execution_id"),
                     "Rejected definition was imported or executed",
                 )
-                row["passed"] = True
-        require(bool(report["cases"]), "No test cases selected")
+        except Rejected as error:
+            if entry["kind"] in ("positive", "negative"):
+                row["acceptance"] = write_acceptance(artifact_dir, False, str(error), identity)
+            raise
+        row["passed"] = True
+
+
+def evaluate(
+    scenario: str,
+    config_path: Path,
+    evidence: Path,
+    cases: dict | None,
+    mode: str = "stub",
+    selected_case: str | None = None,
+    *,
+    runtime_src: Path | None = None,
+    runtime_manifest: Path | None = None,
+    judge: Judge | None = None,
+) -> dict:
+    """Judge the recorded observation of one submission; write report.json."""
+    evidence.mkdir(parents=True, exist_ok=True)
+    identity = evaluator_identity()
+    # Declared outside the try: a submission that is rejected part way through
+    # still says how far the engine got and which obligations were measured.
+    rubric_runs: list[dict] = []
+    report: dict[str, Any] = {
+        "scenario": scenario,
+        "mode": mode,
+        "passed": False,
+        "report_schema": "sapi-lab-verification/v1",
+        "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+        "evaluator": identity,
+        "cases": [],
+        "limits": [
+            "Checks the supported static sapi-lab/v0 profile only.",
+            "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven.",
+        ],
+    }
+    try:
+        if runtime_src is not None:
+            require(runtime_manifest is not None and runtime_manifest.is_file(), "Missing packaged runtime manifest")
+            assert runtime_manifest is not None
+            check_runtime_sources(runtime_src, runtime_manifest)
+        expected = plan(scenario, config_path, cases, mode, selected_case)
+        assert cases is not None
+        report["submission_sha256"] = expected["submission_sha256"]
+        report["fixture_sha256"] = expected["fixture_sha256"]
+        report["config_transformations"] = ["workflow.inputs replaced by case fixture"] + (
+            ["execution.deadline_seconds set to 600"] if mode == "live" else []
+        )
+        manifest = read_evidence(evidence, expected)
+        report["observation"] = {"manifest": "observation.json", "plan_sha256": manifest["plan_sha256"]}
+        if scenario == "daily-digest":
+            if TYPE_CHECKING or __package__:
+                from .lifecycle_submission import evaluate_lifecycle
+            else:
+                from lifecycle_submission import evaluate_lifecycle
+            evaluate_lifecycle(expected["entries"], evidence, identity, report["cases"])
+        else:
+            judge_entries(scenario, expected["entries"], evidence, cases, mode, identity, report, rubric_runs)
         report["passed"] = all(row["passed"] for row in report["cases"])
     except Exception as error:
         report["error"] = str(error)
         report["error_type"] = type(error).__name__
-    # Outside the acceptance try on purpose: the rubric reads the verdict and
-    # never sets it. `evaluate` returns None for a scenario with no card, and a
-    # stated non-score rather than raising, so neither can fail this submission.
-    # The engine ran every case the submission is scored on. Whether the
-    # obligations then held is the named checks' business, not this flag's.
-    executed = bool(rubric_runs) and len(rubric_runs) == executions
-    try:
-        evaluation = evaluate(scenario, rubric_runs, accepted=report["passed"], execution_pass=executed, judge=judge)
-    except Exception as error:
-        # `evaluate` is written not to raise. The guard is here anyway because an
-        # exception escaping this late would leave the container without a report
-        # and pay a correct submission zero: the one thing a rubric may not do.
-        evaluation = {
-            "schema": SCHEMA,
-            "status": NOT_EVALUATED,
-            "score_0_10": None,
-            "normalized_reward": None,
-            "reason": "Not scored: " + type(error).__name__ + ": " + str(error),
-        }
-    if evaluation is not None:
-        (report_dir / "evaluation.json").write_text(json.dumps(evaluation, ensure_ascii=False, indent=2) + "\n")
-    (report_dir / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+        report["passed"] = False
+    if scenario != "daily-digest":
+        # Outside the acceptance try on purpose: the rubric reads the verdict and
+        # never sets it. `score_rubric` returns None for a scenario with no card,
+        # and a stated non-score rather than raising, so neither can fail this
+        # submission. The engine ran every case the submission is scored on.
+        executions = sum(row["kind"] == "positive" for row in report["cases"])
+        executed = bool(rubric_runs) and len(rubric_runs) == executions
+        try:
+            evaluation = score_rubric(
+                scenario, rubric_runs, accepted=report["passed"], execution_pass=executed, judge=judge
+            )
+        except Exception as error:
+            # `score_rubric` is written not to raise. The guard is here anyway because
+            # an exception escaping this late would leave the container without a
+            # report and pay a correct submission zero: the one thing a rubric may not do.
+            evaluation = {
+                "schema": SCHEMA,
+                "status": NOT_EVALUATED,
+                "score_0_10": None,
+                "normalized_reward": None,
+                "reason": "Not scored: " + type(error).__name__ + ": " + str(error),
+            }
+        if evaluation is not None:
+            (evidence / "evaluation.json").write_text(json.dumps(evaluation, ensure_ascii=False, indent=2) + "\n")
+    (evidence / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     return report
 
 
+def load_cases(path: Path, scenario: str) -> dict | None:
+    return json.loads(path.read_text()).get(scenario) if path.is_file() else None
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("action", choices=["plan", "evaluate"])
     parser.add_argument("--scenario", required=True)
     parser.add_argument("--config", type=Path, required=True)
-    parser.add_argument("--report-dir", type=Path, required=True)
+    parser.add_argument("--cases", type=Path, default=Path(__file__).with_name("cases.json"))
+    parser.add_argument("--output", type=Path, help="plan: where to write the plan")
+    parser.add_argument("--evidence", type=Path, help="evaluate: the recorded observation directory")
+    parser.add_argument("--runtime-src", type=Path, help="evaluate: the runtime that executed the plan")
     parser.add_argument("--mode", choices=["stub", "live"], default=os.environ.get("SAPI_LLM_MODE", "stub"))
-    parser.add_argument("--bridge-url", default=os.environ.get("SAPI_BRIDGE_URL"))
     parser.add_argument("--case", default=os.environ.get("SAPI_CASE_NAME"))
     args = parser.parse_args()
-    report = verify_submission(args.scenario, args.config, args.report_dir, args.mode, args.bridge_url, args.case)
+    cases = load_cases(args.cases, args.scenario)
+    if args.action == "plan":
+        if args.output is None:
+            parser.error("plan requires --output")
+        try:
+            issued = plan(args.scenario, args.config, cases, args.mode, args.case)
+        except Exception as error:
+            print(json.dumps({"planned": False, "error": f"{type(error).__name__}: {error}"}))
+            return 1
+        args.output.write_text(json.dumps(issued, ensure_ascii=False, indent=2) + "\n")
+        print(json.dumps({"planned": True, "entries": len(issued["entries"])}))
+        return 0
+    if args.evidence is None:
+        parser.error("evaluate requires --evidence")
+    report = evaluate(
+        args.scenario,
+        args.config,
+        args.evidence,
+        cases,
+        args.mode,
+        args.case,
+        runtime_src=args.runtime_src,
+        runtime_manifest=args.cases.with_name("runtime-sources.json") if args.runtime_src else None,
+    )
     print(
         json.dumps(
             {

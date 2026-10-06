@@ -8,8 +8,7 @@ The runtime and independent verifier record those decisions separately in new
 | --- | --- |
 | `execution.status`, `execution.succeeded` | The selected engine imported/executed the workflow and produced its required runtime result; no business acceptance is implied |
 | `execution.engine` | Adapter name and observed engine version |
-| `acceptance.status` | `not_evaluated` after a direct runtime call; `accepted` or `rejected` only after independent verification |
-| `acceptance.passed` | `null` before verification, otherwise the verifier's boolean decision |
+| `acceptance.status`, `acceptance.passed` | Always `not_evaluated` and `null` in `case.json`: the execution record is never rewritten. The verifier's decision is the separate `acceptance.json` beside it (`sapi-lab-acceptance/v1`: `status`, `passed`, `reason`, the sha256 of the `case.json` and `config.json` it judged, and the evaluator). Reports recorded before 2026-10-06 carry the decision inside `case.json` instead |
 | `input.source`, `input.activation` | `fixture` and `injected`: test data was supplied directly, even though the execution engine is real |
 | `llm.selected_mode` | Configured `stub` or `live` mode; it does not establish that this particular workflow called a model |
 | `llm.agency_http_call_count` | Observed Agency HTTP node attempts in native n8n execution data, including failed requests; unavailable evidence can leave this `null` |

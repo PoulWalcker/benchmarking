@@ -7,9 +7,13 @@ observation to native n8n records, including persisted success, node envelopes
 and execution timing. Both checks must pass. The business checker imports no
 compiler, operation or engine implementation.
 
-The verifier uses `src/sapi_config_lab/coordinate/cases.py` to compile and
-execute each case through the selected backend. It supplies fixture inputs but
-never expected answers to the runner. Only the n8n evidence adapter is currently
+The verifier never executes anything. `verify.py plan` writes every definition
+that must run (fixture-applied submissions, negative inputs, the corrupted
+artifact probe, invalid definitions); `sapi_config_lab.coordinate.observe` runs
+that plan through `coordinate/cases.py` and records evidence plus an
+`observation.json` manifest; `verify.py evaluate` recomputes the plan, checks
+the record is complete, unaltered and of exactly those inputs, and judges it.
+Fixture inputs reach the runtime; expected answers never do. Only the n8n evidence adapter is currently
 implemented: new versioned reports require matching `n8n` engine and native
 evidence metadata. Historical unversioned records retain their strict legacy
 checks. An unfamiliar engine cannot gain acceptance through flat n8n aliases.
@@ -66,8 +70,9 @@ execution records, and a case manifest. Compilation errors, expected runtime
 input rejection, successful runtime execution and acceptance rejection remain
 distinct in the report. New case manifests use `sapi-lab-execution/v1`:
 
-- `execution.succeeded` describes engine completion, while `acceptance.passed`
-  remains null until the verifier records a decision. A mutated workflow can
+- `execution.succeeded` describes engine completion. `case.json` is never
+  rewritten: its `acceptance.passed` stays null, and each decision is its own
+  `acceptance.json` naming the evidence hashes it judged. A mutated workflow can
   execute successfully and still receive rejected acceptance.
 - `input.source=fixture` identifies injected input separately from the real
   execution engine.
