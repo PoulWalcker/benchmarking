@@ -26,7 +26,7 @@ import time
 from sapi_config_lab.core.evidence import sha256
 from sapi_config_lab.interfaces.generation.common import summarize_trials
 from sapi_config_lab.core.host import harbor_command, harbor_run_args, image_id, pin_base_image
-from sapi_config_lab.interfaces.harbor import load_trials
+from sapi_config_lab.interfaces.harbor import control_rewards_met, load_trials
 from sapi_config_lab.interfaces.live_evidence import load_verifier, reconcile_dispatches
 from sapi_config_lab.core.provenance import source_manifest
 from sapi_config_lab.interfaces.replay import require
@@ -264,12 +264,7 @@ def native_controls(directory, image, frozen):
             with (directory / (agent + ".log")).open("w") as log:
                 done = subprocess.run(args, cwd=workspace_root(), stdout=log, stderr=subprocess.STDOUT, timeout=1800)
             trials = load_trials(directory / "jobs" / agent)
-            passed = (
-                done.returncode == 0
-                and len(trials) == 1
-                and not trials[0]["exception"]
-                and trials[0]["rewards"] == {"reward": 1.0 if agent == "oracle" else 0.0}
-            )
+            passed = done.returncode == 0 and len(trials) == 1 and control_rewards_met(agent, trials)
             if agent == "oracle" and passed:
                 acceptance = trials[0]["acceptance"]
                 passed = acceptance.get("passed") is True and acceptance.get("runtime_source_manifest") == {

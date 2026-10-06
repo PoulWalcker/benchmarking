@@ -352,6 +352,25 @@ class VerifierSeamTests(unittest.TestCase):
         for forbidden in ("evaluation", "score", "rubric", "normalized"):
             self.assertNotIn(forbidden, script)
 
+    def test_every_control_run_reads_the_reward_gate_from_one_place(self):
+        from sapi_config_lab.interfaces.harbor import CONTROL_REWARDS, control_rewards_met
+
+        self.assertEqual(CONTROL_REWARDS, {"oracle": {"reward": 1.0}, "nop": {"reward": 0.0}})
+        for agent, reward in (("oracle", 1.0), ("nop", 0.0)):
+            self.assertTrue(control_rewards_met(agent, [{"rewards": {"reward": reward}, "exception": None}]))
+            # A rubric score is a separate document; it must never read as a reward.
+            for intruder in (0.732, 1.0 - reward, None, "1.0"):
+                self.assertFalse(control_rewards_met(agent, [{"rewards": {"reward": intruder}, "exception": None}]))
+            self.assertFalse(control_rewards_met(agent, [{"rewards": {"reward": reward}, "exception": "boom"}]))
+        sources = {
+            name: (ROOT / "src/sapi_config_lab/interfaces" / name).read_text()
+            for name in ("harbor.py", "generalization.py", "lifecycle_run.py")
+        }
+        self.assertEqual(sources["harbor.py"].count('{"reward": 1.0}'), 1)
+        for name in ("generalization.py", "lifecycle_run.py"):
+            self.assertNotIn('"reward"', sources[name])
+            self.assertIn("control_rewards_met", sources[name])
+
 
 class StandaloneDistributionTests(unittest.TestCase):
     def test_the_rubric_seam_imports_flat_beside_its_siblings(self):
