@@ -7,7 +7,6 @@ from collections import Counter
 from collections.abc import Callable
 from contextlib import contextmanager
 import fcntl
-import hashlib
 import json
 import os
 import shutil
@@ -25,19 +24,12 @@ import webbrowser
 
 import yaml
 
+from sapi_config_lab.core.evidence import json_text, sha256, write_json
 from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.runtime.ui_n8n import DockerUi, fingerprint
 from sapi_config_lab.runtime.composition import default_backend
 from sapi_config_lab.core.contracts import CompileOptions
 from sapi_config_lab.core.profile import UniqueLoader, Unsupported, read_bindings, validate, validate_bindings
-
-
-def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def write_json(path: Path, value) -> None:
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n")
 
 
 def prepare(config_path: Path, directory: Path, *, port: int = 18766, deadline_seconds: int | None = None) -> dict:
@@ -144,7 +136,7 @@ def admit(directory: Path, *, max_attempts: int, seconds: int, model: str = "gpt
         "workflow_id": prepared["workflow_id"],
     }
     with (directory / "budget.json").open("x") as stream:
-        stream.write(json.dumps(budget, indent=2) + "\n")
+        stream.write(json_text(budget, ensure_ascii=True))
         stream.flush()
         os.fsync(stream.fileno())
     return budget

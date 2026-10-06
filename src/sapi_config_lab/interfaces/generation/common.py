@@ -13,10 +13,6 @@ from sapi_config_lab.paths import workspace_root
 ROOT = workspace_root()
 
 
-def write_json(path, data):
-    Path(path).write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
-
-
 def fingerprints() -> dict[str, str]:
     """Freeze the same complete source inventory used by the control suite."""
     return source_manifest()

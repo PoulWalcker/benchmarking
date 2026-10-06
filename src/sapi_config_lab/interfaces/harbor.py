@@ -13,19 +13,16 @@ import tempfile
 import uuid
 from typing import Any
 
+from sapi_config_lab.core.evidence import write_json
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.interfaces.tasks import stage_tasks
 from sapi_config_lab.core.scenarios import SCENARIOS, select_scenarios
-from sapi_config_lab.core.host import harbor_command
+from sapi_config_lab.core.host import harbor_command, harbor_run_args, image_id, running_containers
 from sapi_config_lab.core.provenance import host_environment, source_manifest
 
 ROOT = workspace_root()
 IMAGE = "sapi-config-lab-n8n:2.41.5"
 TASKS = {"invoice-total", "ticket-routing", "competitor-report"}
-
-
-def write_json(path, data):
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
 
 
 def command(args, log, timeout=2400):
@@ -95,7 +92,7 @@ def main():
             ["docker", "version", "--format", "{{.Server.Version}}"], text=True
         ).strip()
         # Metadata only: never docker inspect environment or read existing volumes.
-        before = subprocess.check_output(["docker", "ps", "--format", "{{.ID}} {{.Names}} {{.Image}}"], text=True)
+        before = running_containers()
         (output / "existing-containers.txt").write_text(before)
         print(f"Local regression tests; report directory: {output}", flush=True)
         rc = command(
@@ -113,9 +110,7 @@ def main():
             )
             if rc:
                 raise RuntimeError("Image build failed; see image-build.log")
-        report["image_id"] = subprocess.check_output(
-            ["docker", "image", "inspect", IMAGE, "--format", "{{.Id}}"], text=True
-        ).strip()
+        report["image_id"] = image_id(IMAGE)
         versions = subprocess.check_output(
             [
                 "docker",
@@ -162,23 +157,7 @@ def main():
         shutil.copytree(staging / "tasks", output / "task-packages")
         for agent in ("oracle", "nop"):
             print(f"Harbor {agent}: {len(selected)} tasks through real n8n", flush=True)
-            argv = [
-                *harbor,
-                "run",
-                "--path",
-                str(staging / "tasks"),
-                "--agent",
-                agent,
-                "--n-concurrent",
-                "1",
-                "--max-retries",
-                "0",
-                "--jobs-dir",
-                str(staging / "jobs"),
-                "--job-name",
-                agent,
-                "--force-build",
-            ]
+            argv = harbor_run_args(harbor, staging / "tasks", staging / "jobs", agent, agent)
             rc = command(argv, output / f"harbor-{agent}.log")
             shutil.copytree(staging / "jobs" / agent, output / "jobs" / agent)
             trials = load_trials(output / "jobs" / agent)

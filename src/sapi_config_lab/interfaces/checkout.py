@@ -12,7 +12,6 @@ import json
 from pathlib import Path
 import secrets
 import shutil
-import subprocess
 import sys
 import tempfile
 import threading
@@ -25,9 +24,10 @@ import uuid
 import yaml
 
 from sapi_config_lab.core.benchmark_tasks import TASKS, task_definition
+from sapi_config_lab.core.evidence import sha256, write_json
 from sapi_config_lab.interfaces.generation.common import audit_stderr
 from sapi_config_lab.interfaces.harbor import command, load_trials
-from sapi_config_lab.core.host import harbor_command
+from sapi_config_lab.core.host import harbor_command, harbor_run_args, image_id, running_containers
 from sapi_config_lab.core.provenance import source_manifest, host_environment
 from sapi_config_lab.runtime.task_evaluation import (
     build_run_log,
@@ -68,16 +68,14 @@ def oracle_scrub() -> str:
 
 
 def save(path, data):
+    # Unlike the shared writer, every checkout artifact may name a directory
+    # that this run is the first to need.
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+    write_json(path, data)
 
 
 def now():
     return datetime.now(timezone.utc).isoformat()
-
-
-def sha(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 def inspect_wrapper():
@@ -114,7 +112,7 @@ def inspect_wrapper():
         "wrapper_retries": 0,
         "provider_internal_retries": "unknown",
         "readiness_http_status": status,
-        "files": [{"path": str(p), "sha256": sha(p)} for p in (wrapper, config)],
+        "files": [{"path": str(p), "sha256": sha256(p)} for p in (wrapper, config)],
     }
 
 
@@ -379,23 +377,9 @@ def native_trial(directory, source, contract, mode, wrapper, config, *, seed=0):
         )
         shutil.copytree(task, directory / "task-package")
         save(directory / "task-package/tests/connection.json", {"url": "runtime-local", "token": "REDACTED"})
-        argv = [
-            *harbor_command(),
-            "run",
-            "--path",
-            str(staging / "tasks"),
-            "--agent",
-            "oracle" if config else "nop",
-            "--n-concurrent",
-            "1",
-            "--max-retries",
-            "0",
-            "--jobs-dir",
-            str(staging / "jobs"),
-            "--job-name",
-            "trial",
-            "--force-build",
-        ]
+        argv = harbor_run_args(
+            harbor_command(), staging / "tasks", staging / "jobs", "trial", "oracle" if config else "nop"
+        )
         rc = command(argv, directory / "harbor.log", timeout=900)
         if (staging / "jobs").exists():
             shutil.copytree(staging / "jobs", directory / "jobs")
@@ -424,7 +408,7 @@ def author(prompt, directory, identity, task=None):
     directory.mkdir(parents=True, exist_ok=False)
     (directory / "prompt.txt").write_text(prompt)
     save(directory / "dispatch.json", {"attempts": 1, "started_at": now(), "requested_model": identity["model"]})
-    if any(sha(row["path"]) != row["sha256"] for row in identity["files"]):
+    if any(sha256(row["path"]) != row["sha256"] for row in identity["files"]):
         raise ValueError("Wrapper identity changed before dispatch")
     started = time.monotonic()
     record: dict[str, Any] = {"eligible": False, "repairs": 0}
@@ -520,12 +504,12 @@ def main():
         print(json.dumps({"plan": str(output / "plan.json"), "model_calls": 0}))
         return 0
     started = time.monotonic()
-    before = subprocess.check_output(["docker", "ps", "--format", "{{.ID}} {{.Names}} {{.Image}}"], text=True)
+    before = running_containers()
     (output / "containers-before.txt").write_text(before)
     if not args.skip_build:
         if command(["docker", "build", "-f", "infra/Dockerfile", "-t", IMAGE, "."], output / "image-build.log", 1200):
             raise RuntimeError("Image build failed")
-    image_id = subprocess.check_output(["docker", "image", "inspect", IMAGE, "--format", "{{.Id}}"], text=True).strip()
+    base_image_id = image_id(IMAGE)
     if args.mode == "live":
         controls = args.controls_report
         if controls is None:
@@ -561,15 +545,15 @@ def main():
             or not gate.get("source_unchanged")
             or gate.get("actual_model_attempts") != 0
             or json.loads((controls.parent / "source-manifest.json").read_text()) != manifest
-            or gate.get("image_id") != image_id
+            or gate.get("image_id") != base_image_id
         ):
             raise ValueError("Live dispatch requires fresh source/image-matched unpaid controls")
-        save(output / "controls-gate.json", {"report": str(controls.resolve()), "sha256": sha(controls)})
+        save(output / "controls-gate.json", {"report": str(controls.resolve()), "sha256": sha256(controls)})
     report = {
         "mode": args.mode,
         "task": task.key,
         "seed": args.seed,
-        "image_id": image_id,
+        "image_id": base_image_id,
         "started_at": now(),
         "authoring": [],
         "status": "failed",
@@ -606,9 +590,7 @@ def main():
         report["full_pipeline_seconds"] = time.monotonic() - started
         report["source_unchanged"] = source_manifest() == manifest
         report["finished_at"] = now()
-        (output / "containers-after.txt").write_text(
-            subprocess.check_output(["docker", "ps", "--format", "{{.ID}} {{.Names}} {{.Image}}"], text=True)
-        )
+        (output / "containers-after.txt").write_text(running_containers())
         evaluated_names = (
             ["reference", "nop"]
             if args.mode == "controls"

@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 import shutil
 
+from sapi_config_lab.core.evidence import json_text, sha256
 from sapi_config_lab.runtime.agency import strict_json
 
 SCHEMA = "sapi-lab-generated-selection/v1"
@@ -32,10 +32,6 @@ FROZEN = {
     ),
 }
 PROVENANCE_FILES = ("agent/generation.json", "agent/prompt.txt", "result.json", "verifier/report.json")
-
-
-def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def require(condition, message):
@@ -156,7 +152,7 @@ def main():
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("x") as stream:
-        stream.write(json.dumps(manifest, indent=2) + "\n")
+        stream.write(json_text(manifest, ensure_ascii=True))
     load_selection(args.output, scenarios=(args.scenario,) if args.scenario else None)
     print(
         json.dumps(

@@ -4,6 +4,8 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+
+from sapi_config_lab.core.evidence import json_text
 from sapi_config_lab.runtime.task_evaluation import summarize_stages
 
 
@@ -101,7 +103,6 @@ def main():
     result = collect_series(a.reports)
     a.output.parent.mkdir(parents=True, exist_ok=True)
     with a.output.open("x") as f:
-        json.dump(result, f, indent=2)
-        f.write("\n")
+        f.write(json_text(result, ensure_ascii=True))
     print(a.output)
     return 0
