@@ -1,0 +1,110 @@
+{
+  "roles": {
+    "prepare": {
+      "operation": "digest.prepare",
+      "kind": "Script",
+      "inputs": {
+        "articles": {
+          "ref": "inputs.articles"
+        }
+      }
+    },
+    "summarize": {
+      "operation": "digest.summarize",
+      "kind": "LLM",
+      "inputs": {
+        "articles": {
+          "ref": "steps.prepare.articles"
+        }
+      }
+    },
+    "preview": {
+      "operation": "digest.preview",
+      "kind": "Script",
+      "inputs": {
+        "summary": {
+          "ref": "steps.summarize"
+        }
+      }
+    },
+    "product": {
+      "operation": "research.product",
+      "kind": "LLM",
+      "inputs": {
+        "material": {
+          "ref": "steps.summarize.text"
+        }
+      }
+    },
+    "marketing": {
+      "operation": "research.marketing",
+      "kind": "LLM",
+      "inputs": {
+        "material": {
+          "ref": "inputs.marketing_material"
+        }
+      }
+    },
+    "combine": {
+      "operation": "research.combine",
+      "kind": "Script",
+      "inputs": {
+        "product": {
+          "ref": "steps.product"
+        },
+        "marketing": {
+          "ref": "steps.marketing"
+        }
+      }
+    },
+    "write": {
+      "operation": "research.write",
+      "kind": "LLM",
+      "inputs": {
+        "brief": {
+          "ref": "steps.combine"
+        }
+      }
+    }
+  },
+  "edges": [
+    [
+      "prepare",
+      "summarize"
+    ],
+    [
+      "summarize",
+      "preview"
+    ],
+    [
+      "summarize",
+      "product"
+    ],
+    [
+      "product",
+      "combine"
+    ],
+    [
+      "marketing",
+      "combine"
+    ],
+    [
+      "combine",
+      "write"
+    ]
+  ],
+  "output": {
+    "digest": {
+      "ref": "steps.preview"
+    },
+    "brief": {
+      "ref": "steps.write"
+    }
+  },
+  "exclusive_actors": [
+    "summarize",
+    "product",
+    "marketing",
+    "write"
+  ]
+}

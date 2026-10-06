@@ -20,8 +20,19 @@ from sapi_config_lab.contracts import CompiledWorkflow, ExecutionRecord, RunBind
 from sapi_config_lab.evidence import canonical, write_record_json
 
 PINNED_N8N_VERSION = "2.41.5"
+IMPORT_TIMEOUT_SECONDS = 180
 # Only these reach n8n from the caller; workflow code can read its process environment.
 INHERITED_ENVIRONMENT = ("PATH", "HOME", "TMPDIR", "TZ", "LANG", "LC_ALL")
+
+
+def execute_timeout(deadline_seconds: int) -> int:
+    """When the harness kills `n8n execute`: the workflow deadline plus time to persist its record."""
+    return max(180, deadline_seconds + 90)
+
+
+def execution_ceiling(deadline_seconds: int, *, bound: bool) -> int:
+    """The longest one import and execution can take; a run bound to an absolute deadline stops at it."""
+    return deadline_seconds if bound else IMPORT_TIMEOUT_SECONDS + execute_timeout(deadline_seconds)
 
 
 def process(args, env, timeout):
@@ -165,7 +176,9 @@ def execute_compiled(compiled: CompiledWorkflow, artifact_dir: Path, binding: Ru
             return min(limit, left)
 
         rc, stdout, stderr = process(
-            ["n8n", "import:workflow", "--input=" + str(artifact_dir / "workflow.json")], env, remaining(180)
+            ["n8n", "import:workflow", "--input=" + str(artifact_dir / "workflow.json")],
+            env,
+            remaining(IMPORT_TIMEOUT_SECONDS),
         )
         (artifact_dir / "import.log").write_text(stdout + stderr)
         record["import_exit_code"] = rc
@@ -173,7 +186,7 @@ def execute_compiled(compiled: CompiledWorkflow, artifact_dir: Path, binding: Ru
         if rc:
             record["error"] = {"category": "import_error", "message": (stdout + stderr)[-4000:]}
         else:
-            deadline = remaining(max(180, compiled.deadline_seconds + 90))
+            deadline = remaining(execute_timeout(compiled.deadline_seconds))
             rc, stdout, stderr = process(["n8n", "execute", "--id=" + artifact["id"], "--rawOutput"], env, deadline)
             record["execute_exit_code"] = rc
             (artifact_dir / "execution.stdout.log").write_text(stdout)

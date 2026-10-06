@@ -81,8 +81,11 @@ def run_logged(command: Sequence[str], log: Path, *, timeout: float) -> int:
     return completed.returncode
 
 
+BUILD_TIMEOUT_SECONDS = 1200
+
+
 def build_image(tag: str, log: Path) -> None:
-    if run_logged(["docker", "build", "-f", "infra/Dockerfile", "-t", tag, "."], log, timeout=1200):
+    if run_logged(["docker", "build", "-f", "infra/Dockerfile", "-t", tag, "."], log, timeout=BUILD_TIMEOUT_SECONDS):
         raise RuntimeError(f"Image build failed; see {log.name}")
 
 

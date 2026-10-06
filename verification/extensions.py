@@ -6,9 +6,11 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING or __package__:
     from .contracts import Rejected, equal, require
     from .n8n_provenance import check_provenance, one_run, ordered, rows
+    from .roles import whole_results
 else:  # Standalone Harbor distribution.
     from contracts import Rejected, equal, require
     from n8n_provenance import check_provenance, one_run, ordered, rows
+    from roles import whole_results
 
 
 def reply_roles(config: dict) -> tuple[str, str]:
@@ -31,8 +33,9 @@ def reply_roles(config: dict) -> tuple[str, str]:
         },
         "Draft lost declared runtime or ticket origin",
     )
+    uses = {draft["id"]: "reply.generate", check["id"]: "reply.check"}
     equal(
-        check["with"],
+        {key: whole_results(value, uses) for key, value in check["with"].items()},
         {
             "draft": {"ref": "steps." + draft["id"]},
             "order_id": {"ref": "inputs.required_order_id"},
@@ -40,7 +43,7 @@ def reply_roles(config: dict) -> tuple[str, str]:
         },
         "Review lost draft or constraint origin",
     )
-    equal(workflow["output"], {"ref": "steps." + draft["id"]}, "Wrong refinement output origin")
+    equal(whole_results(workflow["output"], uses), {"ref": "steps." + draft["id"]}, "Wrong refinement output origin")
     refinement = config["execution"]["refinement"]
     require(len(refinement["region"]) == 2, "Duplicate refinement region occurrence")
     equal(set(refinement["region"]), {draft["id"], check["id"]}, "Wrong refinement region")

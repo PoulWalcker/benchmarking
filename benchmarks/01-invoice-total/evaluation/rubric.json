@@ -1,0 +1,14 @@
+{
+  "id": "invoice-total",
+  "version": "1.0.0",
+  "origin": "local",
+  "criteria": [
+    {
+      "id": "acceptance",
+      "question": "Does the result satisfy the independent acceptance contract for invoice-total?",
+      "weight": 10,
+      "evaluator": "deterministic",
+      "check_id": "accepted"
+    }
+  ]
+}

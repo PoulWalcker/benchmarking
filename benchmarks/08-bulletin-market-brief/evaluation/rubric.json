@@ -1,0 +1,71 @@
+{
+  "id": "bulletin-market-brief",
+  "version": "1.0.0",
+  "origin": "local",
+  "criteria": [
+    {
+      "id": "article_coverage",
+      "question": "Does the digest list exactly the supplied articles, once each, unchanged?",
+      "weight": 1,
+      "evaluator": "deterministic",
+      "check_id": "digest_covers_every_article"
+    },
+    {
+      "id": "digest_facts",
+      "question": "Does the digest text state the facts these articles require, and invent none?",
+      "weight": 1,
+      "evaluator": "deterministic",
+      "check_id": "digest_grounded_in_articles"
+    },
+    {
+      "id": "preview_fidelity",
+      "question": "Does the preview repeat the digest and add only its own mode?",
+      "weight": 1,
+      "evaluator": "deterministic",
+      "check_id": "preview_repeats_the_digest"
+    },
+    {
+      "id": "distinct_actors",
+      "question": "Were the four authored outputs produced by four distinct logical actors?",
+      "weight": 1,
+      "evaluator": "deterministic",
+      "check_id": "four_distinct_actors"
+    },
+    {
+      "id": "brief_grounding",
+      "question": "Does the brief quote both sources and state the facts they require?",
+      "weight": 2,
+      "evaluator": "deterministic",
+      "check_id": "brief_merges_both_sources"
+    },
+    {
+      "id": "article_reporting",
+      "question": "Does the digest text report each article it lists, rather than listing an ID it never covers?",
+      "weight": 2,
+      "evaluator": "llm",
+      "anchors": {
+        "yes": "Each listed article has at least one claim in the digest text that only that article supports.",
+        "maybe": "One listed article is covered only by wording that would fit any of them.",
+        "no": "An article is listed and nothing in the digest text comes from it."
+      },
+      "required_evidence": [
+        "candidate",
+        "environment"
+      ]
+    },
+    {
+      "id": "concision",
+      "question": "Do the digest and the brief carry a fact in every sentence, or are they padded?",
+      "weight": 2,
+      "evaluator": "llm",
+      "anchors": {
+        "yes": "Every sentence adds a fact; nothing is restated and there is no scene-setting.",
+        "maybe": "One sentence restates another or opens with filler; the rest carry facts.",
+        "no": "Padded: boilerplate openings, repeated claims, or sentences that say nothing specific."
+      },
+      "required_evidence": [
+        "candidate"
+      ]
+    }
+  ]
+}

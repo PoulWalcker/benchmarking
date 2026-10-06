@@ -41,8 +41,9 @@ Every benchmark is `benchmarks/NN-<name>/`. Its `scenario.json` states what the 
 | `output` | `artifact_field`/`artifact_name`: an output submitted verbatim as a named file |
 | `controls` | `reference_reward` the oracle must reproduce |
 | `prompt_extension`, `fresh_fixtures`, `human_review` | authoring prompt section, per-run fixture overlay, live report flag |
+| `harbor` | trial resources rendered into `task.toml`; a verifier timeout must contain the verifier's plan |
 
-Files beside it: the reference `config.yaml`, the container `instruction.md`, and either `task.md` + evaluator-only `cases.json` (fixtures) or `authoring-notes.md` + `bindings.yaml` (simulator).
+Files beside it: the reference `config.yaml`, the container `instruction.md`, and either `task.md` + evaluator-only `cases.json` and `evaluation/` (`contract.json`, optional `rubric.json`) (fixtures) or `authoring-notes.md` + `bindings.yaml` (simulator). Scenario-owned evaluation facts live in `evaluation/` as data; the mechanisms that read them stay in `verification/`.
 
 Where a benchmark came from is provenance data. It selects which pinned bytes are trusted, never which code path runs; the code path follows `environment` and `evaluator`.
 
@@ -64,7 +65,7 @@ The two environments differ only in small, explicit places: how a package is sta
 
 `coordinate/evaluation.py` gives both evaluators one result shape: execution, acceptance and optional quality (`null` is not zero).
 
-- **Verifier** (`verification/`): `plan` states which definitions must run, `coordinate/observe.py` runs them and records evidence, `evaluate` checks the record is exactly that plan and judges it. It is packaged into each task, and deliberately duplicates business rules instead of importing the implementation under test.
+- **Verifier** (`verification/`, plus the scenario's `evaluation/` data packaged beside it): `plan` states which definitions must run, `coordinate/observe.py` runs them and records evidence, `evaluate` checks the record is exactly that plan and judges it. It is packaged into each task, and deliberately duplicates business rules instead of importing the implementation under test.
 - **Upstream** (`evaluate/task_evaluation.py`): the pinned upstream scorer and judge, run on the host against the hosted trial's recorded evidence. Its evaluator modules are scrubbed from hosted task containers.
 
 ## Evidence

@@ -1,21 +1,21 @@
 version = "1.0"
 
 [metadata]
-name = "invoice-total"
+name = "${name}"
 description = "Execute a Sapiens-inspired YAML definition in pinned real n8n and verify task data and execution invariants."
 difficulty = "medium"
 category = "workflow-execution"
 tags = ["sapi-lab", "n8n", "yaml", "runtime"]
 
 [agent]
-timeout_sec = 600
+timeout_sec = ${agent_timeout_sec}
 
 [verifier]
 # Shared container is safe only while the candidate is an uploaded YAML; an agent with a shell needs environment_mode = "separate".
-timeout_sec = 1800
+timeout_sec = ${verifier_timeout_sec}
 
 [environment]
-build_timeout_sec = 600
-cpus = 1
-memory_mb = 2048
-storage_mb = 4096
+build_timeout_sec = ${build_timeout_sec}
+cpus = ${cpus}
+memory_mb = ${memory_mb}
+storage_mb = ${storage_mb}

@@ -1,5 +1,8 @@
 {
   "environment": "fixtures",
   "evaluator": "verifier",
-  "prompt_extension": "TASK-SPECIFIC REFINEMENT EXTENSION"
+  "prompt_extension": "TASK-SPECIFIC REFINEMENT EXTENSION",
+  "harbor": {
+    "verifier_timeout_sec": 3000
+  }
 }

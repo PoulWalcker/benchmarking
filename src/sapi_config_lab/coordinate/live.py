@@ -12,14 +12,14 @@ import json
 from pathlib import Path
 import shutil
 import time
-import tomllib
 from typing import Any
 
 from sapi_config_lab.coordinate.evaluation import contract_for, trial_accepted, upstream_evaluate
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.live_evidence import case_budget, collect_native, live_cohort, reconcile_dispatches
+from sapi_config_lab.coordinate.packages import task_toml
 from sapi_config_lab.coordinate.replay import load_selection, read_json, require
-from sapi_config_lab.coordinate.runs import Hosting, Run, run_experiment
+from sapi_config_lab.coordinate.runs import Hosting, Run, progress, run_experiment
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
 from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
 from sapi_config_lab.evidence import sha256
@@ -58,16 +58,13 @@ def validate_control(path: Path, current: dict[str, str], identity: str) -> dict
 
 def validate_packages(path: Path, submissions: dict, image: str):
     templates = ROOT / "harbor/templates"
-    timeouts = tomllib.loads((templates / "task.toml").read_text())
     for scenario, selected in submissions.items():
         task = path / scenario
         require(sha256(task / "environment/base.yaml") == selected["sha256"], "Staged submission hash mismatch")
         if "cases_sha256" in selected:
             require(sha256(task / "tests/cases.json") == selected["cases_sha256"], "Staged fixture hash mismatch")
-        settings = tomllib.loads((task / "task.toml").read_text())
         require(
-            settings["agent"] == timeouts["agent"] and settings["verifier"] == timeouts["verifier"],
-            "Staged Harbor timeouts changed",
+            (task / "task.toml").read_text() == task_toml(ROOT, SCENARIOS[scenario]), "Staged Harbor settings changed"
         )
         require(
             (task / "environment/Dockerfile").read_text().startswith(f"FROM {image}\n"),
@@ -221,6 +218,7 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     def body(run: Run) -> None:
+        progress(f"controls: checking {args.stub_report}")
         report["stub_report_sha256"] = sha256(args.stub_report)
         identity = run.use_image(LAB_IMAGE)
         gate = validate_control(args.stub_report.resolve(), run.sources, identity)
@@ -260,6 +258,7 @@ def main(argv: list[str] | None = None) -> int:
             report["wrapper_files_relocated"] = sorted(wrapper_files)
             shutil.copyfile(args.wrapper_evidence, run.output / "wrapper-identity.json")
             run.pin("wrapper identity", args.wrapper_evidence)
+        progress(f"staging: {len(scenarios)} task packages")
         run.stage(
             "replay" if args.submissions_manifest else "oracle",
             scenarios,
@@ -270,9 +269,11 @@ def main(argv: list[str] | None = None) -> int:
         )
         validate_packages(run.tasks, submissions, run.image or "")
         run.check("before-stub")
+        progress(f"preflight: unpaid stub replay of {', '.join(scenarios)}")
+        started = time.monotonic()
         simulated = Hosting("stub", upstream_evaluate({s: contract_for(SCENARIOS[s]) for s in judged}))
         exit_code, stub_trials = run.harbor(
-            "stub-replay", run.tasks, "oracle", timeout=2400, verifier_env=["SAPI_LLM_MODE=stub"], hosting=simulated
+            "stub-replay", run.tasks, "oracle", verifier_env=["SAPI_LLM_MODE=stub"], hosting=simulated
         )
         report["preflight"] = {"harbor_exit_code": exit_code, "trials": stub_trials}
         require(
@@ -280,6 +281,7 @@ def main(argv: list[str] | None = None) -> int:
             "Unpaid stub replay failed",
         )
         check_trials(stub_trials, submissions, mode="stub")
+        progress(f"preflight: passed ({round(time.monotonic() - started)}s)")
         if args.preflight_only:
             report["status"] = "passed"
             return
@@ -287,7 +289,10 @@ def main(argv: list[str] | None = None) -> int:
         report["judge_model"] = args.judge_model
         report_path = run.output / "report.json"
         bridge_url = host.container_url(host.bridge_port)
-        for (scenario, name), (grant, config) in grants.items():
+        for number, ((scenario, name), (grant, config)) in enumerate(grants.items(), 1):
+            step = f"[{number}/{len(grants)}] {scenario}/{name}"
+            progress(f"{step}: live, up to {grant['max_attempts']} model calls reserved")
+            started = time.monotonic()
             run.check(f"before-{scenario}-{name}")
             budget = {**grant, "model": host.wrapper_model, "expires_at": time.time() + LIVE_CASE_TIMEOUT_SECONDS}
             upper_bound = "refinement" in config["execution"]
@@ -322,7 +327,6 @@ def main(argv: list[str] | None = None) -> int:
                         "live-" + label,
                         run.tasks / scenario,
                         "oracle",
-                        timeout=budget["expires_at"] - time.time(),
                         verifier_env=["SAPI_LLM_MODE=live", "SAPI_CASE_NAME=" + name, "SAPI_BRIDGE_URL=" + bridge_url],
                         hosting=hosting,
                     )
@@ -346,6 +350,7 @@ def main(argv: list[str] | None = None) -> int:
                     report["correlation"].extend(correlation)
                 run.check(f"after-{scenario}-{name}")
                 report["not_run"].remove(f"{scenario}/{name}")
+                progress(f"{step}: passed ({round(time.monotonic() - started)}s)")
                 for outcome in outcomes:
                     outcome.passed = True
         report["counts"] = {

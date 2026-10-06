@@ -92,13 +92,13 @@ class ComposedBusinessTests(unittest.TestCase):
             "draft": reply,
             "check": review,
         }
-        from verification.scenario_contracts import CONTRACTS
+        from verification.roles import contract_for
 
         obs = observation(
             values,
             {"action": action, "invoice_report": report, "reply": reply, "review": review},
             skipped=("normal",),
-            dependencies=CONTRACTS["support-review-packet"]["edges"],
+            dependencies=contract_for("support-review-packet")["edges"],
         )
         self.assertTrue(check_scenario_business_result("support-review-packet", inputs, obs, "live")["output_verified"])
         for wrong in (
@@ -112,7 +112,7 @@ class ComposedBusinessTests(unittest.TestCase):
                 check_scenario_business_result("support-review-packet", inputs, broken, "live")
 
     def test_bulletin_brief_checks_derived_quotes_and_facts_separately(self):
-        from verification.scenario_contracts import CONTRACTS
+        from verification.roles import contract_for
 
         case = all_cases()["bulletin-market-brief"]["positive"][0]
         inputs = case["inputs"]
@@ -139,7 +139,7 @@ class ComposedBusinessTests(unittest.TestCase):
             values,
             {"digest": values["preview"], "brief": brief},
             actors={"summarize": "a", "product": "b", "marketing": "c", "write": "d"},
-            dependencies=CONTRACTS["bulletin-market-brief"]["edges"],
+            dependencies=contract_for("bulletin-market-brief")["edges"],
         )
         self.assertTrue(
             check_scenario_business_result("bulletin-market-brief", inputs, obs, "live", case=case)["output_verified"]
@@ -157,7 +157,7 @@ class ComposedBusinessTests(unittest.TestCase):
                 check_scenario_business_result("bulletin-market-brief", inputs, broken, "live", case=case)
 
     def test_normal_priority_propagates_all_skips_and_returns_null_brief(self):
-        from verification.scenario_contracts import CONTRACTS
+        from verification.roles import contract_for
 
         inputs = {
             "ticket": {"id": "N", "text": "Two days late.", "days_overdue": 2},
@@ -170,7 +170,7 @@ class ComposedBusinessTests(unittest.TestCase):
             values,
             {"action": action, "brief": None},
             skipped=("escalate", "product", "marketing", "combine", "write"),
-            dependencies=CONTRACTS["priority-support-brief"]["edges"],
+            dependencies=contract_for("priority-support-brief")["edges"],
         )
         self.assertTrue(check_scenario_business_result("priority-support-brief", inputs, obs)["output_verified"])
         for role in ("product", "marketing", "combine", "write"):
@@ -226,8 +226,7 @@ class ComposedLocalGraphTests(unittest.TestCase):
         return json.loads(run.stdout)
 
     def test_all_positive_fixtures_satisfy_independent_business_obligations(self):
-        from verification.roles import bind_roles
-        from verification.scenario_contracts import CONTRACTS
+        from verification.roles import bind_roles, contract_for
 
         for scenario, config in self.configs.items():
             roles = bind_roles(scenario, config)
@@ -245,7 +244,7 @@ class ComposedLocalGraphTests(unittest.TestCase):
                         result["output"],
                         skipped=skipped,
                         actors=actors,
-                        dependencies=CONTRACTS[scenario]["edges"],
+                        dependencies=contract_for(scenario)["edges"],
                     )
                     self.assertTrue(
                         check_scenario_business_result(scenario, case["inputs"], obs, case=case)["output_verified"]

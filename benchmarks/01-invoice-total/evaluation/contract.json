@@ -1,0 +1,44 @@
+{
+  "roles": {
+    "validate": {
+      "operation": "invoices.validate",
+      "kind": "Script",
+      "inputs": {
+        "invoices": {
+          "ref": "inputs.invoices"
+        }
+      }
+    },
+    "total": {
+      "operation": "invoices.sum",
+      "kind": "Script",
+      "inputs": {
+        "invoices": {
+          "ref": "steps.validate.invoices"
+        }
+      }
+    },
+    "report": {
+      "operation": "invoices.report",
+      "kind": "Script",
+      "inputs": {
+        "total": {
+          "ref": "steps.total"
+        }
+      }
+    }
+  },
+  "edges": [
+    [
+      "validate",
+      "total"
+    ],
+    [
+      "total",
+      "report"
+    ]
+  ],
+  "output": {
+    "ref": "steps.report"
+  }
+}

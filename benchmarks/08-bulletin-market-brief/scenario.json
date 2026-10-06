@@ -2,5 +2,8 @@
   "environment": "fixtures",
   "evaluator": "verifier",
   "fresh_fixtures": true,
-  "human_review": true
+  "human_review": true,
+  "harbor": {
+    "verifier_timeout_sec": 5400
+  }
 }

@@ -1,0 +1,35 @@
+{
+  "id": "ticket-routing",
+  "version": "1.0.0",
+  "origin": "local",
+  "criteria": [
+    {
+      "id": "classification",
+      "question": "Do the category and priority match the ticket and the stated overdue boundary?",
+      "weight": 2,
+      "evaluator": "deterministic",
+      "check_id": "classification_matches_boundary"
+    },
+    {
+      "id": "single_branch",
+      "question": "Did exactly one draft branch run, with the classifier and the join both complete?",
+      "weight": 3,
+      "evaluator": "deterministic",
+      "check_id": "single_branch_executed"
+    },
+    {
+      "id": "selected_action",
+      "question": "Do the packet, the branch that ran and the join all state the same action?",
+      "weight": 3,
+      "evaluator": "deterministic",
+      "check_id": "draft_is_the_selected_action"
+    },
+    {
+      "id": "no_leak",
+      "question": "Did the branch that did not run leave no output, and stay recorded as skipped?",
+      "weight": 2,
+      "evaluator": "deterministic",
+      "check_id": "skipped_branch_left_no_trace"
+    }
+  ]
+}

@@ -6,12 +6,18 @@ from collections.abc import Iterator, Sequence
 import math
 from pathlib import Path
 import re
-from typing import Any, cast
+from typing import Any, Literal, cast, get_args
 
 import yaml
 
 SPEC = "06ddd3333109cea8a2cb3071609070d7a3c0d3ff"
 ID = re.compile(r"^[a-z][a-z0-9_-]*$")
+# Closed sapi-lab/v0 keywords; validation below accepts exactly these values.
+StepKind = Literal["Script", "LLM"]
+WorkflowKind = Literal["Pipeline", "Gantt"]
+JoinPolicy = Literal["all_terminal"]
+Concurrency = Literal["independent", "required_parallel"]
+ActivationKind = Literal["Callback", "Cron"]
 
 
 class Invalid(ValueError):
@@ -194,7 +200,7 @@ def validate_bindings(value: object) -> dict[str, Any]:
             ["prompt", "output_contract", "input_schema", "output_schema", "transport", "max_attempts"],
             label,
         )
-        check(op["kind"] in ("Script", "LLM"), f"{label}.kind: unknown operation kind")
+        check(op["kind"] in get_args(StepKind), f"{label}.kind: unknown operation kind")
         string(op["implementation"], f"{label}.implementation")
         if "transport" in op:
             check(op["transport"] == "http" and op["kind"] == "Script", f"{label}: invalid transport")
@@ -251,7 +257,7 @@ def validate(cfg: object, bindings: object) -> tuple[list[str], dict[str, list[s
     )
     check(ID.fullmatch(string(w["id"], "workflow.id")), "workflow.id: Invalid workflow identity")
     check(type(w["revision"]) is int and w["revision"] > 0, "workflow.revision: Invalid workflow identity")
-    check(w["kind"] in ("Pipeline", "Gantt"), "workflow.kind: Unknown workflow kind")
+    check(w["kind"] in get_args(WorkflowKind), "workflow.kind: Unknown workflow kind")
     mapping(w["inputs"], "workflow.inputs")
     string(w["acceptance"], "workflow.acceptance")
     check(isinstance(w["steps"], list) and w["steps"], "workflow.steps: Steps must be nonempty list")
@@ -260,9 +266,7 @@ def validate(cfg: object, bindings: object) -> tuple[list[str], dict[str, list[s
     execution = keys(
         cfg["execution"], ["concurrency", "deadline_seconds", "on_step_error"], ["refinement"], "execution"
     )
-    check(
-        execution["concurrency"] in ("independent", "required_parallel"), "execution.concurrency: Unknown concurrency"
-    )
+    check(execution["concurrency"] in get_args(Concurrency), "execution.concurrency: Unknown concurrency")
     check(
         type(execution["deadline_seconds"]) is int and execution["deadline_seconds"] > 0,
         "execution.deadline_seconds: Invalid timeout",
@@ -315,7 +319,7 @@ def validate(cfg: object, bindings: object) -> tuple[list[str], dict[str, list[s
         check(set(arguments) == set(op["inputs"]), f"{label}.with: incorrect operation inputs")
         if "when" in step:
             keys(step["when"], ["ref", "eq"], [], f"{label}.when")
-        check("join" not in step or step["join"] == "all_terminal", f"{label}.join: Unsupported join policy")
+        check("join" not in step or step["join"] in get_args(JoinPolicy), f"{label}.join: Unsupported join policy")
         if "actor" in step:
             actor_name = string(step["actor"], f"{label}.actor")
             selected_actor = actors.get(actor_name)
@@ -395,7 +399,7 @@ def validate(cfg: object, bindings: object) -> tuple[list[str], dict[str, list[s
         check_refs(refinement["carry"], "execution.refinement.carry")
 
     activation = mapping(cfg["activation"], "activation")
-    check(activation.get("kind") in ("Cron", "Callback"), "activation.kind: Invalid workflow initiator")
+    check(activation.get("kind") in get_args(ActivationKind), "activation.kind: Invalid workflow initiator")
     common = ["kind", "rule_id", "workflow_ref"]
     fields = (
         ["hook", "condition", "reaction"] if activation["kind"] == "Callback" else ["schedule", "timezone", "enabled"]

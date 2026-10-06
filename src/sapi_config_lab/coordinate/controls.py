@@ -13,14 +13,23 @@ from typing import Any
 import uuid
 
 from sapi_config_lab.coordinate.evaluation import contract_for, control_passed, upstream_evaluate
+from sapi_config_lab.coordinate.packages import job_seconds, verifier_bounds
 from sapi_config_lab.coordinate.provenance import host_environment
-from sapi_config_lab.coordinate.runs import Hosting, Run, run_experiment
+from sapi_config_lab.coordinate.runs import Hosting, Run, progress, run_experiment
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
-from sapi_config_lab.execute.host import LAB_IMAGE, build_image, run_logged
+from sapi_config_lab.execute.host import BUILD_TIMEOUT_SECONDS, LAB_IMAGE, build_image, run_logged
 from sapi_config_lab.execute.n8n import PINNED_N8N_VERSION
 from sapi_config_lab.paths import workspace_root
 
 ROOT = workspace_root()
+LOCAL_TESTS_SECONDS = 300
+TRANSPORT_SECONDS = 1800
+
+
+def suite_seconds(scenarios: tuple[str, ...]) -> int:
+    """Outer limit of the whole suite: its fixed steps plus the oracle and nop jobs."""
+    jobs = 2 * job_seconds(verifier_bounds(scenarios))
+    return LOCAL_TESTS_SECONDS + BUILD_TIMEOUT_SECONDS + TRANSPORT_SECONDS + jobs
 
 
 def simulated_hosting(scenarios: tuple[str, ...]) -> Hosting:
@@ -39,7 +48,9 @@ def transport_probe(run: Run) -> dict:
         ]
     )
     try:
-        exit_code = run_logged(["docker", "start", "--attach", name], run.output / "transport.log", timeout=1800)
+        exit_code = run_logged(
+            ["docker", "start", "--attach", name], run.output / "transport.log", timeout=TRANSPORT_SECONDS
+        )
         subprocess.check_call(["docker", "cp", name + ":/probe", str(run.output / "transport")])
     finally:
         subprocess.run(["docker", "rm", "--force", name], capture_output=True, check=False)
@@ -77,15 +88,15 @@ def main(argv: list[str] | None = None) -> int:
         report["docker_version"] = subprocess.check_output(
             ["docker", "version", "--format", "{{.Server.Version}}"], text=True
         ).strip()
-        print(f"Local regression tests; report directory: {run.output}", flush=True)
+        progress(f"local tests; report directory {run.output}")
         exit_code = run_logged(
             [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v", "-p", "test_*.py"],
             run.output / "local-tests.log",
-            timeout=300,
+            timeout=LOCAL_TESTS_SECONDS,
         )
         check("local_tests", exit_code == 0, exit_code=exit_code)
         if not args.skip_build:
-            print("Building isolated pinned n8n image", flush=True)
+            progress("image: building the isolated pinned n8n image")
             build_image(LAB_IMAGE, run.output / "image-build.log")
         run.use_image(LAB_IMAGE)
         (run.output / "runtime-versions.txt").write_text(
@@ -102,14 +113,15 @@ def main(argv: list[str] | None = None) -> int:
                 text=True,
             )
         )
-        print("Real n8n HTTP transport and rejection probes", flush=True)
+        progress("transport: real n8n HTTP transport and rejection probes")
         report["transport"] = transport_probe(run)
         check("real_n8n_transport", report["transport"]["exit_code"] == 0 and report["transport"].get("passed") is True)
+        progress(f"staging: {len(selected)} oracle task packages")
         run.stage("oracle", selected)
         hosting = simulated_hosting(selected)
         for agent in ("oracle", "nop"):
-            print(f"Harbor {agent}: {len(selected)} tasks through real n8n", flush=True)
-            exit_code, trials = run.harbor(agent, run.tasks, agent, timeout=2400, hosting=hosting)
+            progress(f"{agent}: {len(selected)} Harbor tasks through real n8n")
+            exit_code, trials = run.harbor(agent, run.tasks, agent, hosting=hosting)
             # An unscored upstream nop writes no reward, so Harbor reports a missing reward file.
             simulated_nop = agent == "nop" and any(SCENARIOS[t["task_name"]].evaluator == "upstream" for t in trials)
             passed = (
@@ -118,6 +130,7 @@ def main(argv: list[str] | None = None) -> int:
                 and all(control_passed(agent, trial) for trial in trials)
             )
             report[agent] = {"passed": passed, "harbor_exit_code": exit_code, "trials": trials}
+            progress(f"{agent}: {'passed' if passed else 'failed'}")
             check(f"harbor_{agent}", passed)
         report["status"] = "passed"
 
