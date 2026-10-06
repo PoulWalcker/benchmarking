@@ -51,7 +51,7 @@ module* needs no registration anywhere.
 ## Before anything: the catalog is closed
 
 A step may only use an operation registered in
-[`src/sapi_config_lab/core/bindings.yaml`](../src/sapi_config_lab/core/bindings.yaml).
+[`src/sapi_config_lab/bindings.yaml`](../src/sapi_config_lab/bindings.yaml).
 The validator rejects anything else before compilation:
 
 ```text
@@ -69,13 +69,13 @@ not available to lab scenarios.
 **If a new operation is genuinely needed**, it is a larger change than a
 scenario and does not belong in the same commit. It needs all of:
 
-1. A catalog entry in `core/bindings.yaml`: `kind` (`Script` or `LLM`), declared
+1. A catalog entry in `bindings.yaml`: `kind` (`Script` or `LLM`), declared
    `inputs` and `outputs`, and `implementation` (`local_js` or `agency_bridge`).
    An `LLM` operation also needs `prompt`, `output_contract`, `input_schema` and
    `output_schema` — the schemas are what the live transport enforces on the
    wrapper's answer.
 2. A deterministic implementation in
-   `src/sapi_config_lab/runtime/n8n/operations.js`. Stub and live transports are
+   `src/sapi_config_lab/compile/operations.js`. Stub and live transports are
    held to the same declared output contract, so the stub is not a toy: it is
    the reference behaviour the live path is checked against.
 3. An independent re-statement in `verification/` of whatever the operation now
@@ -87,7 +87,7 @@ changes future prompt hashes. Do not fold it into a scenario commit.
 ## The worked example
 
 The scenario below is deliberately plain: `tri-ledger-closeout`, a third ledger
-added to the shape of [`06-dual-ledger-closeout.yaml`](../configs/06-dual-ledger-closeout.yaml).
+added to the shape of [`06-dual-ledger-closeout`](../benchmarks/06-dual-ledger-closeout/config.yaml).
 It is Script-only, so every gate up to the Harbor run can be checked without
 Docker and without a model call. [LLM scenarios](#if-your-scenario-uses-an-llm-operation)
 need extra work, listed at the end.

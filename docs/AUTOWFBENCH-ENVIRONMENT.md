@@ -8,7 +8,7 @@ See [the source investigation](history/RESEARCH-AUTOWFBENCH.md) for the case and
 
 ## Source dependency
 
-`sapi_config_lab.runtime.autowfbench` reads the installed adjacent
+`sapi_config_lab.execute.autowfbench` reads the installed adjacent
 `autowfbench-source.json`. It records the upstream commit and SHA-256 of every
 tracked file. No upstream source is copied into the distributed lab package.
 The local ignored cache contains the original source, including evaluator files;
@@ -32,7 +32,7 @@ For an explicitly authorized first fetch:
 
 ```python
 from pathlib import Path
-from sapi_config_lab.runtime.autowfbench import fetch_source, verify_source
+from sapi_config_lab.execute.autowfbench import fetch_source, verify_source
 
 source = fetch_source(Path(".cache/autowfbench"))
 pin = verify_source(source)
@@ -45,7 +45,7 @@ upstream revision separately from its machine-specific path.
 ## Trusted lifecycle
 
 ```python
-from sapi_config_lab.runtime.autowfbench import start_environment
+from sapi_config_lab.execute.autowfbench import start_environment
 
 with start_environment(source, seed=0) as session:
     definition = session.definition

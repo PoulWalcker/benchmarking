@@ -19,15 +19,15 @@ executions with deterministic operation stubs. They do not start user services
 or install an operating-system Cron job.
 
 ```bash
-python -m sapi_config_lab.runtime.lifecycle --registry reports/my-lifecycle \
+python -m sapi_config_lab.coordinate.lifecycle --registry reports/my-lifecycle \
   register --config benchmarks/05-daily-digest/config.yaml
 
-python -m sapi_config_lab.runtime.lifecycle --registry reports/my-lifecycle \
+python -m sapi_config_lab.coordinate.lifecycle --registry reports/my-lifecycle \
   callback --workflow-id daily-digest --revision 1 --event-id initial-test
 
-python -m sapi_config_lab.runtime.lifecycle --registry reports/my-lifecycle status
+python -m sapi_config_lab.coordinate.lifecycle --registry reports/my-lifecycle status
 
-python -m sapi_config_lab.runtime.lifecycle --registry reports/my-lifecycle \
+python -m sapi_config_lab.coordinate.lifecycle --registry reports/my-lifecycle \
   serve --duration-seconds 180
 ```
 

@@ -30,14 +30,14 @@ SERIES=reports/my-expansion-series
 SCENARIO=dual-ledger-closeout
 RUN=reports/my-expansion-dual-ledger
 
-uv run --locked --extra harbor python -m sapi_config_lab.interfaces.generation.run \
+uv run --locked --extra harbor python -m sapi_config_lab.coordinate.generate \
   --scenario "$SCENARIO" --attempts 2 --series-dir "$SERIES" --report-dir "$RUN-generation"
 
-uv run --locked python -m sapi_config_lab.interfaces.replay \
+uv run --locked python -m sapi_config_lab.coordinate.replay \
   --scenario "$SCENARIO" --source-report "$RUN-generation/report.json" \
   --output "$RUN-selection.json"
 
-uv run --locked --extra harbor python -m sapi_config_lab.interfaces.live \
+uv run --locked --extra harbor python -m sapi_config_lab.coordinate.live \
   --scenario "$SCENARIO" --series-dir "$SERIES" \
   --stub-report "$RUN-generation/control/report.json" \
   --submissions-manifest "$RUN-selection.json" \
@@ -46,7 +46,7 @@ uv run --locked --extra harbor python -m sapi_config_lab.interfaces.live \
 ```
 
 The generation and live commands start Harbor, so they need the `harbor` extra;
-without it `core/host.py` stops with `Run uv sync --extra harbor`. The
+without it `execute/host.py` stops with `Run uv sync --extra harbor`. The
 replay command only validates recorded artifacts and does not need that extra.
 
 Choose new `SCENARIO` and `RUN` values for the next row only after the preceding
