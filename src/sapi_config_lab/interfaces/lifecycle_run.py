@@ -53,7 +53,18 @@ def read_json(path):
 
 
 class LifecycleSeries:
-    """A process-exclusive, fsynced 1+2+6 series; unknown work cannot resume."""
+    """A process-exclusive, fsynced 1+2+6 series; unknown work cannot resume.
+
+    Not an ExpansionSeries under another vocabulary. That ledger admits against a
+    plan enumerated up front and refuses past a spend ceiling; here the ceiling is
+    recorded for the report and never compared, the bound being the per-phase
+    POLICY cap, and the admissible sequence is a pattern over event kinds whose
+    length the run decides. Expansion latches a failure and fails closed on it; a
+    grant here has no failed state at all, and unresolved work blocks as unknown.
+    Expansion releases its lock between calls, this one holds it for the session.
+    A shared base could carry only the directory and the path -- the admission
+    rules, the failure semantics and the recorded bytes are all different.
+    """
 
     def __init__(self, directory: Path):
         self.directory = Path(directory).resolve()
