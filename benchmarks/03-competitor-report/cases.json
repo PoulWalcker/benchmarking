@@ -1,0 +1,84 @@
+{
+  "positive": [
+    {
+      "name": "original-evidence",
+      "inputs": {
+        "product_material": "Product has invoicing, stock tracking and a public API.",
+        "marketing_material": "Marketing targets small shops using webinars and partner referrals."
+      },
+      "report_anchors": [
+        [
+          "invoic"
+        ],
+        [
+          "stock",
+          "inventory"
+        ],
+        [
+          "\\bapi\\b",
+          "application programming interface"
+        ],
+        [
+          "small shops",
+          "small retail",
+          "small business"
+        ],
+        [
+          "webinar"
+        ],
+        [
+          "partner",
+          "referral"
+        ]
+      ]
+    },
+    {
+      "name": "unseen-source-markers",
+      "inputs": {
+        "product_material": "P-ALPHA-73: Offline inventory includes barcode scanning and CSV export.",
+        "marketing_material": "M-BETA-91: Rural cooperatives hear about the service through printed catalogues."
+      },
+      "report_anchors": [
+        [
+          "offline"
+        ],
+        [
+          "barcode"
+        ],
+        [
+          "\\bcsv\\b",
+          "comma.separated"
+        ],
+        [
+          "cooperativ"
+        ],
+        [
+          "catalog",
+          "catalogu"
+        ]
+      ]
+    }
+  ],
+  "negative": [
+    {
+      "name": "missing-product",
+      "inputs": {
+        "product_material": "",
+        "marketing_material": "M: local shops through referrals."
+      },
+      "error": "Missing product material",
+      "operation": "research.product",
+      "schema_error": "Schema violation at inputs.material"
+    },
+    {
+      "name": "missing-marketing",
+      "inputs": {
+        "product_material": "P: barcode inventory.",
+        "marketing_material": ""
+      },
+      "error": "Missing marketing material",
+      "operation": "research.marketing",
+      "schema_error": "Schema violation at inputs.material"
+    }
+  ]
+}

@@ -45,7 +45,7 @@ class RecordingBackend:
 
 class BackendContractTests(unittest.TestCase):
     def setUp(self):
-        self.config = profile.read(workspace_root() / "configs/01-invoice-total.yaml")
+        self.config = profile.read(workspace_root() / "benchmarks/01-invoice-total/config.yaml")
 
     def test_runner_uses_injected_backend_and_leaves_acceptance_unevaluated(self):
         backend = RecordingBackend()
@@ -91,7 +91,7 @@ class BackendContractTests(unittest.TestCase):
         backend = RecordingBackend()
         with tempfile.TemporaryDirectory() as directory, contextlib.redirect_stdout(io.StringIO()):
             output = Path(directory) / "compiled.json"
-            config = str(workspace_root() / "configs/01-invoice-total.yaml")
+            config = str(workspace_root() / "benchmarks/01-invoice-total/config.yaml")
             self.assertEqual(cli.main(["compile", config, "--output", str(output)], backend=backend), 0)
             self.assertEqual(json.loads(output.read_text()), {"test_document": True})
             self.assertEqual(
@@ -128,10 +128,10 @@ class BackendContractTests(unittest.TestCase):
     def test_n8n_adapter_preserves_supported_and_unsupported_profile(self):
         backend = N8nBackend()
         bindings = profile.read_bindings(CATALOG)
-        for path in sorted((workspace_root() / "configs").glob("*.yaml")):
+        for path in sorted((workspace_root() / "benchmarks").glob("*/config.yaml")):
             config = profile.read(path)
-            with self.subTest(config=path.name):
-                if path.name != "05-digest-lifecycle.yaml":
+            with self.subTest(config=path.parent.name):
+                if path.parent.name != "05-daily-digest":
                     compiled = backend.compile(config, bindings, CompileOptions())
                     self.assertEqual(compiled.engine, "n8n")
                     attempts = config["execution"].get("refinement", {}).get("max_attempts", 1)

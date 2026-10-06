@@ -8,6 +8,7 @@ from unittest.mock import patch
 from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.execute.agency import ContractError, DispatchAudit, execute
 from sapi_config_lab.profile import read_bindings
+from sapi_config_lab.coordinate.scenarios import all_cases
 
 
 class OccurrenceBudgetTests(unittest.TestCase):
@@ -58,17 +59,14 @@ class OccurrenceBudgetTests(unittest.TestCase):
                     dispatch.assert_not_called()
 
     def test_named_case_admission_covers_all_seventeen_expected_occurrences(self):
-        import json
         from sapi_config_lab.coordinate.live_evidence import case_budget
-        from sapi_config_lab.paths import workspace_root
         from sapi_config_lab.coordinate.scenarios import EXPANSION_SCENARIOS
         from sapi_config_lab.profile import read
 
-        root = workspace_root()
-        cases = json.loads((root / "verification/cases.json").read_text())
+        cases = all_cases()
         counts = []
-        for scenario, filename in EXPANSION_SCENARIOS.items():
-            config = read(root / "configs" / filename)
+        for scenario, definition in EXPANSION_SCENARIOS.items():
+            config = read(definition.config)
             for name in cases[scenario]["live_cases"]:
                 config["workflow"]["inputs"] = next(
                     case["inputs"] for case in cases[scenario]["positive"] if case["name"] == name

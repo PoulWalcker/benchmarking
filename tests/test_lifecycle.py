@@ -49,7 +49,7 @@ class DigestBackend:
 
 class LifecycleTests(unittest.TestCase):
     def setUp(self):
-        self.config = profile.read(workspace_root() / "configs/05-digest-lifecycle.yaml")
+        self.config = profile.read(workspace_root() / "benchmarks/05-daily-digest/config.yaml")
         self.backend = DigestBackend()
 
     def test_callback_releases_exact_tested_definition_and_duplicate_survives_restart(self):

@@ -45,29 +45,21 @@ def stage_tasks(
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=False)
     templates = root / "harbor/templates"
-    cases = json.loads((root / "verification/cases.json").read_text())
-    descriptions = json.loads((root / "generation/tasks.json").read_text())
-    descriptions.update(json.loads((root / "generation/lifecycle-task.json").read_text()))
-    cases.update(json.loads((root / "generation/lifecycle-cases.json").read_text()))
     hashes = {}
-    for scenario, filename in selected.items():
+    for scenario, definition in selected.items():
         task = destination / scenario
         (task / "environment").mkdir(parents=True)
         (task / "tests").mkdir()
         if mode == "generation":
+            extension = definition.prompt_extension
             instruction = (
                 "TASK\n"
-                + descriptions[scenario]
+                + definition.task()
                 + "\n\nFORMAT\n"
                 + (root / "generation/FORMAT.md").read_text()
                 + (
-                    "\n\nTASK-SPECIFIC REFINEMENT EXTENSION\n" + (root / "generation/REFINEMENT.md").read_text()
-                    if scenario == "revise-answer"
-                    else ""
-                )
-                + (
-                    "\n\nTASK-SPECIFIC LIFECYCLE EXTENSION\n" + (root / "generation/LIFECYCLE.md").read_text()
-                    if scenario == "daily-digest"
+                    f"\n\n{extension}\n" + (definition.directory / "prompt-extension.md").read_text()
+                    if extension
                     else ""
                 )
                 + "\n\nPROFILE\n"
@@ -77,14 +69,14 @@ def stage_tasks(
             )
             dockerfile = (
                 f"FROM {image}\nUSER root\nWORKDIR /app\n"
-                "RUN rm -rf /app/lab/configs /app/scenario /app/submission "
+                "RUN rm -rf /app/lab/benchmarks /app/scenario /app/submission "
                 "&& mkdir -p /app/submission\n"
             )
         else:
-            instruction = (root / "harbor/tasks" / scenario / "instruction.md").read_text()
+            instruction = (definition.directory / "instruction.md").read_text()
             (task / "solution").mkdir()
             shutil.copyfile(templates / "solve.sh", task / "solution/solve.sh")
-            source = Path(submissions[scenario]["path"]) if mode == "replay" else root / "configs" / filename
+            source = Path(submissions[scenario]["path"]) if mode == "replay" else definition.config
             shutil.copyfile(source, task / "environment/base.yaml")
             if mode == "replay" and sha256(task / "environment/base.yaml") != submissions[scenario]["sha256"]:
                 raise ValueError("Staged replay submission hash mismatch")
@@ -116,5 +108,5 @@ def stage_tasks(
             if sha256(case_path) != submissions[scenario]["cases_sha256"]:
                 raise ValueError("Staged replay fixture hash mismatch")
         else:
-            write_json(case_path, {scenario: cases[scenario]})
+            write_json(case_path, {scenario: definition.cases()})
     return hashes

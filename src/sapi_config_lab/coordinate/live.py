@@ -582,8 +582,8 @@ def main(argv: list[str] | None = None):
             report["selection_sha256"] = sha256(args.submissions_manifest)
         else:
             submissions = {
-                scenario: {"path": ROOT / "configs" / filename, "sha256": sha256(ROOT / "configs" / filename)}
-                for scenario, filename in SCENARIOS.items()
+                scenario: {"path": definition.config, "sha256": sha256(definition.config)}
+                for scenario, definition in SCENARIOS.items()
             }
         if args.wrapper_evidence:
             report["wrapper_identity"] = wrapper_identity(args.wrapper_evidence, args.upstream)

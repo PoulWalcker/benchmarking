@@ -382,7 +382,7 @@ def main(argv=None) -> int:
             if not 1 <= args.seconds <= 3600:
                 parser.error("--seconds must be between one second and one hour")
             state = args.state_dir or workspace_root() / "var/ui"
-            configs = sorted((workspace_root() / "configs").glob("*.yaml")) if args.all else [args.config]
+            configs = sorted((workspace_root() / "benchmarks").glob("*/config.yaml")) if args.all else [args.config]
             evidence = None
             if args.live:
                 # Finish local compile/validation before contacting Docker or

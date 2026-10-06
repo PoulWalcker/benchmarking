@@ -12,7 +12,7 @@ from verification.extensions import check_refinement_history, review_reply, veri
 
 def evidence(texts, *, mode="live", maximum=3, limit=280):
     """Construct evidence independently, without compiler/controller/operation code."""
-    config = yaml.safe_load((Path(__file__).parents[1] / "configs/04-revise-answer.yaml").read_text())
+    config = yaml.safe_load((Path(__file__).parents[1] / "benchmarks/04-revise-answer/config.yaml").read_text())
     config["execution"]["refinement"]["max_attempts"] = maximum
     config["workflow"]["inputs"]["max_characters"] = limit
     run = {

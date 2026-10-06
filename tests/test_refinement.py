@@ -14,7 +14,7 @@ from sapi_config_lab import profile
 
 class RefinementTests(unittest.TestCase):
     def setUp(self):
-        self.config = profile.read(workspace_root() / "configs/04-revise-answer.yaml")
+        self.config = profile.read(workspace_root() / "benchmarks/04-revise-answer/config.yaml")
         self.bindings = profile.read_bindings(CATALOG)
 
     def run_export(self, config=None, mutate=None):
@@ -66,7 +66,7 @@ class RefinementTests(unittest.TestCase):
         self.assertEqual(attempts[2]["runtime"]["feedback"], ["Shorten the reply"])
 
     def test_generic_lowering_also_handles_a_script_only_workflow(self):
-        config = profile.read(workspace_root() / "configs/01-invoice-total.yaml")
+        config = profile.read(workspace_root() / "benchmarks/01-invoice-total/config.yaml")
         config["execution"]["refinement"] = {
             "region": [s["id"] for s in config["workflow"]["steps"]],
             "initial_state": {},

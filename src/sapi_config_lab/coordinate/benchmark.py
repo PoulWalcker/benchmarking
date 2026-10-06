@@ -365,7 +365,7 @@ def native_trial(directory, source, contract, mode, wrapper, config, *, seed=0):
             (ROOT / "harbor/templates/task.toml").read_text().replace("invoice-total", definition.challenge_id)
         )
         (task / "environment/Dockerfile").write_text(
-            f"FROM {IMAGE}\nUSER root\nRUN rm -rf /app/lab/configs /app/scenario "
+            f"FROM {IMAGE}\nUSER root\nRUN rm -rf /app/lab/benchmarks /app/scenario "
             f"{oracle_scrub()} && mkdir -p /app/submission\n"
         )
         if config is not None:

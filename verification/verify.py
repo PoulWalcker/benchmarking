@@ -18,8 +18,6 @@ from pathlib import Path
 
 import yaml
 
-from sapi_config_lab.coordinate.scenarios import SCENARIOS
-
 if TYPE_CHECKING or __package__:
     from .business import check_business_result
     from .extensions import refinement_corruptions, verify_refinement
@@ -209,13 +207,18 @@ def verify_submission(
     *,
     runner=None,
     judge: Judge | None = None,
+    cases: dict | None = None,
 ) -> dict:
+    """`cases` is this scenario's fixture set; in a task package it is the
+    cases.json staged beside this file, which holds only this scenario."""
+    if cases is None:
+        cases = json.loads((Path(__file__).parent / "cases.json").read_text()).get(scenario)
     if scenario == "daily-digest":
         if TYPE_CHECKING or __package__:
             from .lifecycle_submission import verify_submission as verify_digest
         else:
             from lifecycle_submission import verify_submission as verify_digest
-        return verify_digest(config_path, report_dir, mode=mode)
+        return verify_digest(config_path, report_dir, mode=mode, cases=cases)
     report_dir.mkdir(parents=True, exist_ok=True)
     # Declared outside the try: a submission that is rejected part way through
     # still says how far the engine got and which obligations were measured.
@@ -234,7 +237,8 @@ def verify_submission(
         ],
     }
     try:
-        require(scenario in SCENARIOS, "Unknown acceptance scenario")
+        require(isinstance(cases, dict), "Unknown acceptance scenario")
+        assert cases is not None
         submission = config_path.read_bytes()
         report["submission_sha256"] = hashlib.sha256(submission).hexdigest()
         (report_dir / "submission.yaml").write_bytes(submission)
@@ -252,7 +256,6 @@ def verify_submission(
             from sapi_config_lab.coordinate.cases import run_case
 
             runner = run_case
-        cases = json.loads((Path(__file__).parent / "cases.json").read_text())[scenario]
         for kind in ("positive", "negative"):
             if mode == "live" and kind == "negative":
                 continue  # live schema failures are a separate bridge test, not this stub diagnostic contract
@@ -418,7 +421,7 @@ def verify_submission(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--scenario", choices=sorted(SCENARIOS), required=True)
+    parser.add_argument("--scenario", required=True)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--report-dir", type=Path, required=True)
     parser.add_argument("--mode", choices=["stub", "live"], default=os.environ.get("SAPI_LLM_MODE", "stub"))

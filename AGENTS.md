@@ -29,7 +29,7 @@ case through compile then execute; `backend.py` composes the n8n backend;
 `controls.py` is the unpaid oracle/nop suite; `generate.py`, `live.py` and
 `benchmark.py` are the paid tracks; `lifecycle.py` is the durable controller;
 `packages.py` assembles Harbor task packages.
-| Benchmark definitions | `benchmarks/<scenario>/` | data only |
+| Benchmark definitions | `benchmarks/NN-<scenario>/` | data only |
 
 `tests/test_boundaries.py` enforces this table: `STAGES` assigns every module to
 one stage, `ALLOWED` is the table's last column, and only coordination may load
@@ -52,8 +52,9 @@ the table and the test together, never one alone.
   (`acceptance.json`, `evaluation.json`, `report.json`) beside it, naming the
   evidence it read; corruption probes mutate copies.
 - **Evaluator-only material** (`benchmarks/*/cases.json`, reference
-  `config.yaml`, verifier code) never reaches a candidate agent's container.
-  Generation packages are checked for this in `tests/test_packaging.py`.
+  `config.yaml`, verifier code) never reaches a candidate agent's container:
+  `.dockerignore` keeps fixtures out of the image, and generation packages
+  delete `/app/lab/benchmarks`. `tests/test_packaging.py` checks both.
 - **Independent verification is not duplication.** The verifier recomputes
   expected answers in plain Python and must not import the compiler, operations
   or runtime. Do not "deduplicate" it against the workflow implementation.
@@ -63,8 +64,10 @@ the table and the test together, never one alone.
 
 ## Adding a scenario
 
-See `docs/AUTHORING.md`. A scenario is a `benchmarks/<scenario>/` directory plus
-its role contract and business check in `verification/`.
+A scenario is one `benchmarks/NN-<scenario>/` directory (reference
+`config.yaml`, public `task.md`, container `instruction.md`, evaluator-only
+`cases.json`, `scenario.json`) plus its role contract and business check in
+`verification/`. Nothing else registers it. See `docs/AUTHORING.md`.
 
 ## Never change
 

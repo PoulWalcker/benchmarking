@@ -18,15 +18,10 @@ import secrets
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.evidence import json_text
 from sapi_config_lab.coordinate.replay import read_json, require
-from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.coordinate.scenarios import EXPANSION_SCENARIOS
+from sapi_config_lab.coordinate.scenarios import EXPANSION_SCENARIOS, EXTENSION_SCENARIOS
 
-RUNTIME_CAPS = {
-    "dual-ledger-closeout": {"base-ledgers": 0, "alternate-ledgers": 0},
-    "support-review-packet": {"high-packet": 2, "normal-packet": 2},
-    "bulletin-market-brief": {"base-bulletins": 4, "alternate-bulletins": 4},
-    "priority-support-brief": {"high-brief": 4, "normal-empty": 1},
-}
+# Live case name -> model-call ceiling, from each benchmark's scenario.json.
+RUNTIME_CAPS = {name: scenario.runtime_caps for name, scenario in EXPANSION_SCENARIOS.items()}
 
 
 def select_series_scenarios(scenarios: tuple[str, ...] | None = None) -> tuple[str, ...]:
@@ -64,7 +59,7 @@ def _serialized(method):
 def fresh_case_overlay(scenario: str) -> dict:
     """Fresh public-contract values after prompt freeze; no new acceptance rules."""
     require(scenario in EXPANSION_SCENARIOS, "Unknown expansion fixture scenario")
-    canonical = read_json(workspace_root() / "verification/cases.json")[scenario]
+    canonical = EXPANSION_SCENARIOS[scenario].cases()
     cases = copy.deepcopy(canonical)
     token = secrets.token_hex(6).upper()
     increment = secrets.randbelow(400) + 31
@@ -265,7 +260,7 @@ class RefinementSeries(ExpansionSeries):
 
     schema = "sapi-lab-refinement-series/v1"
     authoring_attempts = 3
-    runtime_caps = {"revise-answer": {"valid-reply": 3, "impossible-limit": 3}}
+    runtime_caps = {name: scenario.runtime_caps for name, scenario in EXTENSION_SCENARIOS.items()}
 
     @staticmethod
     def select(scenarios: tuple[str, ...] | None = None) -> tuple[str, ...]:

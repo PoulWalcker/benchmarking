@@ -13,6 +13,7 @@ from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.provenance import source_manifest as inventory
 from sapi_config_lab.coordinate.scenarios import BASELINE_SCENARIOS as SCENARIOS
 from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.coordinate.scenarios import all_cases
 
 ROOT = workspace_root()
 
@@ -46,15 +47,13 @@ class PackagingTests(unittest.TestCase):
                     workspace_root()
 
     def test_oracle_packages_take_current_sources_and_only_own_cases(self):
-        source_cases = json.loads((ROOT / "verification/cases.json").read_text())
+        source_cases = all_cases()
         with tempfile.TemporaryDirectory() as directory:
             destination = Path(directory) / "tasks"
             stage_tasks(destination)
-            for name, config in SCENARIOS.items():
+            for name, definition in SCENARIOS.items():
                 task = destination / name
-                self.assertEqual(
-                    (task / "environment/base.yaml").read_bytes(), (ROOT / "configs" / config).read_bytes()
-                )
+                self.assertEqual((task / "environment/base.yaml").read_bytes(), definition.config.read_bytes())
                 self.assertEqual(
                     (task / "tests/verify.py").read_bytes(), (ROOT / "verification/verify.py").read_bytes()
                 )
@@ -74,7 +73,7 @@ class PackagingTests(unittest.TestCase):
             stage_tasks(destination, mode="generation")
             for task in destination.iterdir():
                 dockerfile = (task / "environment/Dockerfile").read_text()
-                self.assertIn("rm -rf /app/lab/configs /app/scenario /app/submission", dockerfile)
+                self.assertIn("rm -rf /app/lab/benchmarks /app/scenario /app/submission", dockerfile)
                 self.assertEqual(set(json.loads((task / "tests/cases.json").read_text())), {task.name})
                 self.assertFalse((task / "solution").exists())
                 self.assertEqual(list(task.rglob("*.yaml")), [])
@@ -109,6 +108,21 @@ class PackagingTests(unittest.TestCase):
             (root / public[0]).write_text("changed behavior")
             self.assertNotEqual(inventory(root), before)
 
+    def test_every_benchmark_is_complete_and_its_fixtures_stay_out_of_the_image(self):
+        from sapi_config_lab.coordinate.scenarios import SCENARIOS as ALL
+
+        self.assertEqual(len(ALL), len(list((ROOT / "benchmarks").glob("*/scenario.json"))))
+        for name, definition in ALL.items():
+            for required in ("config.yaml", "task.md", "instruction.md", "cases.json"):
+                self.assertTrue((definition.directory / required).is_file(), (name, required))
+            self.assertIn("positive", definition.cases())
+            if definition.runtime_caps:
+                self.assertEqual(list(definition.runtime_caps), definition.cases()["live_cases"], name)
+        # The lab image copies benchmarks/ for its reference configs; cases.json is
+        # evaluator-only and reaches a container only as a staged tests/ file.
+        self.assertIn("COPY benchmarks /app/lab/benchmarks/", (ROOT / "infra/Dockerfile").read_text())
+        self.assertIn("benchmarks/*/cases.json", (ROOT / ".dockerignore").read_text().splitlines())
+
     def test_agent_image_still_deletes_every_scoring_oracle_module(self):
         # rm -rf exits 0 on a missing path, so a stale entry would leave the oracle
         # readable inside the agent's container and nothing at run time would say so.
@@ -128,14 +142,16 @@ class PackagingTests(unittest.TestCase):
             calls.append(config)
             return {"status": "success", "output": {"total_minor": 999}, "mapping": {}}
 
-        cases = json.loads((ROOT / "verification/cases.json").read_text())["invoice-total"]["positive"]
+        fixtures = all_cases()["invoice-total"]
+        cases = fixtures["positive"]
         with tempfile.TemporaryDirectory() as directory:
             result = verifier.verify_submission(
                 "invoice-total",
-                ROOT / "configs/01-invoice-total.yaml",
+                ROOT / "benchmarks/01-invoice-total/config.yaml",
                 Path(directory),
                 selected_case=cases[0]["name"],
                 runner=runner,
+                cases=fixtures,
             )
             self.assertFalse(result["passed"])
             self.assertEqual(len(calls), 1)

@@ -73,7 +73,7 @@ class UiTests(unittest.TestCase):
                 main(
                     [
                         "open",
-                        str(workspace_root() / "configs/04-revise-answer.yaml"),
+                        str(workspace_root() / "benchmarks/04-revise-answer/config.yaml"),
                         "--live",
                         "--state-dir",
                         temporary,
@@ -84,7 +84,7 @@ class UiTests(unittest.TestCase):
     def test_open_reuses_post_import_identity_and_preserves_user_edits(self):
         adapter = FakeN8n()
         original = copy.deepcopy(adapter.rows)
-        source = workspace_root() / "configs/09-priority-support-brief.yaml"
+        source = workspace_root() / "benchmarks/09-priority-support-brief/config.yaml"
         with tempfile.TemporaryDirectory() as temporary:
             state = Path(temporary)
             first = open_workflow(source, state, adapter=adapter)
@@ -116,7 +116,7 @@ class UiTests(unittest.TestCase):
         adapter = FakeN8n()
         with tempfile.TemporaryDirectory() as temporary:
             state = Path(temporary)
-            source = workspace_root() / "configs/01-invoice-total.yaml"
+            source = workspace_root() / "benchmarks/01-invoice-total/config.yaml"
             with patch.object(adapter, "import_new", side_effect=ValueError("unknown import outcome")):
                 with self.assertRaisesRegex(ValueError, "unknown import"):
                     open_workflow(source, state, adapter=adapter)
@@ -144,7 +144,7 @@ class UiTests(unittest.TestCase):
 
     def test_live_open_creates_fresh_copy_with_exact_overlay_and_derived_cap(self):
         adapter = FakeN8n()
-        source = workspace_root() / "configs/04-revise-answer.yaml"
+        source = workspace_root() / "benchmarks/04-revise-answer/config.yaml"
         with tempfile.TemporaryDirectory() as temporary:
             state = Path(temporary)
             with (
@@ -201,7 +201,7 @@ class UiTests(unittest.TestCase):
             request.assert_not_called()
 
     def test_preparing_a_live_graph_freezes_exact_inputs_and_a_single_run_cap(self):
-        source = workspace_root() / "configs/09-priority-support-brief.yaml"
+        source = workspace_root() / "benchmarks/09-priority-support-brief/config.yaml"
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "run"
             prepared = prepare(source, output, port=18766)
@@ -231,7 +231,7 @@ class UiTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "run"
-            prepare(workspace_root() / "configs/09-priority-support-brief.yaml", output)
+            prepare(workspace_root() / "benchmarks/09-priority-support-brief/config.yaml", output)
             with self.assertRaisesRegex(ValueError, "cap"):
                 admit(output, max_attempts=5, seconds=600)
             self.assertFalse((output / "budget.json").exists())

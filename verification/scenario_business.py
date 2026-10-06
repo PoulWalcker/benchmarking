@@ -96,12 +96,16 @@ def _facts(text: str, anchors: list, label: str, forbidden: list | tuple = ()) -
         require(not re.search(pattern, text, re.IGNORECASE), label + " invented a controlled absent fact: " + pattern)
 
 
-def _fact_contract(scenario: str, inputs: dict[str, Any], case: dict | None) -> dict:
-    """The frozen fixture these inputs came from, which states the required facts."""
+def fact_contract(scenario: str, inputs: dict[str, Any], case: dict | None) -> dict:
+    """The frozen fixture these inputs came from, which states the required facts.
+
+    Without an explicit case, look the inputs up in the staged cases.json.
+    """
     if case is not None:
         equal(case.get("inputs"), inputs, "Independent fixture inputs differ")
         return case
-    fixtures = json.loads((Path(__file__).parent / "cases.json").read_text())[scenario]["positive"]
+    staged = Path(__file__).parent / "cases.json"
+    fixtures = json.loads(staged.read_text())[scenario]["positive"] if staged.exists() else []
     matches = [item for item in fixtures if item["inputs"] == inputs]
     require(matches, "No independent source fact contract for these inputs")
     return matches[0]
@@ -163,7 +167,7 @@ def _research(
 
 def _digest(inputs: dict[str, Any], observation: WorkflowObservation, case: dict | None) -> dict:
     """The digest lists exactly the supplied articles, once each, and changed none."""
-    _fact_contract("bulletin-market-brief", inputs, case)
+    fact_contract("bulletin-market-brief", inputs, case)
     equal(_occurrence(observation, "prepare"), {"articles": inputs["articles"]}, "Preparation changed articles")
     digest = _occurrence(observation, "summarize")
     require(set(digest) == {"text", "article_ids"}, "Invalid digest fields")
@@ -176,7 +180,7 @@ def _digest(inputs: dict[str, Any], observation: WorkflowObservation, case: dict
 
 def _digest_facts(inputs: dict[str, Any], observation: WorkflowObservation, case: dict | None) -> dict:
     """The digest text states the facts the supplied articles require of it."""
-    fixture = _fact_contract("bulletin-market-brief", inputs, case)
+    fixture = fact_contract("bulletin-market-brief", inputs, case)
     digest = _occurrence(observation, "summarize")
     _facts(digest["text"], fixture["product_anchors"], "digest", fixture.get("forbidden_anchors", []))
     return digest
@@ -202,7 +206,7 @@ def _actors(observation: WorkflowObservation) -> dict:
 
 def _bulletin_brief(inputs: dict[str, Any], observation: WorkflowObservation, case: dict | None, mode: str) -> dict:
     """The brief merges the run's own digest with the supplied marketing material."""
-    fixture = _fact_contract("bulletin-market-brief", inputs, case)
+    fixture = fact_contract("bulletin-market-brief", inputs, case)
     digest = _occurrence(observation, "summarize")
     return _research(observation, digest["text"], inputs["marketing_material"], fixture, mode)
 
@@ -217,7 +221,7 @@ def _priority_research(
             observation,
             inputs["product_material"],
             inputs["marketing_material"],
-            _fact_contract("priority-support-brief", inputs, case),
+            fact_contract("priority-support-brief", inputs, case),
             mode,
         )
     for role in ("product", "marketing", "combine", "write"):

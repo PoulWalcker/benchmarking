@@ -13,7 +13,7 @@ ROOT = workspace_root()
 
 class OccurrenceTests(unittest.TestCase):
     def test_cycle_control_uses_graph_edges_when_steps_are_reordered(self):
-        config = read(ROOT / "configs/03-competitor-report.yaml")
+        config = read(ROOT / "benchmarks/03-competitor-report/config.yaml")
         config["workflow"]["steps"].reverse()
         bad = dict(invalid_configs(config))["cycle"]
         with self.assertRaisesRegex(Invalid, "Cyclic|cycle|Cycle"):
@@ -22,7 +22,7 @@ class OccurrenceTests(unittest.TestCase):
     def test_role_binding_accepts_renamed_ids_but_rejects_wrong_input_origin(self):
         from verification.roles import bind_roles
 
-        config = read(ROOT / "configs/01-invoice-total.yaml")
+        config = read(ROOT / "benchmarks/01-invoice-total/config.yaml")
         config["workflow"]["steps"].reverse()
         config = _rename(config, {"validate": "alpha", "total": "beta", "report": "gamma"})
         self.assertEqual(bind_roles("invoice-total", config), {"validate": "alpha", "total": "beta", "report": "gamma"})
@@ -73,7 +73,7 @@ def ledger_record():
     """Small worked ledger example encoded as fabricated native envelopes."""
     from tests.test_verification_contract import invoice_record
 
-    config = read(ROOT / "configs/06-dual-ledger-closeout.yaml")
+    config = read(ROOT / "benchmarks/06-dual-ledger-closeout/config.yaml")
     inputs = {
         "domestic_invoices": [{"id": "D", "amount_minor": 7, "currency": "AED"}],
         "export_invoices": [{"id": "X", "amount_minor": 13, "currency": "EUR"}],

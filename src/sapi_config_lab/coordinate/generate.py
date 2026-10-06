@@ -240,7 +240,7 @@ def main(argv: list[str] | None = None):
             # Freeze every author-visible byte before producing fresh evaluation inputs.
             write_json(output / "frozen-prompts.json", report["prompt_sha256"])
             private_cases = (
-                {scenarios[0]: json.loads((ROOT / "verification/cases.json").read_text())[scenarios[0]]}
+                {scenarios[0]: EXTENSION_SCENARIOS[scenarios[0]].cases()}
                 if refinement
                 else fresh_case_overlay(scenarios[0])
             )

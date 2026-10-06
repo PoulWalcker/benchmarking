@@ -18,7 +18,7 @@ class LabTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.bindings = profile.read(CATALOG)["operations"]
-        cls.configs = [profile.read(p) for p in sorted((ROOT / "configs").glob("*.yaml"))]
+        cls.configs = [profile.read(p) for p in sorted((ROOT / "benchmarks").glob("*/config.yaml"))]
 
     def run_config(self, index, inputs=None, mutate_export=None):
         artifact, _ = compiler.compile_n8n(copy.deepcopy(self.configs[index]), self.bindings)

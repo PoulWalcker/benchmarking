@@ -10,7 +10,7 @@ import sys
 
 from sapi_config_lab.paths import workspace_root
 
-SOURCE_DIRECTORIES = ("src", "tests", "configs", "docs", "generation", "infra", "verification", "harbor", ".github")
+SOURCE_DIRECTORIES = ("src", "tests", "benchmarks", "docs", "generation", "infra", "verification", "harbor", ".github")
 SOURCE_FILES = (
     "pyproject.toml",
     "uv.lock",

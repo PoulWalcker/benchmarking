@@ -23,3 +23,5 @@ reviews/
 .env
 .env.*
 .DS_Store
+# Evaluator-only fixtures never enter an image a candidate runs in.
+benchmarks/*/cases.json

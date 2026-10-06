@@ -48,9 +48,7 @@ KNOWN_VIOLATIONS = {
     ("verification.lifecycle_submission", "profile"),
     ("verification.lifecycle_submission", "coordinate.provenance"),
     ("verification.lifecycle_submission", "evidence"),
-    ("verification.lifecycle_submission", "paths"),
     ("verification.lifecycle_submission", "coordinate.lifecycle"),
-    ("verification.verify", "coordinate.scenarios"),
     ("verification.verify", "coordinate.cases"),
 }
 

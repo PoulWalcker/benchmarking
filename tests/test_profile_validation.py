@@ -12,7 +12,7 @@ from sapi_config_lab import profile
 class ProfileValidationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.config = profile.read(workspace_root() / "configs/03-competitor-report.yaml")
+        cls.config = profile.read(workspace_root() / "benchmarks/03-competitor-report/config.yaml")
         cls.bindings = profile.read_bindings(CATALOG)
 
     def test_invalid_shapes_report_the_offending_field(self):
@@ -83,7 +83,7 @@ class ProfileValidationTests(unittest.TestCase):
             ("05-scheduled-digest.yaml", ("lifecycle", "on_test_pass"), None, "lifecycle.on_test_pass"),
         ]:
             # Match the existing example names without coupling to editorial stems.
-            path = next((workspace_root() / "configs").glob(filename[:2] + "*.yaml"))
+            path = next((workspace_root() / "benchmarks").glob(filename[:2] + "-*/config.yaml"))
             config = profile.read(path)
             target = config
             for key in route[:-1]:

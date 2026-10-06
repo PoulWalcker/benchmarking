@@ -12,15 +12,15 @@ restates the other's rule.
 """
 
 from collections.abc import Callable
-import json
 import re
-from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING or __package__:
-    from .contracts import Rejected, WorkflowObservation, equal, require
+    from .contracts import WorkflowObservation, equal, require
+    from .scenario_business import fact_contract
 else:  # Harbor runs the distributed verifier as a standalone script.
-    from contracts import Rejected, WorkflowObservation, equal, require
+    from contracts import WorkflowObservation, equal, require
+    from scenario_business import fact_contract
 
 OPERATIONS = {
     "invoice-total": ["invoices.validate", "invoices.sum", "invoices.report"],
@@ -185,13 +185,12 @@ def _report_excerpts(observation: WorkflowObservation) -> dict[str, Any]:
     return output
 
 
-def _report_facts(inputs: dict[str, Any], observation: WorkflowObservation, mode: str) -> dict[str, Any]:
+def _report_facts(
+    inputs: dict[str, Any], observation: WorkflowObservation, mode: str, case: dict | None
+) -> dict[str, Any]:
     """The report states the facts the frozen contract requires of these sources."""
     output = observation.final["output"]
-    fixtures = json.loads((Path(__file__).parent / "cases.json").read_text())["competitor-report"]["positive"]
-    fixture = next((case for case in fixtures if case["inputs"] == inputs), None)
-    if fixture is None:
-        raise Rejected("No independent report fact contract for these source materials")
+    fixture = fact_contract("competitor-report", inputs, case)
     for alternatives in fixture["report_anchors"]:
         require(
             any(re.search(pattern, output["report"], re.IGNORECASE) for pattern in alternatives),
@@ -208,7 +207,7 @@ def _report_facts(inputs: dict[str, Any], observation: WorkflowObservation, mode
 
 
 def competitor_report_obligations(
-    inputs: dict[str, Any], observation: WorkflowObservation, *, mode: str = "live"
+    inputs: dict[str, Any], observation: WorkflowObservation, *, mode: str = "live", case: dict | None = None
 ) -> dict[str, Callable[[], dict]]:
     """The five named obligations of competitor-report, in acceptance order.
 
@@ -221,7 +220,7 @@ def competitor_report_obligations(
         "analyses_quote_their_source": lambda: _quoted_analyses(inputs, observation, mode),
         "join_preserves_both_analyses": lambda: _joined_analyses(observation),
         "report_carries_both_excerpts": lambda: _report_excerpts(observation),
-        "report_covers_both_sources": lambda: _report_facts(inputs, observation, mode),
+        "report_covers_both_sources": lambda: _report_facts(inputs, observation, mode, case),
     }
 
 
@@ -276,7 +275,7 @@ def check_business_result(
             obligation()
     else:
         # The five named obligations, run in order; the first failure still raises.
-        for obligation in competitor_report_obligations(inputs, observation, mode=mode).values():
+        for obligation in competitor_report_obligations(inputs, observation, mode=mode, case=case).values():
             obligation()
         equal(value("research.write"), output, "Result differs from writer output")
     return {
