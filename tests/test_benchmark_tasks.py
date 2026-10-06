@@ -3,11 +3,11 @@
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
-from sapi_config_lab.core.benchmark_tasks import TASKS, task_definition
-from sapi_config_lab.interfaces.checkout import oracle_config, terminal_submission
-from sapi_config_lab.core.contracts import CompileOptions
-from sapi_config_lab.runtime.n8n.adapter import N8nBackend
-from sapi_config_lab.core.profile import read_bindings
+from sapi_config_lab.coordinate.benchmark_tasks import TASKS, task_definition
+from sapi_config_lab.coordinate.benchmark import oracle_config, terminal_submission
+from sapi_config_lab.contracts import CompileOptions
+from sapi_config_lab.coordinate.backend import N8nBackend
+from sapi_config_lab.profile import read_bindings
 
 ROOT = Path(__file__).resolve().parents[1]
 

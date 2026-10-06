@@ -12,8 +12,9 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from sapi_config_lab.runtime.autowfbench import PINNED_REVISION, fetch_source, start_environment, verify_source
-from sapi_config_lab.runtime import autowfbench
+from sapi_config_lab.autowfbench_source import PINNED_REVISION, fetch_source, verify_source
+from sapi_config_lab.execute.autowfbench import start_environment
+from sapi_config_lab.execute import autowfbench
 from tests.support.checkout_controls import CHECKOUT_INCOMPLETE_ACTIONS, CHECKOUT_ORACLE_ACTIONS
 
 SOURCE = Path(
@@ -55,7 +56,7 @@ class SourceCacheTests(unittest.TestCase):
                 }
             )
         )
-        self.patcher = patch("sapi_config_lab.runtime.autowfbench.MANIFEST", self.manifest)
+        self.patcher = patch("sapi_config_lab.autowfbench_source.MANIFEST", self.manifest)
         self.patcher.start()
         self.addCleanup(self.patcher.stop)
 
@@ -169,7 +170,7 @@ class OriginalEnvironmentTests(unittest.TestCase):
                     original(*args, **kwargs)
                     raise TimeoutError("Injected response loss after upstream commit")
 
-                with patch("sapi_config_lab.runtime.autowfbench._post", side_effect=lost_response) as dispatch:
+                with patch("sapi_config_lab.execute.autowfbench._post", side_effect=lost_response) as dispatch:
                     first = session.call(operation, arguments, operation_id="effect", max_attempts=3)
                     same = session.call(operation, arguments, operation_id="effect", max_attempts=3)
                     different = session.call(operation, arguments, operation_id="different")

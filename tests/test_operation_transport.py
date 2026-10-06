@@ -7,9 +7,9 @@ import subprocess
 import unittest
 
 from sapi_config_lab.paths import CATALOG
-from sapi_config_lab.core.contracts import CompileOptions
-from sapi_config_lab.runtime.n8n.adapter import N8nBackend
-from sapi_config_lab.core.profile import Invalid, read, read_bindings
+from sapi_config_lab.contracts import CompileOptions
+from sapi_config_lab.coordinate.backend import N8nBackend
+from sapi_config_lab.profile import Invalid, read, read_bindings
 
 ROOT = Path(__file__).resolve().parents[1]
 

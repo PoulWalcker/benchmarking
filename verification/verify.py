@@ -18,7 +18,7 @@ from pathlib import Path
 
 import yaml
 
-from sapi_config_lab.core.scenarios import SCENARIOS
+from sapi_config_lab.coordinate.scenarios import SCENARIOS
 
 if TYPE_CHECKING or __package__:
     from .business import check_business_result
@@ -249,7 +249,7 @@ def verify_submission(
         config = yaml.load(submission, Loader=UniqueLoader)
         require(isinstance(config, dict), "Submission must be a YAML object")
         if runner is None:
-            from sapi_config_lab.runtime.execution import run_case
+            from sapi_config_lab.coordinate.cases import run_case
 
             runner = run_case
         cases = json.loads((Path(__file__).parent / "cases.json").read_text())[scenario]

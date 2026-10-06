@@ -1,7 +1,7 @@
 """Trusted scripted calibration; excluded from candidate Docker image."""
 
 from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.core.profile import read
+from sapi_config_lab.profile import read
 
 ROOT = workspace_root()
 

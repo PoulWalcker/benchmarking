@@ -5,8 +5,8 @@ import json
 import subprocess
 import time
 
-from sapi_config_lab.core import profile
-from sapi_config_lab.runtime.n8n import compiler
+from sapi_config_lab import profile
+from sapi_config_lab.compile import n8n as compiler
 from sapi_config_lab.paths import workspace_root, CATALOG
 
 ROOT = workspace_root()

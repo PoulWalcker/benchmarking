@@ -321,7 +321,7 @@ class VerifierSeamTests(unittest.TestCase):
 
     def test_the_viewer_export_leaves_a_rubric_document_alone(self):
         """It shares a file name with the task-evaluation document; the schema parts them."""
-        from sapi_config_lab.interfaces.review_export import export_trial
+        from sapi_config_lab.evaluate.review_export import export_trial
 
         with tempfile.TemporaryDirectory() as directory:
             trial = Path(directory) / "job" / "trial" / "verifier"
@@ -353,7 +353,7 @@ class VerifierSeamTests(unittest.TestCase):
             self.assertNotIn(forbidden, script)
 
     def test_every_control_run_reads_the_reward_gate_from_one_place(self):
-        from sapi_config_lab.interfaces.harbor import CONTROL_REWARDS, control_rewards_met
+        from sapi_config_lab.coordinate.controls import CONTROL_REWARDS, control_rewards_met
 
         self.assertEqual(CONTROL_REWARDS, {"oracle": {"reward": 1.0}, "nop": {"reward": 0.0}})
         for agent, reward in (("oracle", 1.0), ("nop", 0.0)):
@@ -362,7 +362,7 @@ class VerifierSeamTests(unittest.TestCase):
             for intruder in (0.732, 1.0 - reward, None, "1.0"):
                 self.assertFalse(control_rewards_met(agent, [{"rewards": {"reward": intruder}, "exception": None}]))
             self.assertFalse(control_rewards_met(agent, [{"rewards": {"reward": reward}, "exception": "boom"}]))
-        source = (ROOT / "src/sapi_config_lab/interfaces/harbor.py").read_text()
+        source = (ROOT / "src/sapi_config_lab/coordinate/controls.py").read_text()
         self.assertEqual(source.count('{"reward": 1.0}'), 1)
 
 

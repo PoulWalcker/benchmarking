@@ -11,7 +11,7 @@ import tarfile
 import tempfile
 import zipfile
 
-from sapi_config_lab.core.provenance import source_manifest
+from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.paths import workspace_root
 
 PRIVATE_PATHS = (
@@ -69,10 +69,10 @@ def main() -> int:
             if required not in source_members:
                 raise RuntimeError(f"Missing reproducibility source: {required}")
         for required in (
-            "sapi_config_lab/core/bindings.yaml",
-            "sapi_config_lab/runtime/agency-prompt.md",
-            "sapi_config_lab/runtime/n8n/operations.js",
-            "sapi_config_lab/runtime/n8n/runtime-fragment.js",
+            "sapi_config_lab/bindings.yaml",
+            "sapi_config_lab/execute/agency-prompt.md",
+            "sapi_config_lab/compile/operations.js",
+            "sapi_config_lab/compile/runtime-fragment.js",
         ):
             if required not in wheel_members:
                 raise RuntimeError(f"Missing installed runtime resource: {required}")

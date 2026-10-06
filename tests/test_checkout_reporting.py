@@ -2,7 +2,7 @@
 
 import unittest
 
-from sapi_config_lab.interfaces.checkout import terminal_submission
+from sapi_config_lab.coordinate.benchmark import terminal_submission
 
 
 class TerminalSubmissionTests(unittest.TestCase):

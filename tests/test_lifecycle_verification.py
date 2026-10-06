@@ -11,9 +11,9 @@ from unittest.mock import patch
 
 import yaml
 
-from sapi_config_lab.core import profile
-from sapi_config_lab.core.scenarios import select_scenarios
-from sapi_config_lab.interfaces.tasks import stage_tasks
+from sapi_config_lab import profile
+from sapi_config_lab.coordinate.scenarios import select_scenarios
+from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.paths import workspace_root
 from verification.contracts import Rejected
 from verification.lifecycle import digest_native, verify_lifecycle
@@ -339,7 +339,7 @@ class LifecycleSubmissionTests(unittest.TestCase):
                 raise PermissionError("Harbor log mount cannot be opened for directory fsync")
             return original_open(path, flags, *args, **kwargs)
 
-        with patch("sapi_config_lab.runtime.lifecycle.os.open", side_effect=mount_open):
+        with patch("sapi_config_lab.evidence.os.open", side_effect=mount_open):
             report = verify_submission(Path(self.temporary.name) / "missing.yaml", report_dir)
         self.assertFalse(report["passed"])
         self.assertEqual(report["error_type"], "FileNotFoundError")

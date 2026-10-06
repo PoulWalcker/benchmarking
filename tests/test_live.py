@@ -10,13 +10,14 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.interfaces.live import BUDGET, audit_records, finalize_report, main, validate_control
-from sapi_config_lab.core.provenance import source_manifest
-from sapi_config_lab.interfaces.live_evidence import reconcile_dispatches
-from sapi_config_lab.interfaces.replay import load_selection
+from sapi_config_lab.coordinate.live import BUDGET, audit_records, finalize_report, main, validate_control
+from sapi_config_lab.coordinate.provenance import source_manifest
+from sapi_config_lab.coordinate.live_evidence import reconcile_dispatches
+from sapi_config_lab.coordinate.replay import load_selection
 from sapi_config_lab.paths import CATALOG
-from sapi_config_lab.runtime.agency import DispatchAudit, canonical_hash, execute
-from sapi_config_lab.core.profile import read_bindings
+from sapi_config_lab.evidence import digest
+from sapi_config_lab.execute.agency import DispatchAudit, execute
+from sapi_config_lab.profile import read_bindings
 
 
 class LiveEvidenceTests(unittest.TestCase):
@@ -38,14 +39,14 @@ class LiveEvidenceTests(unittest.TestCase):
                 "output": json.dumps(output),
                 "stderr": "model: gpt-6-astra\ntokens used\n14\n",
             }
-            with patch("sapi_config_lab.runtime.agency.urlopen", return_value=BytesIO(json.dumps(wrapper).encode())):
+            with patch("sapi_config_lab.execute.agency.urlopen", return_value=BytesIO(json.dumps(wrapper).encode())):
                 execute(request, read_bindings(CATALOG), "http://unused", 1, audit=audit)
             audit.append(
                 {
                     "event": "agency_response",
                     "invocation_id": request["invocation_id"],
                     "operation": request["operation"],
-                    "inputs_sha256": canonical_hash(request["inputs"]),
+                    "inputs_sha256": digest(request["inputs"]),
                     "http_status": 200,
                     "status": "completed",
                     "model": "gpt-6-astra",
@@ -117,7 +118,7 @@ class LiveEvidenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             path = root / "selection.json"
-            with patch("sapi_config_lab.interfaces.live.subprocess.Popen") as dispatch:
+            with patch("sapi_config_lab.coordinate.live.subprocess.Popen") as dispatch:
                 for manifest in (
                     {},
                     {"schema": "fake", "entries": []},
@@ -151,7 +152,7 @@ class LiveEvidenceTests(unittest.TestCase):
             (root / "existing-containers.txt").write_text("existing")
             report = {"status": "passed", "counts": {"provider_call_count": None}}
             with patch(
-                "sapi_config_lab.interfaces.live.subprocess.check_output", side_effect=OSError("Docker unavailable")
+                "sapi_config_lab.coordinate.live.subprocess.check_output", side_effect=OSError("Docker unavailable")
             ):
                 finalize_report(report, root, None, None, source_manifest())
             saved = json.loads((root / "report.json").read_text())
@@ -164,6 +165,6 @@ class LiveEvidenceTests(unittest.TestCase):
             self.assertEqual((root / "bridge-audit.jsonl").read_text(), '{"event":"completion"')
 
     def test_canonical_input_hash_is_key_order_independent_and_rejects_nonfinite(self):
-        self.assertEqual(canonical_hash({"b": [2], "a": "é"}), canonical_hash({"a": "é", "b": [2]}))
+        self.assertEqual(digest({"b": [2], "a": "é"}), digest({"a": "é", "b": [2]}))
         with self.assertRaises(ValueError):
-            canonical_hash({"x": float("nan")})
+            digest({"x": float("nan")})

@@ -6,8 +6,8 @@ import unittest
 from unittest.mock import patch
 
 from sapi_config_lab.paths import CATALOG
-from sapi_config_lab.runtime.agency import ContractError, DispatchAudit, execute
-from sapi_config_lab.core.profile import read_bindings
+from sapi_config_lab.execute.agency import ContractError, DispatchAudit, execute
+from sapi_config_lab.profile import read_bindings
 
 
 class OccurrenceBudgetTests(unittest.TestCase):
@@ -25,7 +25,7 @@ class OccurrenceBudgetTests(unittest.TestCase):
         }
         with tempfile.TemporaryDirectory() as directory:
             audit = DispatchAudit(Path(directory) / "audit.jsonl", budget)
-            with patch("sapi_config_lab.runtime.agency.urlopen") as dispatch:
+            with patch("sapi_config_lab.execute.agency.urlopen") as dispatch:
                 with self.assertRaisesRegex(ContractError, "occurrence"):
                     execute(request, read_bindings(CATALOG), "http://unused", 1, audit=audit)
                 dispatch.assert_not_called()
@@ -52,17 +52,17 @@ class OccurrenceBudgetTests(unittest.TestCase):
             }
             with self.subTest(budget=budget), tempfile.TemporaryDirectory() as directory:
                 audit = DispatchAudit(Path(directory) / "audit.jsonl", budget)
-                with patch("sapi_config_lab.runtime.agency.urlopen") as dispatch:
+                with patch("sapi_config_lab.execute.agency.urlopen") as dispatch:
                     with self.assertRaises(ContractError):
                         execute(request, read_bindings(CATALOG), "http://unused", 1, audit=audit)
                     dispatch.assert_not_called()
 
     def test_named_case_admission_covers_all_seventeen_expected_occurrences(self):
         import json
-        from sapi_config_lab.interfaces.live_evidence import case_budget
+        from sapi_config_lab.coordinate.live_evidence import case_budget
         from sapi_config_lab.paths import workspace_root
-        from sapi_config_lab.core.scenarios import EXPANSION_SCENARIOS
-        from sapi_config_lab.core.profile import read
+        from sapi_config_lab.coordinate.scenarios import EXPANSION_SCENARIOS
+        from sapi_config_lab.profile import read
 
         root = workspace_root()
         cases = json.loads((root / "verification/cases.json").read_text())

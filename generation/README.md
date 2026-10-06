@@ -48,13 +48,13 @@ are not started if controls fail.
 
 ## Execution sequence
 
-1. `src/sapi_config_lab/interfaces/generation/run.py` records the complete public
+1. `src/sapi_config_lab/coordinate/generate.py` records the complete public
    source inventory, including all runtime/verifier modules, task data, prompts,
    packaging settings, and dependency locks. It uses the same inventory as the
    control suite; new modules are included automatically. Hashes remain fixed
    across answers, and local environment snapshots are excluded.
 2. Prompts are assembled from `tasks.json`, `FORMAT.md`, `docs/PROFILE.md`, and
-   `src/sapi_config_lab/core/bindings.yaml`. Complete prompts are saved in
+   `src/sapi_config_lab/bindings.yaml`. Complete prompts are saved in
    the task packages and agent artifacts.
 3. Temporary Harbor packages contain neither `solution/` nor
    `environment/base.yaml`. Reference configs are removed from the running

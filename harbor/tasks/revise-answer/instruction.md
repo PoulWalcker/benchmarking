@@ -8,4 +8,4 @@ Create a Gantt workflow with logical id revise-answer. Draft a concise helpful r
 
 Use Callback fixture activation, revision 1, independent concurrency and fail-fast errors.
 The profile and operation catalog are available under `/app/lab/docs/PROFILE.md` and
-`/app/lab/src/sapi_config_lab/core/bindings.yaml`. Tests replace inputs; all outputs remain local drafts.
+`/app/lab/src/sapi_config_lab/bindings.yaml`. Tests replace inputs; all outputs remain local drafts.

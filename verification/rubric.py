@@ -61,7 +61,7 @@ _DETERMINED = "Protected environment verification"
 def digest(value: Any) -> str:
     """Canonical JSON digest, ASCII-escaped.
 
-    Source of truth is `sapi_config_lab.runtime.task_evaluation.digest`,
+    Source of truth is `sapi_config_lab.evaluate.task_evaluation.digest`,
     itself matching AutoWFBench's `autowfbench.core.common.digest`. It is copied
     rather than imported so that verification/ keeps to the stdlib and digests
     identically whether or not `sapi_config_lab` happens to be importable where
