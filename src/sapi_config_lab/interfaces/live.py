@@ -22,7 +22,7 @@ from sapi_config_lab.runtime.agency import strict_json
 from sapi_config_lab.core.evidence import sha256, write_json
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.interfaces.tasks import SCENARIOS, stage_tasks
-from sapi_config_lab.core.host import harbor_command, image_id, pin_base_image, running_containers
+from sapi_config_lab.core.host import harbor_command, harbor_run_args, image_id, pin_base_image, running_containers
 from sapi_config_lab.interfaces.harbor import IMAGE, load_trials
 from sapi_config_lab.core.provenance import host_environment, source_manifest
 from sapi_config_lab.interfaces.replay import load_selection, read_json, require
@@ -708,25 +708,14 @@ def main(argv: list[str] | None = None):
             )
 
         def run_harbor(name: str, task_path: Path, mode: str, timeout: float = 2400):
-            command = [
-                *harbor,
-                "run",
-                "--path",
-                str(task_path),
-                "--agent",
-                "oracle",
-                "--n-concurrent",
-                "1",
-                "--max-retries",
-                "0",
-                "--jobs-dir",
-                str(staging / "jobs"),
-                "--job-name",
+            command = harbor_run_args(
+                harbor,
+                task_path,
+                staging / "jobs",
                 name,
-                "--verifier-env",
-                "SAPI_LLM_MODE=" + mode,
-                "--force-build",
-            ]
+                "oracle",
+                verifier_env=["SAPI_LLM_MODE=" + mode],
+            )
             if mode == "live":
                 command += ["--verifier-env", f"SAPI_BRIDGE_URL=http://host.docker.internal:{args.bridge_port}"]
             report.setdefault("commands", []).append(command)

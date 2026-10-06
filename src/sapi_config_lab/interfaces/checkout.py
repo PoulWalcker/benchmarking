@@ -27,7 +27,7 @@ from sapi_config_lab.core.benchmark_tasks import TASKS, task_definition
 from sapi_config_lab.core.evidence import sha256, write_json
 from sapi_config_lab.interfaces.generation.common import audit_stderr
 from sapi_config_lab.interfaces.harbor import command, load_trials
-from sapi_config_lab.core.host import harbor_command, image_id, running_containers
+from sapi_config_lab.core.host import harbor_command, harbor_run_args, image_id, running_containers
 from sapi_config_lab.core.provenance import source_manifest, host_environment
 from sapi_config_lab.runtime.task_evaluation import (
     build_run_log,
@@ -377,23 +377,9 @@ def native_trial(directory, source, contract, mode, wrapper, config, *, seed=0):
         )
         shutil.copytree(task, directory / "task-package")
         save(directory / "task-package/tests/connection.json", {"url": "runtime-local", "token": "REDACTED"})
-        argv = [
-            *harbor_command(),
-            "run",
-            "--path",
-            str(staging / "tasks"),
-            "--agent",
-            "oracle" if config else "nop",
-            "--n-concurrent",
-            "1",
-            "--max-retries",
-            "0",
-            "--jobs-dir",
-            str(staging / "jobs"),
-            "--job-name",
-            "trial",
-            "--force-build",
-        ]
+        argv = harbor_run_args(
+            harbor_command(), staging / "tasks", staging / "jobs", "trial", "oracle" if config else "nop"
+        )
         rc = command(argv, directory / "harbor.log", timeout=900)
         if (staging / "jobs").exists():
             shutil.copytree(staging / "jobs", directory / "jobs")

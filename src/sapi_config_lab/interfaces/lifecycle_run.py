@@ -25,7 +25,7 @@ import time
 
 from sapi_config_lab.core.evidence import sha256
 from sapi_config_lab.interfaces.generation.common import summarize_trials
-from sapi_config_lab.core.host import harbor_command, image_id, pin_base_image
+from sapi_config_lab.core.host import harbor_command, harbor_run_args, image_id, pin_base_image
 from sapi_config_lab.interfaces.harbor import load_trials
 from sapi_config_lab.interfaces.live_evidence import load_verifier, reconcile_dispatches
 from sapi_config_lab.core.provenance import source_manifest
@@ -256,25 +256,9 @@ def native_controls(directory, image, frozen):
     report: dict[str, Any] = {"status": "failed", "image_id": identity, "image": pinned_image, "checks": []}
     try:
         for agent in ("oracle", "nop"):
-            args = [
-                *harbor_command(),
-                "run",
-                "--path",
-                str(directory / "tasks"),
-                "--agent",
-                agent,
-                "--n-attempts",
-                "1",
-                "--n-concurrent",
-                "1",
-                "--max-retries",
-                "0",
-                "--jobs-dir",
-                str(directory / "jobs"),
-                "--job-name",
-                agent,
-                "--force-build",
-            ]
+            args = harbor_run_args(
+                harbor_command(), directory / "tasks", directory / "jobs", agent, agent, attempts="1"
+            )
             with (directory / (agent + ".log")).open("w") as log:
                 done = subprocess.run(args, cwd=workspace_root(), stdout=log, stderr=subprocess.STDOUT, timeout=1800)
             trials = load_trials(directory / "jobs" / agent)
@@ -316,27 +300,15 @@ def author(series, *, upstream, image):
                 article["id"] = marker + "-" + article["id"]
         durable_json(path, corpus)
         report["private_cases_sha256"] = sha256(path)
-        args = [
-            *harbor_command(),
-            "run",
-            "--path",
-            str(directory / "tasks"),
-            "--agent",
-            "sapi_config_lab.interfaces.generation.agent:WrapperYamlAgent",
-            "--ak",
-            "upstream=" + upstream,
-            "--n-attempts",
-            "1",
-            "--n-concurrent",
-            "1",
-            "--max-retries",
-            "0",
-            "--jobs-dir",
-            str(directory / "jobs"),
-            "--job-name",
+        args = harbor_run_args(
+            harbor_command(),
+            directory / "tasks",
+            directory / "jobs",
             "generated",
-            "--force-build",
-        ]
+            "sapi_config_lab.interfaces.generation.agent:WrapperYamlAgent",
+            agent_key="upstream=" + upstream,
+            attempts="1",
+        )
         report["command"] = args
         grant = series.grant("authoring", {"prompt_sha256": report["prompt_sha256"]})
         with (directory / "harbor.log").open("w") as log:
