@@ -161,10 +161,10 @@ class ExpansionAdmissionTests(unittest.TestCase):
             for number, content in enumerate(("first answer", "distinct second answer")):
                 directory = Path(tmp) / str(number)
                 (directory / "agent").mkdir(parents=True)
-                (directory / "verifier").mkdir()
+                (directory / "verifier/evidence").mkdir(parents=True)
                 own = directory / "agent/submission.yaml"
                 own.write_text(content)
-                (directory / "verifier/submission.yaml").write_text(content)
+                (directory / "verifier/evidence/submission.yaml").write_text(content)
                 trials.append(
                     {
                         "scenario": "dual-ledger-closeout",
@@ -181,7 +181,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
                     }
                 )
             check_generated_stub_gates(trials, "dual-ledger-closeout", 1)
-            (Path(tmp) / "1/verifier/submission.yaml").write_text("substituted first answer")
+            (Path(tmp) / "1/verifier/evidence/submission.yaml").write_text("substituted first answer")
             with self.assertRaisesRegex(ValueError, "submission hash"):
                 check_generated_stub_gates(trials, "dual-ledger-closeout", 1)
 

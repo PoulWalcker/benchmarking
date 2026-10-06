@@ -187,14 +187,17 @@ its own scenario's test inputs. There is no manual synchronization step.
 4. The lab runtime (`sapi_config_lab.coordinate.observe`) runs exactly that plan
    through the n8n adapter, which validates YAML, compiles JSON, imports it and
    executes it by ID. It saves `case.json`, the generated graph, the step-to-node
-   mapping, logs and raw n8n execution data, then `observation.json` with the
-   plan's hash and the hash of every recorded file. It decides nothing.
+   mapping, logs and raw n8n execution data under `/logs/verifier/evidence/`,
+   then `observation.json` with the plan's hash and the hash of every file it
+   recorded. It decides nothing.
 5. `verify.py evaluate` recomputes the plan, rejects a record that is missing,
-   partial, edited or of other inputs, checks the packaged runtime was the one
+   partial, edited, holds extra files, lacks the native artifacts its status
+   requires, disagrees with its own native records or is of other inputs, checks the packaged runtime was the one
    that ran, and only then checks the total, selected branch or combined
    sources together with native node evidence. It never runs n8n itself.
-6. Each decision is written to `acceptance.json` beside the untouched
-   `case.json`, and the summary to `/logs/verifier/report.json`. `test.sh`
+6. Each decision is written to `acceptance.json` under the sibling
+   `/logs/verifier/evaluation/`, with the summary in `report.json` there; the
+   evidence directory is never written again. `test.sh`
    writes reward 1/0 to `/logs/verifier/reward.txt`. Harbor collects these
    files; the experiment runner copies them to `reports/<run>/jobs/` and writes
    the overall `report.json`.

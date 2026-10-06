@@ -163,7 +163,8 @@ def collect_native(
     observed_cases = set()
     for trial in trials:
         scenario = trial["task_name"]
-        directory = Path(trial["result_path"]).parent / "verifier"
+        verifier = Path(trial["result_path"]).parent / "verifier"
+        directory = verifier / "evidence"
         acceptance = trial["acceptance"]
         require(
             sha256(directory / "submission.yaml")
@@ -193,7 +194,8 @@ def collect_native(
             require(
                 row.get("passed") is True
                 and row.get("acceptance", {}).get("passed") is (case.get("expected") != "exhausted")
-                and read_json(artifact / "acceptance.json").get("passed") is (case.get("expected") != "exhausted")
+                and read_json(verifier / "evaluation/cases" / name / "acceptance.json").get("passed")
+                is (case.get("expected") != "exhausted")
                 and run.get("execution", {}).get("succeeded") is (case.get("expected") != "exhausted"),
                 "Execution and independent acceptance differ from expected case outcome",
             )

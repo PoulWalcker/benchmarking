@@ -4,7 +4,8 @@ The independent verifier decides what must run (`verify.py plan`) and judges
 the record afterwards (`verify.py evaluate`); it never executes anything. This
 step executes each planned definition exactly as given, writes its evidence,
 and finishes with observation.json: the plan's hash and the hash of every file
-it recorded. It computes no verdict, and it records every entry it can even
+under each entry's directory, native engine records included. The verifier
+requires the directory to hold exactly those files. It computes no verdict, and it records every entry it can even
 after another one fails, so a missing entry always means the step stopped.
 """
 
@@ -42,23 +43,28 @@ def wrong_result(artifact: Document) -> Document:
 TRANSFORMS: dict[str, ArtifactTransform] = {"wrong-result": wrong_result}
 
 
-def _case(entry: Document, directory: Path, mode: str, bridge_url: str | None, runner: Runner) -> list[str]:
+def _case(entry: Document, directory: Path, mode: str, bridge_url: str | None, runner: Runner) -> None:
     transform = entry.get("artifact_transform")
     options: dict = {"llm_mode": mode, "bridge_url": bridge_url}
     if transform is not None:
         options = {"llm_mode": mode, "artifact_transform": TRANSFORMS[transform]}
     runner(entry["config"], directory, **options)
-    return ["case.json", "config.json"]
 
 
-def _lifecycle(entry: Document, directory: Path, backend) -> list[str]:
+def _lifecycle(entry: Document, directory: Path, backend) -> None:
     controller = LifecycleController(directory, backend=backend)
     event = controller.callback(controller.register(entry["config"]), entry["callback"])
     durable_json(directory / "event.json", event)
     if entry["tick"]:
         controller.tick(datetime.fromisoformat(entry["tick"]))
     durable_json(directory / "snapshot.json", controller.snapshot())
-    return ["event.json", "snapshot.json"]
+
+
+def recorded_files(directory: Path) -> dict[str, str]:
+    """Every file an entry left behind, by path relative to its directory."""
+    return {
+        path.relative_to(directory).as_posix(): sha256(path) for path in sorted(directory.rglob("*")) if path.is_file()
+    }
 
 
 def observe(
@@ -83,14 +89,13 @@ def observe(
         row: Document = {"name": entry["name"], "files": {}}
         try:
             if entry["procedure"] == "lifecycle":
-                written = _lifecycle(entry, directory, backend)
+                _lifecycle(entry, directory, backend)
             else:
-                written = _case(entry, directory, plan["mode"], bridge_url, runner)
+                _case(entry, directory, plan["mode"], bridge_url, runner)
         except Exception as error:
             # An engine or controller failure is evidence too; acceptance decides.
             row["error"] = f"{type(error).__name__}: {error}"
-            written = []
-        row["files"] = {name: sha256(directory / name) for name in written if (directory / name).is_file()}
+        row["files"] = recorded_files(directory) if directory.is_dir() else {}
         manifest["entries"].append(row)
     write_json(evidence / "observation.json", manifest)
     return manifest

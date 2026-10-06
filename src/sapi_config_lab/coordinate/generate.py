@@ -113,7 +113,7 @@ def finalize_generation(
         for trial in trials:
             path = Path(trial["result_path"]).parent.relative_to(output)
             lines.append(
-                f"| {trial['scenario']} | {trial['passed']} | {trial['failure_stage'] or '—'} | [YAML]({path}/agent/submission.yaml) · [Verification]({path}/verifier/report.json) |"
+                f"| {trial['scenario']} | {trial['passed']} | {trial['failure_stage'] or '—'} | [YAML]({path}/agent/submission.yaml) · [Verification]({path}/verifier/evaluation/report.json) |"
             )
         lines += ["", "## Limits", ""] + ["- " + item for item in report["limitations"]]
         (output / "SUMMARY.md").write_text("\n".join(lines) + "\n")

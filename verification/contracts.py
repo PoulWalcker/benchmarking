@@ -1,7 +1,11 @@
 """Independent acceptance primitives and engine-neutral workflow observations."""
 
 from dataclasses import dataclass
+import json
+from pathlib import Path
 from typing import Any
+
+ACCEPTANCE_SCHEMA = "sapi-lab-acceptance/v1"
 
 
 @dataclass(frozen=True)
@@ -21,6 +25,41 @@ class Rejected(AssertionError):
 def require(condition: Any, message: str) -> None:
     if not condition:
         raise Rejected(message)
+
+
+@dataclass(frozen=True)
+class Recorded:
+    """One run's checked evidence, and where decisions about it are written.
+
+    `evidence` is read-only: `files` holds the hash of every file of each plan
+    entry, already compared with the disk. Decisions go under `evaluation`,
+    a sibling directory, so judging twice never touches what was observed.
+    """
+
+    evidence: Path
+    evaluation: Path
+    files: dict[str, dict[str, str]]
+    evaluator: dict[str, str]
+
+    def case(self, name: str) -> Path:
+        return self.evidence / "cases" / name
+
+    def accept(self, name: str, passed: bool, reason: str | None) -> dict:
+        """One decision about one recorded entry, naming every file it covered."""
+        decision: dict[str, Any] = {"status": "accepted" if passed else "rejected", "passed": passed}
+        if reason:
+            decision["reason"] = reason
+        directory = self.evaluation / "cases" / name
+        directory.mkdir(parents=True, exist_ok=True)
+        document = {
+            "schema": ACCEPTANCE_SCHEMA,
+            **decision,
+            "evidence": self.files[name],
+            "evaluator": self.evaluator["name"],
+            "evaluator_sha256": self.evaluator["sources_sha256"],
+        }
+        (directory / "acceptance.json").write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n")
+        return decision
 
 
 def equal(actual: Any, expected: Any, message: str) -> None:

@@ -1,9 +1,11 @@
 """Evaluation judges only a complete, unaltered record of the plan it issued.
 
 No test here starts n8n, Docker or a model: the evidence is written by the
-observe step with a fake runner, then evaluated, edited and evaluated again.
+observe step with a fake runner or the simulated engine adapter, then
+evaluated, edited and evaluated again.
 """
 
+import functools
 import hashlib
 import json
 from pathlib import Path
@@ -11,9 +13,11 @@ import shutil
 import tempfile
 import unittest
 
+from sapi_config_lab.coordinate.cases import run_case
 from sapi_config_lab.coordinate.packages import runtime_sources
 from sapi_config_lab.coordinate.scenarios import all_cases
 from sapi_config_lab.paths import workspace_root
+from tests.support.native import SimulatedN8n
 from tests.support.verifying import verify_with_runner
 from verification import verify as verifier
 from verification.contracts import Rejected
@@ -29,22 +33,23 @@ def engine_success(config, artifacts, **options):
 
 
 def recorded(directory: Path) -> dict[str, str]:
-    """Hashes of every evidence file, leaving out what evaluation itself writes."""
-    written = {"acceptance.json", "report.json", "evaluation.json"}
+    """Hashes of every evidence file; evaluation writes none of them."""
     return {
         str(path.relative_to(directory)): hashlib.sha256(path.read_bytes()).hexdigest()
         for path in sorted(directory.rglob("*"))
-        if path.is_file() and path.name not in written
+        if path.is_file()
     }
 
 
 class EvidenceBoundaryTests(unittest.TestCase):
+    """A run that claims success without native records never reaches judgement."""
+
     def setUp(self):
         self.directory = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.directory)
         self.evidence = self.directory / "evidence"
         self.report = verify_with_runner(
-            verifier, "invoice-total", CONFIG, self.evidence, runner=engine_success, cases=CASES
+            verifier, "invoice-total", CONFIG, self.directory, runner=engine_success, cases=CASES
         )
 
     def evaluate(self):
@@ -70,13 +75,11 @@ class EvidenceBoundaryTests(unittest.TestCase):
         self.assertFalse(self.report["passed"])
         self.assertNotIn("observation", self.report.get("error", ""))
         before = recorded(self.evidence)
-        acceptance = (self.evidence / "cases" / CASES["positive"][0]["name"] / "acceptance.json").read_bytes()
         again = self.evaluate()
         self.assertEqual(again, self.report)
         self.assertEqual(recorded(self.evidence), before)
-        self.assertEqual(
-            (self.evidence / "cases" / CASES["positive"][0]["name"] / "acceptance.json").read_bytes(), acceptance
-        )
+        # Rejected before any judgement, so no case decision was written.
+        self.assertFalse((self.directory / "evaluation/cases").exists())
         case = json.loads((self.evidence / "cases" / CASES["positive"][0]["name"] / "case.json").read_text())
         self.assertNotIn("acceptance", case)
 
@@ -134,3 +137,92 @@ class EvidenceBoundaryTests(unittest.TestCase):
             "invoice-total", CONFIG, self.evidence, CASES, runtime_src=ROOT / "src", runtime_manifest=manifest
         )
         self.assertIn("Runtime sources differ", report["error"])
+
+    def test_a_success_without_native_records_is_rejected_before_judgement(self):
+        self.assertIn("lacks native artifacts", self.report["error"])
+
+
+class RecordedRunTests(unittest.TestCase):
+    """A complete accepted record, from the simulated engine adapter."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.source = Path(tempfile.mkdtemp())
+        runner = functools.partial(run_case, backend=SimulatedN8n())
+        cls.report = verify_with_runner(verifier, "invoice-total", CONFIG, cls.source, runner=runner, cases=CASES)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.source)
+
+    def setUp(self):
+        # Every probe edits its own copy; the recorded original is never touched.
+        self.directory = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.directory)
+        shutil.copytree(self.source / "evidence", self.directory / "evidence")
+        self.evidence = self.directory / "evidence"
+        self.case = self.evidence / "cases" / CASES["positive"][0]["name"]
+
+    def evaluate(self):
+        return verifier.evaluate("invoice-total", CONFIG, self.evidence, CASES)
+
+    def rehash(self, name: str) -> None:
+        """Rewrite the manifest so it agrees with an edited or removed file."""
+        manifest = json.loads((self.evidence / "observation.json").read_text())
+        files = manifest["entries"][0]["files"]
+        if (self.case / name).exists():
+            files[name] = hashlib.sha256((self.case / name).read_bytes()).hexdigest()
+        else:
+            files.pop(name)
+        (self.evidence / "observation.json").write_text(json.dumps(manifest))
+
+    def test_an_accepted_run_evaluates_twice_without_changing_its_evidence(self):
+        self.assertTrue(self.report["passed"], self.report.get("error"))
+        before = recorded(self.evidence)
+        first = self.evaluate()
+        second = self.evaluate()
+        self.assertTrue(first["passed"])
+        self.assertEqual(first, second)
+        self.assertEqual(recorded(self.evidence), before)
+        decision = json.loads((self.directory / "evaluation/cases" / self.case.name / "acceptance.json").read_text())
+        self.assertTrue(decision["passed"])
+        self.assertEqual(decision["evaluator_sha256"], first["evaluator"]["sources_sha256"])
+        self.assertEqual(set(decision["evidence"]), set(recorded(self.case)))
+
+    def test_a_compile_error_needs_no_native_execution_artifacts(self):
+        rejected = self.evidence / "cases/invalid-yaml-cycle"
+        self.assertEqual(sorted(path.name for path in rejected.iterdir()), ["case.json", "config.json"])
+        self.assertTrue(self.evaluate()["passed"])
+
+    def test_an_edited_native_record_is_rejected(self):
+        persisted = self.case / "execution.persisted.json"
+        persisted.write_text(persisted.read_text().replace("38000", "38001"))
+        self.assertIn("changed after collection", self.evaluate()["error"])
+        self.rehash("execution.persisted.json")
+        self.assertIn("Persisted native record differs", self.evaluate()["error"])
+
+    def test_an_edited_workflow_is_rejected_even_with_a_consistent_manifest(self):
+        workflow = self.case / "workflow.json"
+        workflow.write_text(workflow.read_text().replace('"active": false', '"active": true'))
+        self.rehash("workflow.json")
+        self.assertIn("Recorded workflow differs from its hash", self.evaluate()["error"])
+
+    def test_a_missing_native_artifact_is_rejected_even_when_unlisted(self):
+        (self.case / "execution.metadata.json").unlink()
+        self.assertIn("changed after collection", self.evaluate()["error"])
+        self.rehash("execution.metadata.json")
+        self.assertIn("lacks native artifacts", self.evaluate()["error"])
+
+    def test_extra_files_are_rejected_wherever_they_appear(self):
+        (self.case / "planted.json").write_text("{}")
+        self.assertIn("changed after collection", self.evaluate()["error"])
+        (self.case / "planted.json").unlink()
+        (self.evidence / "planted.json").write_text("{}")
+        self.assertIn("holds files no entry recorded", self.evaluate()["error"])
+
+    def test_extracted_run_data_must_match_every_native_record(self):
+        case = json.loads((self.case / "case.json").read_text())
+        case["run_data"]["Result"][0]["executionTime"] = 2
+        (self.case / "case.json").write_text(json.dumps(case))
+        self.rehash("case.json")
+        self.assertIn("differs from the extracted run data", self.evaluate()["error"])

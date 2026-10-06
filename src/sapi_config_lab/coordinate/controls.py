@@ -38,7 +38,7 @@ def load_trials(job: Path) -> list[dict]:
     trials = []
     for path in sorted(job.glob("*/result.json")):
         trial = json.loads(path.read_text())
-        report_path = path.parent / "verifier/report.json"
+        report_path = path.parent / "verifier/evaluation/report.json"
         acceptance = json.loads(report_path.read_text()) if report_path.exists() else None
         trials.append(
             {
@@ -84,7 +84,7 @@ def summarize_trials(job: Path) -> list[dict]:
                 for case in acceptance["cases"]:
                     if case.get("passed"):
                         continue
-                    case_path = directory / "verifier/cases" / Path(case["artifacts"]).name / "case.json"
+                    case_path = directory / "verifier/evidence/cases" / Path(case["artifacts"]).name / "case.json"
                     if case_path.exists():
                         status = json.loads(case_path.read_text()).get("status")
                         if status == "compile_error":
