@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from sapi_config_lab.compile.n8n import compile_n8n
 from sapi_config_lab.contracts import (
     CompiledWorkflow,
     CompileOptions,
@@ -10,7 +11,6 @@ from sapi_config_lab.contracts import (
     RunBinding,
     WorkflowBackend,
 )
-from sapi_config_lab.compile.n8n import compile_n8n
 from sapi_config_lab.execute.n8n import execute_compiled
 
 

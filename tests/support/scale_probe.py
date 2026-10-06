@@ -7,7 +7,7 @@ import time
 
 from sapi_config_lab import profile
 from sapi_config_lab.compile import n8n as compiler
-from sapi_config_lab.paths import workspace_root, CATALOG
+from sapi_config_lab.paths import CATALOG, workspace_root
 
 ROOT = workspace_root()
 

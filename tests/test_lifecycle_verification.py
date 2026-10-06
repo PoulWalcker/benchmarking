@@ -12,14 +12,13 @@ from unittest.mock import patch
 import yaml
 
 from sapi_config_lab import profile
-from sapi_config_lab.coordinate.scenarios import select_scenarios
 from sapi_config_lab.coordinate.packages import stage_tasks
+from sapi_config_lab.coordinate.scenarios import all_cases, select_scenarios
 from sapi_config_lab.paths import workspace_root
 from verification.contracts import Rejected
 from verification.lifecycle import digest_native, verify_lifecycle
 from verification.lifecycle_submission import validate_task
 from verification.verify import evaluate
-from sapi_config_lab.coordinate.scenarios import all_cases
 
 
 def hash_json(value):

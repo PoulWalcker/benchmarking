@@ -1,21 +1,19 @@
 """Durable lifecycle decisions through its public interface; no Docker or models."""
 
 import copy
+from datetime import UTC, datetime
 import json
-import shutil
-from datetime import datetime, timezone
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.contracts import CompiledWorkflow
+from sapi_config_lab import profile
+from sapi_config_lab.contracts import CompiledWorkflow, CompileOptions, RunBinding
 from sapi_config_lab.coordinate.lifecycle import LifecycleController
 from sapi_config_lab.evidence import durable_json
-from sapi_config_lab.contracts import CompileOptions, RunBinding
-from sapi_config_lab.paths import CATALOG
-from sapi_config_lab import profile
+from sapi_config_lab.paths import CATALOG, workspace_root
 from tests.support.native import SimulatedN8n
 
 
@@ -104,13 +102,13 @@ class LifecycleTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             controller = LifecycleController(Path(directory), backend=self.backend)
             ref = controller.register(self.config)
-            self.assertEqual(controller.tick(datetime(2026, 10, 4, 5, 0, tzinfo=timezone.utc)), [])
+            self.assertEqual(controller.tick(datetime(2026, 10, 4, 5, 0, tzinfo=UTC)), [])
             controller.callback(ref, "release")
-            self.assertEqual(controller.tick(datetime(2026, 10, 4, 5, 1, tzinfo=timezone.utc)), [])
-            event = controller.tick(datetime(2026, 10, 5, 5, 0, tzinfo=timezone.utc))[0]
+            self.assertEqual(controller.tick(datetime(2026, 10, 4, 5, 1, tzinfo=UTC)), [])
+            event = controller.tick(datetime(2026, 10, 5, 5, 0, tzinfo=UTC))[0]
             self.assertEqual(event["admission"]["kind"], "Cron")
             restarted = LifecycleController(Path(directory), backend=self.backend)
-            restarted.tick(datetime(2026, 10, 5, 5, 0, tzinfo=timezone.utc))
+            restarted.tick(datetime(2026, 10, 5, 5, 0, tzinfo=UTC))
             self.assertEqual(len(self.backend.calls), 2)
             self.assertEqual(event["state"], "passed")
 
@@ -126,7 +124,7 @@ class LifecycleTests(unittest.TestCase):
             controller = LifecycleController(Path(directory), backend=self.backend, rebuilder=rebuild)
             controller.callback(controller.register(self.config), "exhaust")
             state = controller.snapshot()
-            self.assertEqual(controller.tick(datetime(2026, 10, 5, 5, 0, tzinfo=timezone.utc)), [])
+            self.assertEqual(controller.tick(datetime(2026, 10, 5, 5, 0, tzinfo=UTC)), [])
         self.assertEqual(len(self.backend.calls), 3)
         self.assertEqual(len(state["rebuilds"]), 2)
         self.assertTrue(state["families"]["daily-digest"]["suspended"])
@@ -177,11 +175,11 @@ class LifecycleTests(unittest.TestCase):
             overlaps = []
 
             def during_run(compiled, artifacts, binding):
-                overlaps.extend(controller.tick(datetime(2026, 10, 6, 5, 0, tzinfo=timezone.utc)))
+                overlaps.extend(controller.tick(datetime(2026, 10, 6, 5, 0, tzinfo=UTC)))
                 return execute(compiled, artifacts, binding)
 
             self.backend.execute = during_run
-            result = controller.tick(datetime(2026, 10, 5, 5, 0, tzinfo=timezone.utc))
+            result = controller.tick(datetime(2026, 10, 5, 5, 0, tzinfo=UTC))
             self.assertEqual(result[0]["state"], "passed")
             self.assertEqual(overlaps[0]["state"], "skipped_overlap")
             self.assertEqual(len(self.backend.calls), 2)
@@ -275,7 +273,7 @@ class LifecycleTests(unittest.TestCase):
                 return execute(compiled, artifacts, binding)
 
             self.backend.execute = during_old_run
-            controller.tick(datetime(2026, 10, 5, 5, 0, tzinfo=timezone.utc))
+            controller.tick(datetime(2026, 10, 5, 5, 0, tzinfo=UTC))
             state = controller.snapshot()
             self.assertEqual(state["families"]["daily-digest"]["active"], "daily-digest@2")
             kinds = [t["kind"] for t in state["transitions"]]

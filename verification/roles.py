@@ -1,7 +1,7 @@
 """Bind independent business roles to submitted logical occurrences by lineage."""
 
 from itertools import product
-from typing import Any, TYPE_CHECKING, TypedDict, NotRequired, cast
+from typing import TYPE_CHECKING, Any, NotRequired, TypedDict, cast
 
 if TYPE_CHECKING or __package__:
     from .contracts import Rejected, equal, require
@@ -24,8 +24,8 @@ class RoleContract(TypedDict):
     exclusive_actors: NotRequired[list[str]]
 
 
-# The three original scenarios, whose records predate submitted-graph binding.
-BASELINE_SCENARIOS = ("invoice-total", "ticket-routing", "competitor-report")
+# Scenarios whose historical records carry no submitted graph; only they may bind by unique operation.
+GRAPHLESS_RECORD_SCENARIOS = ("invoice-total", "ticket-routing", "competitor-report")
 
 
 def contract_for(scenario: str) -> RoleContract:
@@ -75,7 +75,7 @@ def bind_roles(scenario: str, config: dict) -> dict[str, str]:
     ]
     matches = []
     for assignment in product(*candidates):
-        binding = {role: step["id"] for role, step in zip(roles, assignment)}
+        binding = {role: step["id"] for role, step in zip(roles, assignment, strict=True)}
         if len(set(binding.values())) != len(roles):
             continue
         reverse = {sid: role for role, sid in binding.items()}
@@ -86,7 +86,7 @@ def bind_roles(scenario: str, config: dict) -> dict[str, str]:
                 set(edges) == {tuple(edge) for edge in contract["edges"]},
                 "Submitted dependencies differ from role lineage",
             )
-            for role, step in zip(roles, assignment):
+            for role, step in zip(roles, assignment, strict=True):
                 expected = contract["roles"][role]
                 equal(
                     role_references(step.get("with"), reverse), expected["inputs"], "Wrong role input origin: " + role

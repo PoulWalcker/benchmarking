@@ -13,9 +13,11 @@ from unittest.mock import patch
 from sapi_config_lab.coordinate.live import audit_records, main, validate_control
 from sapi_config_lab.coordinate.live_evidence import reconcile_dispatches
 from sapi_config_lab.coordinate.replay import load_selection
-from sapi_config_lab.paths import CATALOG
-from sapi_config_lab.evidence import digest
+from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
+from sapi_config_lab.evidence import digest, sha256
 from sapi_config_lab.execute.agency import DispatchAudit, execute
+from sapi_config_lab.execute.host import HostConfig
+from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.profile import read_bindings
 
 
@@ -151,3 +153,62 @@ class LiveEvidenceTests(unittest.TestCase):
         self.assertEqual(digest({"b": [2], "a": "é"}), digest({"a": "é", "b": [2]}))
         with self.assertRaises(ValueError):
             digest({"x": float("nan")})
+
+
+class WrapperIdentityTests(unittest.TestCase):
+    def identity(self, root: Path, files: list[dict]) -> Path:
+        path = root / "identity.json"
+        record = {
+            "schema": "sapi-lab-wrapper-identity/v1",
+            "endpoint": "http://127.0.0.1:8765/run",
+            "dispatch": "codex-exec",
+            "response_substitution": False,
+            "wrapper_retries": 0,
+            "provider_internal_retries": "unknown",
+            "model": "gpt-6-astra",
+            "files": files,
+        }
+        path.write_text(json.dumps(record))
+        return path
+
+    def test_a_relocated_wrapper_is_named_explicitly_and_still_hash_checked(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            moved = root / "elsewhere/codex_bridge.py"
+            moved.parent.mkdir()
+            moved.write_text("wrapper source")
+            recorded = {"path": "/Users/someone/n8n/codex_bridge.py", "sha256": sha256(moved)}
+            path = self.identity(root, [recorded])
+
+            def check(files=None):
+                return wrapper_identity(path, "http://127.0.0.1:8765/run", "gpt-6-astra", files)
+
+            with self.assertRaisesRegex(ValueError, "identity changed"):
+                check()
+            self.assertEqual(check({"codex_bridge.py": moved})["model"], "gpt-6-astra")
+            with self.assertRaisesRegex(ValueError, "does not record"):
+                check({"other.py": moved})
+            moved.write_text("edited wrapper source")
+            with self.assertRaisesRegex(ValueError, "identity changed"):
+                check({"codex_bridge.py": moved})
+            with self.assertRaisesRegex(ValueError, "incompatible"):
+                wrapper_identity(path, "http://127.0.0.1:8765/run", "other-model", {"codex_bridge.py": moved})
+
+    def test_wrapper_file_arguments_are_explicit_pairs(self):
+        self.assertEqual(parse_wrapper_files(["a.py=/x/a.py"]), {"a.py": Path("/x/a.py")})
+        for bad in (["a.py"], ["=/x"], ["a.py=/x", "a.py=/y"]):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                parse_wrapper_files(bad)
+
+
+class HostConfigTests(unittest.TestCase):
+    def test_every_machine_setting_has_an_environment_override(self):
+        defaults = HostConfig()
+        configured = HostConfig.from_environment(
+            {"SAPI_CONTAINER_HOST": "172.17.0.1", "SAPI_BRIDGE_PORT": "19000", "SAPI_STAGING_DIR": "/srv/stage"}
+        )
+        self.assertEqual(configured.container_host, "172.17.0.1")
+        self.assertEqual(configured.bridge_port, 19000)
+        self.assertEqual(configured.staging_dir, "/srv/stage")
+        self.assertEqual(configured.wrapper_url, defaults.wrapper_url)
+        self.assertEqual(HostConfig.from_environment({}), defaults)

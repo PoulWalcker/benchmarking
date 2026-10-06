@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
-"""Task acceptance, deliberately independent from compiler/operation helpers.
+"""Independent task acceptance; it imports no compiler or operation code and never executes anything.
 
-The verifier never executes anything. `plan` states exactly which definitions
-the trusted execution step must run for a submission; `evaluate` reads what
-that step recorded, checks the record is complete and is the plan it was
-given, and only then judges it. Business assertions consume engine-neutral
-observations; the n8n evidence adapter separately establishes native
-execution provenance. Recorded evidence is never modified: each decision is
-written to its own acceptance.json under the sibling evaluation/ directory.
+`plan` states which definitions the trusted step must run; `evaluate` checks the recorded
+evidence is exactly that plan's, then judges it, writing decisions beside, never into, the evidence.
 """
 
 from __future__ import annotations
@@ -16,36 +11,37 @@ import argparse
 import copy
 import hashlib
 import json
-from typing import Any, TYPE_CHECKING
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import yaml
 
 if TYPE_CHECKING or __package__:
     from .business import check_business_result, expected_classification
-    from .extensions import refinement_corruptions, reply_roles, verify_refinement
     from .contracts import Recorded, Rejected, require
+    from .extensions import refinement_corruptions, reply_roles, verify_refinement
     from .n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
     from .roles import bind_roles, contract_for
     from .rubric import SCHEMA, Judge
-    from .rubric_facts import NOT_EVALUATED, evaluate as score_rubric, observe
+    from .rubric_facts import NOT_EVALUATED, observe
+    from .rubric_facts import evaluate as score_rubric
 else:  # Harbor executes its copied verifier directly.
     import sys
 
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from business import check_business_result, expected_classification
-    from extensions import refinement_corruptions, reply_roles, verify_refinement
     from contracts import Recorded, Rejected, require
+    from extensions import refinement_corruptions, reply_roles, verify_refinement
     from n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
     from roles import bind_roles, contract_for
     from rubric import SCHEMA, Judge
-    from rubric_facts import NOT_EVALUATED, evaluate as score_rubric, observe
+    from rubric_facts import NOT_EVALUATED, observe
+    from rubric_facts import evaluate as score_rubric
 
 PLAN_SCHEMA = "sapi-lab-observation-plan/v1"
 OBSERVATION_SCHEMA = "sapi-lab-observation/v1"
-# The corrupted-artifact probe: compiled code is altered after compilation, so
-# n8n succeeds and only independent acceptance can notice the wrong result.
+# Corrupted-artifact probe: n8n succeeds and only independent acceptance can notice the wrong result.
 WRONG_RESULT = "wrong-result"
 
 
@@ -59,13 +55,7 @@ def check_execution(
     case: dict | None = None,
     rubric_runs: list | None = None,
 ) -> dict:
-    """Both independent business acceptance and engine provenance must pass.
-
-    `rubric_runs` collects rubric facts for the cases the submission is scored
-    on. They are read off the observation before acceptance, so a case that is
-    rejected still reports which named obligation failed; corruption probes pass
-    no collector, because a deliberately broken run is not the submission.
-    """
+    """Business acceptance and engine provenance must both pass; `rubric_runs` collects facts before acceptance."""
     if scenario == "revise-answer":
         if config is None or case is None:
             raise Rejected("Refinement requires submitted config and frozen case")
@@ -255,11 +245,7 @@ def plan(
     mode: str = "stub",
     selected_case: str | None = None,
 ) -> dict:
-    """Every definition the trusted execution step must run, and nothing else.
-
-    Each entry is a complete config: the submission with fixture inputs applied,
-    a deliberately corrupted artifact, or a deliberately invalid definition.
-    """
+    """Every definition the trusted step must run: fixture-applied submissions, corruptions and invalid definitions."""
     require(isinstance(cases, dict), "Unknown acceptance scenario")
     assert cases is not None
     raw, config = read_submission(config_path)
@@ -403,7 +389,7 @@ def read_evidence(evidence: Path, expected_plan: dict) -> dict[str, dict[str, st
     )
     expected_files = {"submission.yaml", "observation.json"}
     files: dict[str, dict[str, str]] = {}
-    for entry, row in zip(expected_plan["entries"], recorded):
+    for entry, row in zip(expected_plan["entries"], recorded, strict=True):
         directory = evidence / "cases" / entry["name"]
         listed = row.get("files")
         required = {"case.json", "config.json"} if entry["procedure"] == "case" else {"snapshot.json", "event.json"}
@@ -428,11 +414,7 @@ def read_evidence(evidence: Path, expected_plan: dict) -> dict[str, dict[str, st
 
 
 def check_runtime_sources(runtime_src: Path, manifest_path: Path) -> None:
-    """The runtime that executed is the one packaged with these tests.
-
-    A candidate may write anywhere in its container; this detects edits to the
-    compiler and runtime sources. It is not a sandbox (see README).
-    """
+    """Detects edits to the packaged runtime a candidate could make in its container; not a sandbox."""
     expected = json.loads(manifest_path.read_text())
     suffixes = set(expected["suffixes"])
     present = {
@@ -452,11 +434,7 @@ def judge_entries(
     report: dict,
     rubric_runs: list[dict],
 ) -> None:
-    """Judge each recorded plan entry, appending its row to the report.
-
-    Rows are appended before judging, so a rejected submission still reports
-    how far the engine got. The first rejection raises.
-    """
+    """Judge each recorded entry; rows are appended first, so a rejection still shows how far the engine got."""
     fixtures = {case["name"]: case for kind in ("positive", "negative") for case in cases[kind]}
     for entry in entries:
         artifact_dir = recorded.case(entry["name"])
@@ -553,8 +531,6 @@ def evaluate(
     evaluation = evaluation or evidence.parent / "evaluation"
     evaluation.mkdir(parents=True, exist_ok=True)
     identity = evaluator_identity()
-    # Declared outside the try: a submission that is rejected part way through
-    # still says how far the engine got and which obligations were measured.
     rubric_runs: list[dict] = []
     report: dict[str, Any] = {
         "scenario": scenario,
@@ -592,25 +568,19 @@ def evaluate(
         else:
             judge_entries(scenario, expected["entries"], recorded, cases, mode, report, rubric_runs)
         report["passed"] = all(row["passed"] for row in report["cases"])
-    except Exception as error:
+    except Exception as error:  # Candidate evidence can fail any way; each way is a rejection
         report["error"] = str(error)
         report["error_type"] = type(error).__name__
         report["passed"] = False
     if scenario != "daily-digest":
-        # Outside the acceptance try on purpose: the rubric reads the verdict and
-        # never sets it. `score_rubric` returns None for a scenario with no card,
-        # and a stated non-score rather than raising, so neither can fail this
-        # submission. The engine ran every case the submission is scored on.
+        # Outside the acceptance try: the rubric reads the verdict and never sets it.
         executions = sum(row["kind"] == "positive" for row in report["cases"])
         executed = bool(rubric_runs) and len(rubric_runs) == executions
         try:
             scored = score_rubric(
                 scenario, rubric_runs, accepted=report["passed"], execution_pass=executed, judge=judge
             )
-        except Exception as error:
-            # `score_rubric` is written not to raise. The guard is here anyway because
-            # an exception escaping this late would leave the container without a
-            # report and pay a correct submission zero: the one thing a rubric may not do.
+        except Exception as error:  # A rubric must never cost a correct submission its report
             scored = {
                 "schema": SCHEMA,
                 "status": NOT_EVALUATED,
@@ -646,7 +616,7 @@ def main() -> int:
             parser.error("plan requires --output")
         try:
             issued = plan(args.scenario, args.config, cases, args.mode, args.case)
-        except Exception as error:
+        except Exception as error:  # An unplannable submission runs nothing and fails
             print(json.dumps({"planned": False, "error": f"{type(error).__name__}: {error}"}))
             return 1
         args.output.write_text(json.dumps(issued, ensure_ascii=False, indent=2) + "\n")

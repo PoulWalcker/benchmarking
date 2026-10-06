@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator
 from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import partial
 import json
 from pathlib import Path
@@ -13,15 +13,14 @@ import shutil
 import subprocess
 from typing import Any
 
-from sapi_config_lab.autowfbench_source import default_source
 from sapi_config_lab.coordinate.evaluation import trial_result
 from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.agency import start_bridge, stop_bridge
-from sapi_config_lab.execute.autowfbench import SimulatorHost
 from sapi_config_lab.execute.host import (
+    HostConfig,
     checked_harbor,
     collect_jobs,
     harbor_run_args,
@@ -31,7 +30,9 @@ from sapi_config_lab.execute.host import (
     running_containers,
     staging_dir,
 )
+from sapi_config_lab.execute.simulator import SimulatorHost
 from sapi_config_lab.paths import CATALOG
+from sapi_config_lab.pinned_source import pinned_source
 
 
 def fingerprint(path: Path) -> dict[str, str]:
@@ -42,10 +43,7 @@ def fingerprint(path: Path) -> dict[str, str]:
 
 
 def load_trials(job: Path, hosted: dict[str, Path] | None = None) -> list[dict]:
-    """One row per Harbor trial: reward, exception, the evaluator's report and the common result.
-
-    A hosted trial's report is the one its host recorded, never the container's copy.
-    """
+    """One row per Harbor trial; a hosted trial's report is its host's record, never the container's copy."""
     trials = []
     for path in sorted(job.glob("*/result.json")):
         trial = json.loads(path.read_text())
@@ -64,7 +62,7 @@ def load_trials(job: Path, hosted: dict[str, Path] | None = None) -> list[dict]:
 
 @dataclass(frozen=True)
 class Hosting:
-    """How a job's simulator tasks are served: runtime model mode, bridge and evaluator."""
+    """How a job's hosted tasks are served: runtime model mode, bridge and evaluator."""
 
     llm_mode: str
     evaluate: Callable[[str, Path], dict]
@@ -81,6 +79,7 @@ class Run:
     report: dict[str, Any]
     sources: dict
     prefix: str
+    host: HostConfig = field(default_factory=HostConfig.from_environment)
     harbor_argv: list[str] = field(default_factory=list)
     identity: str | None = None
     image: str | None = None
@@ -105,7 +104,7 @@ class Run:
         """Stage task packages from the pinned image and keep a copy beside the report."""
         if self.image is None:
             raise RuntimeError("Pin an image before staging task packages")
-        self.staging = staging_dir(self.prefix + "-")
+        self.staging = staging_dir(self.prefix + "-", self.host)
         prompts = stage_tasks(self.tasks, mode=mode, image=self.image, scenarios=scenarios, **inputs)
         shutil.copytree(self.tasks, self.output / "task-packages")
         self.pin("task-packages", self.output / "task-packages")
@@ -149,17 +148,16 @@ class Run:
     def hosted(
         self, job: str, tasks: Path, records: Path, hosting: Hosting | None
     ) -> Iterator[tuple[Path, dict[str, Path]]]:
-        """Serve each simulator task from the host; yields the task path Harbor runs and each host's record.
+        """Serve each hosted task for one job; yields the task path Harbor runs and each host's record.
 
-        Credentials go into a per-job copy, so the pinned packages never change,
-        and must not appear in anything this job persisted.
+        Credentials go into a per-job copy so pinned packages never change, and must not leak into anything persisted.
         """
         hosted = [task for task in task_dirs(tasks) if (task / "tests/environment.json").is_file()]
         if not hosted:
             yield tasks, {}
             return
         if hosting is None:
-            raise RuntimeError("Simulator tasks need a host environment")
+            raise RuntimeError("Hosted tasks need a host environment")
         assert self.staging is not None
         copy = self.staging / "hosted" / job / (tasks.name if tasks in hosted else "tasks")
         shutil.copytree(tasks, copy)
@@ -168,16 +166,18 @@ class Run:
             with ExitStack() as stack:
                 for task in hosted:
                     environment = json.loads((task / "tests/environment.json").read_text())
-                    scenario = environment["scenario"]
+                    scenario = SCENARIOS[environment["scenario"]]
+                    assert scenario.provenance is not None
                     host = SimulatorHost(
-                        default_source(),
+                        pinned_source(scenario.provenance.source),
                         environment["challenge"],
-                        records / scenario,
+                        records / scenario.name,
                         seed=environment["seed"],
-                        output=SCENARIOS[scenario].output,
+                        artifact=scenario.artifact,
                         llm_mode=hosting.llm_mode,
                         bridge_url=hosting.bridge_url,
-                        evaluate=partial(hosting.evaluate, scenario),
+                        evaluate=partial(hosting.evaluate, scenario.name),
+                        host=self.host,
                     )
                     stack.callback(host.close)
                     hosts.append(host)
@@ -198,9 +198,7 @@ class Run:
                 raise RuntimeError("Ephemeral credentials appeared in persisted artifacts: " + ", ".join(leaked))
 
     @contextmanager
-    def bridge(
-        self, port: int, upstream: str, budget: dict, name: str, *, bindings: Path = CATALOG, reject_tool_use=False
-    ) -> Iterator[Path]:
+    def bridge(self, budget: dict, name: str, *, bindings: Path = CATALOG, reject_tool_use=False) -> Iterator[Path]:
         """An Agency bridge enforcing `budget`; yields its audit path and always stops it."""
         budget_path = self.output / "budgets" / (name + ".json")
         audit = self.output / "audits" / (name + ".jsonl")
@@ -208,7 +206,13 @@ class Run:
         write_json(budget_path, budget)
         self.pin("budget " + name, budget_path)
         self.bridge_process = start_bridge(
-            port, upstream, audit, budget_path, self.output / (name + "-bridge.log"), bindings, reject_tool_use
+            self.host.bridge_port,
+            self.host.wrapper_url,
+            audit,
+            budget_path,
+            self.output / (name + "-bridge.log"),
+            bindings,
+            reject_tool_use,
         )
         try:
             yield audit
@@ -220,7 +224,7 @@ class Run:
         def cleanup(stage: str, step: Callable[[], Any]) -> None:
             try:
                 step()
-            except Exception as error:
+            except Exception as error:  # Every cleanup step runs and is reported
                 self.report.setdefault("cleanup_errors", []).append(
                     {"stage": stage, "error": f"{type(error).__name__}: {error}"}
                 )
@@ -231,7 +235,7 @@ class Run:
                 return
             try:
                 collect_jobs(self.staging, self.output / "jobs")
-            except Exception:
+            except OSError:
                 self.report["retained_staging"] = str(self.staging)
                 raise
             shutil.rmtree(self.staging)
@@ -254,7 +258,7 @@ class Run:
         cleanup("final_check", lambda: self.check("final"))
         cleanup("collect_jobs", collect)
         cleanup("containers", containers)
-        self.report["finished_at"] = datetime.now(timezone.utc).isoformat()
+        self.report["finished_at"] = datetime.now(UTC).isoformat()
         write_json(self.output / "report.json", self.report)
 
 
@@ -265,6 +269,7 @@ def run_experiment(
     *,
     prefix: str,
     classify: Callable[[Exception], str] | None = None,
+    host: HostConfig | None = None,
 ) -> dict[str, Any]:
     """Create the run directory, call `body(run)`, and always finish the run."""
     output = output.resolve()
@@ -272,16 +277,16 @@ def run_experiment(
         raise ValueError("Choose a new report directory; an existing one is never overwritten")
     output.mkdir(parents=True)
     report.setdefault("status", "failed")
-    report["started_at"] = datetime.now(timezone.utc).isoformat()
+    report["started_at"] = datetime.now(UTC).isoformat()
     sources = source_manifest()
     write_json(output / "source-manifest.json", sources)
     report["source_manifest"] = "source-manifest.json"
-    run = Run(output, report, sources, prefix)
+    run = Run(output, report, sources, prefix, host or HostConfig.from_environment())
     try:
         (output / "existing-containers.txt").write_text(running_containers())
         run.harbor_argv, report["harbor_version"] = checked_harbor()
         body(run)
-    except Exception as error:
+    except Exception as error:  # A run always ends with a written report
         report["status"] = "failed"
         report["error"] = f"{type(error).__name__}: {error}"
         if isinstance(error, subprocess.TimeoutExpired):

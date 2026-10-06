@@ -9,7 +9,7 @@ from sapi_config_lab.coordinate.live_evidence import case_budget
 from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import read
-from tests.test_extension_verification import evidence
+from tests.test_refinement_verification import evidence
 from verification.verify import check_execution
 
 

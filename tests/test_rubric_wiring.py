@@ -6,17 +6,17 @@ import tempfile
 import unittest
 import unittest.mock
 
-from tests.test_expansion_scenarios import observation
+from sapi_config_lab.coordinate.scenarios import all_cases
+from tests.support.verifying import verify_with_runner
+from tests.test_scenario_business import observation
 from verification import rubric_facts
 from verification import verify as verifier
+from verification.business import check_business_result
 from verification.contracts import Rejected
 from verification.rubric import RecordedJudge, RunFacts, _judge_view
 from verification.rubric_cards import CARDS, card_for
-from verification.business import check_business_result
 from verification.scenario_business import check_scenario_business_result
 from verification.scenario_contracts import CONTRACTS, ROUTING_EDGES
-from sapi_config_lab.coordinate.scenarios import all_cases
-from tests.support.verifying import verify_with_runner
 
 ROOT = Path(__file__).parents[1]
 SCENARIO = "support-review-packet"
@@ -182,7 +182,7 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(document["deterministic_points"], 6.0)
 
     def test_a_judge_that_answers_no_leaves_the_six_deterministic_points(self):
-        document = self.evaluate(RecordedJudge({name: "no" for name in ANSWERS}))
+        document = self.evaluate(RecordedJudge(dict.fromkeys(ANSWERS, "no")))
         self.assertEqual(document["score_0_10"], 6.0)
         self.assertEqual(document["normalized_reward"], 0.6)
 
@@ -314,7 +314,7 @@ class VerifierSeamTests(unittest.TestCase):
 
     def test_a_rubric_scored_scenario_still_rewards_exactly_one_or_zero(self):
         """The two numbers are separate: a quality score of 6.0 is never the reward."""
-        judge = RecordedJudge({name: "no" for name in ANSWERS})
+        judge = RecordedJudge(dict.fromkeys(ANSWERS, "no"))
         for accepted, expected in ((True, 1.0), (False, 0.0)):
             with self.subTest(accepted=accepted):
                 document = rubric_facts.evaluate(
@@ -644,7 +644,7 @@ class CardedScenarioTests(unittest.TestCase):
                 self.assertEqual(sorted(judge.requests[0].facts.prose), declared)
 
     def test_the_judge_sees_no_check_name_no_verdict_and_no_fixture_name(self):
-        for scenario, (case, build) in CARDED_SCENARIOS.items():
+        for scenario, (case, _build) in CARDED_SCENARIOS.items():
             if not judged_criteria(scenario):
                 continue
             with self.subTest(scenario=scenario):

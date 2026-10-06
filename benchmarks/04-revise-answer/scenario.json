@@ -1,4 +1,5 @@
 {
-  "group": "extension",
+  "environment": "fixtures",
+  "evaluator": "verifier",
   "prompt_extension": "TASK-SPECIFIC REFINEMENT EXTENSION"
 }

@@ -7,11 +7,7 @@ CATALOG = Path(__file__).resolve().parent / "bindings.yaml"
 
 
 def workspace_root() -> Path:
-    """Experiments need fixtures/templates; the installed compiler does not.
-
-    SAPI_LAB_ROOT selects a checkout explicitly. Otherwise discover it from
-    the working directory or an editable source installation. Never create one.
-    """
+    """The checkout experiments read fixtures from: SAPI_LAB_ROOT, else the working directory or this source tree."""
     explicit = os.environ.get("SAPI_LAB_ROOT")
     candidates = [Path(explicit)] if explicit else [Path.cwd(), *Path.cwd().parents, *Path(__file__).resolve().parents]
     for path in candidates:

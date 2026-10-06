@@ -1,34 +1,44 @@
-"""Local catalog adapter for the user's existing codex-exec HTTP wrapper.
+"""Agency bridge: n8n's catalog operations forwarded to the local model wrapper, budgeted and audited.
 
-No credentials, stderr, arbitrary prompts, or model overrides are exposed.
-The upstream wrapper remains unchanged. This is a research adapter, not a
-durable Agency service: no retries, idempotency, cancellation or actor memory.
+No credentials, stderr, arbitrary prompts or model overrides are exposed. This is a
+research adapter, not a durable Agency service: no retries, idempotency or cancellation.
 """
 
 from __future__ import annotations
 
 import argparse
 import hashlib
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import math
 import os
+from pathlib import Path
 import re
 import subprocess
 import sys
 import time
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request
 
 import yaml
+
 from sapi_config_lab.evidence import digest
+from sapi_config_lab.execute.host import HostConfig
 from sapi_config_lab.net import urlopen
 from sapi_config_lab.paths import CATALOG, workspace_root
+from sapi_config_lab.wrapper_audit import reported_model, reported_tokens, stderr_sha256, tool_markers
 
 MAX_BODY = 1_048_576
-WRAPPER_UPSTREAM = "http://127.0.0.1:8765/run"
-WRAPPER_MODEL = "gpt-6-astra"
+MAX_OUTGOING_ATTEMPTS = 8
+# The wrapper's own subprocess deadline is 180 seconds; never wait much past it.
+WRAPPER_TIMEOUT_SECONDS = 185
+BUDGET_FIELDS = (
+    {"max_attempts", "operations", "model"},
+    {"max_attempts", "operations", "model", "occurrences"},
+    {"max_attempts", "operations", "model", "occurrences", "expires_at"},
+    {"max_attempts", "operations", "model", "occurrences", "expires_at", "workflow_id"},
+)
+OCCURRENCE = re.compile(r"[a-z][a-z0-9_-]*/r[1-9][0-9]*/[a-z][a-z0-9_-]*(?:/attempt[1-9][0-9]*)?")
 
 
 class ContractError(ValueError):
@@ -36,7 +46,7 @@ class ContractError(ValueError):
 
 
 def check_schema(value, schema, path="output"):
-    """Validate the documented catalog subset without coercion or extra deps."""
+    """Validate the documented catalog subset without coercion or extra dependencies."""
     kind = schema.get("type")
     if isinstance(kind, list):
         for candidate in kind:
@@ -75,12 +85,15 @@ def check_schema(value, schema, path="output"):
     if kind == "array":
         for index, child in enumerate(value):
             check_schema(child, schema["items"], f"{path}[{index}]")
-    if kind in ("integer", "number"):
-        if value < schema.get("minimum", -math.inf) or value > schema.get("maximum", math.inf):
-            raise ContractError(f"{path}: out of range")
+    if kind in ("integer", "number") and not schema.get("minimum", -math.inf) <= value <= schema.get(
+        "maximum", math.inf
+    ):
+        raise ContractError(f"{path}: out of range")
 
 
 def strict_json(text):
+    """JSON that rejects duplicate keys and non-finite constants."""
+
     def pairs(items):
         result = {}
         for key, value in items:
@@ -99,7 +112,7 @@ def strict_json(text):
 
 
 def build_prompt(data, binding) -> str:
-    # Preserve the established model instructions and prompt encoding.
+    """The exact model prompt; its bytes are pinned by recorded prompt hashes."""
     return (
         Path(__file__).with_name("agency-prompt.md").read_text()
         + "OPERATION: "
@@ -113,62 +126,55 @@ def build_prompt(data, binding) -> str:
     )
 
 
+def validate_budget(budget: dict) -> None:
+    if (
+        not isinstance(budget, dict)
+        or set(budget) not in BUDGET_FIELDS
+        or type(budget["max_attempts"]) is not int
+        or not (0 if "occurrences" in budget else 1) <= budget["max_attempts"] <= MAX_OUTGOING_ATTEMPTS
+        or not isinstance(budget["operations"], dict)
+        or any(
+            not isinstance(key, str) or type(value) is not int or value < 1
+            for key, value in budget["operations"].items()
+        )
+        or sum(budget["operations"].values()) != budget["max_attempts"]
+        or not isinstance(budget["model"], str)
+        or re.fullmatch(r"[A-Za-z0-9_.-]+", budget["model"]) is None
+    ):
+        raise ValueError("Invalid outgoing attempt budget")
+    if "occurrences" in budget:
+        occurrences = budget["occurrences"]
+        if not isinstance(occurrences, dict) or len(occurrences) != budget["max_attempts"]:
+            raise ValueError("Invalid outgoing occurrence admission")
+        counts: dict[str, int] = {}
+        for occurrence, operation in occurrences.items():
+            if (
+                not isinstance(occurrence, str)
+                or OCCURRENCE.fullmatch(occurrence) is None
+                or not isinstance(operation, str)
+            ):
+                raise ValueError("Invalid outgoing occurrence admission")
+            counts[operation] = counts.get(operation, 0) + 1
+        if counts != budget["operations"]:
+            raise ValueError("Occurrence and operation budgets disagree")
+    if "expires_at" in budget and (
+        type(budget["expires_at"]) not in (int, float)
+        or not math.isfinite(budget["expires_at"])
+        or budget["expires_at"] <= 0
+    ):
+        raise ValueError("Invalid outgoing case deadline")
+    if "workflow_id" in budget and (
+        not isinstance(budget["workflow_id"], str)
+        or re.fullmatch(r"[A-Za-z0-9_-]{1,64}", budget["workflow_id"]) is None
+    ):
+        raise ValueError("Invalid admitted native workflow ID")
+
+
 class DispatchAudit:
     """One serial adapter's durable attempt budget and fail-closed run latch."""
 
     def __init__(self, path: Path, budget: dict):
-        if (
-            not isinstance(budget, dict)
-            or set(budget)
-            not in (
-                {"max_attempts", "operations", "model"},
-                {"max_attempts", "operations", "model", "occurrences"},
-                {"max_attempts", "operations", "model", "occurrences", "expires_at"},
-                {"max_attempts", "operations", "model", "occurrences", "expires_at", "workflow_id"},
-            )
-            or type(budget["max_attempts"]) is not int
-            or not (0 if "occurrences" in budget else 1) <= budget["max_attempts"] <= 8
-            or not isinstance(budget["operations"], dict)
-            or any(
-                not isinstance(key, str) or type(value) is not int or value < 1
-                for key, value in budget["operations"].items()
-            )
-            or sum(budget["operations"].values()) != budget["max_attempts"]
-            or not isinstance(budget["model"], str)
-            or re.fullmatch(r"[A-Za-z0-9_.-]+", budget["model"]) is None
-        ):
-            raise ValueError("Invalid outgoing attempt budget")
-        occurrences = budget.get("occurrences")
-        if occurrences is not None:
-            if not isinstance(occurrences, dict) or len(occurrences) != budget["max_attempts"]:
-                raise ValueError("Invalid outgoing occurrence admission")
-            expected_counts: dict[str, int] = {}
-            for occurrence, operation in occurrences.items():
-                if (
-                    not isinstance(occurrence, str)
-                    or re.fullmatch(
-                        r"[a-z][a-z0-9_-]*/r[1-9][0-9]*/[a-z][a-z0-9_-]*(?:/attempt[1-9][0-9]*)?", occurrence
-                    )
-                    is None
-                    or not isinstance(operation, str)
-                ):
-                    raise ValueError("Invalid outgoing occurrence admission")
-                expected_counts[operation] = expected_counts.get(operation, 0) + 1
-            if expected_counts != budget["operations"]:
-                raise ValueError("Occurrence and operation budgets disagree")
-        elif "occurrences" in budget:
-            raise ValueError("Invalid outgoing occurrence admission")
-        if "expires_at" in budget and (
-            type(budget["expires_at"]) not in (int, float)
-            or not math.isfinite(budget["expires_at"])
-            or budget["expires_at"] <= 0
-        ):
-            raise ValueError("Invalid outgoing case deadline")
-        if "workflow_id" in budget and (
-            not isinstance(budget["workflow_id"], str)
-            or re.fullmatch(r"[A-Za-z0-9_-]{1,64}", budget["workflow_id"]) is None
-        ):
-            raise ValueError("Invalid admitted native workflow ID")
+        validate_budget(budget)
         self.occurrences: set[str] = set()
         self.execution_identity: str | None = None
         self.path = path
@@ -257,9 +263,9 @@ def execute(data, catalog, upstream, timeout, *, audit: DispatchAudit | None = N
         if audit:
             context = audit.begin(data, prompt)
         stage = "agency_transport"
-        # Attempt is fsynced immediately before this actual outgoing call; no retries.
+        # The attempt is fsynced just before this one outgoing call; there are no retries.
         if audit and "expires_at" in audit.budget:
-            timeout = min(timeout, 185, audit.budget["expires_at"] - time.time())
+            timeout = min(timeout, WRAPPER_TIMEOUT_SECONDS, audit.budget["expires_at"] - time.time())
             if timeout <= 0:
                 raise ContractError("case deadline expired before dispatch")
         with urlopen(request, timeout=timeout) as response:
@@ -281,26 +287,15 @@ def execute(data, catalog, upstream, timeout, *, audit: DispatchAudit | None = N
         stderr = wrapper.get("stderr", "")
         if not isinstance(stderr, str):
             raise ContractError("invalid wrapper metadata")
-        observed_tool_markers = [
-            name
-            for name, pattern in {
-                "shell": r"(?m)^exec(?:\s|$)",
-                "tool": r"(?m)^tool\s+",
-                "file_edit": r"(?m)^(?:file update|apply_patch)(?:\s|$)",
-                "web": r"(?mi)^(?:web search|searching the web|searched the web)(?:\s|$)",
-            }.items()
-            if re.search(pattern, stderr)
-        ]
+        observed_tool_markers = tool_markers(stderr)
         if reject_tool_use and observed_tool_markers:
             stage = "forbidden_tool_use_observed"
             raise ContractError("forbidden tool use observed")
-        model = re.search(r"(?m)^model:\s*([A-Za-z0-9_.-]+)\s*$", stderr)
-        model_name = model.group(1) if model else None
+        model_name = reported_model(stderr)
         if audit and model_name != audit.budget["model"]:
             raise ContractError("unexpected or absent wrapper model identifier")
         result = {"invocation_id": invocation, "status": "completed", "output": output, "usage": None}
         if audit:
-            tokens = re.search(r"(?m)^tokens used\s*\n([\d,]+)\s*$", stderr)
             audit.append(
                 {
                     "event": "completion",
@@ -314,8 +309,8 @@ def execute(data, catalog, upstream, timeout, *, audit: DispatchAudit | None = N
                         "response_bytes": len(raw),
                         "response_sha256": hashlib.sha256(raw).hexdigest(),
                         "output_text_sha256": hashlib.sha256(wrapper["output"].encode()).hexdigest(),
-                        "stderr_sha256": hashlib.sha256(stderr.encode()).hexdigest(),
-                        "cli_reported_tokens": int(tokens.group(1).replace(",", "")) if tokens else None,
+                        "stderr_sha256": stderr_sha256(stderr),
+                        "cli_reported_tokens": reported_tokens(stderr),
                         "tool_audit_enabled": reject_tool_use,
                         "observed_tool_markers": observed_tool_markers if reject_tool_use else None,
                         "observed_retry_markers": len(re.findall(r"(?mi)^(?:retrying|reconnecting)\b", stderr)),
@@ -326,10 +321,8 @@ def execute(data, catalog, upstream, timeout, *, audit: DispatchAudit | None = N
         return {**result, "provider": "existing-codex-exec-wrapper", "model": model_name}
     except Exception as error:
         if audit:
-            timeout_error = (
-                isinstance(error, TimeoutError)
-                or isinstance(error, URLError)
-                and isinstance(error.reason, TimeoutError)
+            timeout_error = isinstance(error, TimeoutError) or (
+                isinstance(error, URLError) and isinstance(error.reason, TimeoutError)
             )
             audit.fail(
                 context,
@@ -376,15 +369,14 @@ def make_handler(catalog, upstream, timeout, audit_path, budget=None, reject_too
             except TimeoutError, HTTPError, URLError:
                 status, result = 502, {"status": "failed", "error": "upstream_transport"}
             except ContractError as error:
-                # All ContractError messages are adapter-owned labels or schema
-                # paths; they never include model output or wrapper stderr.
+                # Messages are adapter-owned labels or schema paths, never model output or stderr.
                 status, result = 422, {"status": "failed", "error": "contract_rejected", "detail": str(error)}
             except ValueError:
                 status, result = (
                     422,
                     {"status": "failed", "error": "contract_rejected", "detail": "invalid request length"},
                 )
-            except Exception:
+            except Exception:  # Server boundary: a 500, never a hung n8n node
                 status, result = 500, {"status": "failed", "error": "adapter_error"}
             record = {
                 "timestamp_unix": time.time(),
@@ -428,14 +420,12 @@ def start_bridge(
     bindings: Path = CATALOG,
     reject_tool_use: bool = False,
 ) -> subprocess.Popen:
-    """Start this adapter as a child process and wait until it answers /health.
-
-    Fails if the process exits or another service already holds the port.
-    """
+    """Start the bridge as a child process and wait for /health; fails if the port is already taken."""
     with log.open("w") as stream:
         process = subprocess.Popen(
             [sys.executable, "-m", "sapi_config_lab.execute.agency", "--port", str(port), "--upstream", upstream]
-            + ["--timeout", "185", "--audit", str(audit), "--budget", str(budget), "--bindings", str(bindings)]
+            + ["--timeout", str(WRAPPER_TIMEOUT_SECONDS), "--audit", str(audit), "--budget", str(budget)]
+            + ["--bindings", str(bindings)]
             + (["--reject-tool-use"] if reject_tool_use else []),
             cwd=workspace_root(),
             stdout=stream,
@@ -471,11 +461,12 @@ def stop_bridge(process: subprocess.Popen | None) -> None:
 
 
 def main():
+    host = HostConfig.from_environment()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=18765)
-    parser.add_argument("--upstream", default=WRAPPER_UPSTREAM)
-    parser.add_argument("--timeout", type=int, default=185)
+    parser.add_argument("--port", type=int, default=host.bridge_port)
+    parser.add_argument("--upstream", default=host.wrapper_url)
+    parser.add_argument("--timeout", type=int, default=WRAPPER_TIMEOUT_SECONDS)
     parser.add_argument("--bindings", type=Path, default=CATALOG)
     parser.add_argument("--audit", type=Path, required=True)
     parser.add_argument("--budget", type=Path)

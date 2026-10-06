@@ -1,9 +1,10 @@
 """Compile the supported profile to n8n JSON; never execute workflows."""
 
 import json
-import uuid
 from pathlib import Path
 from urllib.parse import urlparse
+import uuid
+
 from sapi_config_lab.contracts import Document, LlmMode
 from sapi_config_lab.profile import SPEC, Unsupported, check, validate
 
@@ -63,12 +64,7 @@ def compile_n8n(
     activation: str = "fixture",
     bound_deadline: bool = False,
 ) -> tuple[Document, dict[str, str]]:
-    """Compile the closed DAG profile to n8n; compilation does not execute it.
-
-    bridge_url is a deployment base URL or the full /v1/agency/execute URL.
-    Live mode retains fixture activation; workflow deadlines remain explicit in
-    cfg and each HTTP timeout is capped at that deadline. No automatic retries.
-    """
+    """Compile the closed DAG profile to n8n without executing it; HTTP timeouts are capped at the deadline."""
     check(llm_mode in ("stub", "live"), "llm_mode must be stub or live")
     check(type(request_timeout_seconds) is int and request_timeout_seconds > 0, "Invalid HTTP timeout")
     if llm_mode == "live":
@@ -179,8 +175,7 @@ def compile_n8n(
         step_json, binding_json = json.dumps(step, ensure_ascii=False), json.dumps(binding, ensure_ascii=False)
         tool_transport = binding.get("transport") == "http"
         if tool_transport or (step["kind"] == "LLM" and llm_mode == "live"):
-            # Exclusive IF paths reconverge at Restore. The false path carries
-            # the envelope and never reaches HTTP Request, even for a root step.
+            # Exclusive IF paths reconverge at Restore; the false path never reaches HTTP Request.
             name, guard = "Prepare " + sid, "Guard " + sid
             http = ("Tool " if tool_transport else "Agency ") + sid
             restored = sid + (" [HTTP]" if tool_transport else " [LLM LIVE]")

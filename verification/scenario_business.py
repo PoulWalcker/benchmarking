@@ -1,15 +1,13 @@
-"""Independent business obligations for the four bounded expansion scenarios.
+"""Independent business obligations for the composed scenarios (06-09), over logical observations only.
 
-These checks consume logical observations only. They import neither compiler nor
-operation implementations; native execution and submitted origins are checked at
-separate seams. Source facts are an explicitly bounded fixture lexical contract.
+Source facts are a bounded lexical contract stated by each fixture.
 """
 
 from collections.abc import Callable
 import json
-import re
 from pathlib import Path
-from typing import Any, TYPE_CHECKING
+import re
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING or __package__:
     from .contracts import WorkflowObservation, equal, require
@@ -97,10 +95,7 @@ def _facts(text: str, anchors: list, label: str, forbidden: list | tuple = ()) -
 
 
 def fact_contract(scenario: str, inputs: dict[str, Any], case: dict | None) -> dict:
-    """The frozen fixture these inputs came from, which states the required facts.
-
-    Without an explicit case, look the inputs up in the staged cases.json.
-    """
+    """The fixture these inputs came from (looked up in the staged cases.json without a case)."""
     if case is not None:
         equal(case.get("inputs"), inputs, "Independent fixture inputs differ")
         return case
@@ -235,12 +230,7 @@ def _priority_research(
 def bulletin_brief_obligations(
     inputs: dict[str, Any], observation: WorkflowObservation, *, case: dict | None = None, mode: str = "live"
 ) -> dict[str, Callable[[], Any]]:
-    """The five named obligations of bulletin-market-brief, in acceptance order.
-
-    `mode` defaults to live: the extra stub equalities are the harness checking
-    its own deterministic operations, not an obligation of the brief. Acceptance
-    passes the mode it was given, so its behaviour is unchanged.
-    """
+    """The five named obligations of bulletin-market-brief, in acceptance order; `mode` defaults to live."""
     return {
         "digest_covers_every_article": lambda: _digest(inputs, observation, case),
         "digest_grounded_in_articles": lambda: _digest_facts(inputs, observation, case),
@@ -263,12 +253,7 @@ def priority_support_obligations(
 def support_review_obligations(
     inputs: dict[str, Any], observation: WorkflowObservation
 ) -> dict[str, Callable[[], dict]]:
-    """The three named obligations of support-review-packet, in acceptance order.
-
-    Acceptance calls exactly these and lets the first Rejected propagate, as it
-    always has. rubric_facts.py calls them one at a time and reads raised / did
-    not raise as one named check each, so neither side restates the other.
-    """
+    """The three named obligations of support-review-packet, in acceptance order."""
     return {
         "routing_single_action": lambda: _routing(inputs, observation),
         "ledger_report": lambda: _ledger(inputs, observation, "invoices", "validate", "total", "report"),
@@ -332,5 +317,5 @@ def check_scenario_business_result(
         brief = obligations["research_matches_priority"]()
         equal(output, {"action": action, "brief": brief}, "Wrong priority support packet")
     else:
-        require(False, "Unknown expansion acceptance scenario")
+        require(False, "Unknown scenario for composed acceptance")
     return {"output_verified": True, "operation_count": len(events), "llm_mode": mode}

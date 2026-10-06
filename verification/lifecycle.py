@@ -1,9 +1,10 @@
 """Independent lifecycle audit; controller records never substitute for native runs."""
 
+from datetime import UTC, datetime
 import hashlib
+from itertools import pairwise
 import json
-from datetime import datetime, timezone
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
 
 if TYPE_CHECKING or __package__:
@@ -73,7 +74,7 @@ def digest_native(config: dict, run: dict, admission: dict, *, mode: str) -> dic
         states[sid] = state
     observation = WorkflowObservation(final, events, states, {})
     check_graph_evidence(config, workflow["inputs"], run, observation, mode)
-    equal(final.get("statuses"), {sid: "completed" for sid in events}, "Final digest status changed")
+    equal(final.get("statuses"), dict.fromkeys(events, "completed"), "Final digest status changed")
     equal(final.get("steps"), {sid: states[sid]["steps"][sid] for sid in events}, "Final digest step data changed")
     articles = workflow["inputs"]["articles"]
     arguments = {
@@ -107,11 +108,7 @@ def digest_native(config: dict, run: dict, admission: dict, *, mode: str) -> dic
 
 
 def verify_lifecycle(snapshot: dict, *, mode: str = "live", require_wall_clock: bool = True) -> dict:
-    """Audit a completed bounded digest lifecycle snapshot without controller imports.
-
-    The caller must separately compare saved native files and reconcile returned
-    calls with outgoing audits. Mock controller backends fail native provenance.
-    """
+    """Audit a completed digest lifecycle snapshot; callers still compare native files and reconcile calls."""
     equal(snapshot.get("schema"), "sapi-lab-lifecycle/v1", "Unsupported lifecycle evidence")
     definitions, events = snapshot["definitions"], snapshot["events"]
     transitions = snapshot["transitions"]
@@ -120,7 +117,7 @@ def verify_lifecycle(snapshot: dict, *, mode: str = "live", require_wall_clock: 
         [row.get("sequence") for row in transitions], list(range(1, len(transitions) + 1)), "Transition order changed"
     )
     require(all(type(row.get("at")) in (float, int) for row in transitions), "Missing lifecycle wall clock")
-    require(all(a["at"] <= b["at"] for a, b in zip(transitions, transitions[1:])), "Lifecycle timestamps reversed")
+    require(all(a["at"] <= b["at"] for a, b in pairwise(transitions)), "Lifecycle timestamps reversed")
 
     def matching(kind: str, field: str, value: str) -> list[dict]:
         return [row for row in transitions if row["kind"] == kind and row["data"].get(field) == value]
@@ -250,10 +247,10 @@ def verify_lifecycle(snapshot: dict, *, mode: str = "live", require_wall_clock: 
             equal((due.hour, due.minute), (int(hour), int(minute)), "Cron event was not due")
             if require_wall_clock:
                 equal(event.get("clock_source"), "system", "Injected clock cannot prove real Cron activation")
-                actual = datetime.fromtimestamp(admitted["at"], timezone.utc).astimezone(ZoneInfo(zone_name))
+                actual = datetime.fromtimestamp(admitted["at"], UTC).astimezone(ZoneInfo(zone_name))
                 equal(actual.strftime("%Y-%m-%dT%H:%M"), date, "Cron was not admitted at its real due minute")
                 equal(
-                    datetime.fromtimestamp(event["scheduled_at"], timezone.utc)
+                    datetime.fromtimestamp(event["scheduled_at"], UTC)
                     .astimezone(ZoneInfo(zone_name))
                     .strftime("%Y-%m-%dT%H:%M"),
                     date,

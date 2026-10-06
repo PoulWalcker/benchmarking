@@ -1,9 +1,6 @@
-"""Render recorded business evaluations into the Harbor viewer's trial summary.
+"""Render recorded evaluations as `<trial>/analysis.md`, the Harbor viewer's trial summary.
 
-The viewer builds its trial summary from `<trial>/analysis.md`; it never reads our
-`sapi-lab-task-evaluation/v1` rubric. This command writes that derived Markdown
-view beside the frozen evidence. It adds files only: no recorded artifact is
-rewritten, and `evaluation.json` itself is read-only here.
+Derived files only: no recorded artifact is rewritten.
 """
 
 from __future__ import annotations
@@ -109,11 +106,7 @@ def render(evaluation: dict, source: Path) -> str:
 
 
 def reward_files(evaluation: dict) -> dict[str, dict]:
-    """Populate the viewer's documented verifier-output endpoint.
-
-    This build's bundled frontend never requests that endpoint, so these files
-    are written only on request.
-    """
+    """The viewer's documented reward files; its bundled frontend never reads them, so they are opt-in."""
     criteria = evaluation.get("criteria") or []
     return {
         "reward.json": {"reward": evaluation.get("normalized_reward")},

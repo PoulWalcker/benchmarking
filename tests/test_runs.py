@@ -149,9 +149,8 @@ class LedgerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unknown outcome"):
             self.ledger().reserve("runtime", "next", 1, self.report, 4)
         other = Ledger.open(self.root / "timeout.json", ceilings={"runtime": 4}, stop_after_failure=False)
-        with self.assertRaises(subprocess.TimeoutExpired):
-            with other.reserved("runtime", "slow", 1, self.report, 4):
-                raise subprocess.TimeoutExpired("harbor", 1)
+        with self.assertRaises(subprocess.TimeoutExpired), other.reserved("runtime", "slow", 1, self.report, 4):
+            raise subprocess.TimeoutExpired("harbor", 1)
         self.assertEqual(other.data["events"][0]["status"], "unknown")
         self.assertEqual(other.spent("runtime"), 1)
 
@@ -194,8 +193,17 @@ class LiveCeilingTests(unittest.TestCase):
         with patch("sapi_config_lab.coordinate.live.validate_control", return_value=gate):
             with contextlib.redirect_stdout(io.StringIO()):
                 code = live(
-                    ["--stub-report", str(stub), "--scenario", "ticket-routing", "--max-calls", "1"]
-                    + ["--report-dir", str(root / "run"), "--preflight-only"]
+                    [
+                        "--stub-report",
+                        str(stub),
+                        "--scenario",
+                        "ticket-routing",
+                        "--max-calls",
+                        "1",
+                        "--report-dir",
+                        str(root / "run"),
+                        "--preflight-only",
+                    ]
                 )
         report = json.loads((root / "run/report.json").read_text())
         self.assertEqual(code, 1)

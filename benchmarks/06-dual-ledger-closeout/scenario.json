@@ -1,4 +1,5 @@
 {
-  "group": "expansion",
-  "fixture_overlay": "fresh"
+  "environment": "fixtures",
+  "evaluator": "verifier",
+  "fresh_fixtures": true
 }

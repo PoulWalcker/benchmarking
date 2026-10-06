@@ -10,10 +10,11 @@ from unittest.mock import patch
 from sapi_config_lab.coordinate.packages import EVALUATOR_MODULES, stage_tasks
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.provenance import source_manifest as inventory
-from sapi_config_lab.coordinate.scenarios import BASELINE_SCENARIOS as SCENARIOS
-from sapi_config_lab.paths import workspace_root
-from tests.support.verifying import verify_with_runner
+from sapi_config_lab.coordinate.scenarios import DEFAULT_SCENARIOS as SCENARIOS
 from sapi_config_lab.coordinate.scenarios import all_cases
+from sapi_config_lab.paths import workspace_root
+from tests.support.pinned import AVAILABLE
+from tests.support.verifying import verify_with_runner
 
 ROOT = workspace_root()
 
@@ -34,12 +35,11 @@ GENERATION_PROMPTS = {
 }
 
 
-# The checkout and CRM prompts are the bytes the pre-registry runner sent.
-IMPORTED_PROMPTS = {
+# The checkout and CRM prompts are the bytes recorded authoring runs sent.
+HOSTED_PROMPTS = {
     "checkout-recovery": "232d941d78f8c733b6f58aa6bc708a2577aad7e9c1eb5186df2a0497677a0892",
     "crm-lead-qualification": "ebc122008c4cac5c89464182a1d2b3b39d4f566e6a7e90622e0f37a638880493",
 }
-AVAILABLE = (ROOT / ".cache/autowfbench").is_dir() and importlib.util.find_spec("fastjsonschema") is not None
 
 
 class PackagingTests(unittest.TestCase):
@@ -97,12 +97,12 @@ class PackagingTests(unittest.TestCase):
                 self.assertEqual(list(task.rglob("*.yaml")), [])
 
     @unittest.skipUnless(AVAILABLE, "Requires the pinned upstream source and benchmark extra")
-    def test_simulator_packages_scrub_the_evaluator_and_carry_no_hidden_data(self):
+    def test_hosted_packages_scrub_the_evaluator_and_carry_no_hidden_data(self):
         names = ("checkout-recovery", "crm-lead-qualification")
         for mode in ("generation", "oracle"):
             with tempfile.TemporaryDirectory() as directory:
                 hashes = stage_tasks(Path(directory) / "tasks", mode=mode, scenarios=names)
-                self.assertEqual(hashes if mode == "generation" else IMPORTED_PROMPTS, IMPORTED_PROMPTS)
+                self.assertEqual(hashes if mode == "generation" else HOSTED_PROMPTS, HOSTED_PROMPTS)
                 for name in names:
                     task = Path(directory) / "tasks" / name
                     files = {str(path.relative_to(task)) for path in task.rglob("*") if path.is_file()}
@@ -156,10 +156,9 @@ class PackagingTests(unittest.TestCase):
                 self.assertIn("positive", definition.cases())
             else:
                 required = ("config.yaml", "instruction.md", "authoring-notes.md", "bindings.yaml")
-                self.assertTrue(definition.imported and definition.budgets["runtime_model_calls"] >= 0)
+                self.assertTrue(definition.provenance and definition.runtime_model_calls >= 0)
             for file in required:
                 self.assertTrue((definition.directory / file).is_file(), (name, file))
-            self.assertIn(definition.fixture_overlay, (None, "fresh"), name)
         # The lab image copies benchmarks/ for its reference configs; cases.json is
         # evaluator-only and reaches a container only as a staged tests/ file.
         self.assertIn("COPY benchmarks /app/lab/benchmarks/", (ROOT / "infra/Dockerfile").read_text())

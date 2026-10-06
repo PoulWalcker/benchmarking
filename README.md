@@ -1,100 +1,66 @@
 # Sapi Config Lab
 
-Research harness for testing whether agent-authored workflow definitions can be compiled to real n8n, executed in isolation, and evaluated independently.
+Research harness that tests whether agent-authored workflow definitions compile to real n8n, execute in isolation and pass independent evaluation.
 
 ```text
 task -> author definition -> compile -> execute -> evidence -> evaluate
 ```
 
-Harbor orchestrates isolated benchmark runs. n8n is the implemented workflow backend. The project implements the bounded `sapi-lab/v0` profile inspired by the pinned Sapiens specification; it is not a full Sapiens runtime.
-
-AutoWFBench is integrated as another benchmark source/environment/evaluator, not as a separate project architecture.
+The workflow language is the bounded `sapi-lab/v0` profile, inspired by the pinned Sapiens specification; it is not a full Sapiens runtime. n8n is the implemented backend and Harbor isolates each trial.
 
 ## Quick start
 
-Requirements:
-
-- `uv >= 0.12.4`
-- Docker with Compose
-- Python `3.14.8` selected through `.python-version`
-- Node.js only for local n8n UI workflows
+Requirements: `uv >= 0.12.4`, Docker with Compose, and Python `3.14.8` (selected by `.python-version`).
 
 ```bash
-uv sync --locked --extra harbor
+uv sync --locked --extra harbor --extra benchmark
 ./run.sh
 ```
 
-`./run.sh` is the main unpaid control gate: local checks, pinned n8n image, transport probes, and Harbor oracle/nop trials.
-
-Useful commands:
+`./run.sh` is the unpaid control gate: local tests, the pinned n8n image, transport probes, and Harbor oracle/nop trials for the default scenarios. `./run.sh --scenario <name>` selects others; hosted scenarios first need `uv run --locked sapi-lab fetch-source autowfbench`.
 
 ```bash
-# Local checks
-uv run --locked python -m unittest discover -s tests -v
-uv run --locked ruff check src tests verification infra
-uv run --locked ruff format --check src tests verification infra
-uv run --locked mypy
-
-# Compile without execution
 uv run --locked sapi-lab compile benchmarks/01-invoice-total/config.yaml --output /tmp/workflow.n8n.json
-
-# Model-authored workflow definitions; dispatches model calls
-./run-generation.sh
-
-# Inspect all CLI commands
 uv run --locked sapi-lab --help
 ```
 
-Commands such as `generate`, `live`, benchmark live modes, judged calibration, and some lifecycle/UI paths can dispatch model calls. Read `docs/DEVELOPMENT.md` before using them.
+`generate`, `live`, judged evaluation and some `ui`/`lifecycle` paths dispatch model calls; read [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) first. Machine-specific settings (model wrapper, ports, container routes, staging) are `SAPI_*` environment variables listed there.
 
-## What is being measured
+## What is measured
 
-Keep three facts separate:
+1. **Execution**: did the engine run the workflow?
+2. **Acceptance**: did an independent evaluator confirm the required behavior?
+3. **Quality**: how did an optional rubric or judge rate it?
 
-1. **Execution** — did the engine run the workflow successfully?
-2. **Acceptance** — did the independent verifier confirm the required behavior?
-3. **Quality** — did an optional rubric or judge rate the output well?
+None implies another. Harbor reward follows acceptance, never optional quality.
 
-One does not imply another. Harbor reward for the project scenarios is based on acceptance, not on optional quality scoring.
-
-## Project layout
+## Layout
 
 ```text
-.
-├── src/
-│   └── sapi_config_lab/
-│       ├── author/        # Model-driven definition authoring and repair
-│       ├── compile/       # Validated YAML → backend artifact
-│       ├── execute/       # Artifact execution and runtime transport
-│       ├── evaluate/      # Host-side scoring and report analysis
-│       └── coordinate/    # CLI, case selection, budgets, packaging, experiment runners
-│
-├── benchmarks/            # Project benchmark scenarios and fixtures
-├── verification/          # Independent acceptance and rubric logic
-├── generation/            # Model-facing authoring format and operation catalogs
-├── harbor/                # Shared Harbor task templates
-├── infra/                 # Pinned runtime image and distribution checks
-├── provenance/            # Pinned upstream specification material
-├── evidence/              # Committed historical evidence excerpts
-└── reports/               # New local run output; ignored by Git
+src/sapi_config_lab/
+├── author/       model-driven definition authoring and repair
+├── compile/      validated YAML -> backend artifact
+├── execute/      artifact execution, runtime transport and host tools
+├── evaluate/     scoring and evaluation of recorded evidence
+└── coordinate/   orchestration only
+
+benchmarks/       one directory per benchmark, registered by its scenario.json
+verification/     independent acceptance verifier, packaged into each task
+generation/       model-facing authoring contract (prompt material)
+harbor/           Harbor task templates
+infra/            runtime image and distribution checks
+provenance/       pinned upstream sources
+evidence/         committed evidence extracts
+reports/          local run output (ignored)
 ```
 
 ## Documentation
 
-Read only what you need:
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): stages, the scenario registry, runs, evidence.
+- [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md): setup, commands, configuration, adding scenarios, reading runs.
+- [docs/PROFILE.md](docs/PROFILE.md): `sapi-lab/v0` semantics and limits.
+- [AGENTS.md](AGENTS.md): rules for coding agents.
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system boundaries, stages, scenario registry, evidence model.
-- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — setup, commands, adding scenarios, running and interpreting experiments.
-- [`docs/PROFILE.md`](docs/PROFILE.md) — supported `sapi-lab/v0` YAML semantics and limits.
+`generation/FORMAT.md` and `generation/PROFILE.md` are prompt material, not documentation; editing them changes recorded prompt hashes.
 
-Coding agents should start with [`AGENTS.md`](AGENTS.md).
-
-`generation/FORMAT.md` is model-facing prompt material, not general project documentation. `evidence/README.md` documents the evidence archive itself.
-
-## Evidence and reproducibility
-
-New runs write to `reports/`. Selected historical artifacts may be committed under `evidence/` so claims can point to immutable data.
-
-Historical evidence proves what happened in that recorded run. It does not prove that the same result holds for the current source tree, model configuration, or environment.
-
-Pinned source revisions, source hashes, runtime versions, and task packages exist to make those boundaries explicit.
+Historical evidence proves what happened in a recorded run, not that it still holds for the current tree. Pinned sources, versions, image identities and source manifests make that boundary explicit.

@@ -4,11 +4,11 @@ import json
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING or __package__:
-    from .roles import BASELINE_SCENARIOS, bind_roles, contract_for, resolve
     from .contracts import Rejected, WorkflowObservation, equal, require
+    from .roles import GRAPHLESS_RECORD_SCENARIOS, bind_roles, contract_for, resolve
 else:  # Standalone Harbor distribution.
-    from roles import BASELINE_SCENARIOS, bind_roles, contract_for, resolve
     from contracts import Rejected, WorkflowObservation, equal, require
+    from roles import GRAPHLESS_RECORD_SCENARIOS, bind_roles, contract_for, resolve
 
 
 def rows(record: dict) -> list[dict]:
@@ -84,8 +84,7 @@ def observe_execution(
     if config is not None:
         roles = bind_roles(scenario, config)
     else:
-        # Compatibility for historical, unique-operation baseline records only.
-        require(scenario in BASELINE_SCENARIOS, "Submitted graph required for occurrence acceptance")
+        require(scenario in GRAPHLESS_RECORD_SCENARIOS, "Submitted graph required for occurrence acceptance")
         roles = {}
         for role, obligation in contract["roles"].items():
             matching = [sid for sid, event in events.items() if event.get("operation") == obligation["operation"]]
@@ -290,12 +289,7 @@ def check_rejection(run: dict, case: dict, config: dict) -> None:
 
 
 def live_operations(run: dict, compiled: dict | None = None) -> list[dict]:
-    """Bind each live trace event to native Prepare/Guard/HTTP/Restore records.
-
-    The experiment also supplies the exact saved compiled graph. Returning
-    requests/responses here lets it reconcile the outgoing audit without putting
-    business answers in the runtime backend interface.
-    """
+    """Bind each live trace event to native Prepare/Guard/HTTP/Restore records, for audit reconciliation."""
     calls = []
     _, final = one_run(run, "Result")
     expected_http = set()

@@ -1,8 +1,4 @@
-"""Exercise the live HTTP path in real n8n against a deterministic fake bridge.
-
-Run inside the isolated lab image. These are transport contract tests, not live
-model calls and not a substitute for the three independent task verifiers.
-"""
+"""Transport contract probes: the live HTTP path in real n8n against a fake bridge, inside the lab image."""
 
 from __future__ import annotations
 
@@ -15,10 +11,10 @@ import threading
 import time
 from typing import Any
 
-from sapi_config_lab.paths import workspace_root
 from sapi_config_lab import profile
-from sapi_config_lab.evidence import write_record_json
 from sapi_config_lab.coordinate.cases import run_case
+from sapi_config_lab.evidence import write_record_json
+from sapi_config_lab.paths import workspace_root
 
 ROOT = workspace_root()
 
@@ -70,8 +66,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(raw)
         except BrokenPipeError, ConnectionResetError:
-            # Expected after the n8n HTTP node's short timeout probe.
-            pass
+            pass  # the timeout probe's n8n node has already hung up
 
 
 def probe_config(enabled=True, invalid_input=False):

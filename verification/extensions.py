@@ -1,12 +1,7 @@
-"""Independent business and native evidence checks for bounded extensions.
-
-These checks do not import the compiler, controller, or operation handlers. A
-logical history alone never proves an attempt ran; native records are checked
-separately from the independently recomputed reply-review predicate.
-"""
+"""Independent checks for bounded refinement (revise-answer): a logical history alone never proves an attempt ran."""
 
 import copy
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING or __package__:
     from .contracts import Rejected, equal, require
@@ -112,11 +107,7 @@ def check_refinement_history(config: dict, attempts: list[dict]) -> dict[str, An
 
 
 def verify_refinement(config: dict, run: dict, *, mode: str = "live") -> dict[str, Any]:
-    """Check the reply task against one n8n execution, including failed exhaustion.
-
-    Returned calls still require independent bridge/wrapper audit reconciliation.
-    A checkpoint history or a controller's success flag is insufficient evidence.
-    """
+    """Check the reply task against one n8n execution, including exhaustion; callers still reconcile the calls."""
     require(mode in {"stub", "live"}, "Unsupported refinement mode")
     check_provenance(run)
     draft, check = reply_roles(config)
@@ -225,7 +216,7 @@ def verify_refinement(config: dict, run: dict, *, mode: str = "live") -> dict[st
             equal(envelope.get("runtime"), attempt["runtime"], "Operation carry changed")
             equal(envelope.get("deadline_at_ms"), deadline, "Operation deadline changed")
             equal(envelope.get("steps"), {key: attempt["steps"][key] for key in ids}, "Native output lineage changed")
-            equal(envelope.get("statuses"), {key: "completed" for key in ids}, "Native status lineage changed")
+            equal(envelope.get("statuses"), dict.fromkeys(ids, "completed"), "Native status lineage changed")
             equal(envelope.get("events"), {key: events[key] for key in ids}, "Native trace lineage changed")
             previous = native
         checkpoint = f"Checkpoint {number}"
@@ -271,8 +262,7 @@ def verify_refinement(config: dict, run: dict, *, mode: str = "live") -> dict[st
             "Exhaustion was not a native failure",
         )
         require(not rows(run["run_data"]["Result"][0]), "Exhausted workflow emitted a Result")
-        # The adapter records node presence even when Result executed and threw.
-        # Presence proves execution; successful rows/output would leak a draft.
+        # Result present but without rows: it executed and threw, leaking no draft.
         equal(run.get("result_node_present"), True, "Failed native Result execution was not recorded")
         require(run.get("output") is None and run.get("result") is None, "Unaccepted output escaped exhaustion")
         require(

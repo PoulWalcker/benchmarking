@@ -79,7 +79,7 @@ class SelectionTests(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def test_the_first_started_attempt_is_selected_for_baseline_and_expansion_alike(self):
+    def test_the_first_started_attempt_is_selected_for_every_scenario(self):
         report = generation_run(
             self.root,
             {

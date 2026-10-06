@@ -1,10 +1,10 @@
 """Contract tests; upstream is mocked, never invokes a model."""
 
+from io import BytesIO
 import json
 from pathlib import Path
 import tempfile
 import unittest
-from io import BytesIO
 from unittest.mock import patch
 
 from sapi_config_lab.execute.agency import ContractError, DispatchAudit, check_schema, execute, strict_json

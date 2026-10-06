@@ -1,12 +1,11 @@
 {
-  "group": "imported",
-  "task": {
+  "provenance": {
     "source": "autowfbench",
-    "challenge": "crm-lead-qualification",
-    "workflow_id": "crm-workflow"
+    "challenge": "crm-lead-qualification"
   },
   "environment": "simulator",
   "evaluator": "upstream",
+  "workflow_id": "crm-workflow",
   "bindings": "bindings.yaml",
   "budgets": {
     "authoring_attempts": 1,

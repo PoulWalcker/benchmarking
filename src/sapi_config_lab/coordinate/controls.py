@@ -4,26 +4,27 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 import json
 from pathlib import Path
 import subprocess
 import sys
-import uuid
 from typing import Any
+import uuid
 
 from sapi_config_lab.coordinate.evaluation import contract_for, control_passed, upstream_evaluate
+from sapi_config_lab.coordinate.provenance import host_environment
 from sapi_config_lab.coordinate.runs import Hosting, Run, run_experiment
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
 from sapi_config_lab.execute.host import LAB_IMAGE, build_image, run_logged
-from sapi_config_lab.coordinate.provenance import host_environment
+from sapi_config_lab.execute.n8n import PINNED_N8N_VERSION
 from sapi_config_lab.paths import workspace_root
 
 ROOT = workspace_root()
 
 
 def simulated_hosting(scenarios: tuple[str, ...]) -> Hosting:
-    """Stub runtime calls and the simulated judge: a simulator control costs nothing."""
+    """Stub runtime calls and the simulated judge: a hosted control costs nothing."""
     contracts = {name: contract_for(SCENARIOS[name]) for name in scenarios if SCENARIOS[name].evaluator == "upstream"}
     return Hosting("stub", upstream_evaluate(contracts))
 
@@ -32,8 +33,10 @@ def transport_probe(run: Run) -> dict:
     """Run the HTTP transport probes inside the lab image and copy their summary out."""
     name = "sapi-lab-transport-" + uuid.uuid4().hex[:12]
     subprocess.check_call(
-        ["docker", "create", "--name", name, LAB_IMAGE, "python3", "-m", "sapi_config_lab.coordinate.transport"]
-        + ["--artifacts", "/probe"]
+        [
+            *("docker", "create", "--name", name, LAB_IMAGE),
+            *("python3", "-m", "sapi_config_lab.coordinate.transport", "--artifacts", "/probe"),
+        ]
     )
     try:
         exit_code = run_logged(["docker", "start", "--attach", name], run.output / "transport.log", timeout=1800)
@@ -52,11 +55,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--skip-build", action="store_true", help="Reuse already built lab image (development only)")
     args = parser.parse_args(argv)
     selected = tuple(select_scenarios(args.scenarios))
-    output = args.report_dir or ROOT / "reports" / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    output = args.report_dir or ROOT / "reports" / datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     report: dict[str, Any] = {
         "schema": "sapi-lab-harbor/v1",
         "mode": "stub",
-        "n8n_version": "2.41.5",
+        "n8n_version": PINNED_N8N_VERSION,
         "host_environment": host_environment(),
         "image": LAB_IMAGE,
         "checks": [],
@@ -107,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
         for agent in ("oracle", "nop"):
             print(f"Harbor {agent}: {len(selected)} tasks through real n8n", flush=True)
             exit_code, trials = run.harbor(agent, run.tasks, agent, timeout=2400, hosting=hosting)
-            # An unscored simulator nop writes no reward, so Harbor reports a missing reward file.
+            # An unscored upstream nop writes no reward, so Harbor reports a missing reward file.
             simulated_nop = agent == "nop" and any(SCENARIOS[t["task_name"]].evaluator == "upstream" for t in trials)
             passed = (
                 (exit_code == 0 or simulated_nop)

@@ -29,7 +29,7 @@ def verify_with_runner(
 
     try:
         issued = verifier.plan(scenario, Path(config_path), cases, mode, selected_case)
-    except Exception:
+    except Exception:  # Mirrors the verifier CLI, where a failed plan runs nothing
         issued = None
     if issued is not None:
         observe(issued, Path(config_path), evidence, runner=recording)

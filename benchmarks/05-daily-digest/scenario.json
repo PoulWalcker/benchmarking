@@ -1,4 +1,8 @@
 {
-  "group": "lifecycle",
-  "prompt_extension": "TASK-SPECIFIC LIFECYCLE EXTENSION"
+  "environment": "fixtures",
+  "evaluator": "verifier",
+  "prompt_extension": "TASK-SPECIFIC LIFECYCLE EXTENSION",
+  "budgets": {
+    "authoring_attempts": 0
+  }
 }

@@ -8,11 +8,9 @@ import tempfile
 import unittest
 
 from verification.business import check_business_result
-from verification.contracts import Rejected
+from verification.contracts import Recorded, Rejected
 from verification.n8n_provenance import check_rejection, observe_execution
-from verification.contracts import Recorded
 from verification.verify import check_execution, corruption_checks, evaluator_identity
-
 
 SPEC = "06ddd3333109cea8a2cb3071609070d7a3c0d3ff"
 

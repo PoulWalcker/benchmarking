@@ -1,15 +1,16 @@
 """The UI preparation interface never dispatches and binds one owned workflow."""
 
-import json
 import contextlib
 import copy
 import io
+import json
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
 
 from sapi_config_lab.coordinate.ui import main, open_workflow, prepare
+from sapi_config_lab.execute.host import HostConfig
 from sapi_config_lab.paths import workspace_root
 
 
@@ -59,7 +60,7 @@ class UiTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             with (
                 patch("sapi_config_lab.coordinate.ui.DockerUi", return_value=adapter),
-                patch("sapi_config_lab.coordinate.ui.wrapper_preference", return_value=Path("identity.json")),
+                patch("sapi_config_lab.coordinate.ui.wrapper_preference", return_value=(Path("identity.json"), {})),
                 patch("sapi_config_lab.coordinate.ui.webbrowser.open") as browser,
                 patch("sapi_config_lab.coordinate.ui.serve") as bridge,
                 contextlib.redirect_stdout(io.StringIO()),
@@ -149,7 +150,7 @@ class UiTests(unittest.TestCase):
             state = Path(temporary)
             with (
                 patch("sapi_config_lab.coordinate.ui.DockerUi", return_value=adapter),
-                patch("sapi_config_lab.coordinate.ui.wrapper_preference", return_value=Path("identity.json")),
+                patch("sapi_config_lab.coordinate.ui.wrapper_preference", return_value=(Path("identity.json"), {})),
                 patch("sapi_config_lab.coordinate.ui.serve") as bridge,
                 contextlib.redirect_stdout(io.StringIO()),
             ):
@@ -177,8 +178,8 @@ class UiTests(unittest.TestCase):
             missing = Path(directory) / "ui-priority-01"
             errors = io.StringIO()
             with (
-                patch("sapi_config_lab.coordinate.live.wrapper_identity", return_value={"model": "gpt-6-astra"}),
-                patch("sapi_config_lab.execute.agency.urlopen") as request,
+                patch("sapi_config_lab.coordinate.ui.wrapper_identity", return_value={"model": "gpt-6-astra"}),
+                patch("sapi_config_lab.coordinate.ui.urlopen") as request,
                 contextlib.redirect_stderr(errors),
             ):
                 request.return_value.__enter__.return_value.status = 200
@@ -204,7 +205,7 @@ class UiTests(unittest.TestCase):
         source = workspace_root() / "benchmarks/09-priority-support-brief/config.yaml"
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "run"
-            prepared = prepare(source, output, port=18766)
+            prepared = prepare(source, output, host=HostConfig())
             self.assertEqual(prepared["max_attempts"], 4)
             self.assertEqual(
                 prepared["operations"],
@@ -224,7 +225,7 @@ class UiTests(unittest.TestCase):
             self.assertEqual(urls, {"http://host.docker.internal:18766/v1/agency/execute"})
             self.assertFalse((output / "bridge-audit.jsonl").exists())
             with self.assertRaises(FileExistsError):
-                prepare(source, output, port=18766)
+                prepare(source, output, host=HostConfig())
 
     def test_admission_requires_explicit_cap_and_unmodified_files_and_cannot_resume(self):
         from sapi_config_lab.coordinate.ui import admit
@@ -233,15 +234,15 @@ class UiTests(unittest.TestCase):
             output = Path(directory) / "run"
             prepare(workspace_root() / "benchmarks/09-priority-support-brief/config.yaml", output)
             with self.assertRaisesRegex(ValueError, "cap"):
-                admit(output, max_attempts=5, seconds=600)
+                admit(output, max_attempts=5, seconds=600, model="gpt-6-astra")
             self.assertFalse((output / "budget.json").exists())
             original = (output / "workflow.json").read_bytes()
             (output / "workflow.json").write_bytes(original + b" ")
             with self.assertRaisesRegex(ValueError, "changed"):
-                admit(output, max_attempts=4, seconds=600)
+                admit(output, max_attempts=4, seconds=600, model="gpt-6-astra")
             (output / "workflow.json").write_bytes(original)
-            grant = admit(output, max_attempts=4, seconds=600)
+            grant = admit(output, max_attempts=4, seconds=600, model="gpt-6-astra")
             self.assertEqual(grant["workflow_id"], json.loads(original)["id"])
             self.assertEqual(grant["max_attempts"], 4)
             with self.assertRaises(FileExistsError):
-                admit(output, max_attempts=4, seconds=600)
+                admit(output, max_attempts=4, seconds=600, model="gpt-6-astra")

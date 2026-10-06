@@ -7,9 +7,9 @@ import subprocess
 import tempfile
 import unittest
 
-from sapi_config_lab.paths import CATALOG, workspace_root
-from sapi_config_lab.compile.n8n import compile_n8n
 from sapi_config_lab import profile
+from sapi_config_lab.compile.n8n import compile_n8n
+from sapi_config_lab.paths import CATALOG, workspace_root
 
 
 class RefinementTests(unittest.TestCase):

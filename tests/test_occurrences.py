@@ -4,7 +4,7 @@ import copy
 import unittest
 
 from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.profile import read, read_bindings, validate, Invalid
+from sapi_config_lab.profile import Invalid, read, read_bindings, validate
 from verification.contracts import Rejected
 from verification.verify import invalid_configs
 

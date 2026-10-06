@@ -69,8 +69,9 @@ class NativeLiveEvidenceTests(unittest.TestCase):
 
     def test_native_live_chain_is_required_even_when_authored_trace_is_complete(self):
         import copy
-        from verification.n8n_provenance import live_operations
+
         from verification.contracts import Rejected
+        from verification.n8n_provenance import live_operations
 
         run = self.live_record()
         self.assertEqual(live_operations(run)[0]["request"]["operation"], "ticket.classify")
@@ -97,8 +98,9 @@ class NativeLiveEvidenceTests(unittest.TestCase):
 
     def test_skipped_live_occurrence_requires_native_false_channel_and_no_request(self):
         import copy
-        from verification.n8n_provenance import live_operations
+
         from verification.contracts import Rejected
+        from verification.n8n_provenance import live_operations
 
         run = self.live_record()
         event = run["run_data"]["Result"][0]["data"]["main"][0][0]["json"]["trace"][0]

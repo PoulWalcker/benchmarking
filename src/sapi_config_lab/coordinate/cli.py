@@ -1,4 +1,4 @@
-"""Public commands. Import optional experiment dependencies only when needed."""
+"""The sapi-lab command line. Optional experiment dependencies are imported only by the command that needs them."""
 
 import argparse
 import importlib
@@ -6,14 +6,13 @@ import json
 from pathlib import Path
 import sys
 
+from sapi_config_lab.contracts import CompileOptions, WorkflowBackend
+from sapi_config_lab.coordinate.backend import default_backend
 from sapi_config_lab.evidence import write_json
 from sapi_config_lab.execute.host import LAB_IMAGE
 from sapi_config_lab.paths import CATALOG
-from sapi_config_lab.profile import read, read_bindings, validate, Invalid, Unsupported
-from sapi_config_lab.coordinate.backend import default_backend
-from sapi_config_lab.contracts import CompileOptions, WorkflowBackend
+from sapi_config_lab.profile import Invalid, Unsupported, read, read_bindings, validate
 
-# Commands dispatched by importing a module and calling its main(); the rest are inline below.
 MODULES = {
     "harbor": "coordinate.controls",
     "evaluate": "coordinate.evaluation",
@@ -28,7 +27,6 @@ MODULES = {
     "simulator-worker": "coordinate.simulator_worker",
 }
 
-# What a person types at a normal checkout.
 PUBLIC = {
     "compile": "Validate one YAML; write the n8n JSON and its step-to-node map.",
     "build": "Compile every benchmarks/*/config.yaml and record which were rejected.",
@@ -40,11 +38,10 @@ PUBLIC = {
     "ui": "Import graphs into local n8n and prepare one bounded manual session.",
     "lifecycle": "The durable lifecycle controller against a registry directory.",
     "review-export": "Write a derived analysis.md beside recorded evaluations; adds files only.",
+    "fetch-source": "Fetch a pinned upstream source into .cache/ and verify every byte against provenance/.",
 }
 
-# Entry points for a container or for another command. They run, but a host
-# checkout is the wrong place to type them: each needs an environment it does
-# not get here.
+# Run by a container or another command; each needs an environment a host checkout lacks.
 INTERNAL = {
     "execute": "Run one config through the engine. Needs the real n8n CLI on PATH.",
     "package-tasks": "Assemble Harbor task packages into a new directory; runs nothing.",
@@ -97,8 +94,8 @@ def build_command(argv: list[str], *, backend: WorkflowBackend | None = None) ->
     selected = backend if backend is not None else default_backend()
     for scenario in SCENARIOS.values():
         path, bindings = scenario.config, read_bindings(scenario.bindings)
-        # A simulator's tools are served at run time; any URL compiles.
-        options = CompileOptions(operation_url="http://tools/tools" if scenario.environment == "simulator" else None)
+        # A hosted scenario's tools are served at run time; any URL compiles.
+        options = CompileOptions(operation_url="http://tools/tools" if scenario.hosted else None)
         cfg = read(path)
         order, _ = validate(cfg, bindings)
         row = {
@@ -150,6 +147,15 @@ def package_tasks_command(argv: list[str]) -> int:
     return 0
 
 
+def fetch_source_command(argv: list[str]) -> int:
+    from sapi_config_lab.pinned_source import fetch_source, pinned_source
+
+    parser = argparse.ArgumentParser(description="Fetch a source pinned by provenance/<name>-source.json.")
+    parser.add_argument("name", help="e.g. autowfbench")
+    print(fetch_source(pinned_source(parser.parse_args(argv).name)))
+    return 0
+
+
 def dispatch(argv: list[str] | None = None, *, backend: WorkflowBackend | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Sapiens YAML research lab.",
@@ -170,6 +176,8 @@ def dispatch(argv: list[str] | None = None, *, backend: WorkflowBackend | None =
         return execute_command(args.arguments, backend=backend)
     if command == "package-tasks":
         return package_tasks_command(args.arguments)
+    if command == "fetch-source":
+        return fetch_source_command(args.arguments)
     module = importlib.import_module("sapi_config_lab." + MODULES[command])
     previous = sys.argv
     try:

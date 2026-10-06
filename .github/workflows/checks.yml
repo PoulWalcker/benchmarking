@@ -39,10 +39,9 @@ jobs:
         run: uv run --locked python infra/check_distribution.py
 
   pinned-simulator:
-    # The `local` job runs without the benchmark extra and without the pinned
-    # AutoWFBench checkout, so the 23 tests below skip there. No Docker, no
-    # model call and no judge dispatch: the simulator and the evaluator run
-    # locally against fixed replies.
+    # The `local` job has neither the benchmark extra nor the pinned upstream
+    # checkout, so these tests skip there. No Docker, model call or judge
+    # dispatch: the simulator and the evaluator run locally against fixed replies.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -57,12 +56,10 @@ jobs:
         with:
           path: .cache/autowfbench
           # Keyed on the manifest, so a repin or an edited hash misses the cache.
-          key: autowfbench-${{ hashFiles('src/sapi_config_lab/autowfbench-source.json') }}
-      - name: Fetch the pinned AutoWFBench source
-        # The project's own fetch_source: pinned raw URLs, every file verified
-        # against the SHA-256 manifest, nothing vendored. An unreachable URL or
-        # a changed byte fails here rather than skipping the suite.
-        run: uv run --locked --extra benchmark python -c "from pathlib import Path; from sapi_config_lab.autowfbench_source import fetch_source; print(fetch_source(Path('.cache/autowfbench')))"
+          key: autowfbench-${{ hashFiles('provenance/autowfbench-source.json') }}
+      - name: Fetch the pinned upstream source
+        # Every file is verified against the manifest; a changed byte fails here instead of skipping the suite.
+        run: uv run --locked --extra benchmark sapi-lab fetch-source autowfbench
       - name: Pinned-simulator contract suite
         # A skip is a failure here: silently skipping is the bug this job fixes.
         run: |
@@ -71,7 +68,7 @@ jobs:
           import unittest
 
           modules = [
-              "tests.test_autowfbench_environment",
+              "tests.test_simulator_environment",
               "tests.test_task_evaluation",
               "tests.test_judge_calibration",
           ]

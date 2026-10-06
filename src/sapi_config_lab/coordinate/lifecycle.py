@@ -1,28 +1,31 @@
-"""Durable candidate lifecycle around native workflow executions.
+"""Durable candidate lifecycle: registry, event admission, test, release and rebuild around native executions.
 
-The registry, event admission and release transactions live here, not inside
-the exported candidate graph. Only admitted Callback/Cron events execute it.
+None of this lives in the exported graph; only admitted Callback/Cron events execute it.
 """
 
 from __future__ import annotations
 
-from contextlib import closing, contextmanager
 import argparse
+from collections.abc import Callable, Iterator
+from contextlib import closing, contextmanager
 import copy
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 import fcntl
 import json
 from pathlib import Path
 import sqlite3
 import time
-from typing import Any, Callable, Iterator
+from typing import Any
 from zoneinfo import ZoneInfo
 
-from sapi_config_lab.evidence import canonical, digest, durable_json
-from sapi_config_lab.paths import CATALOG
+from sapi_config_lab import profile
 from sapi_config_lab.contracts import Document, ExecutionRecord, LlmMode, WorkflowBackend
 from sapi_config_lab.coordinate.cases import run_case
-from sapi_config_lab import profile
+from sapi_config_lab.evaluate.operational import digest_acceptance
+from sapi_config_lab.evidence import canonical, digest, durable_json
+from sapi_config_lab.execute.agency import WRAPPER_TIMEOUT_SECONDS
+from sapi_config_lab.execute.host import HostConfig
+from sapi_config_lab.paths import CATALOG
 
 Verifier = Callable[[Document, ExecutionRecord], Document]
 Rebuilder = Callable[[Document, Document, Document, Path], Document]
@@ -35,41 +38,6 @@ def ref_key(ref: Document) -> str:
         "Invalid workflow reference",
     )
     return f"{ref['id']}@{ref['revision']}"
-
-
-def digest_acceptance(config: Document, record: ExecutionRecord) -> Document:
-    """Operational test decision. The experiment verifier remains independent."""
-    findings = []
-    steps = config["workflow"]["steps"]
-    roles = {step["uses"]: step for step in steps}
-    if len(steps) != 3 or set(roles) != {"digest.prepare", "digest.summarize", "digest.preview"}:
-        findings.append("Digest candidate must contain prepare, summarize and preview once each")
-    else:
-        prepare, summary, preview = (roles[name] for name in ("digest.prepare", "digest.summarize", "digest.preview"))
-        expected = [
-            (prepare, {"articles": {"ref": "inputs.articles"}}),
-            (summary, {"articles": {"ref": f"steps.{prepare['id']}.articles"}}),
-            (preview, {"summary": {"ref": "steps." + summary["id"]}}),
-        ]
-        if any(step["with"] != arguments or "when" in step for step, arguments in expected):
-            findings.append("Digest must preserve the supplied article source through prepare, summarize and preview")
-        if config["workflow"]["output"] != {"ref": "steps." + preview["id"]}:
-            findings.append("Digest output must reference the actual preview result")
-    output = record.get("output")
-    if record.get("status") != "success":
-        findings.append("Native execution did not succeed")
-    if not isinstance(output, dict):
-        findings.append("Digest output is not an object")
-    else:
-        if output.get("mode") != "preview":
-            findings.append("Digest must be a preview")
-        if not isinstance(output.get("text"), str) or not output["text"].strip():
-            findings.append("Digest summary must be nonempty")
-        articles = config["workflow"]["inputs"].get("articles", [])
-        expected_ids = [a.get("id") for a in articles if isinstance(a, dict)]
-        if not expected_ids or output.get("article_ids") != expected_ids:
-            findings.append("Digest article IDs must match the supplied articles in order")
-    return {"verifier": "digest.acceptance_v1", "passed": not findings, "findings": findings}
 
 
 def daily_schedule(schedule: str, zone: str) -> tuple[int, int, ZoneInfo]:
@@ -575,7 +543,7 @@ class LifecycleController:
             candidate = self.rebuilder(source, request["findings"], request["target"], directory)
             durable_json(directory / "rebuild-result.json", {"rebuild": rebuild_key, "candidate": candidate})
             self._install_fork(rebuild_key, candidate)
-        except Exception as error:
+        except Exception as error:  # An unknown rebuild outcome must suspend, fail closed
             with self._transaction() as state:
                 rebuild = state["rebuilds"][rebuild_key]
                 rebuild["state"], rebuild["error_type"] = "unknown", type(error).__name__
@@ -585,7 +553,7 @@ class LifecycleController:
     def tick(self, now: datetime | None = None) -> list[Document]:
         """Admit the current daily wall-clock minute only; never replay missed days."""
         clock_source = "injected" if now is not None else "system"
-        now = now or datetime.now(timezone.utc)
+        now = now or datetime.now(UTC)
         profile.check(now.tzinfo is not None, "Cron time must include a timezone")
         state = self.snapshot()
         keys = []
@@ -624,11 +592,7 @@ class LifecycleController:
             return copy.deepcopy(definition)
 
     def _recover(self):
-        """Called only while holding the exclusive runner lock.
-
-        Completed durable results can finish their transaction without another
-        execution. Missing/partial results are unknown and suspend the family.
-        """
+        """Under the runner lock: finish durable results; suspend a family whose result is missing or partial."""
         for event_key, event in self.snapshot()["events"].items():
             if event["state"] == "native_complete":
                 self._finish_event(event_key)
@@ -700,19 +664,22 @@ class LifecycleController:
 
 
 def main(argv: list[str] | None = None) -> int:
+    host = HostConfig.from_environment()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--llm-mode", choices=("stub", "live"), default="stub")
     parser.add_argument("--bridge-url")
     parser.add_argument("--rebuilder-url", help="Explicit real wrapper URL for bounded candidate repair")
     parser.add_argument(
-        "--rebuild-model", default="gpt-6-astra", help="Expected wrapper model identity; does not select or override it"
+        "--rebuild-model",
+        default=host.wrapper_model,
+        help="Expected wrapper model identity (SAPI_WRAPPER_MODEL); does not select or override it",
     )
     sub = parser.add_subparsers(dest="command", required=True)
     register = sub.add_parser("register")
     register.add_argument("--config", type=Path, required=True)
     register.add_argument("--schedule-overlay", help="Explicit daily test Cron; original config stays unchanged")
-    register.add_argument("--timezone", default="Asia/Dubai")
+    register.add_argument("--timezone", help="Timezone of the schedule overlay; default: the config's own")
     for command in ("callback", "restore"):
         action = sub.add_parser(command)
         action.add_argument("--workflow-id", required=True)
@@ -732,14 +699,20 @@ def main(argv: list[str] | None = None) -> int:
         args.registry,
         llm_mode=args.llm_mode,
         bridge_url=args.bridge_url,
-        rebuilder=WrapperRebuilder(args.rebuilder_url, expected_model=args.rebuild_model)
+        rebuilder=WrapperRebuilder(
+            args.rebuilder_url, timeout_seconds=WRAPPER_TIMEOUT_SECONDS, expected_model=args.rebuild_model
+        )
         if args.rebuilder_url
         else None,
     )
     result: Any
     if args.command == "register":
-        overlay = {"schedule": args.schedule_overlay, "timezone": args.timezone} if args.schedule_overlay else None
-        result = controller.register(profile.read(args.config), schedule_overlay=overlay)
+        config = profile.read(args.config)
+        overlay = None
+        if args.schedule_overlay:
+            zone = args.timezone or config["activation"]["timezone"]
+            overlay = {"schedule": args.schedule_overlay, "timezone": zone}
+        result = controller.register(config, schedule_overlay=overlay)
     elif args.command == "callback":
         result = controller.callback(
             {"id": args.workflow_id, "revision": args.revision}, args.event_id, condition=not args.condition_false

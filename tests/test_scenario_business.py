@@ -1,12 +1,12 @@
 """Scenario business contracts and local JS probes; no native n8n claims."""
 
 import copy
-import unittest
 from types import SimpleNamespace
+import unittest
 
+from sapi_config_lab.coordinate.scenarios import all_cases
 from verification.contracts import Rejected
 from verification.scenario_business import check_scenario_business_result
-from sapi_config_lab.coordinate.scenarios import all_cases
 
 
 def observation(values, output, *, skipped=(), actors=None, dependencies=()):
@@ -63,7 +63,7 @@ def ledger_observation():
     return inputs, obs
 
 
-class ExpansionBusinessTests(unittest.TestCase):
+class ComposedBusinessTests(unittest.TestCase):
     def test_repeated_invoice_operations_keep_two_separate_ledgers(self):
         inputs, obs = ledger_observation()
         self.assertTrue(check_scenario_business_result("dual-ledger-closeout", inputs, obs)["output_verified"])
@@ -183,7 +183,7 @@ class ExpansionBusinessTests(unittest.TestCase):
             check_scenario_business_result("priority-support-brief", inputs, obs)
 
 
-class ExpansionLocalGraphTests(unittest.TestCase):
+class ComposedLocalGraphTests(unittest.TestCase):
     """Compile all fixtures through the narrow local JS driver, never real n8n."""
 
     @classmethod
@@ -204,6 +204,7 @@ class ExpansionLocalGraphTests(unittest.TestCase):
         from pathlib import Path
         import subprocess
         import tempfile
+
         from sapi_config_lab.compile.n8n import compile_n8n
 
         artifact, mapping = compile_n8n(self.configs[scenario], self.catalog)
@@ -337,12 +338,12 @@ class FixtureOverlayTests(unittest.TestCase):
         from sapi_config_lab.coordinate.scenarios import SCENARIOS
 
         canonical = all_cases()
-        for scenario in [name for name, s in SCENARIOS.items() if s.fixture_overlay == "fresh"]:
+        for scenario in [name for name, s in SCENARIOS.items() if s.fresh_fixtures]:
             first = fresh_case_overlay(scenario)
             second = fresh_case_overlay(scenario)
             self.assertNotEqual(first["positive"][0]["inputs"], second["positive"][0]["inputs"])
             for kind in ("positive", "negative"):
-                for public, private in zip(canonical[scenario][kind], first[kind]):
+                for public, private in zip(canonical[scenario][kind], first[kind], strict=True):
                     self.assertEqual(
                         {k: v for k, v in public.items() if k != "inputs"},
                         {k: v for k, v in private.items() if k != "inputs"},

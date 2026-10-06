@@ -1,7 +1,7 @@
 """Checks that the experiment does not substitute references or forgive failures."""
 
-import json
 import hashlib
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -9,7 +9,7 @@ import unittest
 from sapi_config_lab.author.agent import audit_stderr
 from sapi_config_lab.coordinate.generate import summarize_trials
 from sapi_config_lab.coordinate.packages import stage_tasks
-from sapi_config_lab.coordinate.scenarios import BASELINE_SCENARIOS as SCENARIOS
+from sapi_config_lab.coordinate.scenarios import DEFAULT_SCENARIOS as SCENARIOS
 from sapi_config_lab.paths import workspace_root
 
 

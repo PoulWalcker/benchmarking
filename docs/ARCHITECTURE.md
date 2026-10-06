@@ -1,183 +1,91 @@
 # Architecture
 
-## System in one picture
-
-The project tests a workflow definition through a sequence of responsibilities:
+## One flow
 
 ```text
-Task source
-    |
-    v
-Author definition (optional)
-    |
-    v
-Compile --------> backend artifact
-                    |
-                    v
-Execute --------> recorded evidence
-                    |
-                    v
-Evaluate -------> acceptance / quality / report
+definition -> COMPILE -> artifact -> EXECUTE -> evidence -> EVALUATE -> verdicts
+     ^
+     |
+  AUTHOR (optional)
 ```
 
-A coordinator selects cases, binds fixtures, enforces budgets, assembles packages, and invokes these stages. Harbor provides isolated experiment orchestration around that flow.
+`coordinate/` selects scenarios and cases, binds fixtures, enforces budgets, stages Harbor task packages and sequences the stages. Harbor isolates each trial; it is orchestration around the flow, not part of it. The boundary that matters is **definition -> artifact -> evidence -> verdict**.
 
-The important boundary is not Harbor vs n8n. It is **definition -> artifact -> evidence -> verdict**.
+## Stages
+
+| Stage | Location | Owns | Never |
+| --- | --- | --- | --- |
+| Shared | `src/sapi_config_lab/*.py`, `bindings.yaml` | profile validation, backend contracts, evidence encoding, pinned sources, wrapper stderr audit | import a stage |
+| Author | `author/` | model-written or repaired YAML | compile or score it |
+| Compile | `compile/` | validated YAML -> n8n JSON + step map | start n8n or decide acceptance |
+| Execute | `execute/` | n8n runs, Agency bridge, hosted simulator, Harbor/Docker host tools and host configuration | turn engine success into acceptance |
+| Evaluate | `evaluate/` | scoring recorded evidence (upstream scorer, judge calibration, lifecycle test decision, review export) | rerun a workflow |
+| Coordinate | `coordinate/` | CLI, scenario registry, runs, ledger, packaging, live gates, lifecycle controller | hold stage logic another stage owns |
+| Verifier | `verification/` | independent acceptance and rubric | import compiler, runtime or coordinator code |
+
+`tests/test_boundaries.py` enforces these import edges. Nothing imports `coordinate/`.
 
 ## One scenario registry
 
-Every scenario is `benchmarks/NN-<scenario>/`: a task, the environment it runs in, and the evaluator that judges it. All go through Author -> Compile -> Execute -> Evidence -> Evaluate, and every Harbor run goes through `coordinate/runs.py`, with paid calls reserved in `coordinate/ledger.py`.
+Every benchmark is `benchmarks/NN-<name>/`. Its `scenario.json` states what the scenario needs; there is no second registry in code.
 
-| Concern | Fixture scenarios (01-09) | Imported simulator scenarios (10-11) |
-| --- | --- | --- |
-| Task source | `task.md` | pinned upstream AutoWFBench challenge + `authoring-notes.md` |
-| Environment | evaluator-only fixtures in `cases.json` | upstream simulator started by the host per trial; candidate sees only tools |
-| Evaluator | independent `verification/` in the container | pinned upstream scorer and judge on the host |
-| Result | execution, acceptance, optional rubric quality | execution, acceptance (`execution_pass`), upstream score |
+| Field | Meaning |
+| --- | --- |
+| `environment` | `fixtures` (verifier-planned cases in the container) or `simulator` (hosted per trial) |
+| `evaluator` | `verifier` for fixtures, `upstream` for simulator; the pair is validated |
+| `default` | selected when a command gets no `--scenario` |
+| `provenance` | `{source, challenge}` of a pinned upstream task: `provenance/<source>-source.json` pins its bytes |
+| `workflow_id` | the workflow id an author must use (hosted tasks) |
+| `bindings` | a scenario-owned operation catalog instead of `src/sapi_config_lab/bindings.yaml` |
+| `budgets` | `authoring_attempts` (0 refuses authoring), `runtime_model_calls` |
+| `output` | `artifact_field`/`artifact_name`: an output submitted verbatim as a named file |
+| `controls` | `reference_reward` the oracle must reproduce |
+| `prompt_extension`, `fresh_fixtures`, `human_review` | authoring prompt section, per-run fixture overlay, live report flag |
 
-`coordinate/evaluation.py` is the one evaluation role; the two evaluators share the result shape, not their scoring semantics.
+Files beside it: the reference `config.yaml`, the container `instruction.md`, and either `task.md` + evaluator-only `cases.json` (fixtures) or `authoring-notes.md` + `bindings.yaml` (simulator).
 
-## Source layout
+Where a benchmark came from is provenance data. It selects which pinned bytes are trusted, never which code path runs; the code path follows `environment` and `evaluator`.
 
-### Shared contracts
+## One run mechanism
 
-`src/sapi_config_lab/` contains the backend-neutral project contract:
+Every Harbor experiment (`harbor`, `generate`, `live`) runs through `coordinate/runs.py`:
 
-- `profile.py` — parsing and validation of `sapi-lab/v0`.
-- `bindings.yaml` — operation catalog and operation contracts.
-- `contracts.py` — `WorkflowBackend`, compile options, compiled artifact, execution record.
-- `evidence.py`, `paths.py`, `net.py` — shared infrastructure with narrow responsibilities.
-- `autowfbench_source.py` and its manifest — pinned upstream source verification.
+- a new report directory, a source manifest, a pinned base image identity and staged task packages;
+- each phase re-checks sources, image and pinned inputs;
+- `Run.harbor` serves hosted tasks: a `SimulatorHost` per task on the host, credentials only in a per-job copy, and a leak scan over everything persisted;
+- `Run.bridge` runs the budgeted Agency bridge;
+- the report is always written, cleanup errors included.
 
-### Author
+Paid work is reserved in `coordinate/ledger.py` before it starts; an unknown outcome is never released.
 
-`src/sapi_config_lab/author/` asks a model to produce or repair a workflow definition.
+The two environments differ only in small, explicit places: how a package is staged (`packages.py`), how a trial is hosted (`runs.py`), how a live grant is computed (`live.py`) and which evaluator reads the evidence (`evaluation.py`).
 
-Authoring stops at YAML. It does not compile or execute the workflow.
+## Evaluation
 
-### Compile
+`coordinate/evaluation.py` gives both evaluators one result shape: execution, acceptance and optional quality (`null` is not zero).
 
-`src/sapi_config_lab/compile/` converts a validated definition into a backend artifact.
+- **Verifier** (`verification/`): `plan` states which definitions must run, `coordinate/observe.py` runs them and records evidence, `evaluate` checks the record is exactly that plan and judges it. It is packaged into each task, and deliberately duplicates business rules instead of importing the implementation under test.
+- **Upstream** (`evaluate/task_evaluation.py`): the pinned upstream scorer and judge, run on the host against the hosted trial's recorded evidence. Its evaluator modules are scrubbed from hosted task containers.
 
-For n8n this includes native node JSON, step mapping, and bounded refinement lowering. Compile code must not start n8n, open a runtime session, or decide whether the business task passed.
+## Evidence
 
-### Execute
+Execution evidence is written once; evaluation writes separate derived files beside it. `reports/` holds local runs (ignored). `evidence/` holds committed extracts that durable claims cite; they are never rewritten.
 
-`src/sapi_config_lab/execute/` owns runtime interaction:
-
-- native n8n execution,
-- Agency/model transport,
-- Harbor/Docker helpers,
-- the pinned AutoWFBench environment proxy.
-
-Execution records what happened. It does not turn engine success into business acceptance.
-
-### Evaluate
-
-`src/sapi_config_lab/evaluate/` reads recorded results and produces host-side scoring or derived analysis.
-
-The project's own scenario acceptance is intentionally separate under `verification/`. That verifier is packaged independently and cannot import the workflow implementation it is checking.
-
-### Coordinate
-
-`src/sapi_config_lab/coordinate/` is the composition layer:
-
-- CLI dispatch,
-- scenario and case selection,
-- compile/execute sequencing,
-- control, generation, live and benchmark series,
-- Harbor task packaging,
-- lifecycle coordination,
-- source and budget gates.
-
-Other stages should not depend on `coordinate/`.
-
-## The independent verifier
-
-`verification/` is intentionally duplicative at the business-rule level.
-
-It recomputes expected results from fixtures and checks recorded native evidence without importing the compiler, runtime operations, or coordinator. Reusing the implementation under test would make a shared bug look like correctness.
-
-A task run separates:
-
-1. **engine execution** — n8n produced a runtime record;
-2. **acceptance** — the verifier established required behavior and provenance;
-3. **quality** — an optional rubric/judge scored the accepted or recorded output.
-
-These values can disagree and must remain separately visible.
-
-## Scenario packages and isolation
-
-Project scenarios live under:
-
-```text
-benchmarks/NN-<scenario>/
-  config.yaml
-  task.md
-  instruction.md
-  cases.json
-  scenario.json
-  prompt-extension.md   # optional
-```
-
-Before a Harbor run, `coordinate/packages.py` assembles an isolated task package from the scenario, shared templates, runtime code, and verifier.
-
-Candidate agents must not receive evaluator-only inputs such as reference solutions, private cases, or verifier internals. Packaging tests enforce this separation.
-
-## Evidence model
-
-Execution produces evidence first; evaluation comes later.
-
-Typical flow:
-
-```text
-verifier plan
-    -> runtime executes exactly the requested cases
-    -> observation + native artifacts are frozen
-    -> verifier checks completeness/integrity
-    -> verifier computes acceptance
-    -> optional rubric computes quality
-```
-
-`reports/` contains new local run output and is ignored by Git.
-
-`evidence/` contains selected committed historical artifacts used to support durable claims. Historical evidence is immutable evidence of that run, not a mutable status page for the current project.
-
-Source manifests and pinned revisions prevent results from silently claiming to describe a different implementation.
+Pinned inputs are explicit and fail closed: the upstream source manifest under `provenance/`, the Harbor and n8n versions in `execute/`, the image identity, the source manifest of a run, prompt hashes in `tests/test_packaging.py`, and the inspected model-wrapper identity before live dispatch.
 
 ## Backend boundary
 
-`WorkflowBackend` is the seam between shared workflow semantics and a concrete engine.
-
-Today n8n is the only production backend. A second backend must define its own:
-
-- supported capability subset,
-- artifact compiler,
-- execution evidence,
-- provenance checks,
-- semantics for branching, waiting, failures, and timing.
-
-Do not introduce a universal IR, plugin registry, or inheritance tree merely to make a hypothetical backend look easy. Add abstraction when a second implementation creates a real shared shape.
-
-## Durable design rules
-
-- Compiler, executor, and evaluator are separate responsibilities.
-- The verifier is independent by design.
-- Orchestration may compose stages; stages should not reach back into orchestration.
-- Upstream benchmark/specification sources are pinned and verified before trusted use.
-- Live model dispatch is explicit, budgeted, and auditable.
-- Historical run output is data, not architecture documentation.
+`WorkflowBackend` (`contracts.py`) is the seam between workflow semantics and an engine; n8n is the only implementation. A second backend must bring its own capability subset, compiler, native evidence and provenance checks. Do not add a universal IR, registry or inheritance tree before that second implementation exists.
 
 ## Terms
 
-| Term | Meaning here |
+| Term | Meaning |
 | --- | --- |
 | definition | validated `sapi-lab/v0` workflow YAML |
-| artifact | backend-specific compiled workflow, currently n8n JSON |
-| execution | one engine run and its recorded native evidence |
-| acceptance | independent pass/fail business verdict |
-| quality | optional non-binary rubric/judge result |
-| oracle | positive control using a known reference submission |
-| nop | negative control with no candidate submission |
-| scenario | one project task family under `benchmarks/` |
-| case | one fixture/input instance of a scenario |
+| artifact | compiled backend workflow (n8n JSON) |
+| execution | one engine run and its native evidence |
+| acceptance | independent pass/fail verdict |
+| quality | optional rubric or judge score |
+| oracle / nop | positive control (reference submission) / negative control (no submission) |
+| scenario / case | one benchmark directory / one fixture input of it |
+| hosted | a scenario whose environment and evaluator the host serves per trial |

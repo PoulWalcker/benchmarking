@@ -1,19 +1,12 @@
-"""Business acceptance independent of compiler code and execution engines.
+"""Business acceptance for invoice-total, ticket-routing and competitor-report, independent of any engine.
 
-Arithmetic uses Python integers, routing follows the stated boundary, and report
-facts come from supplied source text. A successful result here makes no claim
-about whether any workflow actually executed.
-
-Two scenarios state their obligations as named, individually callable units.
-Acceptance runs exactly those, in the order written, and lets the first Rejected
-propagate as it always has; `rubric_facts.py` runs the same callables one at a
-time and reads raised / did not raise as one named check each. Neither side
-restates the other's rule.
+Arithmetic uses Python integers and report facts come from supplied source text. Named
+obligations run in order for acceptance; `rubric_facts.py` calls the same ones one at a time.
 """
 
 from collections.abc import Callable
 import re
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING or __package__:
     from .contracts import WorkflowObservation, equal, require
@@ -215,9 +208,7 @@ def competitor_report_obligations(
 ) -> dict[str, Callable[[], dict]]:
     """The five named obligations of competitor-report, in acceptance order.
 
-    `mode` defaults to live because the extra stub equalities are the harness
-    checking its own deterministic operations, not an obligation of the report.
-    Acceptance passes the mode it was given, so its behaviour is unchanged.
+    Stub-only equalities check the harness's own operations, so `mode` defaults to live.
     """
     return {
         "analyses_independent": lambda: _independent_analyses(observation),

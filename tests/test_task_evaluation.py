@@ -3,7 +3,6 @@
 import copy
 from dataclasses import replace
 from decimal import Decimal
-import importlib.util
 import json
 import os
 from pathlib import Path
@@ -13,6 +12,7 @@ import tempfile
 import unittest
 import unittest.mock
 
+from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.evaluate.task_evaluation import (
     build_run_log,
     digest,
@@ -23,14 +23,7 @@ from sapi_config_lab.evaluate.task_evaluation import (
     validate_task_package,
     write_evaluation,
 )
-
-ROOT = Path(__file__).resolve().parents[1]
-SOURCE = Path(
-    os.environ.get("SAPI_AUTOWFBENCH_SOURCE", ROOT / ".cache/autowfbench/970bbc8645c4d503d35cb5df05363fb9de132519")
-)
-AVAILABLE = (SOURCE / "autowfbench/core/scoring.py").is_file() and importlib.util.find_spec(
-    "fastjsonschema"
-) is not None
+from tests.support.pinned import AVAILABLE, SOURCE
 
 
 class RewardArtifactTests(unittest.TestCase):
@@ -81,7 +74,12 @@ class RewardArtifactTests(unittest.TestCase):
 class PinnedEvaluationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.contract = freeze_contract(SOURCE, "production-checkout-recovery", judge_model="calibration-only-model")
+        cls.contract = freeze_contract(
+            SOURCE,
+            "production-checkout-recovery",
+            judge_model="calibration-only-model",
+            artifact=SCENARIOS["checkout-recovery"].artifact,
+        )
 
     def run_log(self, patch="correct", *, narrative="Observed checkout results", artifact=True):
         # These are calibration candidates in tests, never a solution embedded in
@@ -104,7 +102,8 @@ if patch != 'no_actions':
     env.execute('tests.run', {})
 json.dump(env.finalize(), sys.stdout)
 """
-        env = {**os.environ, "PYTHONPATH": str(SOURCE), "AUTOWFBENCH_ROOT": str(SOURCE), "PYTHONDONTWRITEBYTECODE": "1"}
+        root = str(SOURCE.root)
+        env = {**os.environ, "PYTHONPATH": root, "AUTOWFBENCH_ROOT": root, "PYTHONDONTWRITEBYTECODE": "1"}
         completed = subprocess.run(
             [sys.executable, "-c", program, patch],
             env=env,

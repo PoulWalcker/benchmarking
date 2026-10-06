@@ -1,11 +1,13 @@
 """Small closed-profile feasibility prototype, not a production SAPi runtime."""
 
 from __future__ import annotations
-import math
-import re
+
 from collections.abc import Iterator, Sequence
-from typing import Any, cast
+import math
 from pathlib import Path
+import re
+from typing import Any, cast
+
 import yaml
 
 SPEC = "06ddd3333109cea8a2cb3071609070d7a3c0d3ff"

@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 import copy
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 import json
 from pathlib import Path
 import secrets
@@ -18,12 +18,12 @@ from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.runs import Run, load_trials, run_experiment
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
 from sapi_config_lab.evidence import sha256
-from sapi_config_lab.execute.agency import WRAPPER_UPSTREAM
-from sapi_config_lab.execute.host import LAB_IMAGE, run_logged
+from sapi_config_lab.execute.host import LAB_IMAGE, HostConfig, run_logged
 from sapi_config_lab.paths import workspace_root
 
 ROOT = workspace_root()
 AUTHOR = "sapi_config_lab.author.agent:WrapperYamlAgent"
+MAX_ATTEMPTS = 10
 
 
 def summarize_trials(*jobs: Path) -> list[dict]:
@@ -73,12 +73,14 @@ def summarize_trials(*jobs: Path) -> list[dict]:
 
 
 def fresh_case_overlay(scenario: str) -> dict:
-    """Fresh values for the evaluator-only fixtures, staged after the prompt is frozen."""
+    """Fresh values for the evaluator-only fixtures, staged after the prompt is frozen.
+
+    Replacements are stable, so duplicate-ID controls and sibling metamorphisms survive.
+    """
     cases = copy.deepcopy(SCENARIOS[scenario].cases())
     token = secrets.token_hex(6).upper()
     increment = secrets.randbelow(400) + 31
 
-    # Stable replacements preserve duplicate-ID controls and sibling metamorphisms.
     def transform(value, *, field="", positive=False):
         if isinstance(value, list):
             return [transform(item, field=field, positive=positive) for item in value]
@@ -126,11 +128,12 @@ def write_summary(report: dict, output: Path) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    host = HostConfig.from_environment()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--attempts", type=int, default=3, help="Independent calls per task, no feedback/repair")
     parser.add_argument("--report-dir", type=Path)
-    parser.add_argument("--upstream", default=WRAPPER_UPSTREAM)
-    parser.add_argument("--scenario", action="append", help="Explicit task selection; defaults to the original three")
+    parser.add_argument("--upstream", default=host.wrapper_url, help="Model wrapper URL (SAPI_WRAPPER_URL)")
+    parser.add_argument("--scenario", action="append", help="Explicit selection; defaults to the default scenarios")
     parser.add_argument("--series-dir", type=Path, help="Reserve in a ledger shared with other runs")
     parser.add_argument("--series-ceiling", action="append", help="PHASE=N, fixed when a series ledger is created")
     parser.add_argument("--stop-after-failure", action="store_true", help="A failed attempt blocks later ones")
@@ -140,16 +143,13 @@ def main(argv: list[str] | None = None) -> int:
         series_ceilings = parse_ceilings(args.series_ceiling)
     except ValueError as error:
         parser.error(str(error))
-    if "daily-digest" in scenarios:
-        parser.error("daily-digest authoring needs the retired lifecycle series runner (see Git history)")
-    if not 1 <= args.attempts <= 10:
-        parser.error("--attempts must be between 1 and 10")
-    capped = [s for s in scenarios if args.attempts > SCENARIOS[s].budgets.get("authoring_attempts", 10)]
+    if not 1 <= args.attempts <= MAX_ATTEMPTS:
+        parser.error(f"--attempts must be between 1 and {MAX_ATTEMPTS}")
+    budgets = {s: SCENARIOS[s].authoring_attempts for s in scenarios}
+    capped = [s for s, budget in budgets.items() if budget is not None and args.attempts > budget]
     if capped:
         parser.error("--attempts exceeds the authoring budget of " + ", ".join(capped))
-    output = args.report_dir or ROOT / "reports" / (
-        datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-generation"
-    )
+    output = args.report_dir or ROOT / "reports" / (datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-generation")
     ceiling = len(scenarios) * args.attempts
     report: dict[str, Any] = {
         "schema": "sapi-lab-generation/v2",
@@ -185,7 +185,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         report["ledger"] = str(ledger.path)
         run.use_image(LAB_IMAGE)
-        overlays = {s: fresh_case_overlay(s) for s in scenarios if SCENARIOS[s].fixture_overlay == "fresh"}
+        overlays = {s: fresh_case_overlay(s) for s in scenarios if SCENARIOS[s].fresh_fixtures}
         report["prompt_sha256"] = run.stage("generation", scenarios, cases=overlays)
         report["fixture_overlay"] = sorted(overlays)
         report["private_cases_sha256"] = {
@@ -212,7 +212,7 @@ def main(argv: list[str] | None = None) -> int:
         report["total_trials"] = len(trials)
         report["authoring_attempts_spent"] = ledger.spent("authoring", report_path.resolve())
         report["experiment_completed"] = Counter(t["scenario"] for t in trials) == Counter(
-            {s: args.attempts for s in scenarios}
+            dict.fromkeys(scenarios, args.attempts)
         )
         if report["experiment_completed"] and all(t["passed"] for t in trials):
             report["status"] = "passed"
@@ -225,7 +225,7 @@ def main(argv: list[str] | None = None) -> int:
     report.setdefault("total_trials", len(report["trials"]))
     try:
         write_summary(report, Path(output).resolve())
-    except Exception as error:
+    except (OSError, KeyError, ValueError) as error:
         print(f"SUMMARY.md not written: {error}", file=sys.stderr)
     print(json.dumps({"status": report["status"], "passed": report["passed_trials"], "total": report["total_trials"]}))
     return 0 if report["status"] == "passed" else 1

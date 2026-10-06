@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 import math
 from pathlib import Path
-from typing import Any, Callable, Literal, Protocol, TypedDict
+from typing import Any, Literal, Protocol, TypedDict
 
 Document = dict[str, Any]
 LlmMode = Literal["stub", "live"]
@@ -49,6 +50,14 @@ class RunBinding:
                 raise ValueError("Invalid event ID")
         if self.operation_token is not None and not (isinstance(self.operation_token, str) and self.operation_token):
             raise ValueError("Invalid operation token")
+
+
+@dataclass(frozen=True)
+class OutputArtifact:
+    """A workflow output field that is submitted verbatim as a named Markdown file."""
+
+    field: str
+    name: str
 
 
 @dataclass(frozen=True)

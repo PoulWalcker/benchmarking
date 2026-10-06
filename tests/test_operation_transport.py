@@ -6,10 +6,10 @@ from pathlib import Path
 import subprocess
 import unittest
 
-from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.contracts import CompileOptions, RunBinding
 from sapi_config_lab.coordinate.backend import N8nBackend
 from sapi_config_lab.execute.n8n import binding_environment
+from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.profile import Invalid, read, read_bindings
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -127,7 +127,7 @@ class OperationTransportTests(unittest.TestCase):
         self.assertEqual(request["max_attempts"], 1)
         self.assertTrue(request["operation_id"].endswith("/read/workflow-observed/execution-observed"))
         self.assertEqual(set(request), {"operation", "arguments", "operation_id", "max_attempts"})
-        for expected, row in zip(responses, result["rows"]):
+        for expected, row in zip(responses, result["rows"], strict=True):
             self.assertIsNone(row["error"])
             self.assertEqual(row["result"]["inputs"], {"query": "runtime fixture", "enabled": True})
             self.assertEqual(row["result"]["statuses"], {"read": "completed"})

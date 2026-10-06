@@ -3,14 +3,14 @@
 import unittest
 
 from sapi_config_lab.coordinate.scenarios import SCENARIOS
-from sapi_config_lab.execute.autowfbench import terminal_submission as admitted
+from sapi_config_lab.execute.simulator import terminal_submission as admitted
 
-CHECKOUT = SCENARIOS["checkout-recovery"].output
-CRM = SCENARIOS["crm-lead-qualification"].output
+CHECKOUT = SCENARIOS["checkout-recovery"].artifact
+CRM = SCENARIOS["crm-lead-qualification"].artifact
 
 
-def terminal_submission(record, elapsed, run_id, output=CHECKOUT):
-    return admitted(record, elapsed, run_id, limit=120, output=output)
+def terminal_submission(record, elapsed, run_id, artifact=CHECKOUT):
+    return admitted(record, elapsed, run_id, limit=120, artifact=artifact)
 
 
 class TerminalSubmissionTests(unittest.TestCase):

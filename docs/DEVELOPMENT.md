@@ -3,16 +3,15 @@
 ## Setup
 
 ```bash
-uv sync --locked --extra harbor
+uv sync --locked --extra harbor --extra benchmark
+uv run --locked sapi-lab fetch-source autowfbench   # hosted scenarios only
 ```
 
-The project is pinned to Python `3.14.8` through `.python-version`. Use `--locked` so `uv.lock` and `pyproject.toml` must agree.
+Python is pinned to `3.14.8` by `.python-version`; `--locked` keeps `uv.lock` authoritative. Docker is needed for the n8n/Harbor controls; a local n8n container only for `sapi-lab ui`.
 
-Docker is required for the real n8n/Harbor control path. A local Node/n8n installation is only needed for the interactive UI workflow.
+`fetch-source` downloads the files pinned by `provenance/autowfbench-source.json` into `.cache/autowfbench/<revision>/` and verifies every byte. Nothing else fetches it, and a cache that differs from the manifest is refused, never repaired.
 
-## Fast checks
-
-Run these before a Docker experiment:
+## Checks
 
 ```bash
 uv run --locked python -m unittest discover -s tests -v
@@ -22,179 +21,103 @@ uv run --locked mypy
 uv run --locked python infra/check_distribution.py
 ```
 
-These checks are fast and deterministic. They do not prove real n8n behavior.
-
-For runtime/container behavior use the control suite:
+They are fast and deterministic and prove nothing about real n8n. For that run the unpaid control suite:
 
 ```bash
-./run.sh
-# or one scenario
-./run.sh --scenario <name>
+./run.sh                          # default scenarios
+./run.sh --scenario <name> ...    # any scenarios, hosted ones included
 ```
 
-A useful control requires both sides:
-
-- `oracle` must pass;
-- `nop` must fail.
-
-If either control is wrong, fix the measuring instrument before running model-authored candidates.
+A control is valid only when `oracle` passes and `nop` fails. Fix the instrument before spending model calls.
 
 ## CLI
 
-The CLI is the source of truth for command options:
-
-```bash
-uv run --locked sapi-lab --help
-uv run --locked sapi-lab <command> --help
-```
-
-Main human-facing commands:
+`uv run --locked sapi-lab --help` is the source of truth for options.
 
 | Command | Purpose | Model calls |
 | --- | --- | --- |
-| `compile` | validate one YAML and produce backend artifact + mapping | no |
-| `build` | compile project reference configs | no |
-| `harbor` | run deterministic Docker/Harbor controls | no |
-| `generate` | author workflow YAML with a model after controls | yes |
-| `live` | replay admitted submissions with live model operations | yes |
-| `select` | select generated submissions for replay by a fixed rule | no |
-| `evaluate` | re-evaluate one recorded trial; judge only with `--dispatch-judge` | only if dispatched |
-| `ui` | import/view workflows in local n8n; live execution may call models | sometimes |
-| `lifecycle` | operate the durable candidate lifecycle controller | depends on mode |
-| `review-export` | derive a human-readable analysis beside recorded results | no |
+| `compile` / `build` | validate and compile one config / every reference config | no |
+| `harbor` | the control suite (`./run.sh`) | no |
+| `generate` | model-authored YAML after a passing control suite (`./run-generation.sh`) | yes |
+| `select` | pick generated submissions for replay by a fixed rule | no |
+| `live` | replay submissions with live model operations | yes |
+| `evaluate` | re-evaluate one recorded trial; a judge only with `--dispatch-judge` | only if dispatched |
+| `ui` | import graphs into local n8n; a `--live` session may call models | sometimes |
+| `lifecycle` | the durable candidate lifecycle controller | with `--rebuilder-url` or live mode |
+| `review-export` | write derived `analysis.md` beside recorded evaluations | no |
+| `fetch-source` | fetch and verify a pinned upstream source | no |
 
-Commands listed by the CLI as internal are container/composition entry points. Do not build developer workflow around calling them directly from the host.
+Internal commands (`execute`, `package-tasks`, `transport`, `bridge`, `simulator-worker`) run inside containers or under another command.
 
-## Adding a project scenario
+## Machine configuration
 
-Do not create a new docs file for a scenario. A scenario is code/data plus verifier coverage.
+Defaults describe one Docker Desktop host. Override them through the environment; a CLI option, where one exists, overrides the environment.
 
-### 1. Add the scenario directory
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `SAPI_LAB_ROOT` | discovered from the working directory | the checkout experiments read |
+| `SAPI_WRAPPER_URL` | `http://127.0.0.1:8765/run` | local model wrapper (`--upstream`) |
+| `SAPI_WRAPPER_MODEL` | `gpt-6-astra` | model the wrapper must report; a mismatch fails closed |
+| `SAPI_CONTAINER_HOST` | `host.docker.internal` | how a task container reaches host services (e.g. `172.17.0.1` on Linux) |
+| `SAPI_LISTEN_HOST` | `0.0.0.0` | where hosted-simulator services listen for containers |
+| `SAPI_BRIDGE_PORT` | `18765` | live Agency bridge (`live --bridge-port`) |
+| `SAPI_UI_BRIDGE_PORT` | `18766` | UI Agency bridge (`ui --port`) |
+| `SAPI_N8N_URL` | `http://localhost:5678` | local n8n editor |
+| `SAPI_N8N_CONTAINER` | `n8n-n8n-1` | local n8n container (`ui --container`) |
+| `SAPI_STAGING_DIR` | system temp | staging for task packages; must be mountable by Docker |
 
-```text
-benchmarks/NN-<scenario>/
-  task.md          public task given to an authoring agent
-  config.yaml      reference workflow definition
-  instruction.md   task-container/oracle instruction
-  cases.json       evaluator fixtures
-  scenario.json    runtime/model budgets and scenario metadata
-```
+The coordinator sets the container protocol variables itself: `SAPI_LLM_MODE`, `SAPI_CASE_NAME`, `SAPI_BRIDGE_URL` (Harbor verifier env) and `SAPI_EXPECTED_SUBMISSION_SHA256` (replay packages). n8n inherits only `PATH`, `HOME`, `TMPDIR`, `TZ`, `LANG` and `LC_ALL` plus a run's binding.
 
-Add `prompt-extension.md` only when the scenario genuinely needs task-specific authoring instructions.
+## Adding a scenario
 
-The reference `config.yaml` must obey `docs/PROFILE.md` and the model-facing rules in `generation/FORMAT.md`.
+Add `benchmarks/NN-<name>/` with a `scenario.json` (fields in [ARCHITECTURE.md](ARCHITECTURE.md#one-scenario-registry)), a reference `config.yaml` that obeys [PROFILE.md](PROFILE.md) and `generation/FORMAT.md`, and an `instruction.md`.
 
-### 2. Add independent verification
+A **fixture** scenario adds the public `task.md` and evaluator-only `cases.json`, then extends the verifier:
 
-Extend the existing verifier instead of creating scenario-specific verifier packages:
+- role contract in `verification/scenario_contracts.py` (and `roles.py` when needed);
+- business obligations in `verification/scenario_business.py`, recomputed from fixture inputs, never imported from the operation under test;
+- a rubric card only for a quality question binary acceptance does not answer.
 
-- role/topology contract in `verification/roles.py` when needed;
-- business result checks in `verification/scenario_business.py`;
-- rubric card only when there is a quality question not captured by binary acceptance.
+A **hosted** scenario names its pinned upstream challenge under `provenance` and adds `authoring-notes.md` and its own `bindings.yaml`; the upstream scorer is its evaluator.
 
-Expected answers must be recomputed from fixture inputs in verifier code. Do not import the workflow operation that produced the candidate answer.
-
-### 3. Add tests
-
-Cover at least:
-
-- profile/definition validity;
-- scenario discovery and packaging;
-- positive business behavior;
-- negative or corruption behavior that proves the verifier can reject a plausible bad result;
-- budget/provenance rules for any model operations.
-
-### 4. Run deterministic controls
-
-```bash
-./run.sh --scenario <scenario-name>
-```
-
-Only after the oracle/nop instrument is valid should you spend model calls on authoring or live runtime execution.
+Cover profile validity, packaging, a positive case and a plausible bad result the verifier rejects, then run `./run.sh --scenario <name>`. Do not add a docs file per scenario.
 
 ## Model-authored definitions
 
-The author receives the bounded profile plus the operation catalog. It is not asked to write arbitrary n8n JSON.
+`./run-generation.sh` gives a model the task, `generation/FORMAT.md`, `generation/PROFILE.md` and the operation catalog, once per attempt, with no repair. The answer is a candidate like any other: compiled, executed and independently verified. Runtime model steps are stubs during generation. The wrapper does not disable its CLI tools: the prompt forbids them and recognized tool markers in its stderr reject the attempt, which is an audit, not a sandbox. `tests/test_packaging.py` pins every generation prompt's hash; a prompt change is an experiment change.
 
-```bash
-./run-generation.sh
-```
-
-The generated YAML is still a candidate submission. It must pass the same compile, execute, evidence, and independent verification path as any other definition.
-
-Do not automatically repair a failed answer unless the experiment explicitly measures repair/refinement. Silent repair changes the experiment.
+For a hosted scenario the gate after authoring is admission: the YAML compiles, stays within `runtime_model_calls` and keeps the upstream deadline.
 
 ## Live model execution
 
-Live runtime operations go through the existing wrapper/Agency bridge and use explicit call budgets.
+```bash
+uv run --locked --extra harbor --extra benchmark sapi-lab live --stub-report <control>/report.json \
+  --max-calls N --wrapper-evidence <identity.json> [--submissions-manifest <selection.json>]
+```
 
-Before dispatching:
+Before any dispatch, `live` requires a passing control report for the same sources and image, an unpaid stub replay, a ledger reservation per case and an inspected wrapper identity. The identity records each wrapper file's hash; files are read at their recorded path unless `--wrapper-file NAME=PATH` names the local copy (NAME is the file's basename). Hashes are always checked. Hosted scenarios also need `--judge-model`; each judge call is reserved.
 
-1. run deterministic controls;
-2. inspect the command plan with `--help`/prepare modes where available;
-3. verify the expected wrapper/model identity and source pins;
-4. confirm the configured call budget.
-
-A stale source or wrapper identity should fail closed instead of silently running a different experiment.
-
-## Imported simulator scenarios
-
-`benchmarks/10-checkout-recovery` and `benchmarks/11-crm-lead-qualification` are ordinary scenarios whose task, environment and evaluator come from a pinned upstream AutoWFBench revision. They run through the same `harbor`, `generate`, `select` and `live` commands.
-
-- They need the pinned source in `.cache/autowfbench/<revision>` and `uv sync --extra benchmark`.
-- Their directory holds `scenario.json` (challenge, budgets, control reward), `bindings.yaml`, `authoring-notes.md` and the reference `config.yaml`; there is no `cases.json`.
-- After authoring, the gate is admission only: the YAML compiles, stays within the runtime model cap and keeps the original deadline.
-- In `harbor` and `live`, the host starts a fresh simulator per trial and evaluates the recorded evidence with the upstream scorer. `live` needs `--judge-model`; each judge call is reserved in the ledger.
-- `sapi-lab evaluate --record reports/<run>/environments/<job>/<scenario> --judgement <reply.json>` re-scores a trial from a saved judgement without calling a model.
+`sapi-lab evaluate --record reports/<run>/environments/<job>/<scenario> --judgement <reply.json>` re-scores a hosted trial from a saved judgement without a model call.
 
 ## Local n8n UI
 
-To inspect compiled workflows without treating the UI as benchmark evidence:
-
 ```bash
 uv run --locked sapi-lab ui open --all
-```
-
-For one prepared live workflow:
-
-```bash
 uv run --locked sapi-lab ui open benchmarks/09-priority-support-brief/config.yaml --live
 ```
 
-Interactive UI runs are useful for debugging and inspection. Benchmark claims should point to recorded experiment evidence instead.
+Imports are inactive copies and never execute. A `--live` session arms one fresh copy with a budgeted bridge; execution stays a manual click. UI runs are for inspection, not benchmark evidence.
 
 ## Reading a run
 
-Do not infer correctness from a successful n8n execution.
-
-Look for three separate outputs:
-
 | Question | Evidence |
 | --- | --- |
-| Did the engine run? | execution record / native n8n evidence |
-| Did the required behavior hold? | `acceptance.json` and verifier report |
-| How good was the output? | optional `evaluation.json` / judge result |
+| Did the engine run? | `case.json` and the native n8n records beside it |
+| Did the required behavior hold? | the verifier's `report.json` and each case's `acceptance.json`, or the upstream `report.json` |
+| How good was the output? | `evaluation.json`; `not_evaluated` is missing, not zero |
 
-A negative corruption check is successful when the bad candidate is rejected.
+New runs go to `reports/` (ignored). Commit to `evidence/` only what a durable claim cites, and never edit it afterwards.
 
-`not_evaluated` quality is missing evaluation, not score zero and not acceptance failure.
+## Documentation
 
-## Evidence and historical results
-
-New results belong in `reports/`. Reports are local and ignored by Git.
-
-Commit only evidence that supports a durable claim worth keeping in the repository. Put it under `evidence/` with enough metadata to identify the source run.
-
-Do not maintain a second prose history in `/docs`. Git already records documentation/code history, and experiment artifacts record experiment history.
-
-## Documentation changes
-
-When behavior changes, update the smallest canonical document that owns the rule:
-
-- module/system boundary -> `ARCHITECTURE.md`
-- developer workflow -> `DEVELOPMENT.md`
-- YAML/runtime semantics -> `PROFILE.md`
-- first-run entry point -> root `README.md`
-- coding-agent invariant -> root `AGENTS.md`
-
-Avoid new docs for temporary status, a single experiment, a migration that has already happened, or an implementation detail discoverable from code.
+One fact, one owner: boundaries in `ARCHITECTURE.md`, workflow here, YAML semantics in `PROFILE.md`, the entry path in `README.md`, coding rules in `AGENTS.md`. History lives in Git and `evidence/`, not in `docs/`.

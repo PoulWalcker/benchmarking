@@ -67,8 +67,12 @@ class EvidenceBoundaryTests(unittest.TestCase):
         self.assertEqual(names[: len(expected)], expected)
         self.assertEqual(
             names[len(expected) :],
-            ["mutated-generated-result", "invalid-yaml-unknown-operation", "invalid-yaml-cycle"]
-            + ["invalid-yaml-unsupported-required-parallel"],
+            [
+                "mutated-generated-result",
+                "invalid-yaml-unknown-operation",
+                "invalid-yaml-cycle",
+                "invalid-yaml-unsupported-required-parallel",
+            ],
         )
 
     def test_reevaluation_is_deterministic_and_leaves_the_evidence_untouched(self):

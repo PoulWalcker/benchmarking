@@ -5,8 +5,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.execute.agency import ContractError, DispatchAudit, execute
+from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.profile import read_bindings
 
 
@@ -64,7 +64,7 @@ class OccurrenceBudgetTests(unittest.TestCase):
 
         caps = {}
         for scenario, definition in SCENARIOS.items():
-            if definition.group == "lifecycle" or definition.environment != "fixtures":
+            if definition.hosted or "lifecycle" in read(definition.config):
                 continue
             submission = {"path": definition.config, "cases": definition.cases()}
             for name in live_cohort(scenario, submission):
