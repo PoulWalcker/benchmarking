@@ -6,10 +6,16 @@ real n8n, and independent verifiers evaluate that answer without editing it.
 
 ## Verified series
 
-October 4, 2026: the public [results summary](../docs/RESULTS.md) records this
-series and its report hash. Original prompts, generated YAML, and full results
-are preserved locally under `reports/20261004-yaml-generation-1/`; they are not
-included in Git or source distributions.
+October 4, 2026: the public [results summary](../docs/history/RESULTS.md) records
+this series and its report hash. The two artefacts the documentation cites — the
+[authoring report](../evidence/20261004-yaml-generation-1/report.json) and the
+[Harbor result](../evidence/20261004-yaml-generation-1/jobs/generated/result.json)
+— were extracted into the committed `evidence/` tree and ship with the source
+distribution. The full run directory, with the original prompts, every generated
+YAML and the rest of the `jobs/` tree, was archived out of the repository to
+`sapi-lab-archive/20261004-yaml-generation-1.tar.zst` on the author's machine;
+it is in neither the repository nor any distribution. [`evidence/README.md`](../evidence/README.md)
+records what was extracted and what was dropped.
 Three attempts each for invoices, routing, and research: **9/9 passed**.
 The existing wrapper used `gpt-6-astra`. Answers were not edited; stderr showed
 no recognized tool-call markers. Frozen-core hashes remained unchanged.
