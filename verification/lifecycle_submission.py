@@ -10,16 +10,14 @@ Business acceptance itself remains in lifecycle.py.
 from __future__ import annotations
 
 import copy
-import hashlib
 import json
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING or __package__:
-    from .contracts import require
+    from .contracts import Recorded, require
     from .lifecycle import digest_native, verify_lifecycle
 else:
-    from contracts import require
+    from contracts import Recorded, require
     from lifecycle import digest_native, verify_lifecycle
 
 # The fixed instant the Callback-tested candidate's 09:00 Asia/Dubai Cron fires.
@@ -86,10 +84,10 @@ def plan_lifecycle(config: dict, cases: dict) -> list[dict]:
     return entries
 
 
-def evaluate_lifecycle(entries: list[dict], evidence: Path, identity: dict, rows: list[dict]) -> None:
+def evaluate_lifecycle(entries: list[dict], recorded: Recorded, rows: list[dict]) -> None:
     """Judge each recorded lifecycle entry, appending its row; the first rejection raises."""
     for entry in entries:
-        directory = evidence / "cases" / entry["name"]
+        directory = recorded.case(entry["name"])
         row: dict = {"name": entry["name"], "passed": False}
         rows.append(row)
         passed = False
@@ -114,22 +112,5 @@ def evaluate_lifecycle(entries: list[dict], evidence: Path, identity: dict, rows
             reason = str(error)
             raise
         finally:
-            _write_acceptance(directory, passed, reason, identity)
+            recorded.accept(entry["name"], passed, reason)
         row["passed"] = True
-
-
-def _write_acceptance(directory: Path, passed: bool, reason: str | None, identity: dict) -> None:
-    evidence = {
-        name: hashlib.sha256((directory / name).read_bytes()).hexdigest()
-        for name in ("snapshot.json", "event.json")
-        if (directory / name).is_file()
-    }
-    decision = {"status": "accepted" if passed else "rejected", "passed": passed, "reason": reason}
-    directory.mkdir(parents=True, exist_ok=True)
-    (directory / "acceptance.json").write_text(
-        json.dumps(
-            {"schema": "sapi-lab-acceptance/v1", **decision, "evidence": evidence, "evaluator": identity["name"]},
-            indent=2,
-        )
-        + "\n"
-    )

@@ -333,7 +333,7 @@ class LifecycleSubmissionTests(unittest.TestCase):
             validate_task(config)
 
     def test_harbor_report_does_not_require_opening_the_shared_log_mount(self):
-        report_dir = Path(self.temporary.name) / "shared-verifier-log"
+        report_dir = Path(self.temporary.name) / "shared-verifier-log" / "evaluation"
         original_open = os.open
 
         def mount_open(path, flags, *args, **kwargs):
@@ -343,7 +343,10 @@ class LifecycleSubmissionTests(unittest.TestCase):
 
         with patch("sapi_config_lab.evidence.os.open", side_effect=mount_open):
             report = evaluate(
-                "daily-digest", Path(self.temporary.name) / "missing.yaml", report_dir, all_cases()["daily-digest"]
+                "daily-digest",
+                Path(self.temporary.name) / "missing.yaml",
+                report_dir.parent / "evidence",
+                all_cases()["daily-digest"],
             )
         self.assertFalse(report["passed"])
         self.assertEqual(report["error_type"], "FileNotFoundError")

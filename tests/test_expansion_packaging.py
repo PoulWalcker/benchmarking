@@ -95,7 +95,7 @@ class ExpansionPackagingTests(unittest.TestCase):
                     },
                 )
                 save(
-                    trial / "verifier/report.json",
+                    trial / "verifier/evaluation/report.json",
                     {"scenario": SCENARIO, "mode": "stub", "passed": True, "submission_sha256": digest},
                 )
                 trials.append({"scenario": SCENARIO, "passed": True, "result_path": str(trial / "result.json")})

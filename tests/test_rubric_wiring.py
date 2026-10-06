@@ -259,16 +259,16 @@ class VerifierSeamTests(unittest.TestCase):
     def test_the_evaluation_lands_beside_the_report(self):
         directory, report = self.verify(SCENARIO, "benchmarks/07-support-review-packet/config.yaml")
         self.assertFalse(report["passed"])
-        document = json.loads((directory / "evaluation.json").read_text())
+        document = json.loads((directory / "evaluation/evaluation.json").read_text())
         self.assertEqual(document["schema"], "sapi-lab-rubric-evaluation/v1")
         self.assertEqual(document["status"], rubric_facts.NOT_EVALUATED)
         self.assertIsNone(document["score_0_10"])
         self.assertEqual(document["execution_pass"], False)
-        self.assertEqual(json.loads((directory / "report.json").read_text()), report)
+        self.assertEqual(json.loads((directory / "evaluation/report.json").read_text()), report)
 
     def test_a_scenario_without_a_card_writes_no_evaluation(self):
         directory, _ = self.verify("revise-answer", "benchmarks/04-revise-answer/config.yaml")
-        self.assertFalse((directory / "evaluation.json").exists())
+        self.assertFalse((directory / "evaluation/evaluation.json").exists())
 
     def test_every_carded_scenario_writes_one_beside_the_report(self):
         for scenario, config in (
@@ -280,7 +280,7 @@ class VerifierSeamTests(unittest.TestCase):
             with self.subTest(scenario=scenario):
                 directory, report = self.verify(scenario, config)
                 self.assertFalse(report["passed"])
-                document = json.loads((directory / "evaluation.json").read_text())
+                document = json.loads((directory / "evaluation/evaluation.json").read_text())
                 self.assertEqual(document["rubric"]["id"], scenario)
                 self.assertEqual(document["status"], rubric_facts.NOT_EVALUATED)
                 self.assertIsNone(document["score_0_10"])
@@ -330,7 +330,7 @@ class VerifierSeamTests(unittest.TestCase):
         from sapi_config_lab.evaluate.review_export import export_trial
 
         with tempfile.TemporaryDirectory() as directory:
-            trial = Path(directory) / "job" / "trial" / "verifier"
+            trial = Path(directory) / "job" / "trial" / "verifier" / "evaluation"
             trial.mkdir(parents=True)
             document = rubric_facts.evaluate(
                 SCENARIO, [facts_for(*packet())], accepted=True, execution_pass=True, judge=RecordedJudge(ANSWERS)
@@ -344,9 +344,9 @@ class VerifierSeamTests(unittest.TestCase):
     def test_a_rubric_that_raises_still_leaves_a_report_and_a_verdict(self):
         with unittest.mock.patch.object(verifier, "score_rubric", side_effect=RuntimeError("broken rubric")):
             directory, report = self.verify(SCENARIO, "benchmarks/07-support-review-packet/config.yaml")
-        self.assertEqual(json.loads((directory / "report.json").read_text()), report)
+        self.assertEqual(json.loads((directory / "evaluation/report.json").read_text()), report)
         self.assertIn(reward(report), (0.0, 1.0))
-        document = json.loads((directory / "evaluation.json").read_text())
+        document = json.loads((directory / "evaluation/evaluation.json").read_text())
         self.assertEqual(document["status"], rubric_facts.NOT_EVALUATED)
         self.assertIn("broken rubric", document["reason"])
 

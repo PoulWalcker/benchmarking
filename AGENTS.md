@@ -50,10 +50,13 @@ the table and the test together, never one alone.
   evaluation (`not_evaluated`, null score) is never a failure and never a zero.
 - **Evidence is immutable once written.** In a task container `test.sh` runs
   `verify.py plan` (what must run), `coordinate/observe.py` (runs it, records
-  evidence and `observation.json`), then `verify.py evaluate` (checks the record
-  is complete and unaltered, then judges). Evaluation writes its own files
-  (`acceptance.json`, `evaluation.json`, `report.json`) naming the evidence it
-  read; corruption probes mutate copies. Tests compose the three steps with a
+  `<run>/evidence/` and its `observation.json`, which hashes every file), then
+  `verify.py evaluate` (requires exactly those files, the native artifacts the
+  recorded status implies and their agreement with `case.json`, then judges).
+  Evaluation writes only under `<run>/evaluation/` (`acceptance.json` with the
+  evaluator fingerprint, `evaluation.json`, `report.json`); corruption probes
+  mutate copies. `tests/support/native.py` records a complete accepted case
+  without n8n. Tests compose the three steps with a
   fake runner through `tests/support/verifying.py`.
 - **Evaluator-only material** (`benchmarks/*/cases.json`, reference
   `config.yaml`, verifier code) never reaches a candidate agent's container:

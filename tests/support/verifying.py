@@ -12,8 +12,11 @@ from sapi_config_lab.evidence import write_record_json
 
 
 def verify_with_runner(
-    verifier, scenario, config_path, evidence, mode="stub", selected_case=None, *, runner, cases, judge=None
+    verifier, scenario, config_path, run, mode="stub", selected_case=None, *, runner, cases, judge=None
 ):
+    """Observe into <run>/evidence, then evaluate it into <run>/evaluation."""
+    evidence = Path(run) / "evidence"
+
     def recording(config, directory, **options):
         record = runner(config, directory, **options)
         directory = Path(directory)
@@ -29,5 +32,5 @@ def verify_with_runner(
     except Exception:
         issued = None
     if issued is not None:
-        observe(issued, Path(config_path), Path(evidence), runner=recording)
-    return verifier.evaluate(scenario, Path(config_path), Path(evidence), cases, mode, selected_case, judge=judge)
+        observe(issued, Path(config_path), evidence, runner=recording)
+    return verifier.evaluate(scenario, Path(config_path), evidence, cases, mode, selected_case, judge=judge)

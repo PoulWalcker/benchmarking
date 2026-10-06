@@ -31,7 +31,7 @@ FROZEN = {
         "3775b80868a30886b9102ffbb6b385248c215cf45321a86b758a3a76bfdbb81f",
     ),
 }
-PROVENANCE_FILES = ("agent/generation.json", "agent/prompt.txt", "result.json", "verifier/report.json")
+PROVENANCE_FILES = ("agent/generation.json", "agent/prompt.txt", "result.json", "verifier/evaluation/report.json")
 
 
 def require(condition, message):
@@ -83,7 +83,7 @@ def selection_manifest(source_report: Path) -> dict:
         generation = read_json(directory / "agent/generation.json")
         require(authored_once(generation, submission_hash, prompt_hash), "Historical generation provenance mismatch")
         native = read_json(directory / "result.json")
-        acceptance = read_json(directory / "verifier/report.json")
+        acceptance = read_json(directory / "verifier/evaluation/report.json")
         require(native_stub_passed(native, scenario), "Historical Harbor acceptance missing")
         require(
             acceptance.get("scenario") == scenario
@@ -201,7 +201,7 @@ def expansion_selection(source_report: Path, scenario: str) -> dict:
         native = read_json(path)
         directory = path.parent
         generation = read_json(directory / "agent/generation.json")
-        acceptance = read_json(directory / "verifier/report.json")
+        acceptance = read_json(directory / "verifier/evaluation/report.json")
         submission = directory / "agent/submission.yaml"
         prompt = directory / "agent/prompt.txt"
         require(native_stub_passed(native, scenario), "Native stub trial failed")

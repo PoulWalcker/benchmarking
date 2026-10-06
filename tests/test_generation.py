@@ -71,12 +71,12 @@ class GenerationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             trial = Path(directory) / "invoice_trial"
             (trial / "agent").mkdir(parents=True)
-            (trial / "verifier").mkdir()
+            (trial / "verifier/evaluation").mkdir(parents=True)
             (trial / "result.json").write_text(
                 json.dumps({"task_name": "invoice-total", "verifier_result": {"rewards": {"reward": 1.0}}})
             )
             (trial / "agent/generation.json").write_text('{"status":"submitted"}')
-            (trial / "verifier/report.json").write_text('{"passed":false,"cases":[]}')
+            (trial / "verifier/evaluation/report.json").write_text('{"passed":false,"cases":[]}')
             result = summarize_trials(Path(directory))[0]
             self.assertFalse(result["passed"])
             self.assertEqual(result["failure_stage"], "yaml_parsing_or_definition")
@@ -85,20 +85,23 @@ class GenerationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             trial = Path(directory) / "invoice_trial"
             (trial / "agent").mkdir(parents=True)
-            (trial / "verifier/cases/sample").mkdir(parents=True)
+            (trial / "verifier/evidence/cases/sample").mkdir(parents=True)
+            (trial / "verifier/evaluation").mkdir()
             (trial / "result.json").write_text(
                 json.dumps({"task_name": "invoice-total", "verifier_result": {"rewards": {"reward": 0.0}}})
             )
             (trial / "agent/generation.json").write_text('{"status":"submitted"}')
-            (trial / "verifier/report.json").write_text(
+            (trial / "verifier/evaluation/report.json").write_text(
                 json.dumps(
                     {
                         "passed": False,
-                        "cases": [{"passed": False, "kind": "positive", "artifacts": "/logs/verifier/cases/sample"}],
+                        "cases": [
+                            {"passed": False, "kind": "positive", "artifacts": "/logs/verifier/evidence/cases/sample"}
+                        ],
                     }
                 )
             )
-            (trial / "verifier/cases/sample/case.json").write_text('{"status":"compile_error"}')
+            (trial / "verifier/evidence/cases/sample/case.json").write_text('{"status":"compile_error"}')
             self.assertEqual(summarize_trials(Path(directory))[0]["failure_stage"], "compilation")
 
 

@@ -158,4 +158,4 @@ class PackagingTests(unittest.TestCase):
             self.assertFalse(result["passed"])
             self.assertEqual(len(calls), 1)
             self.assertEqual(calls[0]["workflow"]["inputs"], cases[0]["inputs"])
-            self.assertEqual(json.loads((Path(directory) / "report.json").read_text()), result)
+            self.assertEqual(json.loads((Path(directory) / "evaluation/report.json").read_text()), result)

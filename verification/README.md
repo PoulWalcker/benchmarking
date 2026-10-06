@@ -63,8 +63,12 @@ every run. To inspect a package without running it, choose a new directory:
 uv run --locked sapi-lab package-tasks /tmp/sapi-tasks
 ```
 
-The verifier writes `report.json` and per-case artifacts beneath the requested
-report directory. In Harbor that directory is `/logs/verifier`. The adapter
+Observation records evidence under `<run>/evidence/` and the verifier writes
+`report.json`, `evaluation.json` and each case's `acceptance.json` under the
+sibling `<run>/evaluation/`. In Harbor `<run>` is `/logs/verifier`. The
+evidence directory must hold exactly the files `observation.json` lists; what a
+case must contain depends on its recorded status (`NATIVE_ARTIFACTS` in
+`verify.py`), and `case.json` must agree with the native records beside it. The adapter
 saves source inputs, generated JSON/map, import/execute logs, raw and persisted
 execution records, and a case manifest. Compilation errors, expected runtime
 input rejection, successful runtime execution and acceptance rejection remain
@@ -72,7 +76,8 @@ distinct in the report. New case manifests use `sapi-lab-execution/v1`:
 
 - `execution.succeeded` describes engine completion. `case.json` is never
   rewritten: its `acceptance.passed` stays null, and each decision is its own
-  `acceptance.json` naming the evidence hashes it judged. A mutated workflow can
+  `acceptance.json` naming the evidence hashes it judged and the evaluator's
+  source fingerprint (`evaluator_sha256`). A mutated workflow can
   execute successfully and still receive rejected acceptance.
 - `input.source=fixture` identifies injected input separately from the real
   execution engine.

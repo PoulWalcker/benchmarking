@@ -7,7 +7,7 @@ that step recorded, checks the record is complete and is the plan it was
 given, and only then judges it. Business assertions consume engine-neutral
 observations; the n8n evidence adapter separately establishes native
 execution provenance. Recorded evidence is never modified: each decision is
-written to its own acceptance.json beside the evidence it read.
+written to its own acceptance.json under the sibling evaluation/ directory.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ import yaml
 if TYPE_CHECKING or __package__:
     from .business import check_business_result
     from .extensions import refinement_corruptions, verify_refinement
-    from .contracts import Rejected, require
+    from .contracts import Recorded, Rejected, require
     from .n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
     from .rubric import SCHEMA, Judge
     from .rubric_facts import NOT_EVALUATED, evaluate as score_rubric, observe
@@ -35,14 +35,13 @@ else:  # Harbor executes its copied verifier directly.
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from business import check_business_result
     from extensions import refinement_corruptions, verify_refinement
-    from contracts import Rejected, require
+    from contracts import Recorded, Rejected, require
     from n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
     from rubric import SCHEMA, Judge
     from rubric_facts import NOT_EVALUATED, evaluate as score_rubric, observe
 
 PLAN_SCHEMA = "sapi-lab-observation-plan/v1"
 OBSERVATION_SCHEMA = "sapi-lab-observation/v1"
-ACCEPTANCE_SCHEMA = "sapi-lab-acceptance/v1"
 # The corrupted-artifact probe: compiled code is altered after compilation, so
 # n8n succeeds and only independent acceptance can notice the wrong result.
 WRONG_RESULT = "wrong-result"
@@ -205,6 +204,10 @@ def canonical(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+def digest(value: Any) -> str:
+    return sha256_bytes(canonical(value).encode())
+
+
 def evaluator_identity() -> dict:
     """Which verifier judged: the hash of every module it was built from."""
     here = Path(__file__).resolve().parent
@@ -291,18 +294,89 @@ def plan(
     }
 
 
-def read_evidence(evidence: Path, expected_plan: dict) -> dict:
-    """The observation manifest, after checking it records exactly this plan.
+# What the execution step must have recorded beside case.json and config.json,
+# by the status it reports. A definition the compiler rejected has no engine
+# artifacts; a successful execution has every native record n8n persists.
+NATIVE_ARTIFACTS = {
+    "compile_error": set(),
+    "engine_error": set(),
+    "import_error": {"workflow.json", "mapping.json", "import.log"},
+    "error": {"workflow.json", "mapping.json", "import.log", "execution.stdout.log", "execution.stderr.log"},
+    "success": {
+        "workflow.json",
+        "mapping.json",
+        "import.log",
+        "execution.stdout.log",
+        "execution.stderr.log",
+        "execution.json",
+        "execution.persisted.json",
+        "execution.metadata.json",
+    },
+}
 
-    A missing, partial, reordered or edited record is rejected here, before any
-    business check could be satisfied by whatever files happen to exist.
+
+def inventory(directory: Path) -> dict[str, str]:
+    """Every file under a directory, by relative path; links are never evidence."""
+    paths = sorted(directory.rglob("*"))
+    require(not any(path.is_symlink() for path in paths), "Recorded evidence contains a link")
+    return {path.relative_to(directory).as_posix(): sha256_bytes(path.read_bytes()) for path in paths if path.is_file()}
+
+
+def check_case_record(directory: Path, files: dict[str, str], name: str) -> None:
+    """The native artifacts a recorded case must carry, and their agreement with case.json."""
+    run = json.loads((directory / "case.json").read_text())
+    status = run.get("status")
+    require(status in NATIVE_ARTIFACTS, "Unknown recorded execution status: " + name)
+    missing = NATIVE_ARTIFACTS[status] - set(files)
+    require(not missing, f"Recorded {status} case lacks native artifacts {sorted(missing)}: {name}")
+    engine = (run.get("evidence") or {}).get("engine") or {}
+    named = {value for key, value in engine.items() if key.endswith("_artifact") and value is not None}
+    require(named <= set(files), "Recorded case names a native artifact it did not record: " + name)
+
+    def native(file: str):
+        return json.loads((directory / file).read_text()) if file in files else None
+
+    if "workflow.json" in files:
+        require(
+            files["workflow.json"] == run.get("workflow_sha256"), "Recorded workflow differs from its hash: " + name
+        )
+    if "mapping.json" in files:
+        require(native("mapping.json") == run.get("mapping"), "Recorded mapping differs from the case: " + name)
+    persisted, execution, metadata = (
+        native("execution.persisted.json"),
+        native("execution.json"),
+        native("execution.metadata.json"),
+    )
+    if persisted is not None:
+        require(
+            persisted.get("resultData", {}).get("runData") == run.get("run_data"),
+            "Persisted native record differs from the extracted run data: " + name,
+        )
+    if execution is not None:
+        require(
+            execution.get("data", {}).get("resultData", {}).get("runData") == run.get("run_data"),
+            "Native execution record differs from the extracted run data: " + name,
+        )
+    if metadata is not None:
+        require(
+            str(metadata.get("id")) == run.get("execution_id") and metadata.get("workflowId") == run.get("workflow_id"),
+            "Persisted execution identity differs from the case: " + name,
+        )
+
+
+def read_evidence(evidence: Path, expected_plan: dict) -> dict[str, dict[str, str]]:
+    """Every recorded file, after checking the record is exactly this plan's.
+
+    A missing, extra, partial, reordered or edited file is rejected here, before
+    any business check could be satisfied by whatever files happen to exist.
+    Returns each entry's file hashes, keyed by entry name.
     """
     manifest_path = evidence / "observation.json"
     require(manifest_path.is_file(), "No recorded observation; the execution step did not complete")
     manifest = json.loads(manifest_path.read_text())
     require(manifest.get("schema") == OBSERVATION_SCHEMA, "Unknown observation schema")
     require(
-        manifest.get("plan_sha256") == sha256_bytes(canonical(expected_plan).encode()),
+        manifest.get("plan_sha256") == digest(expected_plan),
         "Recorded observation is not the plan this verifier issued",
     )
     require(
@@ -316,22 +390,30 @@ def read_evidence(evidence: Path, expected_plan: dict) -> dict:
         and [row.get("name") for row in recorded] == [e["name"] for e in expected_plan["entries"]],
         "Recorded observation is incomplete or out of order",
     )
+    expected_files = {"submission.yaml", "observation.json"}
+    files: dict[str, dict[str, str]] = {}
     for entry, row in zip(expected_plan["entries"], recorded):
         directory = evidence / "cases" / entry["name"]
-        files = row.get("files")
+        listed = row.get("files")
         required = {"case.json", "config.json"} if entry["procedure"] == "case" else {"snapshot.json", "event.json"}
-        require(isinstance(files, dict) and required <= set(files), "Recorded case is incomplete: " + entry["name"])
-        for name, digest in files.items():
+        require(isinstance(listed, dict) and required <= set(listed), "Recorded case is incomplete: " + entry["name"])
+        on_disk = inventory(directory) if directory.is_dir() else {}
+        for name in set(listed) | set(on_disk):
             require(
-                (directory / name).is_file() and sha256_bytes((directory / name).read_bytes()) == digest,
+                listed.get(name) == on_disk.get(name),
                 "Recorded evidence changed after collection: " + entry["name"] + "/" + name,
             )
+        expected_files.update("cases/" + entry["name"] + "/" + name for name in listed)
         if entry["procedure"] == "case":
             require(
                 json.loads((directory / "config.json").read_text()) == entry["config"],
                 "Executed definition differs from the planned fixture: " + entry["name"],
             )
-    return manifest
+            check_case_record(directory, listed, entry["name"])
+        files[entry["name"]] = listed
+    extra = set(inventory(evidence)) - expected_files
+    require(not extra, f"Recorded evidence holds files no entry recorded: {sorted(extra)}")
+    return files
 
 
 def check_runtime_sources(runtime_src: Path, manifest_path: Path) -> None:
@@ -350,35 +432,12 @@ def check_runtime_sources(runtime_src: Path, manifest_path: Path) -> None:
     require(present == expected["files"], "Runtime sources differ from the packaged runtime")
 
 
-def write_acceptance(directory: Path, passed: bool, reason: str | None, identity: dict) -> dict:
-    """One decision about one recorded case, naming the evidence it read."""
-    decision: dict[str, Any] = {"status": "accepted" if passed else "rejected", "passed": passed}
-    if reason:
-        decision["reason"] = reason
-    evidence = {
-        name: sha256_bytes((directory / name).read_bytes())
-        for name in ("case.json", "config.json")
-        if (directory / name).is_file()
-    }
-    directory.mkdir(parents=True, exist_ok=True)
-    (directory / "acceptance.json").write_text(
-        json.dumps(
-            {"schema": ACCEPTANCE_SCHEMA, **decision, "evidence": evidence, "evaluator": identity["name"]},
-            ensure_ascii=False,
-            indent=2,
-        )
-        + "\n"
-    )
-    return decision
-
-
 def judge_entries(
     scenario: str,
     entries: list[dict],
-    evidence: Path,
+    recorded: Recorded,
     cases: dict,
     mode: str,
-    identity: dict,
     report: dict,
     rubric_runs: list[dict],
 ) -> None:
@@ -389,10 +448,8 @@ def judge_entries(
     """
     fixtures = {case["name"]: case for kind in ("positive", "negative") for case in cases[kind]}
     for entry in entries:
-        artifact_dir = evidence / "cases" / entry["name"]
+        artifact_dir = recorded.case(entry["name"])
         run = json.loads((artifact_dir / "case.json").read_text())
-        if "mapping" not in run and (artifact_dir / "mapping.json").exists():
-            run["mapping"] = json.loads((artifact_dir / "mapping.json").read_text())
         candidate = entry["config"]
         row: dict[str, Any] = {
             "name": entry["name"],
@@ -416,11 +473,10 @@ def judge_entries(
                         scenario, case["inputs"], run, mode, config=candidate, case=case, rubric_runs=rubric_runs
                     )
                 )
-                row["acceptance"] = write_acceptance(
-                    artifact_dir,
+                row["acceptance"] = recorded.accept(
+                    entry["name"],
                     not row.get("exhausted", False),
                     "Expected refinement exhaustion; no accepted reply" if row.get("exhausted") else None,
-                    identity,
                 )
                 row["verifier_corruptions_rejected"] = (
                     refinement_corruptions(candidate, run, mode=mode)
@@ -431,7 +487,7 @@ def judge_entries(
             elif entry["kind"] == "negative":
                 case = fixtures[entry["name"]]
                 check_rejection(run, case, candidate)
-                row["acceptance"] = write_acceptance(artifact_dir, False, "Expected invalid input rejection", identity)
+                row["acceptance"] = recorded.accept(entry["name"], False, "Expected invalid input rejection")
                 row["expected_error"] = case["error"]
             elif entry["kind"] == "mutated-generated-workflow":
                 row["name"] = "wrong-result-in-generated-json"
@@ -448,14 +504,12 @@ def judge_entries(
                     )
                 except Rejected as error:
                     row["rejection"] = str(error)
-                    row["acceptance"] = write_acceptance(artifact_dir, False, str(error), identity)
+                    row["acceptance"] = recorded.accept(entry["name"], False, str(error))
                 else:
                     raise Rejected("Verifier accepted deliberately wrong generated workflow output")
             else:
                 row["name"] = entry["name"].removeprefix("invalid-yaml-")
-                row["acceptance"] = write_acceptance(
-                    artifact_dir, False, "Definition rejected before execution", identity
-                )
+                row["acceptance"] = recorded.accept(entry["name"], False, "Definition rejected before execution")
                 require(
                     run.get("status") == "compile_error",
                     "Compiler accepted invalid/unsupported definition: " + row["name"],
@@ -466,7 +520,7 @@ def judge_entries(
                 )
         except Rejected as error:
             if entry["kind"] in ("positive", "negative"):
-                row["acceptance"] = write_acceptance(artifact_dir, False, str(error), identity)
+                row["acceptance"] = recorded.accept(entry["name"], False, str(error))
             raise
         row["passed"] = True
 
@@ -483,8 +537,14 @@ def evaluate(
     runtime_manifest: Path | None = None,
     judge: Judge | None = None,
 ) -> dict:
-    """Judge the recorded observation of one submission; write report.json."""
-    evidence.mkdir(parents=True, exist_ok=True)
+    """Judge the recorded observation of one submission.
+
+    `evidence` is only read. Every decision, evaluation.json and report.json
+    go to the sibling `evaluation/` directory, so evaluating again never
+    executes anything and never alters the record.
+    """
+    evaluation = evidence.parent / "evaluation"
+    evaluation.mkdir(parents=True, exist_ok=True)
     identity = evaluator_identity()
     # Declared outside the try: a submission that is rejected part way through
     # still says how far the engine got and which obligations were measured.
@@ -514,16 +574,16 @@ def evaluate(
         report["config_transformations"] = ["workflow.inputs replaced by case fixture"] + (
             ["execution.deadline_seconds set to 600"] if mode == "live" else []
         )
-        manifest = read_evidence(evidence, expected)
-        report["observation"] = {"manifest": "observation.json", "plan_sha256": manifest["plan_sha256"]}
+        recorded = Recorded(evidence, evaluation, read_evidence(evidence, expected), identity)
+        report["observation"] = {"manifest": "evidence/observation.json", "plan_sha256": digest(expected)}
         if scenario == "daily-digest":
             if TYPE_CHECKING or __package__:
                 from .lifecycle_submission import evaluate_lifecycle
             else:
                 from lifecycle_submission import evaluate_lifecycle
-            evaluate_lifecycle(expected["entries"], evidence, identity, report["cases"])
+            evaluate_lifecycle(expected["entries"], recorded, report["cases"])
         else:
-            judge_entries(scenario, expected["entries"], evidence, cases, mode, identity, report, rubric_runs)
+            judge_entries(scenario, expected["entries"], recorded, cases, mode, report, rubric_runs)
         report["passed"] = all(row["passed"] for row in report["cases"])
     except Exception as error:
         report["error"] = str(error)
@@ -537,23 +597,23 @@ def evaluate(
         executions = sum(row["kind"] == "positive" for row in report["cases"])
         executed = bool(rubric_runs) and len(rubric_runs) == executions
         try:
-            evaluation = score_rubric(
+            scored = score_rubric(
                 scenario, rubric_runs, accepted=report["passed"], execution_pass=executed, judge=judge
             )
         except Exception as error:
             # `score_rubric` is written not to raise. The guard is here anyway because
             # an exception escaping this late would leave the container without a
             # report and pay a correct submission zero: the one thing a rubric may not do.
-            evaluation = {
+            scored = {
                 "schema": SCHEMA,
                 "status": NOT_EVALUATED,
                 "score_0_10": None,
                 "normalized_reward": None,
                 "reason": "Not scored: " + type(error).__name__ + ": " + str(error),
             }
-        if evaluation is not None:
-            (evidence / "evaluation.json").write_text(json.dumps(evaluation, ensure_ascii=False, indent=2) + "\n")
-    (evidence / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+        if scored is not None:
+            (evaluation / "evaluation.json").write_text(json.dumps(scored, ensure_ascii=False, indent=2) + "\n")
+    (evaluation / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     return report
 
 

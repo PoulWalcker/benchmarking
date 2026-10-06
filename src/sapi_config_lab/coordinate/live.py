@@ -133,7 +133,7 @@ def check_trials(trials: list[dict], submissions: dict, *, mode: str, expected_c
         require(
             acceptance.get("submission_sha256")
             == submissions[scenario]["sha256"]
-            == sha256(verifier / "submission.yaml"),
+            == sha256(verifier / "evidence/submission.yaml"),
             "Container submission hash mismatch",
         )
         require(
@@ -197,7 +197,7 @@ def failure_category(trials: list[dict], audit: list[dict], default: str) -> str
 
 def native_attempt_count(output: Path) -> int:
     count = 0
-    for path in (output / "jobs").glob("live-*/*/verifier/cases/*/case.json"):
+    for path in (output / "jobs").glob("live-*/*/verifier/evidence/cases/*/case.json"):
         run = read_json(path)
         count += sum(
             len(records)

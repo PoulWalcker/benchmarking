@@ -146,7 +146,7 @@ class LiveEvidenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "bridge-audit.jsonl").write_text('{"event":"completion"')
-            case = root / "jobs/live-ticket-routing/trial/verifier/cases/failed/case.json"
+            case = root / "jobs/live-ticket-routing/trial/verifier/evidence/cases/failed/case.json"
             case.parent.mkdir(parents=True)
             case.write_text("{")
             (root / "existing-containers.txt").write_text("existing")
