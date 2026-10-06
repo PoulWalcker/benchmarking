@@ -21,7 +21,7 @@ build-backend = "hatchling.build"
 packages = ["src/sapi_config_lab"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/src", "/tests", "/verification", "/benchmarks", "/docs", "/evidence", "/generation", "/harbor", "/infra", "/.github", "/README.md", "/AGENTS.md", "/pyproject.toml", "/uv.lock", "/.python-version", "/.gitignore", "/.dockerignore", "/provenance/SapiensSpecNotation.hs", "/provenance/spec-comparison.json", "/provenance/spec-source.json", "/run.sh", "/run-generation.sh"]
+include = ["/src", "/tests", "/verification", "/benchmarks", "/docs", "/evidence", "/generation", "/harbor", "/infra", "/.github", "/README.md", "/AGENTS.md", "/pyproject.toml", "/uv.lock", "/.python-version", "/.gitignore", "/.dockerignore", "/provenance/SapiensSpecNotation.hs", "/provenance/spec-comparison.json", "/provenance/spec-source.json", "/provenance/autowfbench-source.json", "/run.sh", "/run-generation.sh"]
 exclude = ["/reports", "/generated", "/validation", "/review", "/reviews", "/.scratch", "/.python", "/.cache", "/.venv", "/provenance/environment.json", "**/__pycache__", "*.py[cod]", ".env", ".env.*"]
 
 [dependency-groups]
@@ -37,7 +37,48 @@ line-length = 120
 extend-exclude = ["reports", "provenance", "generated", "validation"]
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F"]
+# Ruff owns imports and formatting. Rules are the low-noise families that catch real
+# defects here; src, tests, verification and infra are all checked.
+select = [
+    "E4",    # pycodestyle: import errors
+    "E7",    # pycodestyle: statement errors
+    "E9",    # pycodestyle: syntax and IO errors
+    "F",     # Pyflakes
+    "B",     # flake8-bugbear: likely bugs
+    "BLE",   # flake8-blind-except: broad catches outside deliberate boundaries
+    "C4",    # flake8-comprehensions
+    "I",     # import order
+    "PERF",  # Perflint
+    "PIE",   # flake8-pie
+    "RUF",   # Ruff-specific rules
+    "SIM",   # flake8-simplify
+    "UP",    # pyupgrade: syntax for the pinned Python
+]
+ignore = [
+    # Nested `with` blocks around assertRaises read more clearly than one long header.
+    "SIM117",
+]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+
+[tool.ruff.lint.per-file-ignores]
+# Server boundaries: any failure becomes an HTTP error or a recorded host error, never a hung trial.
+"src/sapi_config_lab/execute/agency.py" = ["BLE001"]
+"src/sapi_config_lab/execute/simulator.py" = ["BLE001"]
+# Process and cleanup boundaries: a run, entry or trial always ends with a written record.
+"src/sapi_config_lab/author/agent.py" = ["BLE001"]
+"src/sapi_config_lab/coordinate/observe.py" = ["BLE001"]
+"src/sapi_config_lab/coordinate/runs.py" = ["BLE001"]
+"src/sapi_config_lab/coordinate/simulator_worker.py" = ["BLE001"]
+# An unknown model-rebuild outcome must suspend the lifecycle family: fail closed.
+"src/sapi_config_lab/coordinate/lifecycle.py" = ["BLE001"]
+# Candidate evidence can fail any way; each way is a rejection or a stated non-score, never a crash.
+"verification/rubric.py" = ["BLE001"]
+"verification/rubric_facts.py" = ["BLE001"]
+"verification/verify.py" = ["BLE001"]
+# Test helpers mirror those boundaries.
+"tests/**" = ["BLE001"]
 
 [tool.mypy]
 python_version = "3.14"

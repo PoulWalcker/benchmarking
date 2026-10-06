@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 import tempfile
+from typing import ClassVar
 import unittest
 from unittest.mock import patch
 
@@ -11,11 +12,11 @@ from sapi_config_lab.coordinate.runs import Hosting, Run, fingerprint
 
 
 class FakeSimulatorHost:
-    """Stands in for execute.autowfbench.SimulatorHost; records how it was configured."""
+    """Stands in for execute.simulator.SimulatorHost; records how it was configured."""
 
-    made: list = []
+    made: ClassVar[list] = []
 
-    def __init__(self, source, challenge, record, *, seed, output, llm_mode, bridge_url, evaluate):
+    def __init__(self, source, challenge, record, *, seed, artifact, llm_mode, bridge_url, evaluate, host):
         self.record, self.llm_mode, self.evaluate = record, llm_mode, evaluate
         self.token = "secret-" + record.name
         self.closed = False
@@ -85,7 +86,7 @@ class HostingTests(unittest.TestCase):
         hosting = Hosting("stub", lambda scenario, record: {})
         with (
             patch("sapi_config_lab.coordinate.runs.run_logged", side_effect=harbor_run),
-            patch("sapi_config_lab.coordinate.runs.default_source", return_value=self.root),
+            patch("sapi_config_lab.coordinate.runs.pinned_source", return_value=self.root),
         ):
             return self.run.harbor("oracle", self.run.tasks, "oracle", timeout=10, hosting=hosting)
 
@@ -116,12 +117,21 @@ class HostingTests(unittest.TestCase):
             self.run.harbor("oracle", self.run.tasks, "oracle", timeout=10)
 
 
+class VerifierResultTests(unittest.TestCase):
+    def test_lifecycle_rows_without_a_case_kind_still_give_a_result(self):
+        from sapi_config_lab.coordinate.evaluation import verifier_result
+
+        report = {"passed": True, "cases": [{"name": "callback-and-cron", "passed": True, "native_executions": []}]}
+        self.assertEqual(verifier_result(report, None), {"execution": None, "acceptance": True, "quality": None})
+
+
 class AdmissionTests(unittest.TestCase):
     def test_admission_enforces_the_runtime_cap_and_original_deadline(self):
-        from sapi_config_lab.coordinate import simulator_worker
-        from sapi_config_lab.profile import read
-        from sapi_config_lab.paths import workspace_root
         import yaml
+
+        from sapi_config_lab.coordinate import simulator_worker
+        from sapi_config_lab.paths import workspace_root
+        from sapi_config_lab.profile import read
 
         root = workspace_root() / "benchmarks/10-checkout-recovery"
         limits = {"scenario": "checkout-recovery", "runtime_model_calls": 0, "deadline_seconds": 120}
@@ -139,10 +149,15 @@ class AdmissionTests(unittest.TestCase):
                 config["execution"]["deadline_seconds"] = 600
                 submission.write_text(yaml.safe_dump(config))
                 self.assertEqual(simulator_worker.admit(limits)["error"], "Original deadline required")
+                submission.write_text("workflow: [\n")
+                self.assertEqual(simulator_worker.admit(limits)["error_type"], "Invalid")
                 config["execution"]["deadline_seconds"] = 120
                 config["workflow"]["steps"][0]["kind"] = "LLM"
                 submission.write_text(yaml.safe_dump(config))
-                self.assertEqual(simulator_worker.admit(limits)["error"], "Runtime cap exceeded")
+                self.assertEqual(simulator_worker.admit(limits)["error_type"], "Invalid")
+                # The cap is checked once a definition compiles.
+                with patch.object(simulator_worker, "default_backend"):
+                    self.assertEqual(simulator_worker.admit(limits)["error"], "Runtime cap exceeded")
 
 
 if __name__ == "__main__":

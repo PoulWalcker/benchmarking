@@ -1,4 +1,4 @@
-"""Prepare an inactive native UI graph and serve one explicitly bounded live run."""
+"""Import inactive graphs into a local n8n and serve one explicitly bounded manual live run."""
 
 from __future__ import annotations
 
@@ -6,36 +6,53 @@ import argparse
 from collections import Counter
 from collections.abc import Callable
 from contextlib import contextmanager
+from dataclasses import replace
 import fcntl
+from http.server import HTTPServer
 import json
 import os
+from pathlib import Path
 import shutil
 import subprocess
 import tempfile
-from http.server import HTTPServer
 import threading
 import time
 from urllib.error import HTTPError
-from urllib.request import Request
 from urllib.parse import urlparse
-from pathlib import Path
+from urllib.request import Request
 import uuid
 import webbrowser
 
 import yaml
 
-from sapi_config_lab.evidence import json_text, sha256, write_json
-from sapi_config_lab.paths import CATALOG, workspace_root
-from sapi_config_lab.execute.ui_n8n import DockerUi, fingerprint
+from sapi_config_lab.contracts import CompileOptions
 from sapi_config_lab.coordinate.backend import default_backend
 from sapi_config_lab.coordinate.scenarios import SCENARIOS
-from sapi_config_lab.contracts import CompileOptions
+from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
+from sapi_config_lab.evidence import json_text, sha256, write_json
+from sapi_config_lab.execute.agency import MAX_OUTGOING_ATTEMPTS, WRAPPER_TIMEOUT_SECONDS, make_handler
+from sapi_config_lab.execute.host import HostConfig
+from sapi_config_lab.execute.ui_n8n import DockerUi, fingerprint
+from sapi_config_lab.net import urlopen
+from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.profile import UniqueLoader, Unsupported, read_bindings, validate, validate_bindings
 
+MAX_GRANT_SECONDS = 3600
+DEFAULT_GRANT_SECONDS = 600
+PREPARED_FILES = ("config.yaml", "bindings.yaml", "workflow.json", "mapping.json")
 
-def prepare(config_path: Path, directory: Path, *, port: int = 18766, deadline_seconds: int | None = None) -> dict:
+
+def _check_grant_seconds(seconds: int) -> None:
+    if type(seconds) is not int or not 1 <= seconds <= MAX_GRANT_SECONDS:
+        raise ValueError("A UI grant and deadline must be between one second and one hour")
+
+
+def prepare(
+    config_path: Path, directory: Path, *, host: HostConfig | None = None, deadline_seconds: int | None = None
+) -> dict:
     """Compile without execution; each new directory names one owned workflow."""
-    if not 1024 <= port <= 65535:
+    host = host or HostConfig.from_environment()
+    if not 1024 <= host.ui_bridge_port <= 65535:
         raise ValueError("Use a non-privileged valid bridge port")
     if directory.exists():
         raise FileExistsError("Choose a new UI run directory")
@@ -46,12 +63,10 @@ def prepare(config_path: Path, directory: Path, *, port: int = 18766, deadline_s
     validate(config, bindings)
     original_deadline = config["execution"]["deadline_seconds"]
     if deadline_seconds is not None:
-        if type(deadline_seconds) is not int or not 1 <= deadline_seconds <= 3600:
-            raise ValueError("UI deadline must be between one second and one hour")
+        _check_grant_seconds(deadline_seconds)
         config["execution"]["deadline_seconds"] = deadline_seconds
-    compiled = default_backend().compile(
-        config, bindings, CompileOptions("live", f"http://host.docker.internal:{port}/v1/agency/execute")
-    )
+    bridge_url = f"http://{host.container_host}:{host.ui_bridge_port}/v1/agency/execute"
+    compiled = default_backend().compile(config, bindings, CompileOptions("live", bridge_url))
     workflow = config["workflow"]
     refinement = config["execution"].get("refinement")
     repeats = refinement["max_attempts"] if refinement else 1
@@ -64,8 +79,8 @@ def prepare(config_path: Path, directory: Path, *, port: int = 18766, deadline_s
             if refinement:
                 key += f"/attempt{number}"
             occurrences[key] = step["uses"]
-    if len(occurrences) > 8:
-        raise ValueError("A UI run supports at most eight outgoing attempts")
+    if len(occurrences) > MAX_OUTGOING_ATTEMPTS:
+        raise ValueError(f"A UI run supports at most {MAX_OUTGOING_ATTEMPTS} outgoing attempts")
     native_id = uuid.uuid4().hex[:16]
     document = dict(compiled.document)
     document.update(id=native_id, name=f"Sapi lab / {workflow['id']} / {native_id}", active=False)
@@ -81,14 +96,12 @@ def prepare(config_path: Path, directory: Path, *, port: int = 18766, deadline_s
         "workflow_id": native_id,
         "logical_workflow": workflow["id"],
         "source_origin": "supplied_yaml",
-        "port": port,
+        "port": host.ui_bridge_port,
         "max_attempts": len(occurrences),
         "operations": dict(Counter(occurrences.values())),
         "occurrences": occurrences,
         "prepared_only": True,
-        "hashes": {
-            name: sha256(directory / name) for name in ("config.yaml", "bindings.yaml", "workflow.json", "mapping.json")
-        },
+        "hashes": {name: sha256(directory / name) for name in PREPARED_FILES},
     }
     if deadline_seconds is not None:
         (directory / "original.yaml").write_bytes(raw)
@@ -111,9 +124,7 @@ def load_prepared(directory: Path) -> dict:
     prepared = json.loads(path.read_text())
     if prepared.get("schema") != "sapi-lab-ui-run/v1":
         raise ValueError("Unknown UI preparation")
-    names = {"config.yaml", "bindings.yaml", "workflow.json", "mapping.json"}
-    if "overlay" in prepared:
-        names.add("original.yaml")
+    names = set(PREPARED_FILES) | ({"original.yaml"} if "overlay" in prepared else set())
     if set(prepared["hashes"]) != names or any(
         sha256(directory / name) != expected for name, expected in prepared["hashes"].items()
     ):
@@ -121,13 +132,12 @@ def load_prepared(directory: Path) -> dict:
     return prepared
 
 
-def admit(directory: Path, *, max_attempts: int, seconds: int, model: str = "gpt-6-astra") -> dict:
+def admit(directory: Path, *, max_attempts: int, seconds: int, model: str) -> dict:
     """Durably grant one prepared workflow; never reopen or expand a used grant."""
     prepared = load_prepared(directory)
     if type(max_attempts) is not int or max_attempts != prepared["max_attempts"]:
         raise ValueError("Explicit attempt cap must match the prepared workflow")
-    if type(seconds) is not int or not 1 <= seconds <= 3600:
-        raise ValueError("UI grant must expire within one hour")
+    _check_grant_seconds(seconds)
     budget = {
         "max_attempts": max_attempts,
         "operations": prepared["operations"],
@@ -143,44 +153,65 @@ def admit(directory: Path, *, max_attempts: int, seconds: int, model: str = "gpt
     return budget
 
 
+def _wrapper_status(upstream: str) -> int:
+    """The wrapper serves POST only, so a GET proves reachability without a prompt or a model call."""
+    try:
+        with urlopen(Request(upstream, method="GET"), timeout=3) as response:
+            return response.status
+    except HTTPError as error:
+        return error.code
+
+
+def _outcome(audit: Path) -> dict:
+    try:
+        rows = [json.loads(line) for line in audit.read_text().splitlines()]
+    except (OSError, ValueError) as error:
+        return {"status": "unknown", "collection_error": str(error)}
+    attempts = sum(r["event"] == "dispatch_attempt" for r in rows)
+    completions = sum(r["event"] == "completion" for r in rows)
+    failures = sum(r["event"] == "failure" for r in rows)
+    return {
+        "wrapper_attempts": attempts,
+        "wrapper_completions": completions,
+        "failures": failures,
+        "provider_call_count": None,
+        "status": "failed" if failures else "unknown" if attempts != completions else "stopped",
+    }
+
+
 def serve(
     directory: Path,
     *,
     max_attempts: int,
     seconds: int,
     wrapper_evidence: Path,
-    host: str = "127.0.0.1",
-    upstream: str = "http://127.0.0.1:8765/run",
+    wrapper_files: dict[str, Path] | None = None,
+    host: HostConfig | None = None,
+    bind: str = "127.0.0.1",
     on_ready: Callable[[], None] | None = None,
 ) -> None:
-    """Foreground server; opening/importing the graph does not execute it."""
+    """Foreground bridge for one prepared workflow; opening or importing the graph never executes it."""
+    host = host or HostConfig.from_environment()
     prepared = load_prepared(directory)
-    if max_attempts != prepared["max_attempts"] or not 1 <= seconds <= 3600:
-        raise ValueError("Invalid UI cap or grant duration")
+    if max_attempts != prepared["max_attempts"]:
+        raise ValueError("Invalid UI cap")
+    _check_grant_seconds(seconds)
     if (directory / "budget.json").exists():
         raise ValueError("This UI grant already exists; use 'ui open CONFIG --live' for a fresh copy")
-    from sapi_config_lab.coordinate.live import wrapper_identity
-    from sapi_config_lab.execute.agency import make_handler
-    from sapi_config_lab.net import urlopen
-
-    endpoint = urlparse(upstream)
+    endpoint = urlparse(host.wrapper_url)
     if endpoint.scheme != "http" or endpoint.hostname not in {"127.0.0.1", "localhost"}:
-        raise ValueError("The UI helper requires the existing loopback wrapper")
-    identity = wrapper_identity(wrapper_evidence, upstream)
-    # The existing wrapper implements POST only. A GET response proves HTTP
-    # reachability without submitting a prompt or creating a model call.
-    try:
-        with urlopen(Request(upstream, method="GET"), timeout=3) as response:
-            wrapper_status = response.status
-    except HTTPError as error:
-        wrapper_status = error.code
+        raise ValueError("The UI helper requires a loopback model wrapper")
+    identity = wrapper_identity(wrapper_evidence, host.wrapper_url, host.wrapper_model, wrapper_files)
+    wrapper_status = _wrapper_status(host.wrapper_url)
     if wrapper_status not in {200, 404, 405, 501}:
-        raise ValueError("Existing wrapper did not answer the unpaid readiness probe")
+        raise ValueError("Model wrapper did not answer the unpaid readiness probe")
     budget = admit(directory, max_attempts=max_attempts, seconds=seconds, model=identity["model"])
     audit = directory / "bridge-audit.jsonl"
-    base = make_handler(read_bindings(directory / "bindings.yaml"), upstream, 185, audit, budget)
+    base = make_handler(
+        read_bindings(directory / "bindings.yaml"), host.wrapper_url, WRAPPER_TIMEOUT_SECONDS, audit, budget
+    )
 
-    class Handler(base):  # type: ignore[valid-type,misc]  # Existing HTTP handler factory.
+    class Handler(base):  # type: ignore[valid-type,misc]
         def do_GET(self):
             if self.path != "/health":
                 self.reply(404, {"error": "not_found"})
@@ -201,10 +232,10 @@ def serve(
                 },
             )
 
-    server = HTTPServer((host, prepared["port"]), Handler)
+    server = HTTPServer((bind, prepared["port"]), Handler)
     ready = {
         "workflow_id": budget["workflow_id"],
-        "workflow_url": "http://localhost:5678/workflow/" + budget["workflow_id"],
+        "workflow_url": f"{host.n8n_url}/workflow/{budget['workflow_id']}",
         "health_url": f"http://127.0.0.1:{prepared['port']}/health",
         "max_attempts": max_attempts,
         "expires_at": budget["expires_at"],
@@ -226,21 +257,7 @@ def serve(
     finally:
         timer.cancel()
         server.server_close()
-        try:
-            rows = [json.loads(line) for line in audit.read_text().splitlines()]
-            attempts = sum(r["event"] == "dispatch_attempt" for r in rows)
-            completions = sum(r["event"] == "completion" for r in rows)
-            failures = sum(r["event"] == "failure" for r in rows)
-            outcome = {
-                "wrapper_attempts": attempts,
-                "wrapper_completions": completions,
-                "failures": failures,
-                "provider_call_count": None,
-                "status": "failed" if failures else "unknown" if attempts != completions else "stopped",
-            }
-        except Exception as error:
-            outcome = {"status": "unknown", "collection_error": str(error)}
-        write_json(directory / "stopped.json", outcome)
+        write_json(directory / "stopped.json", _outcome(audit))
 
 
 @contextmanager
@@ -262,21 +279,21 @@ def open_workflow(
     state: Path,
     *,
     adapter=None,
-    container: str = "n8n-n8n-1",
-    port: int = 18766,
+    host: HostConfig | None = None,
     new_copy: bool = False,
     deadline_seconds: int | None = None,
 ) -> dict:
-    """Compile, safely register once, and return a link; never execute anything."""
+    """Compile, register once and return a link; never execute anything."""
+    host = host or HostConfig.from_environment()
     with local_state(state), tempfile.TemporaryDirectory(dir=state) as temporary:
         staging = Path(temporary) / "prepared"
-        prepared = prepare(config, staging, port=port, deadline_seconds=deadline_seconds)
+        prepared = prepare(config, staging, host=host, deadline_seconds=deadline_seconds)
         document = json.loads((staging / "workflow.json").read_text())
         definition = {key: value for key, value in document.items() if key not in {"id", "name"}}
         key = fingerprint({"source": sha256(config), "bindings": sha256(CATALOG), "graph": definition})
         index_path = state / "index.json"
         index = json.loads(index_path.read_text()) if index_path.exists() else {}
-        selected = adapter if adapter is not None else DockerUi(container)
+        selected = adapter if adapter is not None else DockerUi(host.n8n_container)
         ownership_key = selected.identity + ":" + key
         existing = selected.workflows()
         entry = index.get(ownership_key)
@@ -309,7 +326,7 @@ def open_workflow(
             "config": str(config),
             "status": "reused_edited" if edited else "reused" if reused else "imported",
             "workflow_id": prepared["workflow_id"],
-            "workflow_url": "http://localhost:5678/workflow/" + prepared["workflow_id"],
+            "workflow_url": f"{host.n8n_url}/workflow/{prepared['workflow_id']}",
             "directory": str(directory),
             "active": active,
             "matches_prepared": not edited,
@@ -323,21 +340,87 @@ def open_workflow(
         }
 
 
-def wrapper_preference(state: Path, supplied: Path | None) -> Path:
-    from sapi_config_lab.coordinate.live import wrapper_identity
-
+def wrapper_preference(
+    state: Path, supplied: Path | None, files: dict[str, Path], host: HostConfig
+) -> tuple[Path, dict[str, Path]]:
+    """The inspected wrapper identity and its local file locations, remembered for later live use."""
     settings = state / "settings.json"
     saved = json.loads(settings.read_text()) if settings.exists() else {}
     path = supplied or (Path(saved["wrapper_evidence"]) if saved.get("wrapper_evidence") else None)
     if path is None:
         raise ValueError("First live use requires --wrapper-evidence PATH to the inspected wrapper identity file")
-    wrapper_identity(path, "http://127.0.0.1:8765/run")
+    files = files or {name: Path(location) for name, location in saved.get("wrapper_files", {}).items()}
+    wrapper_identity(path, host.wrapper_url, host.wrapper_model, files)
     state.mkdir(parents=True, exist_ok=True)
-    write_json(settings, {"wrapper_evidence": str(path.resolve())})
-    return path
+    write_json(
+        settings,
+        {"wrapper_evidence": str(path.resolve()), "wrapper_files": {k: str(v.resolve()) for k, v in files.items()}},
+    )
+    return path, files
+
+
+def open_command(parser: argparse.ArgumentParser, args: argparse.Namespace, host: HostConfig) -> None:
+    if args.all and args.live:
+        parser.error("--all is view-only; select one config for --live")
+    if not 1 <= args.seconds <= MAX_GRANT_SECONDS:
+        parser.error("--seconds must be between one second and one hour")
+    state = args.state_dir or workspace_root() / "var/ui"
+    # Hosted scenarios need their host environment; the UI imports fixture workflows only.
+    configs = [s.config for s in SCENARIOS.values() if not s.hosted] if args.all else [args.config]
+    wrapper = None
+    if args.live:
+        # Validate and compile before contacting Docker or the wrapper; script-only graphs need no bridge.
+        with tempfile.TemporaryDirectory() as temporary:
+            preview = prepare(args.config, Path(temporary) / "prepared", host=host, deadline_seconds=args.seconds)
+        if preview["max_attempts"]:
+            wrapper = wrapper_preference(state, args.wrapper_evidence, parse_wrapper_files(args.wrapper_file), host)
+    rows = []
+    for config in configs:
+        try:
+            row = open_workflow(
+                config,
+                state,
+                host=host,
+                new_copy=args.new_copy or args.live,
+                deadline_seconds=args.seconds if args.live else None,
+            )
+        except Unsupported as error:
+            if not args.all:
+                raise ValueError(f"This config needs the lifecycle controller (sapi-lab lifecycle): {error}") from error
+            row = {"config": str(config), "status": "controller_required", "reason": str(error), "executed": False}
+        rows.append(row)
+        print(json.dumps(row), flush=True)
+        if not args.no_browser and not args.live and not args.all and row.get("workflow_url"):
+            webbrowser.open(row["workflow_url"])
+    if args.all and not args.no_browser:
+        webbrowser.open(host.n8n_url)
+    if not args.live:
+        return
+    row = rows[0]
+
+    def ready():
+        print("Fresh copy ready. Click Execute workflow in n8n; no execution has started.", flush=True)
+        if not args.no_browser:
+            webbrowser.open(row["workflow_url"])
+
+    if not row["max_attempts"]:
+        ready()
+        return
+    assert wrapper is not None
+    serve(
+        Path(row["directory"]),
+        max_attempts=row["max_attempts"],
+        seconds=args.seconds,
+        wrapper_evidence=wrapper[0],
+        wrapper_files=wrapper[1],
+        host=host,
+        bind=args.host,
+        on_ready=ready,
+    )
 
 
 def main(argv=None) -> int:
+    host = HostConfig.from_environment()
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     view = commands.add_parser("open", help="Compile and import inactive graphs, then open their editor links")
@@ -348,103 +431,44 @@ def main(argv=None) -> int:
     view.add_argument("--new-copy", action="store_true", help="Preserve a changed owned graph and import a new copy")
     view.add_argument("--no-browser", action="store_true")
     view.add_argument("--state-dir", type=Path)
-    view.add_argument("--container", default="n8n-n8n-1")
-    view.add_argument("--port", type=int, default=18766)
-    view.add_argument("--seconds", type=int, default=600, help="Live workflow deadline and foreground grant lifetime")
+    view.add_argument("--container", default=host.n8n_container, help="Local n8n container (SAPI_N8N_CONTAINER)")
+    view.add_argument("--port", type=int, default=host.ui_bridge_port, help="UI bridge port (SAPI_UI_BRIDGE_PORT)")
+    view.add_argument("--seconds", type=int, default=DEFAULT_GRANT_SECONDS, help="Live deadline and grant lifetime")
     view.add_argument("--wrapper-evidence", type=Path, help="Inspected wrapper identity; saved for subsequent live use")
-    view.add_argument("--host", default="127.0.0.1")
+    view.add_argument("--wrapper-file", action="append", help="NAME=PATH of an inspected wrapper file on this machine")
+    view.add_argument("--host", default="127.0.0.1", help="Address the UI bridge binds")
     prep = commands.add_parser("prepare", help="Compile an inactive UI graph; never call a model")
     prep.add_argument("config", type=Path)
     prep.add_argument("--output-dir", type=Path, required=True)
-    prep.add_argument("--port", type=int, default=18766)
+    prep.add_argument("--port", type=int, default=host.ui_bridge_port)
     run = commands.add_parser(
         "serve", help="Start a foreground bounded bridge; manual workflow execution remains explicit"
     )
     run.add_argument("directory", type=Path)
     run.add_argument("--max-attempts", type=int, required=True)
-    run.add_argument("--seconds", type=int, default=600)
+    run.add_argument("--seconds", type=int, default=DEFAULT_GRANT_SECONDS)
     run.add_argument("--wrapper-evidence", type=Path, required=True)
-    run.add_argument("--host", default="127.0.0.1")
+    run.add_argument("--wrapper-file", action="append", help="NAME=PATH of an inspected wrapper file on this machine")
+    run.add_argument("--host", default="127.0.0.1", help="Address the UI bridge binds")
     args = parser.parse_args(argv)
+    host = replace(host, ui_bridge_port=args.port) if hasattr(args, "port") else host
+    if hasattr(args, "container"):
+        host = replace(host, n8n_container=args.container)
     try:
         if args.command == "prepare":
-            print(json.dumps(prepare(args.config, args.output_dir, port=args.port)))
+            print(json.dumps(prepare(args.config, args.output_dir, host=host)))
         elif args.command == "serve":
             serve(
                 args.directory,
                 max_attempts=args.max_attempts,
                 seconds=args.seconds,
                 wrapper_evidence=args.wrapper_evidence,
-                host=args.host,
+                wrapper_files=parse_wrapper_files(args.wrapper_file),
+                host=host,
+                bind=args.host,
             )
         else:
-            if args.all and args.live:
-                parser.error("--all is view-only; select one config for --live")
-            if not 1 <= args.seconds <= 3600:
-                parser.error("--seconds must be between one second and one hour")
-            state = args.state_dir or workspace_root() / "var/ui"
-            # Simulator scenarios need their host environment; the UI imports fixture workflows only.
-            fixtures = [s.config for s in SCENARIOS.values() if s.environment == "fixtures"]
-            configs = fixtures if args.all else [args.config]
-            evidence = None
-            if args.live:
-                # Finish local compile/validation before contacting Docker or
-                # looking up live admission. Script-only graphs need no bridge.
-                with tempfile.TemporaryDirectory() as temporary:
-                    preview = prepare(
-                        args.config, Path(temporary) / "prepared", port=args.port, deadline_seconds=args.seconds
-                    )
-                if preview["max_attempts"]:
-                    evidence = wrapper_preference(state, args.wrapper_evidence)
-            rows = []
-            for config in configs:
-                try:
-                    row = open_workflow(
-                        config,
-                        state,
-                        container=args.container,
-                        port=args.port,
-                        new_copy=args.new_copy or args.live,
-                        deadline_seconds=args.seconds if args.live else None,
-                    )
-                except Unsupported as error:
-                    row = {
-                        "config": str(config),
-                        "status": "controller_required",
-                        "reason": str(error),
-                        "guide": str(workspace_root() / "docs/LIFECYCLE.md"),
-                        "executed": False,
-                    }
-                    if not args.all:
-                        raise ValueError(
-                            "This config requires the lifecycle controller. See docs/LIFECYCLE.md"
-                        ) from error
-                rows.append(row)
-                print(json.dumps(row), flush=True)
-                if not args.no_browser and not args.live and not args.all and row.get("workflow_url"):
-                    webbrowser.open(row["workflow_url"])
-            if args.all and not args.no_browser:
-                webbrowser.open("http://localhost:5678")
-            if args.live:
-                row = rows[0]
-
-                def ready():
-                    print("Fresh copy ready. Click Execute workflow in n8n; no execution has started.", flush=True)
-                    if not args.no_browser:
-                        webbrowser.open(row["workflow_url"])
-
-                if row["max_attempts"]:
-                    assert evidence is not None
-                    serve(
-                        Path(row["directory"]),
-                        max_attempts=row["max_attempts"],
-                        seconds=args.seconds,
-                        wrapper_evidence=evidence,
-                        host=args.host,
-                        on_ready=ready,
-                    )
-                else:
-                    ready()
+            open_command(parser, args, host)
     except (ValueError, OSError, yaml.YAMLError, subprocess.SubprocessError) as error:
         parser.error(str(error))
     return 0

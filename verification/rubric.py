@@ -1,29 +1,11 @@
-"""Weighted rubric scoring that rides alongside binary acceptance.
+"""Weighted rubric scoring beside binary acceptance; pure, so callers own persistence and dispatch.
 
-Resolves a rubric card against already-collected run facts and returns one
-sapi-lab-rubric-evaluation/v1 document. The module is pure: no file, no
-environment variable, no path, no model call, so callers own persistence and own
-every dispatch. It deliberately does NOT decide acceptance, turn a score into a
-Harbor reward, import an upstream scorecard or compare two documents.
-
-Three rules the rest of this file enforces.
-
-Answer values are fixed: a card states exactly {"yes": 1, "maybe": 0.33,
-"no": 0} numerically or it is refused, and points come from that table rather
-than the card's copy of it, as upstream does. No card can reweight an answer.
-score_0_10 stays in [0, 10] and normalized_reward in [0, 1] not by construction
-but because the card is re-validated and re-digested after the judge returns and
-before any point is awarded: a judge holds this card's own Criterion objects and
-`object.__setattr__` defeats `frozen=True`, so the range is re-checked, not
-assumed.
-
-A judge sees prose, references and the run digest, and nothing else: not the
-execution flag, no deterministic check name or outcome, and not the protected
-verification narrative, which no llm criterion may require and which is never
-forwarded. What is withheld is absent, never replaced by a fabricated value.
-
-One run costs at most one dispatch, because there is one call site and no loop.
-A run that did not execute costs none, since its score would be discarded.
+Rules enforced here:
+- Answer values are exactly {"yes": 1, "maybe": 0.33, "no": 0}; no card can reweight an answer.
+- A judge sees prose, references and the run digest only: never the execution flag, the
+  deterministic checks or the protected verification narrative.
+- At most one judge dispatch per run (one call site, no loop); none for a run that did not execute.
+- The card is re-validated after the judge returns, since `object.__setattr__` defeats `frozen=True`.
 """
 
 from __future__ import annotations
@@ -45,9 +27,7 @@ SCHEMA = "sapi-lab-rubric-evaluation/v1"
 PROMPT_VERSION = "1.0.1"
 ANSWER_VALUES: Mapping[Answer, float] = {"yes": 1.0, "maybe": 0.33, "no": 0.0}
 
-# Points are Decimal so a total never acquires a binary-float remainder. The
-# card's own table is validated against this one and then ignored, which is what
-# the upstream evaluator does with it.
+# Decimal, so a total never acquires a binary-float remainder; the card's own table is only validated.
 _ANSWER_POINTS: Mapping[Answer, Decimal] = {"yes": Decimal("1"), "maybe": Decimal("0.33"), "no": Decimal("0")}
 _EVIDENCE_SOURCES = frozenset({"environment", "candidate", "verification", "engine"})
 _PROTECTED_SOURCE = "verification"
@@ -59,15 +39,9 @@ _DETERMINED = "Protected environment verification"
 
 
 def digest(value: Any) -> str:
-    """Canonical JSON digest, ASCII-escaped.
+    """Canonical ASCII-escaped JSON digest, copied from evaluate.task_evaluation so verification/ imports nothing.
 
-    Source of truth is `sapi_config_lab.evaluate.task_evaluation.digest`,
-    itself matching AutoWFBench's `autowfbench.core.common.digest`. It is copied
-    rather than imported so that verification/ keeps to the stdlib and digests
-    identically whether or not `sapi_config_lab` happens to be importable where
-    these files are run; a test pins the two together.
-    `lifecycle.py` hashes with `ensure_ascii=False` and is a different function
-    on purpose: do not merge them.
+    A test pins the two together. lifecycle.py's `ensure_ascii=False` digest is deliberately different.
     """
     return hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
@@ -79,14 +53,7 @@ class RubricError(ValueError):
 
 
 def _sealed(mapping: Mapping[Any, Any]) -> Any:
-    """Copy and seal; frozen guards the attribute, never the mapping behind it.
-
-    Without this a caller mutating its own dict, or a judge writing through the
-    request it was handed, rewrites a validated card for every later run. The
-    seal refuses an ordinary write and nothing more: in-process code can still
-    reach the copy behind the proxy, which is why `score` re-checks the card
-    after the judge returns instead of relying on this.
-    """
+    """Copy and seal against ordinary writes; `score` still re-checks the card after the judge returns."""
     return MappingProxyType(dict(mapping))
 
 
@@ -113,8 +80,6 @@ class Criterion:
     required_evidence: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        # Frozen protects rebinding, not the caller's dict. Copy, or a later
-        # mutation of that dict silently changes an already-scored criterion.
         object.__setattr__(self, "anchors", _sealed(self.anchors))
         object.__setattr__(self, "required_evidence", tuple(self.required_evidence))
 
@@ -135,12 +100,7 @@ class RubricCard:
         object.__setattr__(self, "answer_values", _sealed(self.answer_values))
 
     def digest(self) -> str:
-        """Identify every field the document prints beside it, so none is uncovered.
-
-        `origin` and `prompt_version` are in here because the document reports
-        `origin` next to this digest and the attribution binds `prompt_version`:
-        leaving either out let an upstream and a local card share one digest.
-        """
+        """Covers every field the document prints beside it, origin and prompt version included."""
         return digest(
             {
                 "id": self.id,
@@ -204,11 +164,7 @@ class RunFacts:
 
 @dataclass(frozen=True)
 class JudgeView:
-    """The only run facts a judge receives.
-
-    There is no execution flag and no check here, so no llm criterion can be
-    answered from either, and no field asserts something false in their place.
-    """
+    """The only run facts a judge receives: no execution flag and no checks."""
 
     prose: Mapping[str, str]
     refs: Mapping[str, tuple[str, ...]]
@@ -221,11 +177,7 @@ class JudgeView:
 
 @dataclass(frozen=True)
 class JudgeRequest:
-    """One batched request. Scoring never sends a second one for the same run.
-
-    It names the card by digest instead of carrying it: the deterministic
-    criteria and their check names are not the judge's business.
-    """
+    """One batched request per run; it names the card by digest so deterministic criteria stay private."""
 
     card_id: str
     card_digest: str
@@ -304,8 +256,7 @@ def _validate_card(card: RubricCard) -> None:
         raise RubricError("Duplicate rubric criterion id")
     _validate_answer_values(card.answer_values)
     for criterion in card.criteria:
-        # Type first: summing before this raised TypeError out of score(), which
-        # promises RubricError for a card it cannot use.
+        # Type first, so a bad weight is a RubricError rather than a TypeError from the sum below.
         if type(criterion.weight) is not int or criterion.weight <= 0:
             raise RubricError("Criterion weight must be a positive integer: " + criterion.id)
         if not set(criterion.required_evidence) <= _EVIDENCE_SOURCES:
@@ -313,8 +264,6 @@ def _validate_card(card: RubricCard) -> None:
         if criterion.evaluator == "deterministic":
             if not criterion.check_id:
                 raise RubricError("A deterministic criterion needs an independent check: " + criterion.id)
-            # Nothing reads a deterministic criterion's sources: it is answered
-            # by its check. Declaring one would describe a lookup that never happens.
             if criterion.required_evidence:
                 raise RubricError("A deterministic criterion names no evidence source: " + criterion.id)
         elif criterion.evaluator == "llm":
@@ -326,18 +275,12 @@ def _validate_card(card: RubricCard) -> None:
                 raise RubricError("An llm criterion must not read protected verification: " + criterion.id)
         else:
             raise RubricError("Unsupported evaluator: " + criterion.id)
-    # Every weight above is a positive int, so only an empty card reaches zero.
-    # It stays as the denominator's own guard rather than an inferred one.
     if sum(criterion.weight for criterion in card.criteria) <= 0:
         raise RubricError("Rubric weights must sum above zero")
 
 
 def _validate_answer_values(values: Mapping[Answer, float]) -> None:
-    """Require the one table upstream hardcodes, numerically; refuse every other.
-
-    Checking the key set alone let a card state `{"yes": 7.5}` or a negative or
-    a NaN, which then left the scale, or reached `digest()` and raised there.
-    """
+    """Require upstream's one answer table, numerically; refuse every other."""
     if set(values) != set(ANSWER_VALUES):
         raise RubricError("A rubric card must value exactly yes, maybe and no")
     for answer, value in values.items():
@@ -350,26 +293,18 @@ def _validate_facts(card: RubricCard, facts: RunFacts) -> None:
         raise RubricError("execution_pass must be a boolean")
     for criterion in card.criteria:
         if criterion.evaluator == "deterministic":
-            # A check the caller did not resolve is an error, never a silent "no".
             if criterion.check_id not in facts.checks:
                 raise RubricError("Missing deterministic check: " + criterion.check_id)
             if type(facts.checks[criterion.check_id]) is not bool:
                 raise RubricError("Non-boolean deterministic check: " + criterion.check_id)
             continue
-        # An llm criterion reads prose and nothing else, so its required sources
-        # are satisfiable only if the caller supplied prose under those names.
         missing = sorted(set(criterion.required_evidence) - set(facts.prose))
         if missing:
             raise RubricError("Evidence for " + criterion.id + " lacks: " + ", ".join(missing))
 
 
 def _judge_view(card: RubricCard, facts: RunFacts) -> JudgeView:
-    """Build the judge's copy by withholding, never by restating.
-
-    Only prose that some llm criterion declared it needs crosses over, which
-    excludes the protected verification narrative because no llm criterion may
-    declare it. Refs cross over only for the criteria actually being judged.
-    """
+    """The judge's copy, by withholding: only prose an llm criterion requires, only refs of judged criteria."""
     sources = {
         source for criterion in card.criteria if criterion.evaluator == "llm" for source in criterion.required_evidence
     }
@@ -385,9 +320,7 @@ def _attribution_fault(card: RubricCard, judge: Judge, reply: JudgeReply) -> str
     """Say why a reply cannot be attributed to this judge, prompt and run."""
     try:
         attribution = reply.attribution
-        # Judge is a Protocol and JudgeReply is not enforced, so a duck-typed
-        # reply may carry anything here. Check the shape before `dict()` is
-        # taken of it in _consult, where no degradation path is left.
+        # A duck-typed reply may carry anything; check its shape before _consult copies it.
         if not isinstance(attribution, Mapping):
             return "Judge attribution is not a mapping"
         if any(key not in attribution for key in _ATTRIBUTION_KEYS):
@@ -404,8 +337,6 @@ def _attribution_fault(card: RubricCard, judge: Judge, reply: JudgeReply) -> str
 def _answers_fault(card: RubricCard, facts: RunFacts, reply: JudgeReply) -> str | None:
     """Say why answers cannot be awarded. An attributed reply may still be unusable."""
     try:
-        # Same reason as the attribution check: `reasons` is copied in _consult
-        # outside every try, so a duck-typed `reasons=None` escaped as TypeError.
         for name, value in (("answers", reply.answers), ("reasons", reply.reasons)):
             if not isinstance(value, Mapping):
                 return "Judge " + name + " is not a mapping"
@@ -427,15 +358,7 @@ def _answers_fault(card: RubricCard, facts: RunFacts, reply: JudgeReply) -> str 
 
 
 def _card_fault(card: RubricCard, facts: RunFacts, card_digest: str) -> str | None:
-    """Say how the card changed while the judge held it; None means it did not.
-
-    JudgeRequest hands over the card's own Criterion objects, and `frozen=True`
-    stops `c.weight = x` but not `object.__setattr__(c, "weight", x)`. Nothing
-    in this process can prevent that write, so it is caught afterwards instead:
-    a weight, evidence source or evaluator that moved makes the digest recorded
-    before dispatch a claim about a card that no longer exists, which is a judge
-    fault and never a score.
-    """
+    """How the card changed while the judge held its Criterion objects; a change is a judge fault, never a score."""
     try:
         _validate_card(card)
         _validate_facts(card, facts)
@@ -462,22 +385,14 @@ def _consult(
     try:
         reply = judge.judge(request)
     except RubricError:
-        # A judge that reports an unusable card or request is reporting the
-        # caller's mistake, not an outage. Degrading it would hide a bug.
-        raise
+        raise  # the caller's mistake, not an outage
     except BaseExceptionGroup as group:
-        # asyncio.TaskGroup and asyncio.timeout wrap a cancellation in a group,
-        # and only ExceptionGroup inherits Exception, so the arm below missed
-        # exactly the case it exists for. Operator intent and a reported caller
-        # mistake keep their meaning when they arrive inside a group.
+        # asyncio wraps cancellations in groups; interrupts and caller mistakes keep their meaning inside one.
         intent, _ = group.split((KeyboardInterrupt, SystemExit, RubricError))
         if intent is not None:
             raise
         return {}, {}, None, "Judge dispatch failed: " + type(group).__name__ + ": " + str(group)
-    except (Exception, asyncio.CancelledError) as error:
-        # Transport, timeout, unavailability and cancellation are environment
-        # faults: reported, never raised and never scored as a "no".
-        # KeyboardInterrupt and SystemExit stay unhandled; they are not faults.
+    except (Exception, asyncio.CancelledError) as error:  # Judge faults are reported, never scored
         return {}, {}, None, "Judge dispatch failed: " + type(error).__name__ + ": " + str(error)
     fault = _attribution_fault(card, judge, reply)
     if fault is not None:
@@ -490,26 +405,15 @@ def _consult(
 
 
 def score(card: RubricCard, facts: RunFacts, judge: Judge | None = None) -> Document:
-    """Score one run against one card and return the evaluation document.
+    """Score one run against one card.
 
-    Raises RubricError for an unusable card or unusable run facts, always before
-    any dispatch. A judge that fails after dispatch yields an unscored document
-    with a stated error, because a missing judgement is not a bad result.
-
-    At most one judgement is requested per call, guaranteed by there being a
-    single call site below and no loop; a run that did not execute requests
-    none, since its score would be discarded, and so can carry no judge fault.
-
-    The card is re-validated and re-digested after the judge returns and before
-    any point is awarded. A judge that rewrote a criterion through
-    `object.__setattr__` gets `judge_failed` and no score, not a total computed
-    against a card the recorded digest does not describe.
+    Raises RubricError before any dispatch for an unusable card or facts; a judge failure
+    afterwards yields `judge_failed` with no score, because a missing judgement is not a bad result.
     """
     _validate_card(card)
     _validate_facts(card, facts)
     if card.needs_judge and judge is None:
         raise RubricError("This card has llm criteria; pass a judge to score it")
-    # Before the dispatch: a digest that cannot be taken must not cost a judgement.
     card_digest = card.digest()
 
     answers: dict[str, Answer] = {}
@@ -520,7 +424,6 @@ def score(card: RubricCard, facts: RunFacts, judge: Judge | None = None) -> Docu
     consulted = card.needs_judge and facts.execution_pass
     if consulted and judge is not None:
         answers, reasons, attribution, judge_error = _consult(card, facts, judge, card_digest)
-        # Before a single point is awarded, and before the denominator is read.
         card_fault = _card_fault(card, facts, card_digest)
         if card_fault is not None:
             answers, reasons, judge_error = {}, {}, card_fault
@@ -542,12 +445,9 @@ def score(card: RubricCard, facts: RunFacts, judge: Judge | None = None) -> Docu
             "answer": None,
             "points": None,
             "reason": unanswered,
-            # What went in, never what a judge cited back: this module collects
-            # no citations and validates none, so it does not claim to hold any.
             "refs_supplied": [],
         }
         if card_fault is not None:
-            # Not one point off a card whose digest no longer describes it.
             rows.append(row)
             continue
         if criterion.evaluator == "deterministic":
@@ -570,22 +470,15 @@ def score(card: RubricCard, facts: RunFacts, judge: Judge | None = None) -> Docu
                 deterministic += points
         rows.append(row)
 
-    # These three are exhaustive and disjoint in order. A run that did not
-    # execute is never dispatched, so the first two never compete; "complete"
-    # is reached only with every row answered, because a judge that answered
-    # fewer than its criteria is already a fault above.
+    # "complete" implies every row is answered: a judge that answered fewer is already a fault above.
     if judge_error is not None:
         status = "judge_failed"
     elif not facts.execution_pass:
-        # The engine not running is a separate fact from acceptance and from
-        # quality: the criteria stay reported, the total is withheld.
         status = "unscored"
     else:
         status = "complete"
 
-    # No total is manufactured for a run that is not fully answered. Both the
-    # score and the reward come off the same Decimal; dividing the float by ten
-    # disagrees with it for 289 of the 1001 reachable scores.
+    # Score and reward come off the same Decimal; no total for a run that is not fully answered.
     scored: float | None = None
     reward: float | None = None
     if status == "complete":

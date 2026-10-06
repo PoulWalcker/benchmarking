@@ -1,15 +1,14 @@
-"""Pinned AutoWFBench dependency and a candidate-only tool interface.
+"""A hosted simulator environment: a pinned upstream simulator behind a candidate-only tool listener.
 
-The trusted caller owns source files, environment startup and finalization.
-Candidates receive a distinct HTTP listener exposing tools, never admin methods.
-The original upstream simulator owns state, limits, event recording and checks.
+The trusted host owns startup, finalization and evidence. Candidates reach a separately
+authenticated listener that exposes tools, never the simulator's admin methods.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
 import copy
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 import hashlib
 import hmac
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -23,15 +22,20 @@ import sys
 import threading
 import time
 from typing import Any
-import uuid
 from urllib.request import Request
+import uuid
 
-from sapi_config_lab.autowfbench_source import verify_source
+from sapi_config_lab.contracts import OutputArtifact
 from sapi_config_lab.evidence import write_json
+from sapi_config_lab.execute.host import HostConfig
+from sapi_config_lab.execute.n8n import PINNED_N8N_VERSION
 from sapi_config_lab.net import urlopen
+from sapi_config_lab.pinned_source import PinnedSource
 
 Document = dict[str, Any]
 MAX_BODY = 2_000_000
+MAX_TOOL_ATTEMPTS = 3
+STARTUP_SECONDS = 15
 
 
 def _post(url: str, body: Document, token: str, timeout: float = 15) -> Document:
@@ -51,24 +55,32 @@ def _post(url: str, body: Document, token: str, timeout: float = 15) -> Document
     return value
 
 
-class EnvironmentSession:
-    """One fresh original simulator plus a separately authenticated tools listener.
+def _valid_receipt(result: Document) -> bool:
+    if type(result.get("ok")) is not bool or set(result) != ({"ok", "value"} if result["ok"] else {"ok", "error"}):
+        return False
+    error = result.get("error")
+    return result["ok"] or (
+        isinstance(error, dict)
+        and set(error) == {"code", "message", "retryable"}
+        and isinstance(error["code"], str)
+        and isinstance(error["message"], str)
+        and type(error["retryable"]) is bool
+    )
 
-    Construct through start_environment. connection contains only candidate
-    credentials; finalize and close belong to the trusted orchestrator. A new
-    session is the reset operation. No state is reused across sessions.
-    """
+
+class EnvironmentSession:
+    """One fresh simulator plus its tool listener. A new session is the only reset; nothing is reused."""
 
     def __init__(
-        self, source_root: Path, challenge_id: str, seed: int, *, python: str, bind_host: str, public_host: str
+        self, source: PinnedSource, challenge_id: str, seed: int, *, python: str, bind_host: str, public_host: str
     ):
-        self.source = verify_source(source_root)
-        challenge = source_root / "benchmark/challenges" / challenge_id / "definition.json"
-        if challenge_id not in {"crm-lead-qualification", "production-checkout-recovery"}:
+        self.source = source.verify()
+        if f"benchmark/challenges/{challenge_id}/definition.json" not in self.source["files"]:
             raise ValueError("Unknown pinned challenge")
         if type(seed) is not int or seed < 0:
             raise ValueError("Seed must be a nonnegative integer")
-        self.definition = json.loads(challenge.read_text())
+        root = source.root.resolve()
+        self.definition = json.loads((root / "benchmark/challenges" / challenge_id / "definition.json").read_text())
         self.challenge_id, self.seed = challenge_id, seed
         self._run_token, self._admin_token, self._candidate_token = (secrets.token_urlsafe(32) for _ in range(3))
         self._lock = threading.RLock()
@@ -83,8 +95,8 @@ class EnvironmentSession:
         # Never pass host credentials or a caller's PYTHONPATH to the simulator.
         env = {
             "PATH": os.defpath,
-            "PYTHONPATH": str(source_root),
-            "AUTOWFBENCH_ROOT": str(source_root),
+            "PYTHONPATH": str(root),
+            "AUTOWFBENCH_ROOT": str(root),
             "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONNOUSERSITE": "1",
             "AWB_RUN_TOKEN": self._run_token,
@@ -92,7 +104,7 @@ class EnvironmentSession:
         }
         self._process = subprocess.Popen(
             [python, "-m", "autowfbench", "environment", challenge_id, "--seed", str(seed), "--host", "127.0.0.1"],
-            cwd=source_root,
+            cwd=root,
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -102,7 +114,7 @@ class EnvironmentSession:
             assert self._process.stdout is not None
             with selectors.DefaultSelector() as selector:
                 selector.register(self._process.stdout, selectors.EVENT_READ)
-                if not selector.select(timeout=15):
+                if not selector.select(timeout=STARTUP_SECONDS):
                     raise RuntimeError("Environment startup timed out")
                 line = self._process.stdout.readline()
             if not line:
@@ -129,7 +141,7 @@ class EnvironmentSession:
 
     @property
     def connection(self) -> Document:
-        """Run-scoped candidate credentials. Do not persist them in public artifacts."""
+        """Run-scoped candidate credentials; never persisted in public artifacts."""
         if self._closed:
             raise RuntimeError("Environment session is closed")
         return dict(self._connection)
@@ -194,18 +206,20 @@ class EnvironmentSession:
         operation_id: str | None = None,
         max_attempts: int = 1,
     ) -> Document:
-        """Dispatch once by default; keyed explicit retries require a known safe error.
+        """Dispatch once; keyed retries only after a known retryable error, never after an unknown outcome.
 
-        This is a project transport policy, not a change to the upstream tool or
-        rubric. A known receipt can be replayed within this live session. An
-        uncertain upstream response stops further calls; it is never retried.
+        This is project transport policy, not a change to the upstream tool or rubric.
         """
         arguments = {} if arguments is None else copy.deepcopy(arguments)
         if not isinstance(operation, str) or not isinstance(arguments, dict):
             raise ValueError("Invalid tool request")
         if operation_id is not None and (not isinstance(operation_id, str) or not 1 <= len(operation_id) <= 240):
             raise ValueError("Invalid operation ID")
-        if type(max_attempts) is not int or not 1 <= max_attempts <= 3 or (max_attempts > 1 and operation_id is None):
+        if (
+            type(max_attempts) is not int
+            or not 1 <= max_attempts <= MAX_TOOL_ATTEMPTS
+            or (max_attempts > 1 and operation_id is None)
+        ):
             raise ValueError("Explicit retries require an operation ID and one to three attempts")
         encoded = json.dumps(
             {"operation": operation, "arguments": arguments, "max_attempts": max_attempts},
@@ -222,7 +236,7 @@ class EnvironmentSession:
             if self._closed:
                 raise RuntimeError("Environment session is closed")
             if self._frozen:
-                return {"ok": False, "error": {"code": "RUN_CLOSED", "message": "Run is frozen", "retryable": False}}
+                return failure("RUN_CLOSED", "Run is frozen")
             if operation_id is not None and operation_id in self._receipts:
                 prior = self._receipts[operation_id]
                 if prior["request_digest"] != request_digest:
@@ -253,19 +267,7 @@ class EnvironmentSession:
                     result = _post(
                         self._upstream_url + "/tools", {"operation": operation, "arguments": arguments}, self._run_token
                     )
-                    valid = type(result.get("ok")) is bool and set(result) == (
-                        {"ok", "value"} if result["ok"] else {"ok", "error"}
-                    )
-                    if valid and not result["ok"]:
-                        error = result["error"]
-                        valid = (
-                            isinstance(error, dict)
-                            and set(error) == {"code", "message", "retryable"}
-                            and isinstance(error["code"], str)
-                            and isinstance(error["message"], str)
-                            and type(error["retryable"]) is bool
-                        )
-                    if not valid:
+                    if not _valid_receipt(result):
                         raise ValueError("Malformed upstream receipt")
                 except OSError, ValueError:
                     self._ambiguous = True
@@ -283,7 +285,7 @@ class EnvironmentSession:
             return copy.deepcopy(row["receipt"])
 
     def transport_evidence(self) -> Document:
-        """Separate project-policy evidence; never merge it into original checks."""
+        """Project-policy evidence, kept apart from the simulator's own checks."""
         with self._lock:
             return {
                 "policy": "sapi-lab-run-scoped-receipts/v1",
@@ -293,7 +295,7 @@ class EnvironmentSession:
             }
 
     def finalize(self) -> Document:
-        """Freeze and collect benchmark-owned state, events and original checks once."""
+        """Freeze the run and collect the simulator's state, events and checks once."""
         with self._lock:
             if self._evidence is not None:
                 return copy.deepcopy(self._evidence)
@@ -304,7 +306,7 @@ class EnvironmentSession:
             return copy.deepcopy(self._evidence)
 
     def close(self) -> None:
-        """Stop listeners and simulator; safe after partial startup and repeated calls."""
+        """Stop listener and simulator; safe after partial startup and on repeated calls."""
         with self._lock:
             if self._closed:
                 return
@@ -335,7 +337,7 @@ class EnvironmentSession:
 
 
 def start_environment(
-    source_root: Path,
+    source: PinnedSource,
     challenge_id: str = "production-checkout-recovery",
     seed: int = 0,
     *,
@@ -343,19 +345,12 @@ def start_environment(
     bind_host: str = "127.0.0.1",
     public_host: str = "127.0.0.1",
 ) -> EnvironmentSession:
-    """Start an explicitly located, verified source dependency with fresh state.
-
-    For Docker candidates, the trusted host may explicitly bind the tool proxy
-    on 0.0.0.0 and advertise host.docker.internal. The original admin listener
-    remains loopback. Do not mount source cache or host paths into candidates.
-    """
-    return EnvironmentSession(
-        Path(source_root).resolve(), challenge_id, seed, python=python, bind_host=bind_host, public_host=public_host
-    )
+    """A verified simulator with fresh state. Its admin listener stays on loopback whatever bind_host is."""
+    return EnvironmentSession(source, challenge_id, seed, python=python, bind_host=bind_host, public_host=public_host)
 
 
 def terminal_submission(
-    record: Document, elapsed: float, run_id: str, *, limit: float, output: Document
+    record: Document, elapsed: float, run_id: str, *, limit: float, artifact: OutputArtifact | None
 ) -> tuple[str, Document | None]:
     """Only timely, structurally valid terminal output is admitted as completion."""
     if elapsed > limit:
@@ -363,11 +358,10 @@ def terminal_submission(
     if record.get("status") != "success":
         return "solution_failed", None
     answer = record.get("output")
-    field = output.get("artifact_field")
     if not (
         isinstance(answer, dict)
         and isinstance(answer.get("final_answer"), str)
-        and (field is None or isinstance(answer.get(field), str))
+        and (artifact is None or isinstance(answer.get(artifact.field), str))
     ):
         return "protocol_error", None
     return "completed", {
@@ -376,8 +370,8 @@ def terminal_submission(
         "status": "completed",
         "final_answer": answer["final_answer"],
         "artifacts": (
-            [{"name": output["artifact_name"], "media_type": "text/markdown", "content": answer[field]}]
-            if field
+            [{"name": artifact.name, "media_type": "text/markdown", "content": answer[artifact.field]}]
+            if artifact
             else []
         ),
         "trace": [],
@@ -385,33 +379,31 @@ def terminal_submission(
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 class SimulatorHost(ThreadingHTTPServer):
-    """One trial's trusted endpoint: a fresh simulator on /begin, recorded evidence on /finish.
-
-    The container's verifier step authenticates with `token`. `/finish` writes
-    the evidence under `record/evidence` and returns what `evaluate(record)` returns.
-    """
+    """One trial's trusted endpoint: a fresh simulator on /begin, recorded and evaluated evidence on /finish."""
 
     daemon_threads = True
 
     def __init__(
         self,
-        source_root: Path,
+        source: PinnedSource,
         challenge_id: str,
         record: Path,
         *,
         seed: int,
-        output: Document,
+        artifact: OutputArtifact | None,
         llm_mode: str,
         bridge_url: str | None,
         evaluate: Callable[[Path], Document],
+        host: HostConfig,
     ):
-        super().__init__(("0.0.0.0", 0), _HostHandler)
-        self.source_root, self.challenge_id, self.record, self.seed = source_root, challenge_id, record, seed
-        self.output, self.llm_mode, self.bridge_url, self.evaluate = output, llm_mode, bridge_url, evaluate
+        super().__init__((host.listen_host, 0), _HostHandler)
+        self.source, self.challenge_id, self.record, self.seed = source, challenge_id, record, seed
+        self.artifact, self.llm_mode, self.bridge_url, self.evaluate = artifact, llm_mode, bridge_url, evaluate
+        self.host = host
         self.token = secrets.token_urlsafe(32)
         self.run_id = "trial-" + uuid.uuid4().hex
         self.session: EnvironmentSession | None = None
@@ -426,7 +418,7 @@ class SimulatorHost(ThreadingHTTPServer):
 
     @property
     def connection(self) -> Document:
-        return {"url": f"http://host.docker.internal:{self.server_port}", "token": self.token}
+        return {"url": f"http://{self.host.container_host}:{self.server_port}", "token": self.token}
 
     def credentials(self) -> list[str]:
         """Ephemeral credentials that must never appear in persisted artifacts."""
@@ -436,7 +428,11 @@ class SimulatorHost(ThreadingHTTPServer):
         if self.started is not None:
             raise ValueError("Trial already started")
         self.session = start_environment(
-            self.source_root, self.challenge_id, self.seed, bind_host="0.0.0.0", public_host="host.docker.internal"
+            self.source,
+            self.challenge_id,
+            self.seed,
+            bind_host=self.host.listen_host,
+            public_host=self.host.container_host,
         )
         self.operation_token = self.session.connection["access_token"]
         self.limit = self.session.definition["limits"]["wall_clock_seconds"]
@@ -463,7 +459,7 @@ class SimulatorHost(ThreadingHTTPServer):
         write_json(evidence / "environment-evidence.json", self.session.finalize())
         write_json(evidence / "transport-evidence.json", self.session.transport_evidence())
         write_json(evidence / "native-record.json", record)
-        reason, submission = terminal_submission(record, elapsed, self.run_id, limit=self.limit, output=self.output)
+        reason, submission = terminal_submission(record, elapsed, self.run_id, limit=self.limit, artifact=self.artifact)
         trial = {
             "schema": "sapi-lab-simulator-trial/v1",
             "challenge": self.challenge_id,
@@ -480,7 +476,7 @@ class SimulatorHost(ThreadingHTTPServer):
                 "id": "sapi-lab-yaml",
                 "name": "Frozen YAML in real n8n",
                 "version": "1",
-                "runtime": "n8n-2.41.5",
+                "runtime": f"n8n-{PINNED_N8N_VERSION}",
             },
         }
         write_json(evidence / "trial.json", trial)
@@ -517,7 +513,7 @@ class _HostHandler(BaseHTTPRequestHandler):
             else:
                 raise ValueError("Unknown route")
             raw, status = json.dumps(result).encode(), 200
-        except Exception as error:
+        except Exception as error:  # Server boundary: a recorded host error, never a hung trial
             host.record.mkdir(parents=True, exist_ok=True)
             write_json(host.record / "host-error.json", {"type": type(error).__name__, "message": str(error)})
             raw, status = json.dumps({"error": type(error).__name__}).encode(), 500

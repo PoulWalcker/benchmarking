@@ -6,8 +6,8 @@ import copy
 import json
 import uuid
 
-from sapi_config_lab.contracts import Document, LlmMode
 from sapi_config_lab.compile.n8n import RESOURCES, bind_run, compile_n8n
+from sapi_config_lab.contracts import Document, LlmMode
 from sapi_config_lab.profile import SPEC
 
 
@@ -20,12 +20,7 @@ def compile_refinement(
     activation: str = "fixture",
     bound_deadline: bool = False,
 ) -> tuple[Document, dict[str, str]]:
-    """Unroll attempts, retaining native early exit and a single accepted result.
-
-    Each copy keeps logical step IDs inside its envelope. Native names and live
-    invocation IDs identify the attempt independently. No step in a later copy
-    receives a token after an earlier accepted checkpoint.
-    """
+    """Unroll attempts with native early exit: no later copy runs after an accepted checkpoint."""
     workflow = config["workflow"]
     policy = config["execution"]["refinement"]
     maximum = policy["max_attempts"]

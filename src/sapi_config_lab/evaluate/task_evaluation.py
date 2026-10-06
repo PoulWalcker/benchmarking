@@ -1,15 +1,13 @@
-"""Frozen task contracts and an adapter to the unchanged AutoWFBench evaluator.
+"""Frozen upstream task contracts and an adapter to the unchanged upstream scorer and judge.
 
-Only the trusted orchestrator calls this module. Candidate YAML receives public
-instructions and tool capabilities, never the package, checks, or judge interface.
-The external source checkout stays outside our distribution; its pinned manifest
-is verified before and after every upstream invocation.
+Host-only: candidates never see the package, its checks or the judge. The pinned
+source is verified before and after every upstream invocation.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import ROUND_HALF_UP, Decimal
 import hashlib
 import json
@@ -18,6 +16,9 @@ from pathlib import Path
 import subprocess
 import sys
 from typing import Any
+
+from sapi_config_lab.contracts import OutputArtifact
+from sapi_config_lab.pinned_source import PinnedSource
 
 Document = dict[str, Any]
 SCHEMA = "sapi-lab-task-evaluation/v1"
@@ -32,14 +33,10 @@ def digest(value: Any) -> str:
 
 
 def normalized_reward(score_0_10: float) -> float:
-    """Divide the upstream score by ten in Decimal, never in binary float.
+    """Divide the upstream score by ten in Decimal, as upstream scoring does.
 
-    Upstream quantizes `score_0_10` to two decimals before returning a float, so
-    `Decimal(str(...))` recovers that exact value. Plain `score_0_10 / 10`
-    disagrees with the Decimal quotient for 289 of the 1001 reachable scores
-    (0.07 becomes 0.007000000000000001), and 127 of them do not round-trip.
-    This matches upstream `autowfbench/core/scoring.py`, which keeps the score
-    itself in Decimal for the same reason.
+    Binary float division disagrees for 289 of the 1001 reachable two-decimal
+    scores (0.07 / 10 is 0.007000000000000001).
     """
     exact = Decimal(str(score_0_10)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     return float((exact / Decimal(10)).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP))
@@ -70,31 +67,31 @@ json.dump(result, sys.stdout, allow_nan=False)
 """
 
 
-def _source_identity(source_root: Path) -> Document:
-    from sapi_config_lab.autowfbench_source import verify_source
+def _environment(source: PinnedSource, request: Document) -> dict[str, str]:
+    root = str(source.root.resolve())
+    pinned = {"PYTHONPATH": root, "AUTOWFBENCH_ROOT": root, "PYTHONDONTWRITEBYTECODE": "1"}
+    if request["operation"] == "judge":
+        # The judge CLI needs the user's own configuration and credentials; simulator tokens never pass.
+        return {**{k: v for k, v in os.environ.items() if not k.startswith("AWB_")}, **pinned}
+    return {"PATH": os.defpath, **pinned}
 
-    return verify_source(source_root)
 
-
-def _upstream(source_root: Path, request: Document, timeout: float = 30) -> Document:
-    before = _source_identity(source_root)
-    env = {k: v for k, v in os.environ.items() if not k.startswith("AWB_")}
-    env.update(PYTHONPATH=str(source_root), AUTOWFBENCH_ROOT=str(source_root), PYTHONDONTWRITEBYTECODE="1")
+def _upstream(source: PinnedSource, request: Document, timeout: float = 30) -> Document:
+    before = source.verify()
     completed = subprocess.run(
         [sys.executable, "-c", _WORKER],
         input=json.dumps(request, allow_nan=False),
         text=True,
         capture_output=True,
-        cwd=source_root,
-        env=env,
+        cwd=source.root,
+        env=_environment(source, request),
         timeout=timeout,
         check=False,
     )
-    if _source_identity(source_root) != before:
+    if source.verify() != before:
         raise ValueError("Pinned evaluator source changed during evaluation")
     if completed.returncode:
-        # External output may contain candidate text or credentials. Retain only
-        # its digest here; the judge owns its detailed, trusted artifact directory.
+        # stderr may hold candidate text or credentials; keep only its digest.
         raise ValueError(
             "Upstream evaluator failed; stderr sha256=" + hashlib.sha256(completed.stderr.encode()).hexdigest()
         )
@@ -106,14 +103,19 @@ def _upstream(source_root: Path, request: Document, timeout: float = 30) -> Docu
 
 @dataclass(frozen=True)
 class FrozenTaskContract:
-    """Immutable serialized rubric/data plus judge identity, created before solving."""
+    """Rubric, data and judge identity frozen before solving.
 
-    source_root: Path
+    `artifact` is the project's own output requirement; it is outside the digest
+    because it never affects the upstream score.
+    """
+
+    source: PinnedSource
     package_json: str
     source_json: str
     judge_model: str | None
     judge_mode: str
     prompt_version: str = PROMPT_VERSION
+    artifact: OutputArtifact | None = None
 
     @property
     def package(self) -> Document:
@@ -130,7 +132,7 @@ class FrozenTaskContract:
         return {**value, "contract_digest": digest(value)}
 
     def verify(self) -> None:
-        if _source_identity(self.source_root) != json.loads(self.source_json):
+        if self.source.verify() != json.loads(self.source_json):
             raise ValueError("Frozen evaluator identity mismatch")
         if self.prompt_version != PROMPT_VERSION:
             raise ValueError("Unsupported judge prompt version")
@@ -141,11 +143,7 @@ class FrozenTaskContract:
 
 
 def validate_task_package(package: Document) -> None:
-    """Validate supported task/metric semantics before a solver sees the task.
-
-    Business criteria still belong to the original scorecard; this rejects
-    unsupported evaluator/metric types rather than guessing how to grade them.
-    """
+    """Reject evaluator and metric types this adapter does not support, rather than guess how to grade them."""
     definition, card = package["definition"], package["scorecard"]
     if definition["id"] != card["id"] or not definition.get("task") or not definition.get("completion"):
         raise ValueError("Task identity/instructions are incomplete")
@@ -185,18 +183,26 @@ def validate_task_package(package: Document) -> None:
 
 
 def freeze_contract(
-    source_root: Path, challenge: str, *, judge_model: str | None = None, judge_mode: str = "codex"
+    source: PinnedSource,
+    challenge: str,
+    *,
+    judge_model: str | None = None,
+    judge_mode: str = "codex",
+    artifact: OutputArtifact | None = None,
 ) -> FrozenTaskContract:
-    """Freeze original task, fixtures, rubric and explicit judge identity once."""
     if judge_mode not in {"codex", "demo"}:
         raise ValueError("Judge mode must be codex or explicit demo")
     if judge_mode == "codex" and (not isinstance(judge_model, str) or not judge_model.strip()):
         raise ValueError("Pin a semantic judge model before solving")
-    root = Path(source_root).resolve()
-    source = _source_identity(root)
-    package = _upstream(root, {"operation": "package", "challenge": challenge})
+    identity = source.verify()
+    package = _upstream(source, {"operation": "package", "challenge": challenge})
     contract = FrozenTaskContract(
-        root, json.dumps(package, sort_keys=True), json.dumps(source, sort_keys=True), judge_model, judge_mode
+        source,
+        json.dumps(package, sort_keys=True),
+        json.dumps(identity, sort_keys=True),
+        judge_model,
+        judge_mode,
+        artifact=artifact,
     )
     contract.verify()
     return contract
@@ -215,11 +221,7 @@ def build_run_log(
     termination_reason: str,
     solution: Document,
 ) -> Document:
-    """Join trusted environment receipts with explicitly labelled candidate claims.
-
-    `evidence` must come directly from the trusted session's finalize(), not from
-    a workflow result. Tool actions and checks are never inferred from prose.
-    """
+    """Join the trusted session's finalize() evidence with explicitly labelled candidate claims."""
     contract.verify()
     package = contract.package
     if submission is not None and (
@@ -296,15 +298,15 @@ def _validate_run(contract: FrozenTaskContract, run: Document) -> None:
     ids = [event["id"] for event in run["events"]]
     if len(ids) != len(set(ids)):
         raise ValueError("Ambiguous duplicate evidence identifiers")
-    _upstream(contract.source_root, {"operation": "validate", "run_log": run})
+    _upstream(contract.source, {"operation": "validate", "run_log": run})
 
 
 def judge(contract: FrozenTaskContract, run_log: Document, artifact_dir: Path, *, timeout: int = 180) -> Document:
-    """Invoke the original separate judge; callers explicitly authorize model calls."""
+    """Invoke the upstream judge; a codex judge is a model call the caller has reserved."""
     _validate_run(contract, run_log)
     package = contract.package
     return _upstream(
-        contract.source_root,
+        contract.source,
         {
             "operation": "judge",
             "mode": contract.judge_mode,
@@ -342,7 +344,7 @@ def evaluate(
     *,
     judge_error: str | None = None,
 ) -> Document:
-    """Preserve upstream arithmetic and execution_pass; never manufacture a total."""
+    """Upstream arithmetic and execution_pass, unchanged; never a manufactured total."""
     _validate_run(contract, run_log)
     judgement, provenance = None, None
     if judge_reply is not None:
@@ -362,19 +364,20 @@ def evaluate(
         "error": judge_error,
     }
     try:
-        score = _upstream(contract.source_root, request)
+        score = _upstream(contract.source, request)
     except ValueError:
         if judgement is None:
             raise
         request.update(judgement=None, provenance=None, error="Judge response validation failed")
-        score = _upstream(contract.source_root, request)
+        score = _upstream(contract.source, request)
     submission = run_log["submission"]
-    artifact_present = bool(submission and any(a["name"] == "incident-summary.md" for a in submission["artifacts"]))
     project_acceptance = None
-    if contract.package["definition"]["id"] == "production-checkout-recovery":
+    if contract.artifact is not None:
+        name = contract.artifact.name
         project_acceptance = {
-            "criterion": "named_incident_summary",
-            "passed": artifact_present,
+            "criterion": "named_artifact",
+            "artifact": name,
+            "passed": bool(submission and any(a["name"] == name for a in submission["artifacts"])),
             "affects_upstream_score": False,
             "reason": "Separate task-completion diagnostic; upstream has no deterministic filename gate",
         }
@@ -414,10 +417,7 @@ def evaluate_once(
     judgement: Document | None = None,
     dispatch: bool = False,
 ) -> Document:
-    """Score into a fresh directory; the judge is consulted only when `dispatch` is set.
-
-    A saved `judgement` must belong to this contract's judge and to this run log.
-    """
+    """Score into a fresh directory; the judge is consulted only when `dispatch` is set."""
     if dispatch and judgement is not None:
         raise ValueError("Either dispatch the judge or supply a saved judgement, not both")
     if judgement is not None and (fault := judgement_fault(contract, run_log, judgement)):
@@ -428,11 +428,11 @@ def evaluate_once(
     reply, error = judgement, None
     if dispatch:
         dispatched = {"attempts": 1, "mode": contract.judge_mode, "model": contract.judge_model}
-        _write(output / "judge-dispatch.json", {**dispatched, "started_at": datetime.now(timezone.utc).isoformat()})
+        _write(output / "judge-dispatch.json", {**dispatched, "started_at": datetime.now(UTC).isoformat()})
         try:
             reply = judge(contract, run_log, output / "judge", timeout=180)
             _write(output / "judge-reply.json", reply)
-        except Exception as exc:
+        except (ValueError, OSError, subprocess.SubprocessError) as exc:
             error = type(exc).__name__
     report = evaluate(contract, run_log, reply, judge_error=error)
     write_evaluation(output, report)
@@ -444,7 +444,7 @@ def _write(path: Path, value: Any) -> None:
 
 
 def write_evaluation(report_dir: Path, report: Document) -> None:
-    """Persist one trial once. An unscored trial deliberately has no reward file."""
+    """Persist one trial once. An unscored trial has no reward file: not evaluated is not zero."""
     destination = Path(report_dir)
     destination.mkdir(parents=True, exist_ok=True)
     report_path = destination / "evaluation.json"

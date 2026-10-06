@@ -1,10 +1,7 @@
-"""Plan and judge the daily-digest lifecycle submission.
+"""Plan and judge the daily-digest submission through the lifecycle controller's recorded snapshots.
 
-The plan asks the trusted execution step to register each fixture-applied
-candidate with the durable lifecycle controller, send its Callback test, and
-advance the clock past its Cron minute; and to register one deliberately wrong
-output. Judging reads the recorded registry snapshots and callback events.
-Business acceptance itself remains in lifecycle.py.
+Each fixture-applied candidate is registered, Callback-tested and ticked past its Cron
+minute; one deliberately wrong output must be rejected. Business acceptance is in lifecycle.py.
 """
 
 from __future__ import annotations

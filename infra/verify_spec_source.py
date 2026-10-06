@@ -1,12 +1,9 @@
-"""Verify the vendored spec offline or explicitly fetch a candidate for review.
-
-This command never updates the pinned manifest or vendored snapshot.
-"""
+"""Verify the vendored spec offline, or fetch a candidate for review; never updates the pin."""
 
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 import difflib
 import hashlib
 import json
@@ -90,7 +87,7 @@ def compare(root: Path, revision: str, output: Path, *, fetch=_fetch) -> dict:
         "pinned_revision": pinned["revision"],
         "requested_revision": revision,
         "resolved_revision": commit,
-        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "checked_at": datetime.now(UTC).isoformat(),
         "files": rows,
         "changed_files": [row["upstream_path"] for row in rows if not row["identical"]],
         "pin_updated": False,

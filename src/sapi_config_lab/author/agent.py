@@ -1,20 +1,23 @@
-"""Harbor agent: one call to the existing wrapper, exact response as submission."""
+"""Harbor agent: one call to the local model wrapper; its exact answer is the submission."""
 
 from __future__ import annotations
 
 import asyncio
 import hashlib
 import json
-import re
 import time
 from urllib.request import Request, urlopen
 
 from harbor.agents.base import BaseAgent
+
 from sapi_config_lab.evidence import write_json
+from sapi_config_lab.wrapper_audit import reported_model, reported_tokens, stderr_sha256, tool_markers
+
+MAX_ANSWER_CHARACTERS = 100_000
 
 
 class WrapperYamlAgent(BaseAgent):
-    def __init__(self, *args, upstream="http://127.0.0.1:8765/run", **kwargs):
+    def __init__(self, *args, upstream: str, **kwargs):
         super().__init__(*args, **kwargs)
         self.upstream = upstream
 
@@ -61,7 +64,7 @@ class WrapperYamlAgent(BaseAgent):
                 record["failure_reason"] = "observed_tool_use"
                 raise RuntimeError("Tool use observed: attempt is not prompt-only")
             answer = wrapper.get("output")
-            if not isinstance(answer, str) or not answer.strip() or len(answer) > 100_000:
+            if not isinstance(answer, str) or not answer.strip() or len(answer) > MAX_ANSWER_CHARACTERS:
                 record["failure_reason"] = "empty_or_oversized_generation"
                 raise RuntimeError("Empty or oversized generation")
             # No YAML rewriting, fence stripping, compilation feedback or repair.
@@ -72,8 +75,8 @@ class WrapperYamlAgent(BaseAgent):
             await environment.upload_file(source_path=submission, target_path="/app/submission/config.yaml")
             record["status"] = "submitted"
             record["failure_reason"] = None
-        except Exception as error:
-            # Errors from networking can contain external text; store only type.
+        except Exception as error:  # Harbor boundary; external text may carry model output
+            # Only the type is kept.
             record["error_type"] = type(error).__name__
             raise RuntimeError("YAML generation failed; see agent/generation.json") from None
         finally:
@@ -83,27 +86,11 @@ class WrapperYamlAgent(BaseAgent):
 
 
 def audit_stderr(stderr: str) -> dict:
-    """Keep limited CLI metadata, never persist wrapper stderr or credentials.
-
-    This is observational, not a security boundary. The existing wrapper does
-    not disable tools. A prompt asks for no tool use; recognized calls reject
-    the attempt. Unknown CLI formats remain a documented isolation limitation.
-    """
-    model = re.search(r"(?m)^model:\s*([A-Za-z0-9_.-]+)\s*$", stderr)
-    tokens = re.search(r"(?m)^tokens used\s*\n([\d,]+)\s*$", stderr)
-    markers = []
-    for name, pattern in {
-        "shell": r"(?m)^exec(?:\s|$)",
-        "tool": r"(?m)^tool\s+",
-        "file_edit": r"(?m)^(?:file update|apply_patch)(?:\s|$)",
-        "web": r"(?mi)^(?:web search|searching the web|searched the web)(?:\s|$)",
-    }.items():
-        if re.search(pattern, stderr):
-            markers.append(name)
+    """Limited CLI metadata; wrapper stderr itself is never persisted."""
     return {
-        "model": model.group(1) if model else None,
-        "cli_reported_tokens": int(tokens.group(1).replace(",", "")) if tokens else None,
-        "observed_tool_markers": markers,
-        "stderr_sha256": hashlib.sha256(stderr.encode()).hexdigest(),
+        "model": reported_model(stderr),
+        "cli_reported_tokens": reported_tokens(stderr),
+        "observed_tool_markers": tool_markers(stderr),
+        "stderr_sha256": stderr_sha256(stderr),
         "tool_isolation": "prompt restriction plus stderr audit; not enforced by wrapper",
     }

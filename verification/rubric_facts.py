@@ -1,30 +1,14 @@
-"""Run facts for the rubric: named checks, judge prose, and one evaluation.
+"""Run facts for the rubric: the seam between acceptance and `rubric.py`; never decides acceptance.
 
-This is the seam between acceptance and `rubric.py`. `verify.py` calls `observe`
-once per executed case while it still holds the engine-neutral observation, then
-`evaluate` once per submission; `rubric.score` does the scoring and `verify.py`
-writes what comes back to `evaluation.json`.
-
-Nothing here decides acceptance and nothing here reaches `reward.txt`. A named
-check reports whether an obligation that `business.py` or `scenario_business.py`
-already states held on this run: the obligation is called, and raised / did not
-raise becomes false / true. The rule is never restated here, so a check cannot
-drift from the acceptance it describes.
-
-Prose is the run's own text, formatted for a reader. The protected narrative is
-supplied under "verification", which no llm criterion may declare and which
-`rubric._judge_view` therefore never forwards.
-
-A scenario is added by writing one obligations function beside its acceptance,
-one card, and one branch in `_checks` and `_prose`. There is deliberately no
-registry: a reader follows the branch. A scenario with no judged criterion
-supplies no prose, because nothing would read it.
+A named check calls an obligation `business.py` or `scenario_business.py` already
+states and records whether it held, so a check cannot drift from acceptance. The
+protected narrative goes under "verification", which `rubric._judge_view` never forwards.
 """
 
 from __future__ import annotations
 
 import json
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING or __package__:
     from .business import competitor_report_obligations, ticket_routing_obligations
@@ -53,27 +37,18 @@ NOT_EVALUATED = "not_evaluated"
 _NO_JUDGE = "Not scored: this card has judged criteria and no judge is reachable here"
 _NO_RUN = "Not scored: no executed case produced the named checks"
 
-# What a malformed run throws on its way past an obligation, matching the set
-# verify.corruption_checks already treats as a rejection. Collecting facts must
-# never raise into acceptance, and never reports an unmeasured check as true.
+# What a malformed run raises past an obligation; the same set verify.corruption_checks treats as rejection.
 _REJECTIONS = (Rejected, KeyError, TypeError, IndexError)
 
 
 def observe(
     scenario: str, inputs: dict[str, Any], observation: WorkflowObservation, *, case: dict | None = None
 ) -> Document:
-    """Facts for one executed case. Called before acceptance and never raises.
-
-    `_held` already turns an obligation's own rejection into a false check. This
-    outer guard is for the environment underneath one: a frozen fixture file that
-    cannot be read is neither an obligation that failed nor a reason to fail a
-    run acceptance would have passed, so the case reports no facts and `evaluate`
-    says the card was not scored rather than scoring it short.
-    """
+    """Facts for one executed case; never raises, and reports no facts rather than scoring a card short."""
     try:
         checks = _checks(scenario, inputs, observation, case)
         prose = _prose(scenario, inputs, observation, checks)
-    except Exception:
+    except Exception:  # Facts must never fail an accepted run
         checks, prose = {}, {}
     return {"case": (case or {}).get("name"), "checks": checks, "prose": prose}
 
@@ -86,12 +61,7 @@ def evaluate(
     execution_pass: bool,
     judge: Judge | None = None,
 ) -> Document | None:
-    """Score this submission's card, or say plainly why it was not scored.
-
-    Returns None when the scenario has no card, so most scenarios write nothing.
-    Never raises: a rubric that cannot be computed is reported in its own
-    document, because the rubric must not turn an accepted run into a failure.
-    """
+    """This submission's card scored, or why not; None for a scenario with no card. Never raises."""
     try:
         card = card_for(scenario)
     except RubricError:
@@ -115,17 +85,12 @@ def evaluate(
             run_digest=digest({"scenario": scenario, "cases": [run.get("case") for run in runs]}),
         )
         return score(card, facts, judge)
-    except Exception as error:
+    except Exception as error:  # A rubric must never fail an accepted run
         return _not_evaluated(card, "Not scored: " + type(error).__name__ + ": " + str(error), checks, execution_pass)
 
 
 def _not_evaluated(card: RubricCard, reason: str, checks: dict[str, bool], execution_pass: bool) -> Document:
-    """The fourth status, and the only one this module writes itself.
-
-    `rubric.score` returns complete, unscored or judge_failed. This one says the
-    scoring never ran, so no total is stated: a withheld score is null, never a
-    zero, and never a figure nothing computed.
-    """
+    """Scoring never ran: the score is null, never zero."""
     return {
         "schema": SCHEMA,
         "rubric": {"id": card.id, "version": card.version, "origin": card.origin, "digest": card.digest()},
@@ -142,9 +107,7 @@ def _merged_checks(runs: list[Document], accepted: bool) -> dict[str, bool]:
     """One verdict per named check across the cases: it held, or it held everywhere."""
     merged: dict[str, bool] = {"accepted": bool(accepted)}
     if any(not run["checks"] for run in runs):
-        # `observe` collected no facts for one of the cases. Merging the others
-        # would report a check as holding everywhere when one case never
-        # measured it, so the card is left unscored instead.
+        # A case without facts leaves the card unscored, never a check holding where it was not measured.
         return merged
     for run in runs:
         for name, held in run["checks"].items():
@@ -182,8 +145,6 @@ def _checks(
 def _prose(
     scenario: str, inputs: dict[str, Any], observation: WorkflowObservation, checks: dict[str, bool]
 ) -> dict[str, str]:
-    # ticket-routing has no judged criterion, so it supplies no prose: its only
-    # authored output is a two-field classification that a check already pins.
     if scenario == "competitor-report":
         return _competitor_report_prose(inputs, observation, checks)
     if scenario == "support-review-packet":
@@ -231,8 +192,7 @@ def _support_review_prose(
                 + " mode.",
             ]
         ),
-        # Protected: no llm criterion may declare "verification", so _judge_view
-        # withholds this rather than a judge reading the checks off it.
+        # Protected: _judge_view never forwards "verification".
         "verification": _verification(checks),
     }
 
@@ -282,8 +242,11 @@ def _bulletin_brief_prose(
     brief = _by_role(observation, "write")
     return {
         "environment": "\n".join(
-            ["Articles supplied:", _articles(_get(inputs, "articles"))]
-            + ["Marketing material: " + _render(_get(inputs, "marketing_material"))]
+            [
+                "Articles supplied:",
+                _articles(_get(inputs, "articles")),
+                "Marketing material: " + _render(_get(inputs, "marketing_material")),
+            ]
         ),
         "candidate": "\n".join(
             [
@@ -336,7 +299,7 @@ def _by_operation(observation: Any, operation: str) -> dict[str, Any]:
             if event.get("operation") == operation:
                 value = observation.states[sid]["steps"].get(sid)
                 return value if isinstance(value, dict) else {}
-    except Exception:
+    except AttributeError, KeyError, TypeError:
         return {}
     return {}
 
@@ -346,7 +309,7 @@ def _by_role(observation: Any, role: str) -> dict[str, Any]:
     try:
         sid = observation.roles[role]
         value = observation.states[sid]["steps"].get(sid)
-    except Exception:
+    except AttributeError, KeyError, TypeError:
         return {}
     return value if isinstance(value, dict) else {}
 
@@ -374,10 +337,7 @@ def _excerpts(values: Any) -> str:
 
 def _mapping(value: Any, key: str) -> dict[str, Any]:
     """Reach one nested mapping of a run that may be any shape at all."""
-    if isinstance(value, dict):
-        inner = value.get(key)
-    else:
-        inner = getattr(value, key, None) if value is not None else None
+    inner = value.get(key) if isinstance(value, dict) else getattr(value, key, None)
     return inner if isinstance(inner, dict) else {}
 
 

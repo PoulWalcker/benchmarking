@@ -84,11 +84,9 @@ Important properties:
 - live execution has explicit deadlines;
 - there is no general transparent retry layer for ambiguous model outcomes.
 
-## AutoWFBench environment
+## HTTP tool operations
 
-The AutoWFBench adapter does not change `sapi-lab/v0` workflow semantics.
-
-It changes the external task environment available to the candidate: operations are proxied to the pinned upstream simulator through a run-scoped authenticated tool interface. Environment administration, finalization, source verification, and scoring remain on the trusted side.
+A catalog binding with `transport: http` calls a tool of the run's environment, which a hosted scenario serves through a run-scoped, authenticated tool listener in front of its pinned simulator. Workflow semantics do not change: the definition still compiles to the same DAG, the operation URL and token are bound at run time, and environment administration, finalization and scoring stay on the trusted host. HTTP tool operations are not supported inside refinement.
 
 ## Validation boundaries
 

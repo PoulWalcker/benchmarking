@@ -1,15 +1,14 @@
 """Rubric scoring tests use fabricated run facts and never reach a model."""
 
 import ast
-from decimal import ROUND_HALF_UP, Decimal
 import asyncio
+from decimal import ROUND_HALF_UP, Decimal
 import inspect
 import math
 import unittest
 
 from sapi_config_lab.evaluate import task_evaluation
-from verification import rubric
-from verification import rubric_cards
+from verification import rubric, rubric_cards
 from verification.rubric import (
     Criterion,
     JudgeReply,
@@ -36,12 +35,8 @@ CARDED = {
 }
 
 
-# The published criteria of the 2026-10-05 checkout recovery run, as scored by the
-# original independent AutoWFBench judge. That run directory was never committed
-# and is archived outside the repository; nothing of it was extracted into
-# evidence/, so docs/CHECKOUT-EVALUATION.md records its 9.33/10 instead. Weights,
-# answers and the resulting total are upstream's; the evidence sources follow this
-# module's rule that no llm criterion reads protected verification.
+# The criteria of the 2026-10-05 checkout recovery run as the upstream judge scored them (9.33/10).
+# Evidence sources follow this module's rule that no llm criterion reads protected verification.
 CHECKOUT = RubricCard(
     id="production-checkout-recovery",
     version="1.0.0",
@@ -857,7 +852,7 @@ class UnscoredTests(unittest.TestCase):
         self.assertIsNone(document["score_0_10"])
         self.assertEqual(document["judge_error"], "Judge reported incomplete evidence")
         self.assertEqual(document["judge"]["mode"], "recorded")  # the reply is still attributable
-        self.assertIsNone([row for row in document["criteria"] if row["id"] == "usefulness"][0]["points"])
+        self.assertIsNone(next(row for row in document["criteria"] if row["id"] == "usefulness")["points"])
 
         partial = RecordedJudge({"usefulness": "yes", "honesty": "yes"})
         self.assertEqual(

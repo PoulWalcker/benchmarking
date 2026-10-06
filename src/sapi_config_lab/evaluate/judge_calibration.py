@@ -1,8 +1,6 @@
-"""Counterfactual judge controls built from an already recorded, trusted run.
+"""Counterfactual judge controls built from an already recorded, trusted run; no model call here.
 
-`calibration_fixture()` makes no model call: it swaps candidate prose in a
-recorded environment trace and does not claim a solver produced it.
-Expectations are frozen before judging and never change any official score.
+Expectations are frozen before judging and never change an official score.
 """
 
 from __future__ import annotations
@@ -12,15 +10,16 @@ import json
 from pathlib import Path
 
 from sapi_config_lab.evaluate.task_evaluation import Document, FrozenTaskContract, digest
-from sapi_config_lab.paths import workspace_root
+
+DEFINITIONS = Path(__file__).with_name("judge-calibration.json")
 
 
 def calibration_fixture(
     contract: FrozenTaskContract, base_run: Document, case_id: str, *, definitions: Path | None = None
 ) -> Document:
+    """Swap candidate prose into a recorded run; the result never claims a solver produced it."""
     contract.verify()
-    definition_path = definitions or workspace_root() / "generation/judge-calibration.json"
-    catalog = json.loads(definition_path.read_text())
+    catalog = json.loads((definitions or DEFINITIONS).read_text())
     if catalog.get("schema") != "sapi-lab-judge-calibration/v1":
         raise ValueError("Unsupported calibration schema")
     case = catalog["cases"][case_id]
@@ -37,11 +36,8 @@ def calibration_fixture(
     run = copy.deepcopy(base_run)
     run["run_id"] += "-calibration-" + case_id
     text = case["text"][task]
-    artifacts = (
-        [{"name": "incident-summary.md", "media_type": "text/markdown", "content": text}]
-        if task == "production-checkout-recovery"
-        else []
-    )
+    artifact = contract.artifact
+    artifacts = [{"name": artifact.name, "media_type": "text/markdown", "content": text}] if artifact else []
     run["submission"] = {
         "protocol_version": "1.0",
         "run_id": run["run_id"],

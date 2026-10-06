@@ -24,17 +24,13 @@ SOURCE_FILES = (
     "provenance/SapiensSpecNotation.hs",
     "provenance/spec-comparison.json",
     "provenance/spec-source.json",
+    "provenance/autowfbench-source.json",
 )
 SOURCE_SUFFIXES = {".py", ".js", ".mjs", ".yaml", ".yml", ".json", ".toml", ".md", ".sh", ".txt", ".hs"}
 
 
 def source_manifest(root: Path | None = None) -> dict[str, str]:
-    """Include newly added modules/data while excluding all local evidence.
-
-    The provenance directory is an explicit allowlist: environment.json and
-    later machine snapshots must never become public source fingerprints.
-    ``root`` supports testing the inventory against an isolated fixture tree.
-    """
+    """Hashes of every public source file; provenance/ is an allowlist, so machine snapshots never count."""
     root = root or workspace_root()
     files = {root / name for name in SOURCE_FILES}
     for directory in SOURCE_DIRECTORIES:

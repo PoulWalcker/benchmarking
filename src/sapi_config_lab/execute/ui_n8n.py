@@ -1,4 +1,4 @@
-"""Import new inactive UI copies through n8n's supported Docker CLI."""
+"""Import new inactive workflow copies into a local n8n container through its supported CLI."""
 
 from __future__ import annotations
 
@@ -14,9 +14,9 @@ def fingerprint(value: object) -> str:
 
 
 class DockerUi:
-    """No execution, credential access, or update operation is exposed here."""
+    """No execution, credential access or update operation is exposed here."""
 
-    def __init__(self, container: str = "n8n-n8n-1"):
+    def __init__(self, container: str):
         self.container = container
         identity = json.loads(self._command("inspect", "--format", "{{json .Id}}", container))
         if not isinstance(identity, str) or not identity:
@@ -27,9 +27,10 @@ class DockerUi:
     def _command(*arguments: str) -> str:
         result = subprocess.run(["docker", *arguments], capture_output=True, text=True, timeout=90)
         if result.returncode:
-            # Docker/n8n output can contain private configuration; keep it out of
-            # the ordinary UI error message.
-            raise ValueError("Docker/n8n command failed. Check that the local n8n container is running.")
+            # Docker/n8n output can contain private configuration; it stays out of the message.
+            raise ValueError(
+                "Docker/n8n command failed. Check that the local n8n container is running (SAPI_N8N_CONTAINER)."
+            )
         return result.stdout
 
     @contextmanager

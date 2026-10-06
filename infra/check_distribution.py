@@ -61,6 +61,7 @@ def main() -> int:
             "provenance/SapiensSpecNotation.hs",
             "provenance/spec-comparison.json",
             "provenance/spec-source.json",
+            "provenance/autowfbench-source.json",
             ".python-version",
             ".dockerignore",
             ".github/workflows/checks.yml",

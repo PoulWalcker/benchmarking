@@ -2,14 +2,14 @@
 
 import copy
 import json
+from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from pathlib import Path
 
 from sapi_config_lab import profile
 from sapi_config_lab.compile import n8n as compiler
-from sapi_config_lab.paths import workspace_root, CATALOG
+from sapi_config_lab.paths import CATALOG, workspace_root
 
 ROOT = workspace_root()
 
@@ -73,9 +73,8 @@ class LabTests(unittest.TestCase):
             ([{**valid, "amount_minor": 9007199254740991}, {**valid, "id": "B"}], "safe integer"),
         ]
         for invoices, message in cases:
-            with self.subTest(message=message):
-                with self.assertRaisesRegex(RuntimeError, message):
-                    self.run_config(0, {"invoices": invoices})
+            with self.subTest(message=message), self.assertRaisesRegex(RuntimeError, message):
+                self.run_config(0, {"invoices": invoices})
 
     def test_ticket_priority_boundary_and_skipped_branch(self):
         for days in (0, 2, 3, 100):

@@ -11,21 +11,21 @@ import time
 from urllib.parse import urlparse
 from urllib.request import Request
 
-from sapi_config_lab.paths import CATALOG
-from sapi_config_lab.net import urlopen
+from sapi_config_lab import profile
 from sapi_config_lab.contracts import Document
 from sapi_config_lab.evidence import digest, durable_json
-from sapi_config_lab import profile
+from sapi_config_lab.net import urlopen
+from sapi_config_lab.paths import CATALOG
+from sapi_config_lab.wrapper_audit import reported_model, reported_tokens, stderr_sha256, tool_markers
 
 
 class WrapperRebuilder:
-    """The controller reserves its global rebuild limit before calling this adapter.
+    """One outgoing request per fresh artifact directory; failed or unknown outcomes are never retried.
 
-    A fresh artifact directory admits exactly one outgoing request. Failed and
-    unknown outcomes are never retried or replaced with a prepared definition.
+    The lifecycle controller reserves its rebuild limit before calling this.
     """
 
-    def __init__(self, url: str, *, timeout_seconds: int = 185, expected_model: str = "gpt-6-astra"):
+    def __init__(self, url: str, *, timeout_seconds: int, expected_model: str):
         parsed = urlparse(url)
         profile.check(
             parsed.scheme in ("http", "https")
@@ -36,7 +36,7 @@ class WrapperRebuilder:
             and not parsed.fragment,
             "Invalid rebuilder URL",
         )
-        profile.check(type(timeout_seconds) is int and 0 < timeout_seconds <= 185, "Invalid rebuild timeout")
+        profile.check(type(timeout_seconds) is int and timeout_seconds > 0, "Invalid rebuild timeout")
         profile.check(re.fullmatch(r"[A-Za-z0-9_.-]+", expected_model) is not None, "Invalid expected model")
         self.url, self.timeout = url, timeout_seconds
         self.expected_model = expected_model
@@ -80,7 +80,7 @@ class WrapperRebuilder:
             "reserved_at": time.time(),
             "expected_model": self.expected_model,
         }
-        # Exclusive creation and fsync happen before the outgoing seam.
+        # Durably reserved before the outgoing request.
         audit_path = artifacts / "dispatch.json"
         with audit_path.open("x") as handle:
             handle.write(json.dumps(audit) + "\n")
@@ -106,28 +106,18 @@ class WrapperRebuilder:
             )
             stderr = wrapper.get("stderr", "")
             profile.check(isinstance(stderr, str), "Invalid wrapper stderr metadata")
-            model = re.search(r"(?m)^model:\s*([A-Za-z0-9_.-]+)\s*$", stderr)
-            tokens = re.search(r"(?m)^tokens used\s*\n([\d,]+)\s*$", stderr)
-            markers = bool(
-                re.search(
-                    r"(?mi)^(?:exec(?:\s|$)|tool\s+|file update|apply_patch|web search|searching the web|searched the web)",
-                    stderr,
-                )
-            )
+            model, markers = reported_model(stderr), bool(tool_markers(stderr))
             audit.update(
                 observed_tool_markers=markers,
-                stderr_sha256=hashlib.sha256(stderr.encode()).hexdigest(),
+                stderr_sha256=stderr_sha256(stderr),
                 response_sha256=hashlib.sha256(raw).hexdigest(),
                 wrapper_completions=1,
-                model=model.group(1) if model else None,
-                cli_reported_tokens=int(tokens.group(1).replace(",", "")) if tokens else None,
+                model=model,
+                cli_reported_tokens=reported_tokens(stderr),
                 provider_internal_retries="unknown",
                 tool_isolation="prompt restriction and stderr observation; not enforced by wrapper",
             )
-            profile.check(
-                model is not None and model.group(1) == self.expected_model,
-                "Rebuilder model identity differs or is missing",
-            )
+            profile.check(model == self.expected_model, "Rebuilder model identity differs or is missing")
             profile.check(not markers, "Rebuilder used an observed tool")
             answer = wrapper.get("output")
             profile.check(isinstance(answer, str) and 0 < len(answer) <= 100_000, "Invalid candidate output")

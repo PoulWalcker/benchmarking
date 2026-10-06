@@ -9,9 +9,7 @@ import json
 from pathlib import Path
 import time
 
-from sapi_config_lab.evidence import write_record_json
-from sapi_config_lab.paths import CATALOG
-from sapi_config_lab.coordinate.backend import default_backend
+from sapi_config_lab import profile
 from sapi_config_lab.contracts import (
     ArtifactTransform,
     CompileOptions,
@@ -21,7 +19,9 @@ from sapi_config_lab.contracts import (
     RunBinding,
     WorkflowBackend,
 )
-from sapi_config_lab import profile
+from sapi_config_lab.coordinate.backend import default_backend
+from sapi_config_lab.evidence import write_record_json
+from sapi_config_lab.paths import CATALOG
 
 
 def run_case(
@@ -38,17 +38,14 @@ def run_case(
     operation_url: str | None = None,
     operation_token: str | None = None,
 ) -> ExecutionRecord:
-    """Persist one run with engine execution and acceptance represented separately.
+    """Compile and execute one run and record it; acceptance stays `not_evaluated` for the verifier.
 
-    artifact_transform is a test seam for deliberate invalid-artifact probes.
-    No expected outputs are passed to a backend. Acceptance remains unevaluated
-    until the independent verifier explicitly records its decision.
+    artifact_transform deliberately corrupts the artifact for verifier probes.
     """
     selected = backend if backend is not None else default_backend()
     artifact_dir = Path(artifact_dir).resolve()
     artifact_dir.mkdir(parents=True, exist_ok=True)
     config = copy.deepcopy(config)
-    # A malformed binding is the caller's error, raised before anything is recorded.
     binding = RunBinding(deadline_at, admission, operation_token)
     started = time.monotonic()
     record: ExecutionRecord = {
@@ -107,7 +104,6 @@ def run_case(
             },
         }
     )
-    # Only the adapter can establish observed calls from engine evidence.
     record.setdefault(
         "llm",
         {

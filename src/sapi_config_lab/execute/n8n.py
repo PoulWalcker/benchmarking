@@ -3,23 +3,25 @@
 from __future__ import annotations
 
 import copy
+from functools import lru_cache
 import hashlib
 import json
 import os
-import re
 from pathlib import Path
+import re
 import sqlite3
 import subprocess
 import tempfile
 import time
-import uuid
 from typing import Any
-from functools import lru_cache
+import uuid
 
 from sapi_config_lab.contracts import CompiledWorkflow, ExecutionRecord, RunBinding
 from sapi_config_lab.evidence import canonical, write_record_json
 
 PINNED_N8N_VERSION = "2.41.5"
+# Only these reach n8n from the caller; workflow code can read its process environment.
+INHERITED_ENVIRONMENT = ("PATH", "HOME", "TMPDIR", "TZ", "LANG", "LC_ALL")
 
 
 def process(args, env, timeout):
@@ -43,7 +45,7 @@ def version():
 
 
 def parse_cli_execution(text):
-    """n8n rawOutput still has initialization/error log lines around its JSON."""
+    """The execution JSON inside n8n's rawOutput, which still carries log lines around it."""
     decoder = json.JSONDecoder()
     for i, char in enumerate(text):
         if char != "{":
@@ -133,7 +135,7 @@ def execute_compiled(compiled: CompiledWorkflow, artifact_dir: Path, binding: Ru
     write_record_json(artifact_dir / "mapping.json", compiled.mapping)
     record["workflow_sha256"] = hashlib.sha256((artifact_dir / "workflow.json").read_bytes()).hexdigest()
     with tempfile.TemporaryDirectory(prefix="sapi-lab-n8n-") as user_folder:
-        env = os.environ.copy()
+        env = {name: os.environ[name] for name in INHERITED_ENVIRONMENT if name in os.environ}
         env.update(
             {
                 "N8N_USER_FOLDER": user_folder,
@@ -152,7 +154,6 @@ def execute_compiled(compiled: CompiledWorkflow, artifact_dir: Path, binding: Ru
             }
         )
         env.update(bound)
-        # Force local SQLite even if the caller inherited database settings.
         env["DB_SQLITE_DATABASE"] = str(Path(user_folder) / "database.sqlite")
 
         def remaining(limit):
@@ -221,15 +222,13 @@ def execute_compiled(compiled: CompiledWorkflow, artifact_dir: Path, binding: Ru
             record["persisted_status"] = db_execution.get("status") if db_execution else None
             if not succeeded and not record["error"]:
                 record["error"] = {"category": "execution_error", "message": (stdout + stderr)[-4000:]}
-    # HTTP node executions count observed Agency requests, including failed ones.
-    # They do not prove how many paid provider calls the downstream wrapper made.
+    # Agency HTTP node executions count requests, not the provider calls the wrapper made.
     agency_nodes = {
         node["name"]
         for node in artifact["nodes"]
         if node["type"] == "n8n-nodes-base.httpRequest" and node["name"].split(" / ", 1)[-1].startswith("Agency ")
     }
-    # A failed/exhausted refinement has no accepted Result. Keep the last native
-    # checkpoint's history explicitly labeled as workflow-authored evidence.
+    # An exhausted refinement has no Result; keep the last checkpoint's workflow-authored history.
     checkpoints = sorted(
         (int(name.split()[1]), runs)
         for name, runs in record["run_data"].items()

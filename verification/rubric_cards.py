@@ -1,14 +1,4 @@
-"""Rubric cards for the lab scenarios, as Python literals.
-
-The task packager copies verification/*.py flat into a container; JSON data
-files and subdirectories are not copied, so these cards are code. They carry no
-scoring logic of their own and deliberately state no acceptance rule: a card
-only asks questions, weights them and names where it came from.
-
-No llm criterion here names the "verification" source: the protected narrative
-is not a judge's input, and rubric.py refuses a card that asks for it. No
-deterministic criterion names a source either, because its check answers it.
-"""
+"""Rubric cards as Python literals, since only verification/*.py is packaged; cards ask and weigh, never accept."""
 
 from __future__ import annotations
 
@@ -266,9 +256,7 @@ PRIORITY_SUPPORT_BRIEF = RubricCard(
     ),
 )
 
-# Deterministic throughout, and deliberately so. The only authored output of
-# ticket-routing is a two-field classification whose every value acceptance
-# pins exactly; a judged criterion over it could only restate a check.
+# Deterministic only: acceptance already pins every value of its two-field classification.
 TICKET_ROUTING = RubricCard(
     id="ticket-routing",
     version="1.0.0",
@@ -305,12 +293,7 @@ TICKET_ROUTING = RubricCard(
     ),
 )
 
-# Scenarios whose acceptance is already one independent pass/fail obligation keep
-# that behaviour exactly, through this same code path, as a ten-point check.
-#
-# Sealed, and built from a literal that nothing else holds a name for: a plain
-# dict let any in-process caller swap a scenario's card for its own and have
-# card_for() hand that one to every later run.
+# Pass/fail scenarios score as one ten-point check. Sealed, so no caller can swap a card for later runs.
 CARDS: Mapping[str, RubricCard] = MappingProxyType(
     {
         SUPPORT_REVIEW_PACKET.id: SUPPORT_REVIEW_PACKET,

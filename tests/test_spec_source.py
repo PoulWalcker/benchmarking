@@ -6,7 +6,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from infra.verify_spec_source import verify, compare
+from infra.verify_spec_source import compare, verify
 
 
 class SpecSourceTests(unittest.TestCase):

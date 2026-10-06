@@ -5,8 +5,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab import profile
+from sapi_config_lab.paths import CATALOG, workspace_root
 
 
 class ProfileValidationTests(unittest.TestCase):

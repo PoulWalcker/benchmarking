@@ -1,4 +1,4 @@
-"""Trusted container step for simulator scenarios: admit a submission, or run it once against the host's simulator."""
+"""Trusted container step for hosted scenarios: admit a submission, or run it once against the host's environment."""
 
 import argparse
 import hashlib
@@ -10,7 +10,7 @@ from sapi_config_lab.contracts import CompileOptions
 from sapi_config_lab.coordinate.backend import default_backend
 from sapi_config_lab.coordinate.cases import run_case
 from sapi_config_lab.evidence import write_json, write_record_json
-from sapi_config_lab.profile import read, read_bindings
+from sapi_config_lab.profile import Invalid, Unsupported, check, read, read_bindings
 
 SUBMISSION = Path("/app/submission/config.yaml")
 TESTS = Path("/tests")
@@ -32,18 +32,17 @@ def admit(limits: dict) -> dict:
     }
     try:
         config = read(SUBMISSION)
-        llm_steps = sum(step["kind"] == "LLM" for step in config["workflow"]["steps"])
-        if llm_steps > limits["runtime_model_calls"]:
-            raise ValueError("Runtime cap exceeded")
-        if config["execution"]["deadline_seconds"] != limits["deadline_seconds"]:
-            raise ValueError("Original deadline required")
+        # Compiling validates the definition; placeholder URLs compile, the host supplies real ones at run time.
         default_backend().compile(
             config,
             read_bindings(TESTS / "bindings.yaml"),
             CompileOptions(llm_mode="live", bridge_url="http://localhost:1", operation_url="http://localhost:2/tools"),
         )
+        llm_steps = sum(step["kind"] == "LLM" for step in config["workflow"]["steps"])
+        check(llm_steps <= limits["runtime_model_calls"], "Runtime cap exceeded")
+        check(config["execution"]["deadline_seconds"] == limits["deadline_seconds"], "Original deadline required")
         report["passed"] = True
-    except Exception as error:
+    except (Invalid, Unsupported, OSError, UnicodeDecodeError) as error:
         report["error_type"] = type(error).__name__
         report["error"] = str(error)
     return report
@@ -74,7 +73,7 @@ def run() -> dict:
                 operation_token=admitted["operation_token"],
                 deadline_at=admitted["deadline_at"],
             )
-        except Exception as error:
+        except Exception as error:  # Whatever happens, /finish must freeze the environment
             record = {"status": "error", "output": None, "error": {"type": type(error).__name__}}
     else:
         record = {"status": "missing_submission", "output": None}
@@ -93,7 +92,7 @@ def main(argv: list[str] | None = None) -> int:
     if action == "admit":
         (LOGS / "reward.txt").write_text(("1" if report["passed"] else "0") + "\n")
     elif (report["result"]["quality"] or {}).get("normalized_reward") is not None:
-        # An unscored trial has no reward file: not evaluated is not zero.
+        # Not evaluated is not zero: an unscored trial writes no reward file.
         (LOGS / "reward.txt").write_text(str(report["result"]["quality"]["normalized_reward"]) + "\n")
     return 0
 

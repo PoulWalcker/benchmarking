@@ -1,51 +1,68 @@
-"""The benchmark scenarios, discovered from benchmarks/NN-<scenario>/.
-
-A scenario is a task, the environment it runs in and the evaluator that judges
-it. Every directory holds `scenario.json`, the reference `config.yaml` and the
-container `instruction.md`. A local task adds the public `task.md` and the
-evaluator-only `cases.json`; an imported task names its pinned upstream
-challenge and adds `authoring-notes.md` and its own `bindings.yaml`.
-The number prefix fixes the order within a group.
-Registration never extends workflow semantics.
-"""
+"""The benchmark registry: every scenario is benchmarks/NN-<name>/scenario.json plus its files."""
 
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import json
 from pathlib import Path
+from typing import Any
 
+from sapi_config_lab.contracts import OutputArtifact
 from sapi_config_lab.paths import CATALOG, workspace_root
 
-GROUPS = ("baseline", "extension", "lifecycle", "expansion", "imported")
-# environment -> the evaluator it is judged by
-ENVIRONMENTS = {"fixtures": "verifier", "simulator": "upstream"}
+# environment -> the evaluator that judges it
+EVALUATORS = {"fixtures": "verifier", "simulator": "upstream"}
+FIELDS = {
+    "environment",
+    "evaluator",
+    "default",
+    "provenance",
+    "workflow_id",
+    "bindings",
+    "budgets",
+    "output",
+    "controls",
+    "prompt_extension",
+    "fresh_fixtures",
+    "human_review",
+}
+
+
+@dataclass(frozen=True)
+class Provenance:
+    """Where an imported task comes from: a pinned source under provenance/ and its challenge."""
+
+    source: str
+    challenge: str
 
 
 @dataclass(frozen=True)
 class Scenario:
     name: str
     directory: Path
-    group: str
-    prompt_extension: str | None = None
-    fixture_overlay: str | None = None
-    human_review: bool = False
-    environment: str = "fixtures"
-    evaluator: str = "verifier"
+    environment: str
+    evaluator: str
+    default: bool = False
+    provenance: Provenance | None = None
+    workflow_id: str | None = None
     bindings: Path = CATALOG
-    task_source: dict = field(default_factory=lambda: {"source": "local"})
-    budgets: dict = field(default_factory=dict)
-    output: dict = field(default_factory=dict)
-    controls: dict = field(default_factory=dict)
+    authoring_attempts: int | None = None
+    runtime_model_calls: int | None = None
+    artifact: OutputArtifact | None = None
+    reference_reward: float | None = None
+    prompt_extension: str | None = None
+    fresh_fixtures: bool = False
+    human_review: bool = False
 
     @property
     def config(self) -> Path:
         return self.directory / "config.yaml"
 
     @property
-    def imported(self) -> bool:
-        return self.task_source["source"] != "local"
+    def hosted(self) -> bool:
+        """The host serves this scenario's environment and evaluator for each trial."""
+        return self.environment == "simulator"
 
     def task(self) -> str:
         """The public task text exactly as models receive it (no trailing newline)."""
@@ -61,48 +78,63 @@ class Scenario:
         return json.loads((self.directory / "cases.json").read_text())
 
 
+def load_scenario(directory: Path) -> Scenario:
+    meta: dict[str, Any] = json.loads((directory / "scenario.json").read_text())
+    environment = str(meta.get("environment"))
+    budgets, output, controls = meta.get("budgets", {}), meta.get("output"), meta.get("controls", {})
+    provenance = meta.get("provenance")
+    if (
+        set(meta) - FIELDS
+        or EVALUATORS.get(environment) != meta.get("evaluator")
+        or set(budgets) - {"authoring_attempts", "runtime_model_calls"}
+        or set(controls) - {"reference_reward"}
+        or (environment == "simulator")
+        != bool(provenance and "workflow_id" in meta and "runtime_model_calls" in budgets)
+    ):
+        raise ValueError(f"Invalid benchmark definition: {directory.name}")
+    return Scenario(
+        name=directory.name.split("-", 1)[1],
+        directory=directory,
+        environment=environment,
+        evaluator=meta["evaluator"],
+        default=meta.get("default", False),
+        provenance=Provenance(**provenance) if provenance else None,
+        workflow_id=meta.get("workflow_id"),
+        bindings=directory / meta["bindings"] if "bindings" in meta else CATALOG,
+        authoring_attempts=budgets.get("authoring_attempts"),
+        runtime_model_calls=budgets.get("runtime_model_calls"),
+        artifact=OutputArtifact(output["artifact_field"], output["artifact_name"]) if output else None,
+        reference_reward=controls.get("reference_reward"),
+        prompt_extension=meta.get("prompt_extension"),
+        fresh_fixtures=meta.get("fresh_fixtures", False),
+        human_review=meta.get("human_review", False),
+    )
+
+
 def _discover() -> dict[str, Scenario]:
-    found = {}
+    found: dict[str, Scenario] = {}
     for directory in sorted((workspace_root() / "benchmarks").iterdir()):
-        if not (directory / "scenario.json").is_file():
-            continue
-        meta = json.loads((directory / "scenario.json").read_text())
-        name = directory.name.split("-", 1)[1]
-        environment = meta.get("environment", "fixtures")
-        if (
-            name in found
-            or meta.get("group") not in GROUPS
-            or ENVIRONMENTS.get(environment) != meta.get("evaluator", "verifier")
-            or (environment == "simulator") != ("task" in meta)
-        ):
-            raise ValueError(f"Invalid benchmark definition: {directory.name}")
-        found[name] = Scenario(
-            name,
-            directory,
-            meta["group"],
-            meta.get("prompt_extension"),
-            meta.get("fixture_overlay"),
-            meta.get("human_review", False),
-            environment,
-            ENVIRONMENTS[environment],
-            directory / meta["bindings"] if "bindings" in meta else CATALOG,
-            meta.get("task", {"source": "local"}),
-            meta.get("budgets", {}),
-            meta.get("output", {}),
-            meta.get("controls", {}),
-        )
+        if (directory / "scenario.json").is_file():
+            scenario = load_scenario(directory)
+            if scenario.name in found:
+                raise ValueError(f"Duplicate benchmark name: {scenario.name}")
+            found[scenario.name] = scenario
     return found
 
 
 SCENARIOS = _discover()
-BASELINE_SCENARIOS = {name: s for name, s in SCENARIOS.items() if s.group == "baseline"}
+DEFAULT_SCENARIOS = {name: s for name, s in SCENARIOS.items() if s.default}
 
 
 def select_scenarios(names: Iterable[str] | None = None) -> dict[str, Scenario]:
-    selected = tuple(BASELINE_SCENARIOS if names is None else names)
+    selected = tuple(DEFAULT_SCENARIOS if names is None else names)
     if not selected or len(set(selected)) != len(selected) or any(name not in SCENARIOS for name in selected):
         raise ValueError("Unknown, duplicate, or empty scenario selection")
     return {name: SCENARIOS[name] for name in selected}
+
+
+def scenario_for_challenge(challenge: str) -> Scenario:
+    return next(s for s in SCENARIOS.values() if s.provenance and s.provenance.challenge == challenge)
 
 
 def all_cases() -> dict[str, dict]:

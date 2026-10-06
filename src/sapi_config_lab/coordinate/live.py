@@ -6,7 +6,8 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 from contextlib import ExitStack
-from datetime import datetime, timezone
+from dataclasses import replace
+from datetime import UTC, datetime
 import json
 from pathlib import Path
 import shutil
@@ -20,14 +21,15 @@ from sapi_config_lab.coordinate.live_evidence import case_budget, collect_native
 from sapi_config_lab.coordinate.replay import load_selection, read_json, require
 from sapi_config_lab.coordinate.runs import Hosting, Run, run_experiment
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
+from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
 from sapi_config_lab.evidence import sha256
-from sapi_config_lab.execute.agency import WRAPPER_MODEL, WRAPPER_UPSTREAM, strict_json
-from sapi_config_lab.execute.host import LAB_IMAGE
+from sapi_config_lab.execute.agency import strict_json
+from sapi_config_lab.execute.host import LAB_IMAGE, HostConfig
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import read
 
 ROOT = workspace_root()
-CASE_SECONDS = 600
+LIVE_CASE_TIMEOUT_SECONDS = 600
 
 
 def validate_control(path: Path, current: dict[str, str], identity: str) -> dict:
@@ -54,32 +56,9 @@ def validate_control(path: Path, current: dict[str, str], identity: str) -> dict
     return gate
 
 
-def wrapper_identity(path: Path, endpoint: str) -> dict:
-    evidence = read_json(path)
-    require(
-        evidence.get("schema") == "sapi-lab-wrapper-identity/v1" and evidence.get("endpoint") == endpoint,
-        "Wrapper identity endpoint mismatch",
-    )
-    require(
-        evidence.get("dispatch") == "codex-exec"
-        and evidence.get("response_substitution") is False
-        and evidence.get("wrapper_retries") == 0
-        and evidence.get("model") == WRAPPER_MODEL,
-        "Wrapper dispatch inspection is missing or incompatible",
-    )
-    require(
-        evidence.get("provider_internal_retries") in ("unknown", "none", "observed"),
-        "Missing lower-layer retry limitation",
-    )
-    files = evidence.get("files")
-    require(isinstance(files, list) and len(files) >= 1, "Missing private wrapper source identity")
-    require(len({row["path"] for row in files}) == len(files), "Duplicate wrapper source identity")
-    for row in files:
-        require(sha256(Path(row["path"])) == row["sha256"], "Wrapper/config identity changed")
-    return evidence
-
-
 def validate_packages(path: Path, submissions: dict, image: str):
+    templates = ROOT / "harbor/templates"
+    timeouts = tomllib.loads((templates / "task.toml").read_text())
     for scenario, selected in submissions.items():
         task = path / scenario
         require(sha256(task / "environment/base.yaml") == selected["sha256"], "Staged submission hash mismatch")
@@ -87,7 +66,7 @@ def validate_packages(path: Path, submissions: dict, image: str):
             require(sha256(task / "tests/cases.json") == selected["cases_sha256"], "Staged fixture hash mismatch")
         settings = tomllib.loads((task / "task.toml").read_text())
         require(
-            settings["agent"]["timeout_sec"] == 600 and settings["verifier"]["timeout_sec"] == 1800,
+            settings["agent"] == timeouts["agent"] and settings["verifier"] == timeouts["verifier"],
             "Staged Harbor timeouts changed",
         )
         require(
@@ -95,22 +74,22 @@ def validate_packages(path: Path, submissions: dict, image: str):
             "Task image differs from frozen image",
         )
         require(
-            (task / "solution/solve.sh").read_bytes() == (ROOT / "harbor/templates/solve.sh").read_bytes(),
+            (task / "solution/solve.sh").read_bytes() == (templates / "solve.sh").read_bytes(),
             "Copying agent was changed",
         )
 
 
-def simulator_grant(scenario: str, config: dict) -> dict:
-    """A grant for exactly the model calls a simulator submission's LLM steps may make."""
+def hosted_grant(scenario: str, config: dict) -> dict:
+    """A grant for exactly the model calls a hosted submission's LLM steps may make."""
     workflow = config["workflow"]
     calls = {
         f"{workflow['id']}/r{workflow['revision']}/{step['id']}": step["uses"]
         for step in workflow["steps"]
         if step["kind"] == "LLM"
     }
-    require(len(calls) <= SCENARIOS[scenario].budgets["runtime_model_calls"], "Runtime model cap exceeded")
-    operations = dict(Counter(calls.values()))
-    return {"max_attempts": len(calls), "operations": operations, "model": WRAPPER_MODEL, "occurrences": calls}
+    cap = SCENARIOS[scenario].runtime_model_calls
+    require(cap is not None and len(calls) <= cap, "Runtime model cap exceeded")
+    return {"max_attempts": len(calls), "operations": dict(Counter(calls.values())), "occurrences": calls}
 
 
 def check_trials(trials: list[dict], submissions: dict, *, mode: str, expected_cases: dict | None = None) -> None:
@@ -175,7 +154,25 @@ def failure_category(trials: list[dict], audit: list[dict], default: str) -> str
     return default
 
 
+def cohort_grants(submissions: dict, judged: tuple[str, ...]) -> dict[tuple[str, str], tuple[dict, dict]]:
+    """(scenario, case) -> (grant, config): one grant per verifier live case, one per hosted run."""
+    grants = {}
+    for scenario, submission in submissions.items():
+        if scenario in judged:
+            config = read(Path(submission["path"]))
+            grants[scenario, "run"] = (hosted_grant(scenario, config), config)
+            continue
+        for name in live_cohort(scenario, submission):
+            config = read(Path(submission["path"]))
+            config["workflow"]["inputs"] = next(
+                case["inputs"] for case in submission["cases"]["positive"] if case["name"] == name
+            )
+            grants[scenario, name] = (case_budget(scenario, name, config, submission["cases"]), config)
+    return grants
+
+
 def main(argv: list[str] | None = None) -> int:
+    host = HostConfig.from_environment()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stub-report", type=Path, required=True, help="A passing control report for this image")
     parser.add_argument("--submissions-manifest", type=Path, help="From `sapi-lab select`; default: reference configs")
@@ -183,9 +180,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-calls", type=int, required=True, help="Aggregate model-call ceiling for this run")
     parser.add_argument("--report-dir", type=Path)
     parser.add_argument("--preflight-only", action="store_true")
-    parser.add_argument("--wrapper-evidence", type=Path)
-    parser.add_argument("--upstream", default=WRAPPER_UPSTREAM)
-    parser.add_argument("--bridge-port", type=int, default=18765)
+    parser.add_argument("--wrapper-evidence", type=Path, help="The inspected wrapper identity record")
+    parser.add_argument(
+        "--wrapper-file", action="append", help="NAME=PATH: where an inspected wrapper file is on this machine"
+    )
+    parser.add_argument("--upstream", default=host.wrapper_url, help="Model wrapper URL (SAPI_WRAPPER_URL)")
+    parser.add_argument("--bridge-port", type=int, default=host.bridge_port, help="(SAPI_BRIDGE_PORT)")
     parser.add_argument("--series-dir", type=Path, help="Reserve in a ledger shared with other runs")
     parser.add_argument("--series-ceiling", action="append", help="PHASE=N, fixed when a series ledger is created")
     parser.add_argument("--stop-after-failure", action="store_true", help="A failed case blocks later reservations")
@@ -197,10 +197,12 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("Live dispatch requires --wrapper-evidence")
     try:
         series_ceilings = parse_ceilings(args.series_ceiling)
+        wrapper_files = parse_wrapper_files(args.wrapper_file)
         reference = select_scenarios(args.scenario) if not args.submissions_manifest else {}
     except ValueError as error:
         parser.error(str(error))
-    output = args.report_dir or ROOT / "reports" / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-live")
+    host = replace(host, wrapper_url=args.upstream, bridge_port=args.bridge_port)
+    output = args.report_dir or ROOT / "reports" / (datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-live")
     report: dict[str, Any] = {
         "schema": "sapi-lab-live/v3",
         "mode": "preflight" if args.preflight_only else "live",
@@ -239,20 +241,9 @@ def main(argv: list[str] | None = None) -> int:
         require(set(scenarios) <= controlled, "The control report does not cover every scenario")
         judged = tuple(s for s in scenarios if SCENARIOS[s].evaluator == "upstream")
         require(not judged or args.preflight_only or args.judge_model, "Upstream evaluation needs --judge-model")
-        grants = {}
-        for scenario, submission in submissions.items():
-            if scenario in judged:
-                config = read(Path(submission["path"]))
-                grants[scenario, "run"] = (simulator_grant(scenario, config), config)
-                continue
-            for name in live_cohort(scenario, submission):
-                config = read(Path(submission["path"]))
-                config["workflow"]["inputs"] = next(
-                    case["inputs"] for case in submission["cases"]["positive"] if case["name"] == name
-                )
-                grants[scenario, name] = (case_budget(scenario, name, config, submission["cases"]), config)
+        grants = cohort_grants(submissions, judged)
         report["budget"]["cases"] = {f"{s}/{c}": grant["max_attempts"] for (s, c), (grant, _) in grants.items()}
-        report["budget"]["judge"] = {s: 1 for s in judged}
+        report["budget"]["judge"] = dict.fromkeys(judged, 1)
         needed = sum(report["budget"]["cases"].values()) + len(judged)
         require(
             needed <= args.max_calls,
@@ -263,7 +254,10 @@ def main(argv: list[str] | None = None) -> int:
         ledger = open_ledger(run.output, args.series_dir, ceilings, args.stop_after_failure, series_ceilings)
         report["ledger"] = str(ledger.path)
         if args.wrapper_evidence:
-            report["wrapper_identity"] = wrapper_identity(args.wrapper_evidence, args.upstream)
+            report["wrapper_identity"] = wrapper_identity(
+                args.wrapper_evidence, host.wrapper_url, host.wrapper_model, wrapper_files
+            )
+            report["wrapper_files_relocated"] = sorted(wrapper_files)
             shutil.copyfile(args.wrapper_evidence, run.output / "wrapper-identity.json")
             run.pin("wrapper identity", args.wrapper_evidence)
         run.stage(
@@ -292,10 +286,10 @@ def main(argv: list[str] | None = None) -> int:
         report["not_run"] = list(report["budget"]["cases"])
         report["judge_model"] = args.judge_model
         report_path = run.output / "report.json"
-        bridge_url = f"http://host.docker.internal:{args.bridge_port}"
+        bridge_url = f"http://{host.container_host}:{host.bridge_port}"
         for (scenario, name), (grant, config) in grants.items():
             run.check(f"before-{scenario}-{name}")
-            budget = {**grant, "expires_at": time.time() + CASE_SECONDS}
+            budget = {**grant, "model": host.wrapper_model, "expires_at": time.time() + LIVE_CASE_TIMEOUT_SECONDS}
             upper_bound = "refinement" in config["execution"]
             label = f"{scenario}-{name}"
             hosting = None
@@ -322,12 +316,7 @@ def main(argv: list[str] | None = None) -> int:
                     contract = contract_for(SCENARIOS[scenario], args.judge_model)
                     hosting = Hosting("live", upstream_evaluate({scenario: contract}), bridge_url)
                 with run.bridge(
-                    args.bridge_port,
-                    args.upstream,
-                    budget,
-                    label,
-                    bindings=SCENARIOS[scenario].bindings,
-                    reject_tool_use=scenario in judged,
+                    budget, label, bindings=SCENARIOS[scenario].bindings, reject_tool_use=scenario in judged
                 ) as audit:
                     exit_code, trials = run.harbor(
                         "live-" + label,
@@ -347,8 +336,8 @@ def main(argv: list[str] | None = None) -> int:
                     require(calls <= grant["max_attempts"], "Unexpected call count")
                 else:
                     check_trials(trials, submissions, mode="live", expected_cases={scenario: {name}})
-                    native = collect_native(trials, submissions, {scenario: {name}})
-                    correlation = reconcile_dispatches(native, records, grant["model"])
+                    native = collect_native(trials, submissions, {scenario: {name}}, bridge_url)
+                    correlation = reconcile_dispatches(native, records, budget["model"])
                     calls, cap = len(correlation), grant["max_attempts"]
                     require(
                         calls <= cap and (calls >= min(1, cap) if upper_bound else calls == cap),
@@ -371,7 +360,7 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     try:
-        run_experiment(output, report, body, prefix="sapi-lab-live", classify=classify)
+        run_experiment(output, report, body, prefix="sapi-lab-live", classify=classify, host=host)
     except ValueError as error:
         parser.error(str(error))
     print(json.dumps({"status": report["status"], "report": str(Path(output).resolve() / "report.json")}), flush=True)

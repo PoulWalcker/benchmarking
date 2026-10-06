@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Callable
 from datetime import datetime
 import json
 import os
 from pathlib import Path
 import shutil
-from typing import Callable
 
 from sapi_config_lab.contracts import ArtifactTransform, Document, ExecutionRecord
 from sapi_config_lab.coordinate.cases import run_case
@@ -83,8 +83,7 @@ def observe(
                 _lifecycle(entry, directory, backend)
             else:
                 _case(entry, directory, plan["mode"], bridge_url, runner)
-        except Exception as error:
-            # An engine or controller failure is evidence too; acceptance decides.
+        except Exception as error:  # A failed entry is evidence too; acceptance decides
             row["error"] = f"{type(error).__name__}: {error}"
         row["files"] = recorded_files(directory) if directory.is_dir() else {}
         manifest["entries"].append(row)

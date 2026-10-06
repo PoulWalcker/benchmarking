@@ -1,8 +1,7 @@
-"""One evaluation role with two evaluators: the independent verifier and the pinned upstream evaluator.
+"""One result shape over two evaluators, the independent verifier and the pinned upstream scorer.
 
-Both read recorded evidence and report the same three facts, without sharing
-scoring semantics: execution (the engine reached a terminal result), acceptance
-(the evaluator's binary verdict) and quality (an optional score; null is never zero).
+Both read recorded evidence and report execution, acceptance and an optional
+quality score (null is never zero); they share no scoring semantics.
 """
 
 from __future__ import annotations
@@ -13,9 +12,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from sapi_config_lab.autowfbench_source import default_source
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
-from sapi_config_lab.coordinate.scenarios import SCENARIOS, Scenario
+from sapi_config_lab.coordinate.scenarios import SCENARIOS, Scenario, scenario_for_challenge
 from sapi_config_lab.evaluate.judge_calibration import calibration_fixture, compare_calibration
 from sapi_config_lab.evaluate.task_evaluation import (
     FrozenTaskContract,
@@ -24,6 +22,7 @@ from sapi_config_lab.evaluate.task_evaluation import (
     recorded_run_log,
 )
 from sapi_config_lab.evidence import write_json
+from sapi_config_lab.pinned_source import pinned_source
 
 UPSTREAM_REPORT = "sapi-lab-upstream-acceptance/v1"
 ADMISSION_REPORT = "sapi-lab-admission/v1"
@@ -32,11 +31,14 @@ NOT_EVALUATED: dict[str, Any] = {"execution": None, "acceptance": None, "quality
 
 def contract_for(scenario: Scenario, judge_model: str | None = None) -> FrozenTaskContract:
     """The frozen upstream task, rubric and judge identity; the simulated judge unless a model is named."""
+    if scenario.provenance is None:
+        raise ValueError(f"{scenario.name} has no pinned upstream task")
     return freeze_contract(
-        default_source(),
-        scenario.task_source["challenge"],
+        pinned_source(scenario.provenance.source),
+        scenario.provenance.challenge,
         judge_model=judge_model,
         judge_mode="codex" if judge_model else "demo",
+        artifact=scenario.artifact,
     )
 
 
@@ -50,7 +52,7 @@ def verifier_result(report: dict | None, rubric: dict | None) -> dict:
     if not report:
         return dict(NOT_EVALUATED)
     executed = [
-        row.get("execution", {}).get("succeeded") for row in report.get("cases", []) if row["kind"] == "positive"
+        row.get("execution", {}).get("succeeded") for row in report.get("cases", []) if row.get("kind") == "positive"
     ]
     return {
         "execution": all(value is True for value in executed) if executed else None,
@@ -94,7 +96,7 @@ def control_passed(agent: str, trial: dict) -> bool:
         result = trial["result"]
         if agent == "nop":
             return result["acceptance"] is False and (result["quality"] or {}).get("normalized_reward") is None
-        expected = scenario.controls.get("reference_reward")
+        expected = scenario.reference_reward
         return (
             trial_accepted(trial)
             and result["quality"]["status"] == "complete"
@@ -134,7 +136,7 @@ def upstream_evaluate(contracts: dict[str, FrozenTaskContract]) -> Callable[[str
 
 def reevaluate_upstream(record: Path, output: Path, args: argparse.Namespace) -> dict:
     trial = json.loads((record / "evidence/trial.json").read_text())
-    scenario = next(s for s in SCENARIOS.values() if s.task_source.get("challenge") == trial["challenge"])
+    scenario = scenario_for_challenge(trial["challenge"])
     recorded = json.loads((record / "evaluation/task-contract.json").read_text())
     if args.calibration:
         contract = contract_for(scenario, args.judge_model)

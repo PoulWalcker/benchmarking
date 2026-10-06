@@ -1,8 +1,4 @@
-"""Task obligations stated independently of submitted YAML or runtime output.
-
-Role names are verifier vocabulary only. Authors can use any unambiguous step IDs
-and list order; the generic binder checks operation, source, graph and output.
-"""
+"""Role contracts stated independently of submitted YAML; authors may use any unambiguous step IDs."""
 
 from typing import Any
 
@@ -119,8 +115,14 @@ CONTRACTS: dict[str, dict[str, Any]] = {
                 },
             ),
         },
-        "edges": ROUTING_EDGES
-        + [("validate", "total"), ("total", "report"), ("select", "draft"), ("report", "draft"), ("draft", "check")],
+        "edges": [
+            *ROUTING_EDGES,
+            ("validate", "total"),
+            ("total", "report"),
+            ("select", "draft"),
+            ("report", "draft"),
+            ("draft", "check"),
+        ],
         "output": {
             "action": ref("steps.select"),
             "invoice_report": ref("steps.report"),
@@ -173,8 +175,8 @@ CONTRACTS: dict[str, dict[str, Any]] = {
                 when={"ref": "steps.classify.priority", "eq": "high"},
             ),
         },
-        "edges": ROUTING_EDGES
-        + [
+        "edges": [
+            *ROUTING_EDGES,
             ("select", "product"),
             ("select", "marketing"),
             ("product", "combine"),

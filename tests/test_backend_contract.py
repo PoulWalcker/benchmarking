@@ -9,12 +9,12 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.coordinate import cli
-from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.contracts import CompiledWorkflow, CompileOptions
-from sapi_config_lab.coordinate.cases import run_case
-from sapi_config_lab.coordinate.backend import N8nBackend
 from sapi_config_lab import profile
+from sapi_config_lab.contracts import CompiledWorkflow, CompileOptions
+from sapi_config_lab.coordinate import cli
+from sapi_config_lab.coordinate.backend import N8nBackend
+from sapi_config_lab.coordinate.cases import run_case
+from sapi_config_lab.paths import workspace_root
 
 
 class RecordingBackend:

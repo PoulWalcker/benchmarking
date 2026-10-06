@@ -1,12 +1,11 @@
 {
-  "group": "imported",
-  "task": {
+  "provenance": {
     "source": "autowfbench",
-    "challenge": "production-checkout-recovery",
-    "workflow_id": "checkout-workflow"
+    "challenge": "production-checkout-recovery"
   },
   "environment": "simulator",
   "evaluator": "upstream",
+  "workflow_id": "checkout-workflow",
   "bindings": "bindings.yaml",
   "budgets": {
     "authoring_attempts": 2,

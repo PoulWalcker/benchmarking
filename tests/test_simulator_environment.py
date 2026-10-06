@@ -1,9 +1,7 @@
-"""Pinned-source integrity and actual local upstream simulator controls; no models."""
+"""Pinned-source integrity and the real upstream simulator behind the hosted tool listener; no models."""
 
 import hashlib
-import importlib.util
 import json
-import os
 from pathlib import Path
 import shutil
 import tempfile
@@ -12,16 +10,13 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from sapi_config_lab.autowfbench_source import PINNED_REVISION, fetch_source, verify_source
-from sapi_config_lab.execute.autowfbench import start_environment
-from sapi_config_lab.execute import autowfbench
+from sapi_config_lab.execute import simulator
+from sapi_config_lab.execute.simulator import start_environment
+from sapi_config_lab.pinned_source import PinnedSource, fetch_source
 from tests.support.checkout_controls import CHECKOUT_INCOMPLETE_ACTIONS, CHECKOUT_ORACLE_ACTIONS
+from tests.support.pinned import AVAILABLE, SOURCE
 
-SOURCE = Path(
-    os.environ.get("SAPI_AUTOWFBENCH_SOURCE", Path(__file__).parents[1] / ".cache/autowfbench" / PINNED_REVISION)
-)
-# The simulator runs on this interpreter, so its own imports must resolve here too.
-AVAILABLE = (SOURCE / "autowfbench/__main__.py").is_file() and importlib.util.find_spec("fastjsonschema") is not None
+REVISION = "0123456789abcdef0123456789abcdef01234567"
 
 
 def post(connection, path, request, *, token=None):
@@ -51,14 +46,12 @@ class SourceCacheTests(unittest.TestCase):
                 {
                     "schema": "sapi-lab-upstream-source/v1",
                     "repository": "https://github.com/aleski-green/AutoWFBench",
-                    "revision": PINNED_REVISION,
+                    "revision": REVISION,
                     "files": {"module.py": hashlib.sha256(self.content).hexdigest()},
                 }
             )
         )
-        self.patcher = patch("sapi_config_lab.autowfbench_source.MANIFEST", self.manifest)
-        self.patcher.start()
-        self.addCleanup(self.patcher.stop)
+        self.source = PinnedSource(self.manifest, self.root / "cache" / REVISION)
 
     def test_explicit_fetch_is_pinned_atomic_and_reused_offline(self):
         calls = []
@@ -67,38 +60,38 @@ class SourceCacheTests(unittest.TestCase):
             calls.append(url)
             return self.content
 
-        source = fetch_source(self.root / "cache", fetch=download)
-        self.assertEqual(source.name, PINNED_REVISION)
-        self.assertTrue(verify_source(source)["verified"])
-        self.assertEqual(fetch_source(self.root / "cache", fetch=download), source)
+        source = fetch_source(self.source, fetch=download)
+        self.assertEqual(source.name, REVISION)
+        self.assertTrue(self.source.verify()["verified"])
+        self.assertEqual(fetch_source(self.source, fetch=download), source)
         self.assertEqual(len(calls), 1)
-        self.assertIn(f"/{PINNED_REVISION}/module.py", calls[0])
+        self.assertEqual(f"https://raw.githubusercontent.com/aleski-green/AutoWFBench/{REVISION}/module.py", calls[0])
         (source / "module.py").write_text("tampered")
         with self.assertRaisesRegex(ValueError, "hash mismatch"):
-            fetch_source(self.root / "cache", fetch=download)
+            fetch_source(self.source, fetch=download)
         self.assertEqual(len(calls), 1)
         self.assertEqual((source / "module.py").read_text(), "tampered")
 
     def test_failed_download_never_publishes_partial_cache(self):
         with self.assertRaisesRegex(ValueError, "hash mismatch"):
-            fetch_source(self.root / "cache", fetch=lambda url: b"incorrect")
+            fetch_source(self.source, fetch=lambda url: b"incorrect")
         self.assertEqual(list((self.root / "cache").iterdir()), [])
 
     def test_import_shadow_and_symlink_sources_are_rejected(self):
-        source = fetch_source(self.root / "cache", fetch=lambda url: self.content)
+        source = fetch_source(self.source, fetch=lambda url: self.content)
         (source / "json.py").write_text("untrusted import")
         with self.assertRaisesRegex(ValueError, "Unexpected files"):
-            verify_source(source)
+            self.source.verify()
         (source / "json.py").unlink()
         (source / "module.py").unlink()
         outside = self.root / "outside.py"
         outside.write_bytes(self.content)
         (source / "module.py").symlink_to(outside)
         with self.assertRaisesRegex(ValueError, "unsafe"):
-            verify_source(source)
+            self.source.verify()
 
 
-@unittest.skipUnless(AVAILABLE, "Requires the pinned AutoWFBench source cache and the benchmark extra")
+@unittest.skipUnless(AVAILABLE, "Requires the pinned upstream source cache and the benchmark extra")
 class OriginalEnvironmentTests(unittest.TestCase):
     def test_crm_original_case_passes_with_explicit_bounded_transient_retry(self):
         with start_environment(SOURCE, "crm-lead-qualification", seed=2) as session:
@@ -164,13 +157,12 @@ class OriginalEnvironmentTests(unittest.TestCase):
             ("customer.send", {"recipient": "customer@crescent.example", "body": "Discovery pending."}),
         ):
             with self.subTest(operation=operation), start_environment(SOURCE, "crm-lead-qualification") as session:
-                original = autowfbench._post
 
-                def lost_response(*args, **kwargs):
+                def lost_response(*args, original=simulator._post, **kwargs):
                     original(*args, **kwargs)
                     raise TimeoutError("Injected response loss after upstream commit")
 
-                with patch("sapi_config_lab.execute.autowfbench._post", side_effect=lost_response) as dispatch:
+                with patch("sapi_config_lab.execute.simulator._post", side_effect=lost_response) as dispatch:
                     first = session.call(operation, arguments, operation_id="effect", max_attempts=3)
                     same = session.call(operation, arguments, operation_id="effect", max_attempts=3)
                     different = session.call(operation, arguments, operation_id="different")
@@ -289,11 +281,11 @@ class OriginalEnvironmentTests(unittest.TestCase):
     def test_mutated_cache_is_rejected_before_startup(self):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "source"
-            shutil.copytree(SOURCE, source)
+            shutil.copytree(SOURCE.root, source)
             path = source / "autowfbench/runtime/environment.py"
             path.write_text(path.read_text() + "\n# changed\n")
             with self.assertRaisesRegex(ValueError, "hash mismatch"):
-                start_environment(source)
+                start_environment(PinnedSource(SOURCE.manifest, source))
 
     def test_close_is_idempotent_and_stops_candidate_calls(self):
         session = start_environment(SOURCE)

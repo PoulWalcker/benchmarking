@@ -1,22 +1,15 @@
-"""How recorded evidence is encoded and identified.
+"""How recorded evidence is encoded and identified; its exact bytes are pinned by later hashes.
 
-Every artifact this lab writes is hashed, pinned and compared later, so its exact
-bytes are part of the contract. Keeping the encoding here means a change to it is
-a change in one place rather than a drift between twenty.
-
-Two encodings live here and must not be merged. The indented family below is
-for documents people read. The canonical family (`canonical`, `digest`,
-`durable_json`) is sorted, compact and Unicode-literal; lifecycle lineage and
-Agency call audits are recorded in it, so its bytes are pinned by digests
-already in evidence.
+Two encodings must stay separate: indented JSON for documents people read, and the
+canonical form (`canonical`, `digest`, `durable_json`) whose bytes recorded digests pin.
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import hashlib
 import json
 import os
-from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -33,9 +26,7 @@ def write_json(path: Path | str, value: Any, *, ensure_ascii: bool = False) -> N
 
 
 def write_record_json(path: Path | str, value: Any) -> None:
-    """Record an execution artifact, whose records carry values JSON cannot encode
-    (paths, deadlines). Those are recorded as str() rather than failing the run
-    that produced them; no other artifact gets that latitude."""
+    """An execution record; values JSON cannot encode (paths, deadlines) become str() rather than failing the run."""
     Path(path).write_text(json_text(value, default=str))
 
 

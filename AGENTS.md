@@ -1,64 +1,52 @@
 # Agent guide
 
-Keep context small. Read this file first, then open only the document related to the change:
+Read this file first, then only the document the change needs:
 
-- architecture or module boundaries -> `docs/ARCHITECTURE.md`
-- commands, scenarios, tests, reports, UI -> `docs/DEVELOPMENT.md`
-- YAML semantics or supported workflow behavior -> `docs/PROFILE.md`
+- boundaries, the scenario registry, runs, evidence -> `docs/ARCHITECTURE.md`
+- commands, configuration, adding a scenario, reading runs -> `docs/DEVELOPMENT.md`
+- YAML semantics -> `docs/PROFILE.md`
 
 ## System model
 
 ```text
 definition -> COMPILE -> artifact -> EXECUTE -> evidence -> EVALUATE -> verdicts
      ^
-     |
-  AUTHORING (optional)
+  AUTHOR (optional)
 ```
 
-`coordinate/` selects cases, binds fixtures, enforces budgets, packages tasks, and runs the stages. Harbor is orchestration around the experiment, not a workflow implementation.
-
-## Ownership boundaries
+`coordinate/` sequences the stages; each stage owns its own logic.
 
 | Concern | Location | Rule |
 | --- | --- | --- |
-| Shared contracts/profile | `src/sapi_config_lab/*.py`, `bindings.yaml` | backend-neutral project semantics |
-| Author | `src/sapi_config_lab/author/` | produces definitions; does not compile them |
-| Compile | `src/sapi_config_lab/compile/` | validates and produces artifacts; no execution or verdicts |
-| Execute | `src/sapi_config_lab/execute/` | runs artifacts and records engine evidence; no business verdicts |
-| Evaluate | `src/sapi_config_lab/evaluate/` | scores recorded evidence; does not become the executor |
-| Coordinate | `src/sapi_config_lab/coordinate/` | composes stages and owns experiment flow |
-| Independent verifier | `verification/` | recomputes acceptance independently; never imports compiler/runtime logic |
-| Scenario data | `benchmarks/NN-<scenario>/` | task definition, fixtures, reference config and scenario metadata |
+| Shared contracts | `src/sapi_config_lab/*.py`, `bindings.yaml` | backend-neutral; imports no stage |
+| Author | `author/` | produces definitions only |
+| Compile | `compile/` | artifacts only: no execution, no verdicts |
+| Execute | `execute/` | runs artifacts, records engine evidence; owns host tools and `HostConfig` |
+| Evaluate | `evaluate/` | scores recorded evidence; never reruns |
+| Coordinate | `coordinate/` | orchestration; nothing imports it |
+| Verifier | `verification/` | recomputes acceptance from fixtures; imports only itself |
+| Benchmarks | `benchmarks/NN-<name>/` | the only scenario registry, via `scenario.json` |
 
-`tests/test_boundaries.py` enforces import direction. Update architecture and the test together when a boundary intentionally changes.
+`tests/test_boundaries.py` enforces import direction; change it together with `docs/ARCHITECTURE.md` when a boundary intentionally moves.
 
 ## Invariants
 
-- Execution success, acceptance, and quality score are separate facts.
-- Evaluation must use recorded evidence. Do not make acceptance depend on rerunning the candidate.
-- The independent verifier must not reuse compiler or operation implementations to compute expected answers.
-- Evaluator-only material must not be exposed to the candidate agent.
-- Evidence is immutable once recorded. Derived evaluation files may reference evidence; they must not rewrite it.
-- Keep backend-specific behavior behind `WorkflowBackend`. Do not add registries, universal IRs, or placeholder backends without a real second implementation.
-- Share a helper after it has multiple real callers, not in anticipation of future reuse.
-- Model-call budgets and source/provenance gates are safety boundaries, not convenience checks.
+- Execution, acceptance and quality stay separate facts; `not_evaluated` is null, never zero.
+- Evaluation reads recorded evidence; evidence is written once and derived files sit beside it.
+- Candidates see public task material only: cases, references and hosted evaluator modules stay out of their containers.
+- Benchmark origin is `provenance` data in `scenario.json`; code branches on `environment` and `evaluator`.
+- Machine-specific values come from `HostConfig` (`SAPI_*`) or CLI options; reproducibility pins live beside their owner.
+- Model calls are reserved in the ledger before dispatch, live dispatch fails closed on any identity or source mismatch, and oracle/nop controls gate paid work.
+- A shared helper needs two real callers; a second backend precedes any registry or abstract base.
+- A broad `except` belongs only at a real process, server or cleanup boundary; its file is listed under `BLE001` in `pyproject.toml` per-file-ignores, and the code carries no `noqa` comments.
+- Comments state why; one-line docstrings are the norm.
+- Prompt-bearing files (`generation/FORMAT.md`, `generation/PROFILE.md`, `task.md`, `prompt-extension.md`, `authoring-notes.md`, `bindings.yaml`, `execute/agency-prompt.md`) are pinned by recorded prompt hashes (generation prompts in `tests/test_packaging.py`); editing one is an experiment change.
 
-## Common change paths
+## Common changes
 
-### Change workflow semantics
-
-1. Update `docs/PROFILE.md` only if the supported contract changes.
-2. Update validation/compiler/runtime code required by that contract.
-3. Add behavioral and boundary tests.
-4. Run the local checks and a real Docker control if container behavior changed.
-
-### Add or change a benchmark scenario
-
-Follow `docs/DEVELOPMENT.md#adding-a-project-scenario`. Do not create a new documentation file for the scenario.
-
-### Add another benchmark source
-
-Treat source, environment, and evaluator as adapters around the same experiment flow. Add a separate architecture only if the execution model is genuinely different.
+- **Workflow semantics**: update `docs/PROFILE.md` if the contract changes, then validator/compiler/runtime, then behavioral tests; run a Docker control if container behavior changed.
+- **Scenario**: follow `docs/DEVELOPMENT.md#adding-a-scenario`; no new docs file.
+- **Docs**: current truth only, one owner per fact. Runs go to `reports/`, cited evidence to `evidence/`, history to Git.
 
 ## Checks
 
@@ -68,24 +56,5 @@ uv run --locked ruff check src tests verification infra
 uv run --locked ruff format --check src tests verification infra
 uv run --locked mypy
 uv run --locked python infra/check_distribution.py
+./run.sh --scenario <name>   # when execution, packaging, containers, evidence or verification change
 ```
-
-For container/runtime behavior:
-
-```bash
-./run.sh --scenario <name>
-```
-
-## Documentation policy
-
-Documentation describes durable truth, not the history of how the project reached it.
-
-- `README.md` = entry point and happy path.
-- `AGENTS.md` = repository rules for coding agents.
-- `docs/ARCHITECTURE.md` = why the system is split this way.
-- `docs/DEVELOPMENT.md` = how to work with it.
-- `docs/PROFILE.md` = the supported workflow contract.
-
-Do not add status reports, migration diaries, experiment summaries, evaluation write-ups, or one-off research notes to `/docs`. Put run output in `reports/`, committed proof in `evidence/`, and historical discussion in Git/issues.
-
-Do not duplicate CLI help or implementation details that are easier to discover from code. Document constraints, invariants, ownership, and non-obvious workflow.

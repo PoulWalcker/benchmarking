@@ -10,9 +10,11 @@ from unittest.mock import patch
 
 import yaml
 
-from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.author.rebuilder import WrapperRebuilder
 from sapi_config_lab import profile
+from sapi_config_lab.author.rebuilder import WrapperRebuilder
+from sapi_config_lab.paths import workspace_root
+
+URL = "http://127.0.0.1:8765/run"
 
 
 class RebuilderTests(unittest.TestCase):
@@ -46,7 +48,7 @@ class RebuilderTests(unittest.TestCase):
                 self.assertIn("wrong IDs", json.loads(request.data)["prompt"])
                 return Response()
 
-            builder = WrapperRebuilder("http://127.0.0.1:8765/run")
+            builder = WrapperRebuilder(URL, timeout_seconds=185, expected_model="gpt-6-astra")
             with patch("sapi_config_lab.author.rebuilder.urlopen", side_effect=dispatch) as outgoing:
                 result = builder(source, {"passed": False, "findings": ["wrong IDs"]}, target, artifacts)
                 self.assertEqual(result, candidate)
@@ -66,7 +68,7 @@ class RebuilderTests(unittest.TestCase):
         source = profile.read(workspace_root() / "benchmarks/05-daily-digest/config.yaml")
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
-            builder = WrapperRebuilder("http://127.0.0.1:8765/run")
+            builder = WrapperRebuilder(URL, timeout_seconds=185, expected_model="gpt-6-astra")
             with patch("sapi_config_lab.author.rebuilder.urlopen", side_effect=TimeoutError) as outgoing:
                 with self.assertRaises(TimeoutError):
                     builder(source, {}, {"id": "daily-digest", "revision": 2}, path)
@@ -80,12 +82,15 @@ class RebuilderTests(unittest.TestCase):
         for exit_code, stderr in [(False, "model: gpt-6-astra\n"), (0, ""), (0, "model: other-model\n")]:
             with self.subTest(exit_code=exit_code, stderr=stderr), tempfile.TemporaryDirectory() as directory:
                 response = {"ok": True, "exit_code": exit_code, "stderr": stderr, "output": yaml.safe_dump(source)}
-                with patch(
-                    "sapi_config_lab.author.rebuilder.urlopen", return_value=io.BytesIO(json.dumps(response).encode())
-                ) as outgoing:
-                    with self.assertRaises(profile.Invalid):
-                        WrapperRebuilder("http://127.0.0.1:8765/run")(
-                            source, {}, {"id": "daily-digest", "revision": 2}, Path(directory)
-                        )
+                with (
+                    patch(
+                        "sapi_config_lab.author.rebuilder.urlopen",
+                        return_value=io.BytesIO(json.dumps(response).encode()),
+                    ) as outgoing,
+                    self.assertRaises(profile.Invalid),
+                ):
+                    WrapperRebuilder(URL, timeout_seconds=185, expected_model="gpt-6-astra")(
+                        source, {}, {"id": "daily-digest", "revision": 2}, Path(directory)
+                    )
                 self.assertEqual(outgoing.call_count, 1)
                 self.assertFalse((Path(directory) / "candidate.yaml").exists())

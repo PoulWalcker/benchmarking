@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
+from collections import Counter
 import hashlib
 import importlib
 import importlib.util
-import sys
 from pathlib import Path
+import sys
 
-from sapi_config_lab.evidence import sha256
-from sapi_config_lab.coordinate.replay import read_json, require
-from sapi_config_lab.paths import CATALOG, workspace_root
-from sapi_config_lab.evidence import digest
-from sapi_config_lab.execute.agency import MAX_BODY, WRAPPER_MODEL, build_prompt
-from sapi_config_lab.coordinate.backend import default_backend
 from sapi_config_lab.contracts import CompileOptions
+from sapi_config_lab.coordinate.backend import default_backend
+from sapi_config_lab.coordinate.replay import read_json, require
+from sapi_config_lab.evidence import digest, sha256
+from sapi_config_lab.execute.agency import MAX_BODY, build_prompt
+from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.profile import read_bindings
 
 
@@ -137,10 +137,10 @@ def load_verifier():
     return importlib.import_module(name + ".verify"), importlib.import_module(name + ".n8n_provenance")
 
 
-def collect_native(trials: list[dict], submissions: dict, cohorts: dict[str, set[str]]) -> list[dict]:
+def collect_native(trials: list[dict], submissions: dict, cohorts: dict[str, set[str]], bridge_url: str) -> list[dict]:
     """Re-check native artifacts of live trials and return each observed model call."""
     verification, provenance = load_verifier()
-    native = []
+    native: list[dict] = []
     observed = set()
     for trial in trials:
         scenario = trial["task_name"]
@@ -160,7 +160,6 @@ def collect_native(trials: list[dict], submissions: dict, cohorts: dict[str, set
             run = read_json(artifact / "case.json")
             config = read_json(artifact / "config.json")
             case = next(case for case in submission["cases"]["positive"] if case["name"] == name)
-            # The same plan the container ran; re-checks inventory, inputs and native records.
             planned = verification.plan(scenario, Path(submission["path"]), submission["cases"], "live", name)
             verification.read_evidence(directory, planned)
             require(
@@ -180,7 +179,7 @@ def collect_native(trials: list[dict], submissions: dict, cohorts: dict[str, set
                 node["parameters"]["url"] for node in graph["nodes"] if node["type"] == "n8n-nodes-base.httpRequest"
             }
             require(len(endpoints) <= 1, "Multiple Agency endpoints")
-            bridge = next(iter(endpoints), "http://host.docker.internal:18765")
+            bridge = next(iter(endpoints), bridge_url)
             compiled = default_backend().compile(config, read_bindings(CATALOG), CompileOptions("live", bridge))
             require(
                 {**compiled.document, "id": run["workflow_id"], "active": False} == graph
@@ -194,17 +193,14 @@ def collect_native(trials: list[dict], submissions: dict, cohorts: dict[str, set
                 if "refinement" in config["execution"]
                 else provenance.live_operations(run, graph)
             )
-            for call in calls:
-                native.append(
-                    {
-                        "scenario": scenario,
-                        "case": name,
-                        "submission_sha256": submission["sha256"],
-                        "workflow_id": run["workflow_id"],
-                        "execution_id": run["execution_id"],
-                        **call,
-                    }
-                )
+            identity = {
+                "scenario": scenario,
+                "case": name,
+                "submission_sha256": submission["sha256"],
+                "workflow_id": run["workflow_id"],
+                "execution_id": run["execution_id"],
+            }
+            native.extend({**identity, **call} for call in calls)
     expected = {(scenario, name) for scenario in {t["task_name"] for t in trials} for name in cohorts[scenario]}
     require(observed == expected, "Missing required live case")
     return native
@@ -223,7 +219,4 @@ def case_budget(scenario: str, case_name: str, config: dict, cases: dict) -> dic
     require(config["workflow"]["inputs"] == fixture, "Case grant fixture mismatch")
     verification, _ = load_verifier()
     calls = verification.expected_model_calls(scenario, config, fixture)
-    operations: dict[str, int] = {}
-    for operation in calls.values():
-        operations[operation] = operations.get(operation, 0) + 1
-    return {"max_attempts": len(calls), "operations": operations, "model": WRAPPER_MODEL, "occurrences": calls}
+    return {"max_attempts": len(calls), "operations": dict(Counter(calls.values())), "occurrences": calls}

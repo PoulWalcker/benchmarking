@@ -35,7 +35,8 @@ STAGES = {
     "evidence": SHARED,
     "paths": SHARED,
     "net": SHARED,
-    "autowfbench_source": SHARED,
+    "pinned_source": SHARED,
+    "wrapper_audit": SHARED,
     "compile": "compile",
     "execute": "execute",
     "evaluate": "evaluate",
@@ -145,6 +146,11 @@ class StageBoundaryTests(unittest.TestCase):
                     self.assertFalse((node.module or "").split(".")[0] == "harbor", module)
                 if isinstance(node, ast.Import):
                     self.assertFalse(any(a.name.split(".")[0] == "harbor" for a in node.names), module)
+
+    def test_benchmark_origin_names_no_module(self):
+        # Where a benchmark came from is scenario provenance, not architecture.
+        for module, path, _ in modules():
+            self.assertNotIn("autowfbench", module, path)
 
     def test_experiments_reach_harbor_bridges_and_staging_only_through_a_run(self):
         owned = {"harbor_run_args", "collect_jobs", "staging_dir", "pin_base_image", "start_bridge", "stop_bridge"}

@@ -25,6 +25,7 @@ dist/
 !/provenance/SapiensSpecNotation.hs
 !/provenance/spec-comparison.json
 !/provenance/spec-source.json
+!/provenance/autowfbench-source.json
 
 # Claude Code session state: agent worktrees and local settings
 /.claude/
