@@ -616,7 +616,7 @@ def main():
         )
         paths = [output / name / "evaluation/evaluation.json" for name in evaluated_names]
         evaluations = [json.loads(path.read_text()) if path.exists() else None for path in paths]
-        from sapi_config_lab.runtime.task_evaluation import summarize_evaluations
+        from sapi_config_lab.runtime.task_evaluation import is_evaluation, summarize_evaluations
 
         for name, evaluation in zip(evaluated_names, evaluations):
             report[name + "_evaluation"] = summarize_evaluations([evaluation] if (output / name).exists() else [])
@@ -625,10 +625,10 @@ def main():
         candidate = evaluations[-1]
         if args.mode == "controls":
             completed = bool(
-                reference
+                is_evaluation(reference)
                 and reference.get("execution_pass") is True
                 and reference.get("normalized_reward") == 0.732
-                and candidate
+                and is_evaluation(candidate)
                 and candidate.get("execution_pass") is False
                 and candidate.get("normalized_reward") is None
                 and report.get("reference", {}).get("ephemeral_token_leak_check") is True
@@ -640,7 +640,7 @@ def main():
         else:
             completed = bool(
                 report.get("selected_authoring")
-                and all(item and item.get("status") == "complete" for item in evaluations)
+                and all(is_evaluation(item) and item.get("status") == "complete" for item in evaluations)
                 and all(
                     report.get(name, {}).get("harbor_exit_code") == 0
                     and report.get(name, {}).get("trials")
