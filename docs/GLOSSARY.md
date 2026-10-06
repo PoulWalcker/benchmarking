@@ -35,9 +35,15 @@ one "it worked".
 - **Quality** means a judgement that the produced text or artifact is good. On
   the benchmark track that is the separate semantic judge
   (`src/sapi_config_lab/runtime/task_evaluation.py:342`), scored out of ten.
-  On the project's own nine scenarios there is no automatic quality score at
-  all: prose checks are lexical coverage checks, and human review is tracked as
-  `human_review: pending`.
+  On the project's own nine scenarios it is the rubric layer in
+  `verification/rubric.py`, which scores a weighted card out of ten and writes
+  it to `evaluation.json` under `sapi-lab-rubric-evaluation/v1`. Only three
+  scenarios have a card (`verification/rubric_cards.py:95-101`); the rest write
+  no evaluation at all. A card's judged criteria are **not scored in the
+  container**: `verify.py` constructs no judge, so a judged card returns status
+  `not_evaluated` with a null score, never a zero. Prose checks inside
+  acceptance remain lexical coverage checks, and human review is still tracked
+  as `human_review: pending`.
 
 A graph that runs, passes acceptance, and produces a weak answer is a normal and
 fully recorded outcome. See the [report field guide](REPORTS.md) for the field
@@ -85,6 +91,7 @@ Their field names cannot be renamed.
 | `sapi-lab-execution/v1` | `src/sapi_config_lab/runtime/execution.py:95` | `execution`, `acceptance`, `input.activation` (holds a lifecycle admission), `llm`, `evidence` |
 | `sapi-lab-verification/v1` | `verification/verify.py:204` | `cases`, `case_count`, `scenario`, `submission_sha256`, `passed` |
 | `sapi-lab-task-evaluation/v1` | `src/sapi_config_lab/runtime/task_evaluation.py:22,412-420` | `normalized_reward`, `project_acceptance.criterion`, `evaluation_mode` |
+| `sapi-lab-rubric-evaluation/v1` | `verification/rubric.py:44,596-612`, written by `verification/verify.py:414` | `score_0_10`, `normalized_reward`, `execution_pass`, `criteria`, `judge` |
 
 Harbor's own trial record carries `rewards: {"reward": <float>}`. That is
 upstream's schema, not ours, and is equally out of reach.
@@ -254,8 +261,15 @@ the ambiguous terms are defined against.
   of `sapi-lab-execution/v1` and a free-text field of the YAML profile
   (`workflow.acceptance`, validated at `core/profile.py:254`); the YAML
   field is the author's statement of intent and is never read as a decision.
-- **evaluation** — one scored benchmark trial, written once to
-  `evaluation.json` and immutable thereafter (`task_evaluation.py:423-445`).
+- **evaluation** — a scored document written to a file named `evaluation.json`.
+  Two unrelated documents now carry that filename, and they are told apart by
+  their `schema` field, never by their path. On the benchmark track it is one
+  scored benchmark trial, `sapi-lab-task-evaluation/v1`, written once and
+  immutable thereafter (`task_evaluation.py:423-445`). On the project's own
+  scenarios it is the rubric document, `sapi-lab-rubric-evaluation/v1`, written
+  beside the verifier's `report.json` for the three carded scenarios
+  (`verification/verify.py:414`). The second one is read by nobody in the reward
+  chain: it rides alongside acceptance and cannot change it.
 - **criterion** — one scored line of an upstream scorecard, with its own weight
   and cited evidence. Four deterministic criteria are worth six points and three
   semantic criteria four points for the checkout challenge.

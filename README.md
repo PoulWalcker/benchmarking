@@ -17,10 +17,12 @@ future prompt hashes; saved prompts and previous results are never rewritten.
 Start with the guide for your task:
 
 - [Learn the vocabulary first](docs/GLOSSARY.md): *admission*, *case*, *task*, *control*, *candidate* and *reward* each name several different things in this tree. The glossary fixes which one each document means, and states plainly why execution success, acceptance and quality are three separate facts.
+- [Add a scenario](docs/AUTHORING.md): the eight files a new task family touches, with the command to run as the gate after each one.
 - [Run the complete single-case Checkout Recovery evaluation](docs/CHECKOUT-EVALUATION.md): generated YAML, real n8n, original simulator and rubric. The first public synthetic case scored 9.33/10; this is not a general benchmark performance claim.
 - [View workflow graphs and prepare manual runs in local n8n](docs/N8N-UI.md).
 - [Understand the supported YAML profile](docs/PROFILE.md) and [author YAML](generation/README.md).
 - [Read the recorded evidence and its limits](#evidence-and-limits).
+- [Check what is blocked today](#what-does-not-run-right-now) before planning a live run.
 - [Verify or compare the pinned specification](docs/SPEC-SOURCE.md).
 
 For the local n8n UI, start with `uv run --locked sapi-lab ui open --all`: it imports
@@ -95,6 +97,40 @@ The model and authentication are inherited from that wrapper. A separate local
 Agency adapter starts on port 18765 and stops after the series. The wrapper is
 not modified. Responses are neither automatically repaired nor replaced by stubs.
 
+## What does not run right now
+
+Read this before planning a run. The unpaid paths work; the paid ones do not.
+
+**Live model calls are gated and the gate currently fails.** `sapi-lab live`,
+`sapi-lab ui open --live` and the bounded expansion live series all require an
+inspected wrapper identity file and check it before dispatching anything. The
+recorded file, `evidence/20261004-open-tasks-integration/wrapper-identity.json`,
+names two host files with their SHA-256. One of them, the Codex configuration,
+no longer matches on this machine, so `wrapper_identity()` refuses with
+`Wrapper/config identity changed` and no call is made. The wrapper process
+itself is still listening on `127.0.0.1:8765` and still answers the unpaid
+readiness probe — it is the recorded identity that is stale, not the port.
+Restoring these paths means a fresh read-only inspection of the wrapper and a
+new identity record; nothing in this repository can produce one.
+
+`sapi-lab generate` has no such gate and would still reach the wrapper. That is
+not a reason to treat it as safe: the configuration that selects the model is
+exactly the file whose hash changed, so which model a call would now bill is no
+longer established. Inspect the wrapper before dispatching.
+
+**Judged rubric criteria are never scored.** `verify.py` constructs no judge, so
+any rubric card with `llm` criteria — today only `support-review-packet` —
+writes an `evaluation.json` with status `not_evaluated`, the reason "this card
+has judged criteria and no judge is reachable here", and a null score. It is
+never a zero and it never fails a submission. The two binary cards
+(`invoice-total`, `dual-ledger-closeout`) need no judge and do score.
+
+**What still works.** Compilation, `build`, `package-tasks`, the unit suite, the
+lint and type checks, the distribution check, and the complete unpaid control
+suite `./run.sh` — which needs Docker but no model call. The separate
+AutoWFBench benchmark track has its own judge, invoked against the pinned
+upstream source rather than this wrapper, and is not affected by the gate above.
+
 ## Project layout
 
 ```text
@@ -104,16 +140,26 @@ src/sapi_config_lab/
   interfaces/        interaction surfaces: cli.py, Harbor, YAML generation, task packaging
   paths.py           installed resources and checkout discovery
 configs/             nine examples; 04 adds bounded refinement, 05 needs a lifecycle controller
-verification/        independent checks and cases.json test inputs
+verification/        independent checks, rubric cards, and cases.json test inputs
 harbor/              scenario instructions and shared task templates
 generation/          model tasks and format description, without reference YAML
-tests/              local tests; support/ contains the JS driver
+tests/               local tests; support/ contains the JS driver
 infra/               pinned Docker image containing real n8n
-docs/                glossary, profile, architecture, and research questions
+docs/                glossary, authoring guide, profile, architecture, research questions
 docs/history/        frozen records of past runs; not current instructions
+evidence/            committed extracts of the artefacts the documentation cites
 provenance/          pinned public specification and comparison hashes
-reports/             local experiment evidence (ignored, not distributed)
+reports/             where new runs write (ignored, not distributed); empty until one does
+var/ui/              local n8n UI state, created by `sapi-lab ui` (ignored)
 ```
+
+`evidence/` is the only committed run artefact tree. It holds a byte-for-byte
+copy of each artefact that `README.md` or `docs/**` links to, at the path it had
+under `reports/`, so those links resolve from a clean clone; the run directories
+they came from were archived out of the repository and are not reconstructible
+from it. [`evidence/README.md`](evidence/README.md) records what was extracted
+and what was dropped. `reports/` is where new runs still write, and it is
+ignored; it is empty in a fresh checkout.
 
 `generated/` and `validation/` contain local prototype artifacts. Raw reports,
 review dumps, environment snapshots, and generated exports stay in the working
@@ -188,7 +234,8 @@ and [01–03 live](evidence/20261004-verified-2/live/report.json),
 [07 controls](evidence/20261004-scenario-expansion-integration/sc02-generation/control/report.json),
 [08 controls](evidence/20261004-corrected-expansion-integration/sc03-generation/control/report.json),
 and [09 controls](evidence/20261004-corrected-expansion-integration/sc04-generation/control/report.json).
-These links target local ignored reports. The historical generated-live report's
+These links target the committed `evidence/` tree, which holds exactly the
+artefacts cited here and nothing else. The historical generated-live report's
 container-preservation failure is preserved and explained by the user-confirmed
 service stop in its summary; all seven workflow cases passed their business gates.
 The initial SC-03 rejection also remains preserved; the later corrected-task
@@ -240,18 +287,52 @@ CI runs Ruff, mypy, local behavioral tests, and distribution checks. The separat
 Docker/Harbor job runs only when selected in a manual workflow dispatch. It uses
 stubbed model operations and never enables live calls or uploads raw artifacts.
 
-Further reading: [glossary](docs/GLOSSARY.md),
-[architecture and commands](docs/ARCHITECTURE.md),
-[execution and acceptance reports](docs/REPORTS.md),
-[profile](docs/PROFILE.md), [YAML generation](generation/README.md),
-[verification](verification/README.md), and
-[research questions](docs/RESEARCH-QUESTIONS.md). Dated records of individual
-runs, including the [original analysis](docs/history/ANALYSIS.md), are frozen
-under [docs/history/](docs/history/README.md) and are not current instructions.
+## Reading order
+
+There are more documents here than anyone needs. Read the first four in order;
+reach for the rest only when the task calls for them.
+
+**Start here, in this order:**
+
+| Document | Who it is for |
+| --- | --- |
+| [Glossary](docs/GLOSSARY.md) | Everyone, first. Fixes one meaning per overloaded word and states the three facts the rest of the documentation assumes |
+| [Architecture and commands](docs/ARCHITECTURE.md) | Everyone. The three module groups, the full command table split into commands you run and container entry points, and the command migration map |
+| [Report field guide](docs/REPORTS.md) | Anyone about to read a run's output, before concluding anything from it |
+| [Adding a scenario](docs/AUTHORING.md) | Anyone adding or changing a task family. The eight files involved, and the command that checks each one |
+
+**When the task calls for it:**
+
+| Document | Who it is for |
+| --- | --- |
+| [Profile](docs/PROFILE.md) and [`generation/FORMAT.md`](generation/FORMAT.md) | Writing or reviewing `sapi-lab/v0` YAML |
+| [`verification/README.md`](verification/README.md) | What acceptance checks, and how the rubric layer sits beside it |
+| [`generation/README.md`](generation/README.md) | The model-authoring track and what that pilot does and does not establish |
+| [Local n8n UI](docs/N8N-UI.md) | Viewing graphs and preparing one bounded manual run |
+| [Expansion run guide](docs/SCENARIO-EXPANSION.md) | Running the ordered, budgeted four-scenario series |
+| [Lifecycle](docs/LIFECYCLE.md) | Config 05 and why it needs a controller outside the graph |
+| [Frozen generated replay](docs/GENERATED-LIVE.md) | The `live --submissions-manifest` command and its unpaid gate |
+| [Specification source](docs/SPEC-SOURCE.md) | Verifying or comparing the pinned Sapiens revision |
+| [AutoWFBench environment](docs/AUTOWFBENCH-ENVIRONMENT.md) | The separate benchmark track's pinned task interface |
+
+**Records of finished work, not instructions.** These describe what a particular
+experiment established and when. They are accurate about their own run and say
+nothing about the current tree:
+[extension acceptance](docs/EXTENSION-ACCEPTANCE.md),
+[lifecycle evaluation](docs/LIFECYCLE-EVALUATION.md),
+[generalization evaluation](docs/GENERALIZATION-EVALUATION.md),
+[checkout evaluation](docs/CHECKOUT-EVALUATION.md),
+[two-task business evaluation](docs/BUSINESS-EVALUATION.md), and
+[research questions](docs/RESEARCH-QUESTIONS.md), which is dated October 4, 2026.
+
+**Frozen.** Dated records of individual runs, including the
+[original analysis](docs/history/ANALYSIS.md) and the
+[curated results](docs/history/RESULTS.md), are frozen under
+[docs/history/](docs/history/README.md). They are byte-exact by policy, are
+never updated, and are not current instructions — do not read a status line
+there as a thing to do now. Some of their relative links point at files that
+have since moved; that rot is deliberate and is not repaired.
 Historical reports retain their old paths; see the
 [file migration map](docs/MIGRATION-PATHS.json), which records the 2026-10-04
 refactor and is not updated afterwards: its `ANALYSIS.md` entry now resolves to
 `docs/history/ANALYSIS.md`.
-
-The bounded historical generated-YAML/live replay command and its unpaid gate are
-documented in [Frozen generated YAML with live operations](docs/GENERATED-LIVE.md).
