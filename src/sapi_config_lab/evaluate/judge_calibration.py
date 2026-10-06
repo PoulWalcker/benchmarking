@@ -1,14 +1,8 @@
-"""Compare a separate semantic judge with predefined evaluator-only controls.
+"""Counterfactual judge controls built from an already recorded, trusted run.
 
-A run of this module COSTS ONE REAL, PAID JUDGE CALL unless --prepare-only is
-passed. `main()` is the `sapi-lab benchmark-calibrate` entry point; it writes
-the contract and fixture, then dispatches the judge.
-
-`calibration_fixture()` alone makes no model call: it swaps candidate prose in
-an already recorded, trusted environment trace, and does not claim the
-replacement text was produced by a solver. Expectations are frozen before
-judging and never modify the original scorecard or the candidate's official
-score.
+`calibration_fixture()` makes no model call: it swaps candidate prose in a
+recorded environment trace and does not claim a solver produced it.
+Expectations are frozen before judging and never change any official score.
 """
 
 from __future__ import annotations
@@ -17,7 +11,6 @@ import copy
 import json
 from pathlib import Path
 
-from sapi_config_lab.evidence import write_json
 from sapi_config_lab.evaluate.task_evaluation import Document, FrozenTaskContract, digest
 from sapi_config_lab.paths import workspace_root
 
@@ -118,58 +111,3 @@ def compare_calibration(fixture: Document, evaluation: Document | None) -> Docum
         "checks": checks,
         "evaluation_run_id": evaluation["run_id"],
     }
-
-
-def main():
-    """One explicit independent judge dispatch; no repairs or hidden retries.
-
-    Paid unless --prepare-only is passed; see the module docstring.
-    """
-    import argparse
-    import sys
-    from datetime import datetime, timezone
-    from sapi_config_lab.evaluate.task_evaluation import freeze_contract, judge, evaluate, write_evaluation
-
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--source", type=Path, required=True)
-    parser.add_argument("--base-run", type=Path, required=True)
-    parser.add_argument("--case", choices=["supported-good", "contentless", "misleading-success"], required=True)
-    parser.add_argument("--judge-model", required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--prepare-only", action="store_true")
-    args = parser.parse_args()
-    args.output.mkdir(parents=True, exist_ok=False)
-    base = json.loads(args.base_run.read_text())
-    contract = freeze_contract(args.source, base["challenge"]["id"], judge_model=args.judge_model)
-    fixture = calibration_fixture(contract, base, args.case)
-
-    def save(name, value):
-        write_json(args.output / name, value, ensure_ascii=True)
-
-    save("task-contract.json", contract.as_dict())
-    save("fixture.json", fixture)
-    if args.prepare_only:
-        return 0
-    # Everything above is unpaid; --prepare-only returns before this point.
-    # From here one real judge call is billed against args.judge_model.
-    print(f"Dispatching one paid judge call to {args.judge_model}.", file=sys.stderr)
-    save(
-        "dispatch.json",
-        {"attempts": 1, "model": args.judge_model, "started_at": datetime.now(timezone.utc).isoformat()},
-    )
-    reply = None
-    error = None
-    try:
-        reply = judge(contract, fixture["run_log"], args.output / "judge", timeout=180)
-        save("judge-reply.json", reply)
-    except Exception as exc:
-        error = type(exc).__name__
-    result = evaluate(contract, fixture["run_log"], reply, judge_error=error)
-    write_evaluation(args.output / "evaluation", result)
-    comparison = compare_calibration(fixture, result)
-    save("comparison.json", comparison)
-    return 0 if comparison.get("passed") is True else 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

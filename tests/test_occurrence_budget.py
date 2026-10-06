@@ -64,7 +64,7 @@ class OccurrenceBudgetTests(unittest.TestCase):
 
         caps = {}
         for scenario, definition in SCENARIOS.items():
-            if definition.group == "lifecycle":
+            if definition.group == "lifecycle" or definition.environment != "fixtures":
                 continue
             submission = {"path": definition.config, "cases": definition.cases()}
             for name in live_cohort(scenario, submission):

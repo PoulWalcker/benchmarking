@@ -93,7 +93,7 @@ class OperationTransportTests(unittest.TestCase):
         cfg["workflow"]["steps"] = [{"id": "read", "kind": "Script", "uses": "source.read", "with": {}}]
         cfg["workflow"]["dependencies"] = []
         cfg["workflow"]["output"] = {"ref": "steps.read"}
-        bindings = read_bindings(ROOT / "generation/checkout-bindings.yaml")
+        bindings = read_bindings(ROOT / "benchmarks/10-checkout-recovery/bindings.yaml")
         with self.assertRaises(Invalid):
             N8nBackend().compile(cfg, bindings, CompileOptions())
         built = N8nBackend().compile(cfg, bindings, CompileOptions(operation_url="http://tools:123/tools"))

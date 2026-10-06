@@ -339,7 +339,7 @@ def execute(data, catalog, upstream, timeout, *, audit: DispatchAudit | None = N
         raise
 
 
-def make_handler(catalog, upstream, timeout, audit_path, budget=None):
+def make_handler(catalog, upstream, timeout, audit_path, budget=None, reject_tool_use=False):
     dispatch = DispatchAudit(audit_path, budget) if budget is not None else None
 
     class Handler(BaseHTTPRequestHandler):
@@ -371,7 +371,7 @@ def make_handler(catalog, upstream, timeout, audit_path, budget=None):
                 if not 0 < size <= MAX_BODY:
                     raise ContractError("invalid request size")
                 data = strict_json(self.rfile.read(size))
-                result = execute(data, catalog, upstream, timeout, audit=dispatch)
+                result = execute(data, catalog, upstream, timeout, audit=dispatch, reject_tool_use=reject_tool_use)
                 status = 200
             except TimeoutError, HTTPError, URLError:
                 status, result = 502, {"status": "failed", "error": "upstream_transport"}
@@ -419,7 +419,15 @@ def make_handler(catalog, upstream, timeout, audit_path, budget=None):
     return Handler
 
 
-def start_bridge(port: int, upstream: str, audit: Path, budget: Path, log: Path) -> subprocess.Popen:
+def start_bridge(
+    port: int,
+    upstream: str,
+    audit: Path,
+    budget: Path,
+    log: Path,
+    bindings: Path = CATALOG,
+    reject_tool_use: bool = False,
+) -> subprocess.Popen:
     """Start this adapter as a child process and wait until it answers /health.
 
     Fails if the process exits or another service already holds the port.
@@ -427,7 +435,8 @@ def start_bridge(port: int, upstream: str, audit: Path, budget: Path, log: Path)
     with log.open("w") as stream:
         process = subprocess.Popen(
             [sys.executable, "-m", "sapi_config_lab.execute.agency", "--port", str(port), "--upstream", upstream]
-            + ["--timeout", "185", "--audit", str(audit), "--budget", str(budget)],
+            + ["--timeout", "185", "--audit", str(audit), "--budget", str(budget), "--bindings", str(bindings)]
+            + (["--reject-tool-use"] if reject_tool_use else []),
             cwd=workspace_root(),
             stdout=stream,
             stderr=subprocess.STDOUT,
@@ -470,11 +479,13 @@ def main():
     parser.add_argument("--bindings", type=Path, default=CATALOG)
     parser.add_argument("--audit", type=Path, required=True)
     parser.add_argument("--budget", type=Path)
+    parser.add_argument("--reject-tool-use", action="store_true", help="Fail a call whose wrapper reports tool use")
     args = parser.parse_args()
     catalog = yaml.safe_load(args.bindings.read_text())["operations"]
     args.audit.parent.mkdir(parents=True, exist_ok=True)
     budget = strict_json(args.budget.read_bytes()) if args.budget else None
-    server = HTTPServer((args.host, args.port), make_handler(catalog, args.upstream, args.timeout, args.audit, budget))
+    handler = make_handler(catalog, args.upstream, args.timeout, args.audit, budget, args.reject_tool_use)
+    server = HTTPServer((args.host, args.port), handler)
     print(f"Catalog adapter listening on {args.host}:{args.port}", flush=True)
     try:
         server.serve_forever()

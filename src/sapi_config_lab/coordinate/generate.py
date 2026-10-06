@@ -13,7 +13,7 @@ import secrets
 import sys
 from typing import Any
 
-from sapi_config_lab.coordinate.controls import trial_accepted
+from sapi_config_lab.coordinate.evaluation import trial_accepted
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.runs import Run, load_trials, run_experiment
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
@@ -65,6 +65,7 @@ def summarize_trials(*jobs: Path) -> list[dict]:
                 "rewards": trial["rewards"],
                 "exception": trial["exception"],
                 "acceptance": acceptance,
+                "result": trial["result"],
                 "result_path": trial["result_path"],
             }
         )
@@ -143,6 +144,9 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("daily-digest authoring needs the retired lifecycle series runner; see docs/RETIRED.md")
     if not 1 <= args.attempts <= 10:
         parser.error("--attempts must be between 1 and 10")
+    capped = [s for s in scenarios if args.attempts > SCENARIOS[s].budgets.get("authoring_attempts", 10)]
+    if capped:
+        parser.error("--attempts exceeds the authoring budget of " + ", ".join(capped))
     output = args.report_dir or ROOT / "reports" / (
         datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-generation"
     )
@@ -184,7 +188,9 @@ def main(argv: list[str] | None = None) -> int:
         overlays = {s: fresh_case_overlay(s) for s in scenarios if SCENARIOS[s].fixture_overlay == "fresh"}
         report["prompt_sha256"] = run.stage("generation", scenarios, cases=overlays)
         report["fixture_overlay"] = sorted(overlays)
-        report["private_cases_sha256"] = {s: sha256(run.tasks / s / "tests/cases.json") for s in scenarios}
+        report["private_cases_sha256"] = {
+            s: sha256(run.tasks / s / "tests/cases.json") for s in scenarios if SCENARIOS[s].environment == "fixtures"
+        }
         report_path = run.output / "report.json"
         jobs = []
         for attempt in range(1, args.attempts + 1):

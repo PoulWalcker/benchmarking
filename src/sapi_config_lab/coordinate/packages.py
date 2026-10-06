@@ -8,11 +8,24 @@ from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.host import LAB_IMAGE
 from sapi_config_lab.paths import CATALOG, workspace_root
 
-from sapi_config_lab.coordinate.scenarios import select_scenarios
+from sapi_config_lab.coordinate.evaluation import contract_for
+from sapi_config_lab.coordinate.scenarios import Scenario, select_scenarios
 
 
 # What the lab image copies from src/ and the verifier re-hashes in the container.
 RUNTIME_SUFFIXES = (".py", ".js", ".yaml", ".json", ".md")
+
+# A simulator task's evaluator runs on the host; its container must not be able to read it.
+# `rm -rf` exits 0 on a missing path, so tests/test_packaging.py checks each still exists.
+EVALUATOR_MODULES = (
+    "sapi_config_lab/coordinate/evaluation.py",
+    "sapi_config_lab/evaluate/task_evaluation.py",
+    "sapi_config_lab/evaluate/judge_calibration.py",
+    "sapi_config_lab/execute/autowfbench.py",
+    "sapi_config_lab/autowfbench_source.py",
+    "sapi_config_lab/autowfbench-source.json",
+)
+SIMULATOR_TEST = "#!/bin/bash\nset -euo pipefail\npython3 -m sapi_config_lab.coordinate.simulator_worker {action}\n"
 
 
 def runtime_sources(root: Path) -> dict:
@@ -26,6 +39,44 @@ def runtime_sources(root: Path) -> dict:
             if path.is_file() and "__pycache__" not in path.parts and path.suffix in RUNTIME_SUFFIXES
         },
     }
+
+
+def generation_prompt(root: Path, scenario: Scenario, definition: dict | None = None) -> str:
+    """The exact text a model is asked to answer with YAML."""
+    if definition is None:
+        extension = scenario.prompt_extension
+        return (
+            "TASK\n"
+            + scenario.task()
+            + "\n\nFORMAT\n"
+            + (root / "generation/FORMAT.md").read_text()
+            + (f"\n\n{extension}\n" + (scenario.directory / "prompt-extension.md").read_text() if extension else "")
+            + "\n\nPROFILE\n"
+            + (root / "generation/PROFILE.md").read_text()
+            + "\n\nOPERATION CATALOG\n"
+            + CATALOG.read_text()
+        )
+    output = "Your workflow output must contain a final_answer string."
+    if field := scenario.output.get("artifact_field"):
+        output += f" Also output {field} as a string; it is submitted verbatim as {scenario.output['artifact_name']}."
+    return (
+        "TASK\n"
+        + definition["task"]
+        + "\n"
+        + definition["completion"]
+        + f"\nBuild a workflow with id {scenario.task_source['workflow_id']}. Use only the catalog below. "
+        "Choose your own graph. "
+        f"Runtime is {definition['limits']['wall_clock_seconds']} seconds with at most "
+        f"{scenario.budgets['runtime_model_calls']} LLM operations. "
+        "Tool results are JSON strings. "
+        + output
+        + " This is a synthetic simulator. "
+        + scenario.authoring_notes()
+        + "\n\n"
+        + (root / "generation/FORMAT.md").read_text()
+        + "\nOPERATION CATALOG\n"
+        + scenario.bindings.read_text()
+    )
 
 
 def stage_tasks(
@@ -48,8 +99,8 @@ def stage_tasks(
             raise ValueError("Replay submission hash mismatch")
     elif submissions is not None:
         raise ValueError("Submissions require replay mode")
-    if cases is not None and not set(cases) <= set(selected):
-        raise ValueError("Fixtures given for a scenario that is not staged")
+    if cases is not None and not set(cases) <= {name for name, s in selected.items() if s.environment == "fixtures"}:
+        raise ValueError("Fixtures given for a scenario that is not staged on fixtures")
     root = workspace_root()
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=False)
@@ -60,26 +111,17 @@ def stage_tasks(
         task = destination / scenario
         (task / "environment").mkdir(parents=True)
         (task / "tests").mkdir()
+        simulated = definition.environment == "simulator"
+        upstream = None
+        scrub = ""
+        if simulated:
+            upstream = contract_for(definition).package["definition"]
+            scrub = " " + " ".join(f"/app/lab/src/{relative}" for relative in EVALUATOR_MODULES)
         if mode == "generation":
-            extension = definition.prompt_extension
-            instruction = (
-                "TASK\n"
-                + definition.task()
-                + "\n\nFORMAT\n"
-                + (root / "generation/FORMAT.md").read_text()
-                + (
-                    f"\n\n{extension}\n" + (definition.directory / "prompt-extension.md").read_text()
-                    if extension
-                    else ""
-                )
-                + "\n\nPROFILE\n"
-                + (root / "docs/PROFILE.md").read_text()
-                + "\n\nOPERATION CATALOG\n"
-                + CATALOG.read_text()
-            )
+            instruction = generation_prompt(root, definition, upstream)
             dockerfile = (
                 f"FROM {image}\nUSER root\nWORKDIR /app\n"
-                "RUN rm -rf /app/lab/benchmarks /app/scenario /app/submission "
+                f"RUN rm -rf /app/lab/benchmarks /app/scenario /app/submission{scrub} "
                 "&& mkdir -p /app/submission\n"
             )
         else:
@@ -93,7 +135,9 @@ def stage_tasks(
                 raise ValueError("Staged replay submission hash mismatch")
             dockerfile = (
                 f"FROM {image}\nUSER root\nWORKDIR /app\n"
-                "COPY base.yaml /app/scenario/base.yaml\nRUN mkdir -p /app/submission\n"
+                "COPY base.yaml /app/scenario/base.yaml\n"
+                + (f"RUN rm -rf /app/lab/benchmarks{scrub}\n" if simulated else "")
+                + "RUN mkdir -p /app/submission\n"
             )
         (task / "instruction.md").write_text(instruction)
         hashes[scenario] = hashlib.sha256(instruction.encode()).hexdigest()
@@ -101,6 +145,25 @@ def stage_tasks(
         (task / "task.toml").write_text(
             (templates / "task.toml").read_text().replace('name = "invoice-total"', f'name = "{scenario}"')
         )
+        if simulated:
+            assert upstream is not None
+            shutil.copyfile(definition.bindings, task / "tests/bindings.yaml")
+            if mode == "generation":
+                limits = {
+                    "scenario": scenario,
+                    "runtime_model_calls": definition.budgets["runtime_model_calls"],
+                    "deadline_seconds": upstream["limits"]["wall_clock_seconds"],
+                }
+                write_json(task / "tests/admission.json", limits)
+            else:
+                write_json(
+                    task / "tests/environment.json",
+                    {"scenario": scenario, "challenge": definition.task_source["challenge"], "seed": 0},
+                )
+            (task / "tests/test.sh").write_text(
+                SIMULATOR_TEST.format(action="admit" if mode == "generation" else "run")
+            )
+            continue
         test_script = (templates / "test.sh").read_text().replace("@SCENARIO@", scenario)
         if submissions is not None:
             test_script = test_script.replace(

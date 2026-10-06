@@ -9,6 +9,7 @@ is verified before and after every upstream invocation.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal
 import hashlib
 import json
@@ -16,7 +17,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
-from typing import Any, TypeIs
+from typing import Any
 
 Document = dict[str, Any]
 SCHEMA = "sapi-lab-task-evaluation/v1"
@@ -316,6 +317,24 @@ def judge(contract: FrozenTaskContract, run_log: Document, artifact_dir: Path, *
     )
 
 
+def judgement_fault(contract: FrozenTaskContract, run_log: Document, reply: Document) -> str | None:
+    """Why a judge reply does not belong to this frozen judge and run, or None."""
+    try:
+        provenance, judgement = reply["provenance"], reply["judgement"]
+        expected_model = contract.judge_model if contract.judge_mode == "codex" else "SIMULATED"
+        if (
+            provenance["mode"] != contract.judge_mode
+            or provenance["model"] != expected_model
+            or provenance["prompt_version"] != contract.prompt_version
+            or provenance["run_log_digest"] != digest(run_log)
+            or provenance["response_digest"] != digest(judgement)
+        ):
+            return "Judge provenance differs from frozen contract/evidence"
+    except KeyError, TypeError, ValueError:
+        return "Judge provenance validation failed"
+    return None
+
+
 def evaluate(
     contract: FrozenTaskContract,
     run_log: Document,
@@ -327,21 +346,12 @@ def evaluate(
     _validate_run(contract, run_log)
     judgement, provenance = None, None
     if judge_reply is not None:
-        try:
-            provenance, judgement = judge_reply["provenance"], judge_reply["judgement"]
-            expected_model = contract.judge_model if contract.judge_mode == "codex" else "SIMULATED"
-            if (
-                provenance["mode"] != contract.judge_mode
-                or provenance["model"] != expected_model
-                or provenance["prompt_version"] != contract.prompt_version
-                or provenance["run_log_digest"] != digest(run_log)
-                or provenance["response_digest"] != digest(judgement)
-            ):
-                raise ValueError("Judge provenance differs from frozen contract/evidence")
+        reply = judge_reply.get("judgement") if isinstance(judge_reply, dict) else None
+        if judgement_fault(contract, run_log, judge_reply) is None and isinstance(reply, dict) and "status" in reply:
+            provenance, judgement = judge_reply["provenance"], reply
             if judgement["status"] != "complete":
                 judge_error = "Judge reported incomplete evidence"
-        except KeyError, TypeError, ValueError:
-            judgement, provenance = None, None
+        else:
             judge_error = "Judge provenance validation failed"
     request = {
         "operation": "score",
@@ -379,6 +389,60 @@ def evaluate(
     }
 
 
+def recorded_run_log(contract: FrozenTaskContract, evidence: Path) -> Document:
+    """The upstream run log of one simulator trial, from its recorded evidence only."""
+    trial = json.loads((evidence / "trial.json").read_text())
+    return build_run_log(
+        contract,
+        json.loads((evidence / "environment-evidence.json").read_text()),
+        trial["submission"],
+        run_id=trial["run_id"],
+        seed=trial["seed"],
+        started_at=trial["started_at"],
+        finished_at=trial["finished_at"],
+        duration_seconds=trial["duration_seconds"],
+        termination_reason=trial["termination_reason"],
+        solution=trial["solution"],
+    )
+
+
+def evaluate_once(
+    contract: FrozenTaskContract,
+    run_log: Document,
+    output: Path,
+    *,
+    judgement: Document | None = None,
+    dispatch: bool = False,
+) -> Document:
+    """Score into a fresh directory; the judge is consulted only when `dispatch` is set.
+
+    A saved `judgement` must belong to this contract's judge and to this run log.
+    """
+    if dispatch and judgement is not None:
+        raise ValueError("Either dispatch the judge or supply a saved judgement, not both")
+    if judgement is not None and (fault := judgement_fault(contract, run_log, judgement)):
+        raise ValueError(fault)
+    output.mkdir(parents=True, exist_ok=False)
+    _write(output / "task-contract.json", contract.as_dict())
+    _write(output / "run-log.json", run_log)
+    reply, error = judgement, None
+    if dispatch:
+        dispatched = {"attempts": 1, "mode": contract.judge_mode, "model": contract.judge_model}
+        _write(output / "judge-dispatch.json", {**dispatched, "started_at": datetime.now(timezone.utc).isoformat()})
+        try:
+            reply = judge(contract, run_log, output / "judge", timeout=180)
+            _write(output / "judge-reply.json", reply)
+        except Exception as exc:
+            error = type(exc).__name__
+    report = evaluate(contract, run_log, reply, judge_error=error)
+    write_evaluation(output, report)
+    return report
+
+
+def _write(path: Path, value: Any) -> None:
+    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n")
+
+
 def write_evaluation(report_dir: Path, report: Document) -> None:
     """Persist one trial once. An unscored trial deliberately has no reward file."""
     destination = Path(report_dir)
@@ -402,80 +466,3 @@ def write_evaluation(report_dir: Path, report: Document) -> None:
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n")
     if reward is not None:
         (destination / "reward.txt").write_text(str(reward) + "\n")
-
-
-def is_evaluation(report: Any) -> TypeIs[Document]:
-    """Accept one `sapi-lab-task-evaluation/v1` document and nothing else.
-
-    `sapi-lab-rubric-evaluation/v1` also carries `status`, `normalized_reward`
-    and `execution_pass`, so no field test separates the two. The schemas were
-    split so they could not be confused; only the tag decides which this is.
-    """
-    return isinstance(report, dict) and report.get("schema") == SCHEMA
-
-
-def summarize_evaluations(attempts: list[Document | None]) -> Document:
-    """Summarize every dispatched attempt; None preserves an absent evaluation.
-
-    A scored-only mean explicitly names its denominator. Missing judgement is
-    never a zero business score, even if Harbor's generic job metric substitutes
-    zero for absent rewards. Caller records planned-but-undispatched work apart.
-    A document of any other schema is reported under `foreign_schema` and
-    contributes no reward, status, mode or execution flag.
-    """
-    recognized = [report for report in attempts if is_evaluation(report)]
-    missing = sum(report is None for report in attempts)
-    scored = [report for report in recognized if report.get("status") == "complete"]
-    rewards = [report["normalized_reward"] for report in scored]
-    if any(type(value) not in (int, float) or not 0 <= value <= 1 for value in rewards):
-        raise ValueError("Complete attempt lacks a valid normalized reward")
-    return {
-        "attempted": len(attempts),
-        "scored": len(scored),
-        "unscored": len(attempts) - len(scored),
-        "evaluation_missing": missing,
-        "foreign_schema": len(attempts) - missing - len(recognized),
-        "judge_failed": sum(report.get("status") == "judge_failed" for report in recognized),
-        "execution_passed": sum(report.get("execution_pass") is True for report in recognized),
-        "mean_reward_scored": sum(rewards) / len(rewards) if rewards else None,
-        "mean_denominator": "scored attempts only; unscored attempts remain reported",
-        "evaluation_modes": sorted({report["evaluation_mode"] for report in recognized}),
-    }
-
-
-def summarize_stages(
-    authoring: list[Document | None],
-    runtimes: list[Document | None],
-    judges: list[Document | None],
-    *,
-    calibrations: list[Document | None] | None = None,
-) -> Document:
-    """Count dispatched attempts by stage without pooling controls/model scores.
-
-    Supply one record per actual dispatch (None for missing outcome). Optional
-    numeric fields are duration_seconds, cli_reported_tokens, cost_usd and
-    provider_call_count. Judge callers may supply their provenance dictionary.
-    Missing usage is unknown, never a zero-cost claim. Candidate evaluation
-    scores belong in summarize_evaluations, separately from reference controls.
-    """
-    stages = {"authoring": authoring, "runtime": runtimes, "judge": judges, "calibration": calibrations or []}
-    result: Document = {}
-    for name, attempts in stages.items():
-        present = [row for row in attempts if row is not None]
-        row: Document = {"attempted": len(attempts), "outcome_missing": len(attempts) - len(present)}
-        row["eligible"] = sum(item.get("eligible") is True for item in present) if name == "authoring" else None
-        row["failed"] = sum(
-            item.get("status") in {"failed", "error", "judge_failed"} or item.get("eligible") is False
-            for item in present
-        )
-        for field in ("duration_seconds", "cli_reported_tokens", "cost_usd", "provider_call_count"):
-            observed = [item[field] for item in present if item.get(field) is not None]
-            if any(type(value) not in (int, float) or not 0 <= value < float("inf") for value in observed):
-                raise ValueError("Invalid stage measurement: " + field)
-            row[field] = {
-                "observed_sum": sum(observed) if observed else None,
-                "observed_count": len(observed),
-                "total": sum(observed) if len(observed) == len(attempts) and attempts else None,
-            }
-        result[name] = row
-    return {"stages": result, "total_dispatches": sum(len(rows) for rows in stages.values()), "scores_pooled": False}

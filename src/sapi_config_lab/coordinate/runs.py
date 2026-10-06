@@ -3,19 +3,24 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from functools import partial
 import json
 from pathlib import Path
 import shutil
 import subprocess
 from typing import Any
 
+from sapi_config_lab.autowfbench_source import default_source
+from sapi_config_lab.coordinate.evaluation import trial_result
 from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.coordinate.provenance import source_manifest
+from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.agency import start_bridge, stop_bridge
+from sapi_config_lab.execute.autowfbench import SimulatorHost
 from sapi_config_lab.execute.host import (
     checked_harbor,
     collect_jobs,
@@ -26,6 +31,7 @@ from sapi_config_lab.execute.host import (
     running_containers,
     staging_dir,
 )
+from sapi_config_lab.paths import CATALOG
 
 
 def fingerprint(path: Path) -> dict[str, str]:
@@ -35,23 +41,38 @@ def fingerprint(path: Path) -> dict[str, str]:
     return {str(item.relative_to(path)): sha256(item) for item in sorted(path.rglob("*")) if item.is_file()}
 
 
-def load_trials(job: Path) -> list[dict]:
-    """One row per Harbor trial: its reward, exception and the verifier's report."""
+def load_trials(job: Path, hosted: dict[str, Path] | None = None) -> list[dict]:
+    """One row per Harbor trial: reward, exception, the evaluator's report and the common result.
+
+    A hosted trial's report is the one its host recorded, never the container's copy.
+    """
     trials = []
     for path in sorted(job.glob("*/result.json")):
         trial = json.loads(path.read_text())
-        report_path = path.parent / "verifier/evaluation/report.json"
-        acceptance = json.loads(report_path.read_text()) if report_path.exists() else None
-        trials.append(
-            {
-                "task_name": trial.get("task_name"),
-                "rewards": (trial.get("verifier_result") or {}).get("rewards"),
-                "exception": trial.get("exception_info"),
-                "result_path": str(path),
-                "acceptance": acceptance,
-            }
-        )
+        name = trial.get("task_name")
+        report_path = (hosted or {}).get(name, path.parent / "verifier") / "evaluation/report.json"
+        row = {
+            "task_name": name,
+            "rewards": (trial.get("verifier_result") or {}).get("rewards"),
+            "exception": trial.get("exception_info"),
+            "result_path": str(path),
+            "acceptance": json.loads(report_path.read_text()) if report_path.exists() else None,
+        }
+        trials.append({**row, "result": trial_result(row)})
     return trials
+
+
+@dataclass(frozen=True)
+class Hosting:
+    """How a job's simulator tasks are served: runtime model mode, bridge and evaluator."""
+
+    llm_mode: str
+    evaluate: Callable[[str, Path], dict]
+    bridge_url: str | None = None
+
+
+def task_dirs(tasks: Path) -> list[Path]:
+    return [tasks] if (tasks / "task.toml").is_file() else sorted(path for path in tasks.iterdir() if path.is_dir())
 
 
 @dataclass
@@ -108,27 +129,87 @@ class Run:
             raise RuntimeError(f"Staged task packages changed ({phase})")
         self.report.setdefault("phases", []).append({"phase": phase, "unchanged": True})
 
-    def harbor(self, job: str, tasks: Path, agent: str, *, timeout: float, **arguments: Any) -> tuple[int, list[dict]]:
+    def harbor(
+        self, job: str, tasks: Path, agent: str, *, timeout: float, hosting: Hosting | None = None, **arguments: Any
+    ) -> tuple[int, list[dict]]:
         """One `harbor run`; its jobs are copied out even when it fails or times out."""
         if self.staging is None:
             raise RuntimeError("No task packages were staged")
-        argv = harbor_run_args(self.harbor_argv, tasks, self.staging / "jobs", job, agent, **arguments)
-        self.report.setdefault("commands", []).append(argv)
-        try:
-            exit_code = run_logged(argv, self.output / (job + ".log"), timeout=max(1.0, timeout))
-        finally:
-            collect_jobs(self.staging, self.output / "jobs")
-        return exit_code, load_trials(self.output / "jobs" / job)
+        records = self.output / "environments" / job
+        with self.hosted(job, tasks, records, hosting) as (job_tasks, hosted):
+            argv = harbor_run_args(self.harbor_argv, job_tasks, self.staging / "jobs", job, agent, **arguments)
+            self.report.setdefault("commands", []).append(argv)
+            try:
+                exit_code = run_logged(argv, self.output / (job + ".log"), timeout=max(1.0, timeout))
+            finally:
+                collect_jobs(self.staging, self.output / "jobs")
+        return exit_code, load_trials(self.output / "jobs" / job, hosted)
 
     @contextmanager
-    def bridge(self, port: int, upstream: str, budget: dict, name: str) -> Iterator[Path]:
+    def hosted(
+        self, job: str, tasks: Path, records: Path, hosting: Hosting | None
+    ) -> Iterator[tuple[Path, dict[str, Path]]]:
+        """Serve each simulator task from the host; yields the task path Harbor runs and each host's record.
+
+        Credentials go into a per-job copy, so the pinned packages never change,
+        and must not appear in anything this job persisted.
+        """
+        hosted = [task for task in task_dirs(tasks) if (task / "tests/environment.json").is_file()]
+        if not hosted:
+            yield tasks, {}
+            return
+        if hosting is None:
+            raise RuntimeError("Simulator tasks need a host environment")
+        assert self.staging is not None
+        copy = self.staging / "hosted" / job / (tasks.name if tasks in hosted else "tasks")
+        shutil.copytree(tasks, copy)
+        hosts: list[SimulatorHost] = []
+        try:
+            with ExitStack() as stack:
+                for task in hosted:
+                    environment = json.loads((task / "tests/environment.json").read_text())
+                    scenario = environment["scenario"]
+                    host = SimulatorHost(
+                        default_source(),
+                        environment["challenge"],
+                        records / scenario,
+                        seed=environment["seed"],
+                        output=SCENARIOS[scenario].output,
+                        llm_mode=hosting.llm_mode,
+                        bridge_url=hosting.bridge_url,
+                        evaluate=partial(hosting.evaluate, scenario),
+                    )
+                    stack.callback(host.close)
+                    hosts.append(host)
+                    target = copy if tasks in hosted else copy / task.name
+                    write_json(target / "tests/connection.json", host.connection)
+                yield copy, {host.record.name: host.record for host in hosts}
+        finally:
+            shutil.rmtree(copy)
+            credentials = [value for host in hosts for value in host.credentials()]
+            persisted = [self.output / "jobs" / job, records, self.output / (job + ".log")]
+            leaked = [
+                str(path)
+                for root in persisted
+                for path in ([root] if root.is_file() else root.rglob("*") if root.exists() else [])
+                if path.is_file() and any(value.encode() in path.read_bytes() for value in credentials)
+            ]
+            if leaked:
+                raise RuntimeError("Ephemeral credentials appeared in persisted artifacts: " + ", ".join(leaked))
+
+    @contextmanager
+    def bridge(
+        self, port: int, upstream: str, budget: dict, name: str, *, bindings: Path = CATALOG, reject_tool_use=False
+    ) -> Iterator[Path]:
         """An Agency bridge enforcing `budget`; yields its audit path and always stops it."""
         budget_path = self.output / "budgets" / (name + ".json")
         audit = self.output / "audits" / (name + ".jsonl")
         budget_path.parent.mkdir(exist_ok=True)
         write_json(budget_path, budget)
         self.pin("budget " + name, budget_path)
-        self.bridge_process = start_bridge(port, upstream, audit, budget_path, self.output / (name + "-bridge.log"))
+        self.bridge_process = start_bridge(
+            port, upstream, audit, budget_path, self.output / (name + "-bridge.log"), bindings, reject_tool_use
+        )
         try:
             yield audit
         finally:

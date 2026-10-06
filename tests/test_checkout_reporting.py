@@ -2,7 +2,15 @@
 
 import unittest
 
-from sapi_config_lab.coordinate.benchmark import terminal_submission
+from sapi_config_lab.coordinate.scenarios import SCENARIOS
+from sapi_config_lab.execute.autowfbench import terminal_submission as admitted
+
+CHECKOUT = SCENARIOS["checkout-recovery"].output
+CRM = SCENARIOS["crm-lead-qualification"].output
+
+
+def terminal_submission(record, elapsed, run_id, output=CHECKOUT):
+    return admitted(record, elapsed, run_id, limit=120, output=output)
 
 
 class TerminalSubmissionTests(unittest.TestCase):
@@ -37,6 +45,13 @@ class TerminalSubmissionTests(unittest.TestCase):
             with self.subTest(status=status):
                 record = {"status": status, "output": {"final_answer": "Success", "incident_summary": "All fixed"}}
                 self.assertEqual(terminal_submission(record, 1, "run-one"), ("solution_failed", None))
+
+    def test_crm_result_does_not_require_checkout_artifact(self):
+        record = {"status": "success", "output": {"final_answer": "actual receipts"}}
+        reason, submission = terminal_submission(record, 1, "case", CRM)
+        self.assertEqual(reason, "completed")
+        self.assertEqual(submission["artifacts"], [])
+        self.assertEqual(terminal_submission(record, 1, "case")[0], "protocol_error")
 
     def test_empty_explanation_remains_semantic_judge_responsibility(self):
         # Upstream allows empty strings: do not secretly turn prose quality into

@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 
 from sapi_config_lab.coordinate.provenance import source_manifest
+from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.evidence import json_text, sha256
 from sapi_config_lab.execute.agency import strict_json
 
@@ -89,17 +90,24 @@ def select_submission(source_report: Path, scenarios: tuple[str, ...]) -> dict:
             "Authoring provenance mismatch",
         )
         require(sha256(prompt) == report.get("prompt_sha256", {}).get(scenario), "Prompt drift")
+        entry = {
+            "scenario": scenario,
+            "source_trial": first["trial"],
+            "source_yaml_path": str(submission),
+            "source_yaml_sha256": sha256(submission),
+        }
         cases = root / "task-packages" / scenario / "tests/cases.json"
-        require(set(read_json(cases)) == {scenario}, "Private fixture set mismatch")
-        require(report.get("private_cases_sha256", {}).get(scenario) == sha256(cases), "Private fixture hash mismatch")
+        if SCENARIOS[scenario].environment == "fixtures":
+            require(set(read_json(cases)) == {scenario}, "Private fixture set mismatch")
+            require(
+                report.get("private_cases_sha256", {}).get(scenario) == sha256(cases), "Private fixture hash mismatch"
+            )
+            entry.update(cases_path=str(cases), cases_sha256=sha256(cases))
+        else:
+            require(not cases.exists(), "Fixtures staged but not recorded")
         entries.append(
             {
-                "scenario": scenario,
-                "source_trial": first["trial"],
-                "source_yaml_path": str(submission),
-                "source_yaml_sha256": sha256(submission),
-                "cases_path": str(cases),
-                "cases_sha256": sha256(cases),
+                **entry,
                 "attempts": attempts,
                 "provenance": {name: sha256(directory / name) for name in PROVENANCE_FILES},
             }
@@ -114,7 +122,7 @@ def select_submission(source_report: Path, scenarios: tuple[str, ...]) -> dict:
 
 
 def load_selection(path: Path, *, copy_to: Path | None = None) -> dict:
-    """Recompute the selection; return {scenario: {path, sha256, cases}}."""
+    """Recompute the selection; return {scenario: {path, sha256[, cases, cases_sha256]}}."""
     manifest = read_json(path)
     require(isinstance(manifest, dict) and manifest.get("schema") == SCHEMA, "Unknown selection manifest")
     source = Path(manifest["source_report"]["path"])
@@ -126,18 +134,20 @@ def load_selection(path: Path, *, copy_to: Path | None = None) -> dict:
         shutil.copyfile(source, copy_to / "source-report.json")
     submissions = {}
     for entry in manifest["entries"]:
-        yaml_path, cases_path = Path(entry["source_yaml_path"]), Path(entry["cases_path"])
-        submissions[entry["scenario"]] = {
-            "path": yaml_path,
-            "sha256": entry["source_yaml_sha256"],
-            "cases": json.loads(cases_path.read_text())[entry["scenario"]],
-            "cases_sha256": entry["cases_sha256"],
-        }
+        yaml_path = Path(entry["source_yaml_path"])
+        submission: dict = {"path": yaml_path, "sha256": entry["source_yaml_sha256"]}
+        if "cases_path" in entry:
+            cases_path = Path(entry["cases_path"])
+            submission.update(
+                cases=json.loads(cases_path.read_text())[entry["scenario"]], cases_sha256=entry["cases_sha256"]
+            )
+        submissions[entry["scenario"]] = submission
         if copy_to is not None:
             destination = copy_to / entry["scenario"]
             destination.mkdir()
             shutil.copyfile(yaml_path, destination / "submission.yaml")
-            shutil.copyfile(cases_path, destination / "cases.json")
+            if "cases_path" in entry:
+                shutil.copyfile(cases_path, destination / "cases.json")
             for name in PROVENANCE_FILES:
                 target = destination / name
                 target.parent.mkdir(parents=True, exist_ok=True)

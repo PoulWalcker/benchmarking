@@ -12,7 +12,8 @@ import sys
 import uuid
 from typing import Any
 
-from sapi_config_lab.coordinate.runs import Run, run_experiment
+from sapi_config_lab.coordinate.evaluation import contract_for, control_passed, upstream_evaluate
+from sapi_config_lab.coordinate.runs import Hosting, Run, run_experiment
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
 from sapi_config_lab.execute.host import LAB_IMAGE, build_image, run_logged
 from sapi_config_lab.coordinate.provenance import host_environment
@@ -21,22 +22,10 @@ from sapi_config_lab.paths import workspace_root
 ROOT = workspace_root()
 
 
-def trial_accepted(trial: dict) -> bool:
-    """Harbor rewarded the trial 1.0 without an exception and the verifier accepted it."""
-    return (
-        not trial["exception"]
-        and trial["rewards"] == CONTROL_REWARDS["oracle"]
-        and bool(trial["acceptance"])
-        and trial["acceptance"].get("passed") is True
-    )
-
-
-CONTROL_REWARDS = {"oracle": {"reward": 1.0}, "nop": {"reward": 0.0}}
-
-
-def control_rewards_met(agent: str, trials: list[dict]) -> bool:
-    """Oracle scores 1.0, nop scores 0.0, neither raised; a rubric score is never a reward."""
-    return all(not row["exception"] and row["rewards"] == CONTROL_REWARDS[agent] for row in trials)
+def simulated_hosting(scenarios: tuple[str, ...]) -> Hosting:
+    """Stub runtime calls and the simulated judge: a simulator control costs nothing."""
+    contracts = {name: contract_for(SCENARIOS[name]) for name in scenarios if SCENARIOS[name].evaluator == "upstream"}
+    return Hosting("stub", upstream_evaluate(contracts))
 
 
 def transport_probe(run: Run) -> dict:
@@ -114,14 +103,16 @@ def main(argv: list[str] | None = None) -> int:
         report["transport"] = transport_probe(run)
         check("real_n8n_transport", report["transport"]["exit_code"] == 0 and report["transport"].get("passed") is True)
         run.stage("oracle", selected)
+        hosting = simulated_hosting(selected)
         for agent in ("oracle", "nop"):
             print(f"Harbor {agent}: {len(selected)} tasks through real n8n", flush=True)
-            exit_code, trials = run.harbor(agent, run.tasks, agent, timeout=2400)
+            exit_code, trials = run.harbor(agent, run.tasks, agent, timeout=2400, hosting=hosting)
+            # An unscored simulator nop writes no reward, so Harbor reports a missing reward file.
+            simulated_nop = agent == "nop" and any(SCENARIOS[t["task_name"]].evaluator == "upstream" for t in trials)
             passed = (
-                exit_code == 0
+                (exit_code == 0 or simulated_nop)
                 and sorted(t["task_name"] for t in trials) == sorted(selected)
-                and control_rewards_met(agent, trials)
-                and (agent == "nop" or all(t["acceptance"] and t["acceptance"].get("passed") for t in trials))
+                and all(control_passed(agent, trial) for trial in trials)
             )
             report[agent] = {"passed": passed, "harbor_exit_code": exit_code, "trials": trials}
             check(f"harbor_{agent}", passed)

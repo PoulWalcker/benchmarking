@@ -359,17 +359,18 @@ class VerifierSeamTests(unittest.TestCase):
             self.assertNotIn(forbidden, script)
 
     def test_every_control_run_reads_the_reward_gate_from_one_place(self):
-        from sapi_config_lab.coordinate.controls import CONTROL_REWARDS, control_rewards_met
+        from sapi_config_lab.coordinate.evaluation import control_passed
 
-        self.assertEqual(CONTROL_REWARDS, {"oracle": {"reward": 1.0}, "nop": {"reward": 0.0}})
+        def trial(reward, exception=None):
+            row = {"task_name": "invoice-total", "rewards": {"reward": reward}, "exception": exception}
+            return {**row, "acceptance": {"passed": True}}
+
         for agent, reward in (("oracle", 1.0), ("nop", 0.0)):
-            self.assertTrue(control_rewards_met(agent, [{"rewards": {"reward": reward}, "exception": None}]))
+            self.assertTrue(control_passed(agent, trial(reward)))
             # A rubric score is a separate document; it must never read as a reward.
             for intruder in (0.732, 1.0 - reward, None, "1.0"):
-                self.assertFalse(control_rewards_met(agent, [{"rewards": {"reward": intruder}, "exception": None}]))
-            self.assertFalse(control_rewards_met(agent, [{"rewards": {"reward": reward}, "exception": "boom"}]))
-        source = (ROOT / "src/sapi_config_lab/coordinate/controls.py").read_text()
-        self.assertEqual(source.count('{"reward": 1.0}'), 1)
+                self.assertFalse(control_passed(agent, trial(intruder)))
+            self.assertFalse(control_passed(agent, trial(reward, "boom")))
 
 
 class StandaloneDistributionTests(unittest.TestCase):

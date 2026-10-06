@@ -28,6 +28,7 @@ from sapi_config_lab.evidence import json_text, sha256, write_json
 from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.execute.ui_n8n import DockerUi, fingerprint
 from sapi_config_lab.coordinate.backend import default_backend
+from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.contracts import CompileOptions
 from sapi_config_lab.profile import UniqueLoader, Unsupported, read_bindings, validate, validate_bindings
 
@@ -382,7 +383,9 @@ def main(argv=None) -> int:
             if not 1 <= args.seconds <= 3600:
                 parser.error("--seconds must be between one second and one hour")
             state = args.state_dir or workspace_root() / "var/ui"
-            configs = sorted((workspace_root() / "benchmarks").glob("*/config.yaml")) if args.all else [args.config]
+            # Simulator scenarios need their host environment; the UI imports fixture workflows only.
+            fixtures = [s.config for s in SCENARIOS.values() if s.environment == "fixtures"]
+            configs = fixtures if args.all else [args.config]
             evidence = None
             if args.live:
                 # Finish local compile/validation before contacting Docker or

@@ -547,9 +547,10 @@ def evaluate(
     runtime_src: Path | None = None,
     runtime_manifest: Path | None = None,
     judge: Judge | None = None,
+    evaluation: Path | None = None,
 ) -> dict:
-    """Judge the recorded observation of one submission."""
-    evaluation = evidence.parent / "evaluation"
+    """Judge the recorded observation of one submission; decisions go beside it unless `evaluation` is given."""
+    evaluation = evaluation or evidence.parent / "evaluation"
     evaluation.mkdir(parents=True, exist_ok=True)
     identity = evaluator_identity()
     # Declared outside the try: a submission that is rejected part way through

@@ -8,7 +8,7 @@ import sys
 
 from sapi_config_lab.evidence import write_json
 from sapi_config_lab.execute.host import LAB_IMAGE
-from sapi_config_lab.paths import CATALOG, workspace_root
+from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.profile import read, read_bindings, validate, Invalid, Unsupported
 from sapi_config_lab.coordinate.backend import default_backend
 from sapi_config_lab.contracts import CompileOptions, WorkflowBackend
@@ -16,9 +16,7 @@ from sapi_config_lab.contracts import CompileOptions, WorkflowBackend
 # Commands dispatched by importing a module and calling its main(); the rest are inline below.
 MODULES = {
     "harbor": "coordinate.controls",
-    "benchmark": "coordinate.benchmark",
-    "benchmark-series": "evaluate.benchmark_series",
-    "benchmark-calibrate": "evaluate.judge_calibration",
+    "evaluate": "coordinate.evaluation",
     "live": "coordinate.live",
     "select": "coordinate.replay",
     "generate": "coordinate.generate",
@@ -27,7 +25,7 @@ MODULES = {
     "ui": "coordinate.ui",
     "review-export": "evaluate.review_export",
     "lifecycle": "coordinate.lifecycle",
-    "checkout-worker": "coordinate.benchmark_worker",
+    "simulator-worker": "coordinate.simulator_worker",
 }
 
 # What a person types at a normal checkout.
@@ -38,9 +36,7 @@ PUBLIC = {
     "generate": "Model-authored YAML after the control suite passes. Costs model calls.",
     "select": "Select generated submissions for replay by a fixed rule; runs nothing.",
     "live": "Replay saved or reference submissions against live operations. Costs model calls.",
-    "benchmark": "AutoWFBench evaluation, --task checkout|crm. --mode live costs model calls.",
-    "benchmark-series": "Build a comparison manifest from existing reports; reruns nothing.",
-    "benchmark-calibrate": "Judge against frozen controls. Costs one judge call unless --prepare-only.",
+    "evaluate": "Evaluate one recorded trial again; a judge is called only with --dispatch-judge.",
     "ui": "Import graphs into local n8n and prepare one bounded manual session.",
     "lifecycle": "The durable lifecycle controller against a registry directory.",
     "review-export": "Write a derived analysis.md beside recorded evaluations; adds files only.",
@@ -54,7 +50,7 @@ INTERNAL = {
     "package-tasks": "Assemble Harbor task packages into a new directory; runs nothing.",
     "transport": "HTTP transport probes. Runs inside the lab image; run.sh invokes it there.",
     "bridge": "Foreground Agency HTTP adapter. live and ui start it themselves.",
-    "checkout-worker": "Trusted verifier inside the task container; needs /tests and /logs.",
+    "simulator-worker": "Trusted verifier step inside a simulator task container; needs /tests and /logs.",
 }
 
 
@@ -94,11 +90,15 @@ def build_command(argv: list[str], *, backend: WorkflowBackend | None = None) ->
     parser = argparse.ArgumentParser(description="Compile supported examples; reject unsupported extensions.")
     parser.add_argument("--output-dir", type=Path, default=Path("generated"))
     args = parser.parse_args(argv)
-    root, rows = workspace_root(), []
+    from sapi_config_lab.coordinate.scenarios import SCENARIOS
+
+    rows = []
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    bindings = read_bindings(CATALOG)
     selected = backend if backend is not None else default_backend()
-    for path in sorted((root / "benchmarks").glob("*/config.yaml")):
+    for scenario in SCENARIOS.values():
+        path, bindings = scenario.config, read_bindings(scenario.bindings)
+        # A simulator's tools are served at run time; any URL compiles.
+        options = CompileOptions(operation_url="http://tools/tools" if scenario.environment == "simulator" else None)
         cfg = read(path)
         order, _ = validate(cfg, bindings)
         row = {
@@ -109,7 +109,7 @@ def build_command(argv: list[str], *, backend: WorkflowBackend | None = None) ->
             "engine": selected.name,
         }
         try:
-            compiled = selected.compile(cfg, bindings, CompileOptions())
+            compiled = selected.compile(cfg, bindings, options)
             out = args.output_dir / (path.parent.name + "." + selected.name + ".json")
             write_json(out, compiled.document)
             write_json(out.with_suffix(".map.json"), compiled.mapping, ensure_ascii=True)

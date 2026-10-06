@@ -18,7 +18,9 @@ class LabTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.bindings = profile.read(CATALOG)["operations"]
-        cls.configs = [profile.read(p) for p in sorted((ROOT / "benchmarks").glob("*/config.yaml"))]
+        from sapi_config_lab.coordinate.scenarios import SCENARIOS
+
+        cls.configs = [profile.read(s.config) for s in SCENARIOS.values() if s.environment == "fixtures"]
 
     def run_config(self, index, inputs=None, mutate_export=None):
         artifact, _ = compiler.compile_n8n(copy.deepcopy(self.configs[index]), self.bindings)

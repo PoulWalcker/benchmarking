@@ -17,7 +17,9 @@ ENV N8N_DIAGNOSTICS_ENABLED=false \
     PYTHONPATH=/app/lab/src
 WORKDIR /app
 COPY src /app/lab/src/
-COPY docs/PROFILE.md /app/lab/docs/PROFILE.md
+# Task instructions name docs/PROFILE.md; both paths hold the prompt contract.
+COPY generation/PROFILE.md /app/lab/generation/PROFILE.md
+COPY generation/PROFILE.md /app/lab/docs/PROFILE.md
 COPY benchmarks /app/lab/benchmarks/
 RUN mkdir -p /app/submission /app/scenario
 ENTRYPOINT []

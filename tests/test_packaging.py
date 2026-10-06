@@ -7,8 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.coordinate.benchmark import ORACLE_MODULES, oracle_scrub
-from sapi_config_lab.coordinate.packages import stage_tasks
+from sapi_config_lab.coordinate.packages import EVALUATOR_MODULES, stage_tasks
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.provenance import source_manifest as inventory
 from sapi_config_lab.coordinate.scenarios import BASELINE_SCENARIOS as SCENARIOS
@@ -35,11 +34,29 @@ GENERATION_PROMPTS = {
 }
 
 
+# The checkout and CRM prompts are the bytes the pre-registry runner sent.
+IMPORTED_PROMPTS = {
+    "checkout-recovery": "232d941d78f8c733b6f58aa6bc708a2577aad7e9c1eb5186df2a0497677a0892",
+    "crm-lead-qualification": "ebc122008c4cac5c89464182a1d2b3b39d4f566e6a7e90622e0f37a638880493",
+}
+AVAILABLE = (ROOT / ".cache/autowfbench").is_dir() and importlib.util.find_spec("fastjsonschema") is not None
+
+
 class PackagingTests(unittest.TestCase):
     def test_generation_prompts_are_byte_identical_to_the_recorded_ones(self):
         with tempfile.TemporaryDirectory() as directory:
             hashes = stage_tasks(Path(directory) / "tasks", mode="generation", scenarios=tuple(GENERATION_PROMPTS))
         self.assertEqual(hashes, GENERATION_PROMPTS)
+
+    def test_documentation_is_not_part_of_any_prompt(self):
+        real = Path.read_text
+
+        def guarded(path, *args, **kwargs):
+            self.assertNotIn("docs", Path(path).relative_to(ROOT).parts if Path(path).is_relative_to(ROOT) else ())
+            return real(path, *args, **kwargs)
+
+        with tempfile.TemporaryDirectory() as directory, patch.object(Path, "read_text", guarded):
+            stage_tasks(Path(directory) / "tasks", mode="generation", scenarios=tuple(GENERATION_PROMPTS))
 
     def test_experiments_reject_code_from_a_different_installation(self):
         with patch("sapi_config_lab.paths.__file__", "/different/site-packages/sapi_config_lab/paths.py"):
@@ -79,6 +96,26 @@ class PackagingTests(unittest.TestCase):
                 self.assertFalse((task / "solution").exists())
                 self.assertEqual(list(task.rglob("*.yaml")), [])
 
+    @unittest.skipUnless(AVAILABLE, "Requires the pinned upstream source and benchmark extra")
+    def test_simulator_packages_scrub_the_evaluator_and_carry_no_hidden_data(self):
+        names = ("checkout-recovery", "crm-lead-qualification")
+        for mode in ("generation", "oracle"):
+            with tempfile.TemporaryDirectory() as directory:
+                hashes = stage_tasks(Path(directory) / "tasks", mode=mode, scenarios=names)
+                self.assertEqual(hashes if mode == "generation" else IMPORTED_PROMPTS, IMPORTED_PROMPTS)
+                for name in names:
+                    task = Path(directory) / "tasks" / name
+                    files = {str(path.relative_to(task)) for path in task.rglob("*") if path.is_file()}
+                    dockerfile = (task / "environment/Dockerfile").read_text()
+                    for relative in EVALUATOR_MODULES:
+                        self.assertIn(f"/app/lab/src/{relative}", dockerfile)
+                    self.assertIn("/app/lab/benchmarks", dockerfile)
+                    self.assertFalse(any("cases" in f or f.endswith(".py") for f in files), files)
+                    text = "".join((task / f).read_text() for f in files)
+                    self.assertNotIn("scorecard", text)
+                    expected = "tests/admission.json" if mode == "generation" else "tests/environment.json"
+                    self.assertIn(expected, files)
+
     def test_source_provenance_covers_relocated_behavior_and_dependencies(self):
         manifest = source_manifest()
         for path in (ROOT / "src").rglob("*"):
@@ -114,23 +151,25 @@ class PackagingTests(unittest.TestCase):
 
         self.assertEqual(len(ALL), len(list((ROOT / "benchmarks").glob("*/scenario.json"))))
         for name, definition in ALL.items():
-            for required in ("config.yaml", "task.md", "instruction.md", "cases.json"):
-                self.assertTrue((definition.directory / required).is_file(), (name, required))
-            self.assertIn("positive", definition.cases())
+            if definition.environment == "fixtures":
+                required = ("config.yaml", "task.md", "instruction.md", "cases.json")
+                self.assertIn("positive", definition.cases())
+            else:
+                required = ("config.yaml", "instruction.md", "authoring-notes.md", "bindings.yaml")
+                self.assertTrue(definition.imported and definition.budgets["runtime_model_calls"] >= 0)
+            for file in required:
+                self.assertTrue((definition.directory / file).is_file(), (name, file))
             self.assertIn(definition.fixture_overlay, (None, "fresh"), name)
         # The lab image copies benchmarks/ for its reference configs; cases.json is
         # evaluator-only and reaches a container only as a staged tests/ file.
         self.assertIn("COPY benchmarks /app/lab/benchmarks/", (ROOT / "infra/Dockerfile").read_text())
         self.assertIn("benchmarks/*/cases.json", (ROOT / ".dockerignore").read_text().splitlines())
 
-    def test_agent_image_still_deletes_every_scoring_oracle_module(self):
-        # rm -rf exits 0 on a missing path, so a stale entry would leave the oracle
-        # readable inside the agent's container and nothing at run time would say so.
-        scrub = oracle_scrub()
-        self.assertTrue(ORACLE_MODULES)
-        for relative in ORACLE_MODULES:
+    def test_every_scrubbed_evaluator_module_still_exists(self):
+        # rm -rf exits 0 on a missing path, so a stale entry would leave the evaluator
+        # readable inside the candidate's container and nothing at run time would say so.
+        for relative in EVALUATOR_MODULES:
             self.assertTrue((ROOT / "src" / relative).exists(), relative)
-            self.assertIn(f"/app/lab/src/{relative}", scrub)
 
     def test_evaluation_does_not_trust_a_recorded_engine_success(self):
         spec = importlib.util.spec_from_file_location("independent_verifier", ROOT / "verification/verify.py")

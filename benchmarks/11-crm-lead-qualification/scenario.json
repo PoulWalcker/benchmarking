@@ -1,0 +1,18 @@
+{
+  "group": "imported",
+  "task": {
+    "source": "autowfbench",
+    "challenge": "crm-lead-qualification",
+    "workflow_id": "crm-workflow"
+  },
+  "environment": "simulator",
+  "evaluator": "upstream",
+  "bindings": "bindings.yaml",
+  "budgets": {
+    "authoring_attempts": 1,
+    "runtime_model_calls": 1
+  },
+  "controls": {
+    "reference_reward": 0.732
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "group": "imported",
+  "task": {
+    "source": "autowfbench",
+    "challenge": "production-checkout-recovery",
+    "workflow_id": "checkout-workflow"
+  },
+  "environment": "simulator",
+  "evaluator": "upstream",
+  "bindings": "bindings.yaml",
+  "budgets": {
+    "authoring_attempts": 2,
+    "runtime_model_calls": 4
+  },
+  "output": {
+    "artifact_field": "incident_summary",
+    "artifact_name": "incident-summary.md"
+  },
+  "controls": {
+    "reference_reward": 0.732
+  }
+}
