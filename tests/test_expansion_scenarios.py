@@ -251,9 +251,9 @@ class ExpansionLocalGraphTests(unittest.TestCase):
                     )
 
     def test_fresh_private_overlay_keeps_all_positive_and_negative_obligations(self):
-        from sapi_config_lab.coordinate.expansion import fresh_case_overlay
+        from sapi_config_lab.coordinate.generate import fresh_case_overlay
 
-        self.cases = {scenario: fresh_case_overlay(scenario)[scenario] for scenario in self.configs}
+        self.cases = {scenario: fresh_case_overlay(scenario) for scenario in self.configs}
         self.test_all_positive_fixtures_satisfy_independent_business_obligations()
         self.test_invalid_fixtures_reject_in_local_driver()
 
@@ -329,3 +329,46 @@ class ExpansionLocalGraphTests(unittest.TestCase):
         run = subprocess.run(["node", "-e", "new Function(" + json.dumps(code) + ")()"], capture_output=True, text=True)
         self.assertNotEqual(run.returncode, 0)
         self.assertIn("Schema violation at inputs.ticket", run.stderr)
+
+
+class FixtureOverlayTests(unittest.TestCase):
+    def test_private_overlay_changes_values_without_changing_acceptance_contracts(self):
+        from sapi_config_lab.coordinate.generate import fresh_case_overlay
+        from sapi_config_lab.coordinate.scenarios import SCENARIOS
+
+        canonical = all_cases()
+        for scenario in [name for name, s in SCENARIOS.items() if s.fixture_overlay == "fresh"]:
+            first = fresh_case_overlay(scenario)
+            second = fresh_case_overlay(scenario)
+            self.assertNotEqual(first["positive"][0]["inputs"], second["positive"][0]["inputs"])
+            for kind in ("positive", "negative"):
+                for public, private in zip(canonical[scenario][kind], first[kind]):
+                    self.assertEqual(
+                        {k: v for k, v in public.items() if k != "inputs"},
+                        {k: v for k, v in private.items() if k != "inputs"},
+                    )
+            self.assertEqual(first["live_cases"], canonical[scenario]["live_cases"])
+        dual = fresh_case_overlay("dual-ledger-closeout")
+        duplicate = next(row for row in dual["negative"] if row["name"] == "domestic-duplicate")["inputs"][
+            "domestic_invoices"
+        ]
+        self.assertEqual(duplicate[0]["id"], duplicate[1]["id"])
+        overflow = next(row for row in dual["negative"] if row["name"] == "export-overflow")["inputs"][
+            "export_invoices"
+        ]
+        self.assertEqual([row["amount_minor"] for row in overflow], [9007199254740991, 1])
+        priority = fresh_case_overlay("priority-support-brief")
+        normal = next(row["inputs"] for row in priority["positive"] if row["name"] == "normal-empty")
+        self.assertEqual(
+            (normal["product_material"], normal["marketing_material"], normal["ticket"]["days_overdue"]), ("", "", 2)
+        )
+        reply = fresh_case_overlay("support-review-packet")
+        for case in reply["positive"]:
+            inputs = case["inputs"]
+            if case["name"] == "wrong-order-id":
+                self.assertNotIn(inputs["required_order_id"], inputs["ticket"]["text"])
+            else:
+                self.assertIn(inputs["required_order_id"], inputs["ticket"]["text"])
+        bulletin = fresh_case_overlay("bulletin-market-brief")
+        malformed = next(row for row in bulletin["negative"] if row["name"] == "malformed-article-title")
+        self.assertEqual(malformed["inputs"]["articles"][0]["title"], "")

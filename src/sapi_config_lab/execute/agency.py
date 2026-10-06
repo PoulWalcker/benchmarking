@@ -27,6 +27,8 @@ from sapi_config_lab.net import urlopen
 from sapi_config_lab.paths import CATALOG, workspace_root
 
 MAX_BODY = 1_048_576
+WRAPPER_UPSTREAM = "http://127.0.0.1:8765/run"
+WRAPPER_MODEL = "gpt-6-astra"
 
 
 class ContractError(ValueError):
@@ -463,7 +465,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=18765)
-    parser.add_argument("--upstream", default="http://127.0.0.1:8765/run")
+    parser.add_argument("--upstream", default=WRAPPER_UPSTREAM)
     parser.add_argument("--timeout", type=int, default=185)
     parser.add_argument("--bindings", type=Path, default=CATALOG)
     parser.add_argument("--audit", type=Path, required=True)

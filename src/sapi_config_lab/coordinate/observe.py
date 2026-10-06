@@ -1,13 +1,4 @@
-"""Run a verifier-issued observation plan and record what the engine did.
-
-The independent verifier decides what must run (`verify.py plan`) and judges
-the record afterwards (`verify.py evaluate`); it never executes anything. This
-step executes each planned definition exactly as given, writes its evidence,
-and finishes with observation.json: the plan's hash and the hash of every file
-under each entry's directory, native engine records included. The verifier
-requires the directory to hold exactly those files. It computes no verdict, and it records every entry it can even
-after another one fails, so a missing entry always means the step stopped.
-"""
+"""Run a verifier-issued observation plan and record what the engine did."""
 
 from __future__ import annotations
 

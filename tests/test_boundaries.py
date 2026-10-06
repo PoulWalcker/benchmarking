@@ -145,3 +145,15 @@ class StageBoundaryTests(unittest.TestCase):
                     self.assertFalse((node.module or "").split(".")[0] == "harbor", module)
                 if isinstance(node, ast.Import):
                     self.assertFalse(any(a.name.split(".")[0] == "harbor" for a in node.names), module)
+
+    def test_experiments_reach_harbor_bridges_and_staging_only_through_a_run(self):
+        owned = {"harbor_run_args", "collect_jobs", "staging_dir", "pin_base_image", "start_bridge", "stop_bridge"}
+        # benchmark.py keeps its own host-side verifier package and trust model.
+        allowed = {"coordinate.runs", "coordinate.benchmark"}
+        for module, path, _ in modules():
+            if stage_of(module) != "coordinate" or module in allowed:
+                continue
+            for node in ast.walk(ast.parse(path.read_text())):
+                if isinstance(node, ast.ImportFrom):
+                    self.assertFalse(owned & {alias.name for alias in node.names}, module)
+

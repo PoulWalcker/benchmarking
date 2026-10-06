@@ -1,7 +1,5 @@
 {
   "group": "expansion",
-  "runtime_caps": {
-    "base-bulletins": 4,
-    "alternate-bulletins": 4
-  }
+  "fixture_overlay": "fresh",
+  "human_review": true
 }

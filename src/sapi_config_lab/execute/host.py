@@ -16,6 +16,8 @@ import tempfile
 from sapi_config_lab.paths import workspace_root
 
 HARBOR_VERSION = "0.21.0"
+# The lab image every experiment builds its task packages from.
+LAB_IMAGE = "sapi-config-lab-n8n:2.41.5"
 
 
 def harbor_command() -> list[str]:

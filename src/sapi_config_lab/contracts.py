@@ -17,12 +17,7 @@ ADMISSION_FIELDS = frozenset({"kind", "rule_id", "event_id", "workflow_ref", "pu
 
 @dataclass(frozen=True)
 class CompileOptions:
-    """Definition-time choices; the same definition and options give the same artifact.
-
-    `activation="event"` compiles a lifecycle definition for an admitted event,
-    and `bound_deadline` makes the artifact require an absolute deadline. Both
-    say only that a RunBinding value must be supplied, never what it is.
-    """
+    """Definition-time choices; the same definition and options give the same artifact."""
 
     llm_mode: LlmMode = "stub"
     bridge_url: str | None = None
@@ -38,12 +33,7 @@ class CompileOptions:
 
 @dataclass(frozen=True)
 class RunBinding:
-    """What one execution supplies at run time: never compiled into an artifact.
-
-    `deadline_at` is an absolute Unix time reserved by the caller; execution
-    honours it and never extends it. `admission` is the lifecycle event being
-    run, and `operation_token` the session secret for HTTP operations.
-    """
+    """What one execution supplies at run time: never compiled into an artifact."""
 
     deadline_at: float | None = None
     admission: Document | None = None
@@ -104,14 +94,7 @@ class ExecutionRecord(TypedDict, total=False):
 
 
 class WorkflowBackend(Protocol):
-    """Compile a definition, then execute the resulting artifact in its engine.
-
-    Compilation raises profile.Invalid or profile.Unsupported before engine I/O.
-    Execution receives the run's binding, fails closed when the artifact needs a
-    value the binding lacks, and returns engine evidence; it must not equate a
-    process exit code with workflow success. Neither method evaluates business
-    acceptance.
-    """
+    """Compile a definition, then execute the resulting artifact in its engine."""
 
     name: str
 

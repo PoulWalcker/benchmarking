@@ -25,7 +25,7 @@ import yaml
 from sapi_config_lab.coordinate.benchmark_tasks import TASKS, task_definition
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.author.agent import audit_stderr
-from sapi_config_lab.coordinate.controls import load_trials
+from sapi_config_lab.coordinate.runs import load_trials
 from sapi_config_lab.execute.host import (
     build_image,
     harbor_command,

@@ -23,20 +23,22 @@ from pathlib import Path
 import yaml
 
 if TYPE_CHECKING or __package__:
-    from .business import check_business_result
-    from .extensions import refinement_corruptions, verify_refinement
+    from .business import check_business_result, expected_classification
+    from .extensions import refinement_corruptions, reply_roles, verify_refinement
     from .contracts import Recorded, Rejected, require
     from .n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
+    from .roles import bind_roles, contract_for
     from .rubric import SCHEMA, Judge
     from .rubric_facts import NOT_EVALUATED, evaluate as score_rubric, observe
 else:  # Harbor executes its copied verifier directly.
     import sys
 
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from business import check_business_result
-    from extensions import refinement_corruptions, verify_refinement
+    from business import check_business_result, expected_classification
+    from extensions import refinement_corruptions, reply_roles, verify_refinement
     from contracts import Recorded, Rejected, require
     from n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
+    from roles import bind_roles, contract_for
     from rubric import SCHEMA, Judge
     from rubric_facts import NOT_EVALUATED, evaluate as score_rubric, observe
 
@@ -80,6 +82,28 @@ def check_execution(
     result = check_business_result(scenario, inputs, observation, mode, case=case)
     check_operation_order(scenario, inputs, records, observation.roles)
     return {**result, "n8n_node_count": len(run["run_data"]), "engine_provenance_verified": True}
+
+
+def expected_model_calls(scenario: str, config: dict, inputs: dict) -> dict[str, str]:
+    """Every model call this submission may make for these inputs, by occurrence."""
+    revision = config["workflow"]["revision"]
+    if scenario == "revise-answer":
+        draft, _ = reply_roles(config)
+        require(config["execution"]["refinement"]["max_attempts"] == 3, "Reply task requires three maximum attempts")
+        return {f"{scenario}/r{revision}/{draft}/attempt{number}": "reply.generate" for number in range(1, 4)}
+    contract, binding = contract_for(scenario), bind_roles(scenario, config)
+    calls = {}
+    for role, obligation in contract["roles"].items():
+        if obligation["kind"] != "LLM":
+            continue
+        when = obligation.get("when")
+        if when is not None:
+            field = when["ref"].removeprefix("steps.classify.")
+            require(field != when["ref"], "No stated expectation decides this model call: " + role)
+            if expected_classification(inputs)[field] != when["eq"]:
+                continue
+        calls[f"{scenario}/r{revision}/{binding[role]}"] = obligation["operation"]
+    return calls
 
 
 def execution_summary(run: dict) -> dict:
@@ -252,12 +276,6 @@ def plan(
             if mode == "live" and kind == "negative":
                 continue  # live schema failures are a separate bridge test, not this stub diagnostic contract
             for case in cases[kind]:
-                if (
-                    mode == "live"
-                    and scenario == "ticket-routing"
-                    and case["name"] not in {"high-three-days", "normal-boundary-two"}
-                ):
-                    continue
                 if mode == "live" and cases.get("live_cases") and case["name"] not in cases["live_cases"]:
                     continue
                 if selected_case and case["name"] != selected_case:
@@ -294,9 +312,7 @@ def plan(
     }
 
 
-# What the execution step must have recorded beside case.json and config.json,
-# by the status it reports. A definition the compiler rejected has no engine
-# artifacts; a successful execution has every native record n8n persists.
+# Native artifacts each recorded execution status requires beside case.json and config.json.
 NATIVE_ARTIFACTS = {
     "compile_error": set(),
     "engine_error": set(),
@@ -365,12 +381,7 @@ def check_case_record(directory: Path, files: dict[str, str], name: str) -> None
 
 
 def read_evidence(evidence: Path, expected_plan: dict) -> dict[str, dict[str, str]]:
-    """Every recorded file, after checking the record is exactly this plan's.
-
-    A missing, extra, partial, reordered or edited file is rejected here, before
-    any business check could be satisfied by whatever files happen to exist.
-    Returns each entry's file hashes, keyed by entry name.
-    """
+    """Every recorded file, after checking the record is exactly this plan's."""
     manifest_path = evidence / "observation.json"
     require(manifest_path.is_file(), "No recorded observation; the execution step did not complete")
     manifest = json.loads(manifest_path.read_text())
@@ -537,12 +548,7 @@ def evaluate(
     runtime_manifest: Path | None = None,
     judge: Judge | None = None,
 ) -> dict:
-    """Judge the recorded observation of one submission.
-
-    `evidence` is only read. Every decision, evaluation.json and report.json
-    go to the sibling `evaluation/` directory, so evaluating again never
-    executes anything and never alters the record.
-    """
+    """Judge the recorded observation of one submission."""
     evaluation = evidence.parent / "evaluation"
     evaluation.mkdir(parents=True, exist_ok=True)
     identity = evaluator_identity()

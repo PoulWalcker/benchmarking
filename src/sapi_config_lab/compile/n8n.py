@@ -22,12 +22,7 @@ def capability_errors(cfg: Document, *, admitted: bool = False) -> list[str]:
 
 
 def bind_run(cfg: Document, activation: str) -> str:
-    """Fixture statements that read this run's binding from the environment.
-
-    The execution step supplies SAPI_RUN_BINDING; the artifact itself holds only
-    the definition's rules, so it is the same for every run. A missing deadline
-    or an event this definition does not admit fails the execution natively.
-    """
+    """Fixture statements that read this run's binding from the environment."""
     source = (
         "const binding = JSON.parse($env.SAPI_RUN_BINDING || 'null');\n"
         "if (!binding || !Number.isFinite(binding.deadline_at_ms)) throw new Error('Run binding needs an absolute deadline');\n"

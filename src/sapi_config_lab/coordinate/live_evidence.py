@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 import hashlib
 import importlib
 import importlib.util
@@ -12,19 +11,11 @@ from pathlib import Path
 from sapi_config_lab.evidence import sha256
 from sapi_config_lab.coordinate.replay import read_json, require
 from sapi_config_lab.paths import CATALOG, workspace_root
-from sapi_config_lab.coordinate.scenarios import all_cases
 from sapi_config_lab.evidence import digest
-from sapi_config_lab.execute.agency import MAX_BODY, build_prompt
+from sapi_config_lab.execute.agency import MAX_BODY, WRAPPER_MODEL, build_prompt
 from sapi_config_lab.coordinate.backend import default_backend
 from sapi_config_lab.contracts import CompileOptions
-from sapi_config_lab.profile import read, read_bindings
-
-OPERATIONS = {"ticket.classify": 2, "research.product": 2, "research.marketing": 2, "research.write": 2}
-LIVE_CASES = {
-    "invoice-total": {"original-38000", "alternate-values-zero", "maximum-safe-total"},
-    "ticket-routing": {"high-three-days", "normal-boundary-two"},
-    "competitor-report": {"original-evidence", "unseen-source-markers"},
-}
+from sapi_config_lab.profile import read_bindings
 
 
 def reconcile_dispatches(native: list[dict], audit: list[dict], model: str) -> list[dict]:
@@ -146,96 +137,61 @@ def load_verifier():
     return importlib.import_module(name + ".verify"), importlib.import_module(name + ".n8n_provenance")
 
 
-def collect_native(
-    trials: list[dict],
-    submissions: dict,
-    *,
-    expected_cases: dict[str, set[str]] | None = None,
-    cases: dict | None = None,
-) -> list[dict]:
-    """Re-run acceptance over native artifacts and verify the exact executed inputs."""
-    # Same independent verifier used in Harbor; experiments require the checkout.
+def collect_native(trials: list[dict], submissions: dict, cohorts: dict[str, set[str]]) -> list[dict]:
+    """Re-check native artifacts of live trials and return each observed model call."""
     verification, provenance = load_verifier()
-
-    cases = all_cases() if cases is None else cases
-    selected_cases = LIVE_CASES if expected_cases is None else expected_cases
     native = []
-    observed_cases = set()
+    observed = set()
     for trial in trials:
         scenario = trial["task_name"]
         verifier = Path(trial["result_path"]).parent / "verifier"
         directory = verifier / "evidence"
         acceptance = trial["acceptance"]
+        submission = submissions[scenario]
         require(
-            sha256(directory / "submission.yaml")
-            == submissions[scenario]["sha256"]
-            == acceptance.get("submission_sha256"),
+            sha256(directory / "submission.yaml") == submission["sha256"] == acceptance.get("submission_sha256"),
             "Container/source submission mismatch",
         )
         for row in acceptance.get("cases", []):
             name = row["name"]
-            require(
-                name in selected_cases[scenario] and (scenario, name) not in observed_cases,
-                "Unexpected or duplicate live case",
-            )
-            observed_cases.add((scenario, name))
+            require(name in cohorts[scenario] and (scenario, name) not in observed, "Unexpected or duplicate live case")
+            observed.add((scenario, name))
             artifact = directory / "cases" / name
             run = read_json(artifact / "case.json")
             config = read_json(artifact / "config.json")
-            case = next(case for case in cases[scenario]["positive"] if case["name"] == name)
-            fixture = case["inputs"]
-            expected = copy.deepcopy(read(Path(submissions[scenario]["path"])))
-            expected["workflow"]["inputs"] = fixture
-            expected["execution"]["deadline_seconds"] = 600
+            case = next(case for case in submission["cases"]["positive"] if case["name"] == name)
+            # The same plan the container ran; re-checks inventory, inputs and native records.
+            planned = verification.plan(scenario, Path(submission["path"]), submission["cases"], "live", name)
+            verification.read_evidence(directory, planned)
             require(
-                config == expected and row.get("config_sha256") == sha256(artifact / "config.json"),
-                "Executed fixture configuration mismatch",
+                row.get("config_sha256") == sha256(artifact / "config.json"), "Executed fixture configuration mismatch"
             )
+            succeeded = case.get("expected") != "exhausted"
             require(
                 row.get("passed") is True
-                and row.get("acceptance", {}).get("passed") is (case.get("expected") != "exhausted")
-                and read_json(verifier / "evaluation/cases" / name / "acceptance.json").get("passed")
-                is (case.get("expected") != "exhausted")
-                and run.get("execution", {}).get("succeeded") is (case.get("expected") != "exhausted"),
+                and row.get("acceptance", {}).get("passed") is succeeded
+                and read_json(verifier / "evaluation/cases" / name / "acceptance.json").get("passed") is succeeded
+                and run.get("execution", {}).get("succeeded") is succeeded,
                 "Execution and independent acceptance differ from expected case outcome",
             )
-            verification.check_execution(scenario, fixture, run, "live", config=config, case=case)
-            metadata = read_json(artifact / "execution.metadata.json")
-            persisted = read_json(artifact / "execution.persisted.json")
-            execution = read_json(artifact / "execution.json")
-            require(
-                str(metadata.get("id")) == run["execution_id"]
-                and metadata.get("workflowId") == run["workflow_id"]
-                and metadata.get("status") == ("error" if case.get("expected") == "exhausted" else "success"),
-                "Persisted native identity mismatch",
-            )
-            require(
-                persisted.get("resultData", {}).get("runData")
-                == run["run_data"]
-                == execution.get("data", {}).get("resultData", {}).get("runData"),
-                "Extracted/native/persisted records disagree",
-            )
+            verification.check_execution(scenario, case["inputs"], run, "live", config=config, case=case)
             graph = read_json(artifact / "workflow.json")
-            require(
-                graph.get("id") == run["workflow_id"] and sha256(artifact / "workflow.json") == run["workflow_sha256"],
-                "Imported workflow identity/hash mismatch",
-            )
             endpoints = {
                 node["parameters"]["url"] for node in graph["nodes"] if node["type"] == "n8n-nodes-base.httpRequest"
             }
             require(len(endpoints) <= 1, "Multiple Agency endpoints")
             bridge = next(iter(endpoints), "http://host.docker.internal:18765")
             compiled = default_backend().compile(config, read_bindings(CATALOG), CompileOptions("live", bridge))
-            expected_graph = {**compiled.document, "id": run["workflow_id"], "active": False}
             require(
-                expected_graph == graph and compiled.mapping == run["mapping"] == read_json(artifact / "mapping.json"),
+                {**compiled.document, "id": run["workflow_id"], "active": False} == graph
+                and compiled.mapping == run["mapping"],
                 "Saved graph differs from current compiler",
             )
             calls = (
                 importlib.import_module(verification.__package__ + ".extensions").verify_refinement(config, run)[
                     "calls"
                 ]
-                if scenario == "revise-answer"
+                if "refinement" in config["execution"]
                 else provenance.live_operations(run, graph)
             )
             for call in calls:
@@ -243,57 +199,31 @@ def collect_native(
                     {
                         "scenario": scenario,
                         "case": name,
-                        "submission_sha256": submissions[scenario]["sha256"],
+                        "submission_sha256": submission["sha256"],
                         "workflow_id": run["workflow_id"],
                         "execution_id": run["execution_id"],
                         **call,
                     }
                 )
-    expected_pairs = {
-        (scenario, name) for scenario in {trial["task_name"] for trial in trials} for name in selected_cases[scenario]
-    }
-    require(observed_cases == expected_pairs, "Missing required live case")
+    expected = {(scenario, name) for scenario in {t["task_name"] for t in trials} for name in cohorts[scenario]}
+    require(observed == expected, "Missing required live case")
     return native
 
 
-def case_budget(scenario: str, case_name: str, config: dict, *, cases: dict | None = None) -> dict:
-    """Admit only the named case's independently declared model occurrences."""
-    from sapi_config_lab.coordinate.scenarios import EXPANSION_SCENARIOS, EXTENSION_SCENARIOS
-
-    require(
-        scenario in {**EXPANSION_SCENARIOS, **EXTENSION_SCENARIOS}, "Occurrence admission requires a bounded scenario"
-    )
-    scenario_cases = (all_cases() if cases is None else cases)[scenario]
-    require(case_name in scenario_cases["live_cases"], "Case is outside the frozen live cohort")
-    fixture = next(case["inputs"] for case in scenario_cases["positive"] if case["name"] == case_name)
-    require(config["workflow"]["inputs"] == fixture, "Case admission fixture mismatch")
+def live_cohort(scenario: str, submission: dict) -> list[str]:
+    """The cases the verifier plans for a live run of this submission."""
     verification, _ = load_verifier()
-    if scenario == "revise-answer":
-        extensions = importlib.import_module(verification.__package__ + ".extensions")
-        draft, _ = extensions.reply_roles(config)
-        require(
-            config["execution"]["refinement"]["max_attempts"] == 3, "Reply admission requires three maximum attempts"
-        )
-        return {
-            "max_attempts": 3,
-            "operations": {"reply.generate": 3},
-            "model": "gpt-6-astra",
-            "occurrences": {
-                f"{scenario}/r{config['workflow']['revision']}/{draft}/attempt{number}": "reply.generate"
-                for number in range(1, 4)
-            },
-        }
-    roles_module = importlib.import_module(verification.__package__ + ".roles")
-    binding = roles_module.bind_roles(scenario, config)
-    contract = roles_module.contract_for(scenario)
-    roles = [role for role, obligation in contract["roles"].items() if obligation["kind"] == "LLM"]
-    if scenario == "priority-support-brief" and fixture["ticket"]["days_overdue"] <= 2:
-        roles = ["classify"]
+    planned = verification.plan(scenario, Path(submission["path"]), submission["cases"], "live")
+    return [entry["name"] for entry in planned["entries"]]
+
+
+def case_budget(scenario: str, case_name: str, config: dict, cases: dict) -> dict:
+    """A grant for exactly the model calls the verifier expects for this case."""
+    fixture = next(case["inputs"] for case in cases["positive"] if case["name"] == case_name)
+    require(config["workflow"]["inputs"] == fixture, "Case grant fixture mismatch")
+    verification, _ = load_verifier()
+    calls = verification.expected_model_calls(scenario, config, fixture)
     operations: dict[str, int] = {}
-    occurrences = {}
-    for role in roles:
-        operation = contract["roles"][role]["operation"]
+    for operation in calls.values():
         operations[operation] = operations.get(operation, 0) + 1
-        prefix = f"{scenario}/r{config['workflow']['revision']}/{binding[role]}"
-        occurrences[prefix] = operation
-    return {"max_attempts": len(roles), "operations": operations, "model": "gpt-6-astra", "occurrences": occurrences}
+    return {"max_attempts": len(calls), "operations": operations, "model": WRAPPER_MODEL, "occurrences": calls}

@@ -117,8 +117,7 @@ class PackagingTests(unittest.TestCase):
             for required in ("config.yaml", "task.md", "instruction.md", "cases.json"):
                 self.assertTrue((definition.directory / required).is_file(), (name, required))
             self.assertIn("positive", definition.cases())
-            if definition.runtime_caps:
-                self.assertEqual(list(definition.runtime_caps), definition.cases()["live_cases"], name)
+            self.assertIn(definition.fixture_overlay, (None, "fresh"), name)
         # The lab image copies benchmarks/ for its reference configs; cases.json is
         # evaluator-only and reaches a container only as a staged tests/ file.
         self.assertIn("COPY benchmarks /app/lab/benchmarks/", (ROOT / "infra/Dockerfile").read_text())
