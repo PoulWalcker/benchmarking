@@ -47,6 +47,8 @@ MODEL = "gpt-6-astra"
 
 
 def read_json(path):
+    # Not interfaces/replay.read_json, which rejects duplicate keys and non-finite
+    # constants. The two accept different documents; merging them changes both.
     return json.loads(Path(path).read_text())
 
 
