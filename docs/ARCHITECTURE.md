@@ -26,52 +26,58 @@ plugin registry or a hierarchy of empty classes.
 
 ## Responsibilities and dependencies
 
+[AGENTS.md](../AGENTS.md) is the authoritative statement of the stages and
+what each may import; `tests/test_boundaries.py` enforces it.
+
 ```mermaid
 flowchart LR
-  I[interfaces: commands, Harbor, generation] --> R[runtime: n8n, Agency, evaluation]
-  I --> C[core: profile, catalog, contract, provenance]
-  R --> C
-  V[verification: independent criteria] --> R
+  K[coordinate: cli, cases, observe, suites, packaging] --> X[execute: n8n, Agency, Harbor/Docker]
+  K --> P[compile: n8n compiler]
+  K --> E[evaluate: AutoWFBench scoring, reports]
+  K --> A[author: model YAML, repair]
+  K --> V[verification: independent verifier]
+  P --> S[shared: contracts, profile, evidence, paths]
+  X --> S
+  E --> S
+  A --> S
 ```
 
-`core/` holds the shared rules every group reads, `runtime/` the independent
-services, `interfaces/` the surfaces a person or another process drives.
-Dependencies only ever point inward. `paths.py` and `__main__.py` stay at the
-package root: `paths.py` asserts that its own parent directory is
-`src/sapi_config_lab`, which is how a wheel installed from somewhere else is
-rejected, so it cannot sit inside a group.
+`paths.py` and `__main__.py` stay at the package root: `paths.py` asserts that
+its own parent directory is `src/sapi_config_lab`, which is how a wheel
+installed from somewhere else is rejected.
 
-- `core/profile.py`: YAML parsing with duplicate-key rejection, references,
+- `profile.py`: YAML parsing with duplicate-key rejection, references,
   dependencies, actors, and profile validation. It knows nothing about n8n,
-  Harbor, or Docker. `core/bindings.yaml` is the single source operation catalog.
-- `runtime/n8n/compiler.py`: `compile_n8n(config, bindings, ...) -> (artifact, mapping)`.
-  Applies backend capability limits and generates JSON. Adjacent JS files are
-  included in the wheel. The compiler neither starts processes nor computes acceptance.
-- `core/contracts.py`: the typed `WorkflowBackend` interface, `CompileOptions`,
+  Harbor, or Docker. `bindings.yaml` is the single source operation catalog.
+- `contracts.py`: the typed `WorkflowBackend` interface, `CompileOptions`,
   `CompiledWorkflow`, and `ExecutionRecord`. Compilation and execution are the
   two operations; expected business answers never enter this interface.
-- `runtime/execution.py`: `run_case(config, artifact_dir, ..., backend=...)`.
-  Owns compilation/execution orchestration and the common report. The CLI uses
-  the same injected backend for compile, build, and execute. The sole production
-  selection point is `runtime/composition.py::default_backend()`.
-- `runtime/n8n/adapter.py` and `runtime/n8n/execution.py`: implement compilation
-  and real n8n execution through that interface. The executor handles a fresh
-  database, import, execution, raw-data extraction, and native artifact persistence.
-  Success requires persisted n8n success and a Result node. The previous n8n
-  `run_case` entry point delegates to the common orchestration for compatibility.
-- `runtime/agency.py`: the HTTP contract between an LLM node and the existing
-  wrapper, prompt construction, JSON validation, and safe auditing. The shared
-  instruction is in `agency-prompt.md`; operation instructions are in the catalog.
-- `core/provenance.py`, `core/scenarios.py`, `core/host.py`,
-  `core/benchmark_tasks.py`: the source inventory, the scenario list, the host
-  dependency probe, and the benchmark task definitions. Every group reads them
-  and none of them decides how a service runs.
-- `runtime/task_evaluation.py` and `runtime/ui_n8n.py`: scoring of a recorded
-  run and the local n8n container driver. Both are services other code calls.
-- `interfaces/`: `cli.py` plus the series runners, packagers and replay
-  drivers. They manage series, environment dependencies, and reports. Harbor
-  runs in the same Python environment as the installed package, without relying
-  on an arbitrary global executable or manual `sys.path` changes.
+- `compile/n8n.py`: `compile_n8n(config, bindings, ...) -> (artifact, mapping)`.
+  Applies backend capability limits and generates JSON; `compile/refinement.py`
+  expands bounded refinement. Adjacent JS files are included in the wheel. The
+  compiler neither starts processes nor computes acceptance.
+- `execute/n8n.py`: real n8n execution of a compiled artifact: a fresh
+  database, import, execution, raw-data extraction and native artifact
+  persistence. Success requires persisted n8n success and a Result node.
+- `execute/agency.py`: the HTTP contract between an LLM node and the existing
+  wrapper, prompt construction, JSON validation, safe auditing, and
+  `start_bridge`/`stop_bridge`. The shared instruction is in `agency-prompt.md`.
+- `execute/host.py`: the pinned Harbor, `harbor run` argv, run-to-log, image
+  build, staging directory and job collection every suite uses.
+- `coordinate/backend.py`: `N8nBackend`, the compile and execute stages behind
+  one `WorkflowBackend`, and `default_backend()`, the sole production selection
+  point. `coordinate/cases.py::run_case` compiles then executes one case and
+  writes its `sapi-lab-execution/v1` record; it decides nothing about acceptance.
+- `coordinate/observe.py`: runs a verifier-issued plan and records evidence.
+- `coordinate/scenarios.py`: discovers `benchmarks/NN-<scenario>/`.
+- `coordinate/controls.py`, `generate.py`, `live.py`, `benchmark.py`: the
+  unpaid control suite and the paid tracks. They manage series, budgets,
+  environment dependencies and reports.
+- `evaluate/task_evaluation.py`: AutoWFBench scoring of a recorded run.
+  `evaluate/benchmark_series.py`, `review_export.py`, `judge_calibration.py`
+  summarize and present recorded evaluations.
+- `author/agent.py` and `author/rebuilder.py`: one wrapper call that writes a
+  YAML submission, and one bounded lifecycle repair request.
 - `verification/business.py`: independent arithmetic and scenario criteria using
   logical `WorkflowObservation` values from `verification/contracts.py`.
 - `verification/n8n_provenance.py`: checks native execution identity, persisted
@@ -112,7 +118,7 @@ separate experiments. This refactoring implements neither.
 
 ## Why reports still contain copies
 
-`interfaces/tasks.py::stage_tasks()` assembles packages from canonical sources:
+`coordinate/packages.py::stage_tasks()` assembles packages from canonical sources:
 
 | Source | Assembled package contents |
 | --- | --- |
@@ -161,7 +167,7 @@ in the working checkout and are excluded from Git, wheels, and source archives.
 `infra/check_distribution.py` verifies this by building actual archives from a
 temporary checkout containing private sentinel files.
 
-`core/provenance.py` hashes all public source modules and data, including
+`coordinate/provenance.py` hashes all public source modules and data, including
 new files under the owned directories. Both Harbor manifests and generation
 fingerprints use this same inventory. Per-run host versions are recorded locally
 without environment variables or machine paths. Existing evidence is never
@@ -185,6 +191,13 @@ make honestly. The consequences are bounded:
   Re-reading past evidence needs nothing from this checkout.
 - Runs recorded after the split form a new comparison group. Do not pool their
   numbers with pre-split runs in one series; compare within a group.
+
+The 2026-10-06 move into `compile`/`execute`/`evaluate`/`author`/`coordinate`
+and `benchmarks/` is a second break of the same kind, handled the same way:
+runs recorded after it form their own comparison group, and the frozen
+expansion and refinement selections, which require today's source manifest to
+equal the one they recorded, cannot be resumed from this tree. Retired
+experiments name the revision that reruns them in [RETIRED.md](RETIRED.md).
 
 ## Automated checks
 
@@ -224,7 +237,7 @@ check. Terms used below are defined in the [glossary](GLOSSARY.md).
 | `benchmark-series` | Build a comparison manifest from existing reports. It reruns nothing. | `--extra benchmark` | No |
 | `benchmark-calibrate` | Compare the semantic judge against frozen evaluator-only controls. **It dispatches one real, paid judge call** unless `--prepare-only` is passed. | `--extra benchmark` | Yes, unless `--prepare-only` |
 | `ui` | Compile and import graphs into local n8n, and prepare one bounded manual live session. | local n8n | Only when you press Execute on an LLM graph |
-| `lifecycle` | The durable lifecycle controller: `register`, `callback`, `restore`, `status`, `tick`, `drain`, `serve` against a registry directory. Same entry point as the `python -m sapi_config_lab.runtime.lifecycle` form used in the [lifecycle guide](LIFECYCLE.md). | — | Only with `--llm-mode live` or `--rebuilder-url` |
+| `lifecycle` | The durable lifecycle controller: `register`, `callback`, `restore`, `status`, `tick`, `drain`, `serve` against a registry directory. Same entry point as the `python -m sapi_config_lab.coordinate.lifecycle` form used in the [lifecycle guide](LIFECYCLE.md). | — | Only with `--llm-mode live` or `--rebuilder-url` |
 | `review-export` | Write a derived `analysis.md` beside recorded evaluations so the Harbor viewer can display them. It adds files only; `evaluation.json` is read-only to it. | a Harbor jobs directory | No |
 
 The former `checkout` alias of `benchmark` was removed; see [retired runners](RETIRED.md).
@@ -240,10 +253,10 @@ the wrong place to type them: each needs an environment it does not get there.
 | `package-tasks` | Assemble Harbor task packages into a new directory without running them. | Every experiment stages its own packages; a standalone package is for inspection only. |
 | `transport` | Deterministic HTTP transport probes against a fake bridge. | Written to run inside the isolated lab image, where `run.sh` invokes it; outside that image it has no workspace to probe. |
 | `bridge` | Foreground local Agency adapter in front of the existing wrapper. | `live` and `ui` start it themselves; a second one competes for the port and the budget latch. |
-| `checkout-worker` | The trusted in-container verifier that runs frozen YAML through the real n8n backend. | The task container runs it as `python3 -m sapi_config_lab.interfaces.checkout_worker`; it reads `/tests/connection.json` and writes `/logs/verifier`. |
+| `checkout-worker` | The trusted in-container verifier that runs frozen YAML through the real n8n backend. | The task container runs it as `python3 -m sapi_config_lab.coordinate.benchmark_worker`; it reads `/tests/connection.json` and writes `/logs/verifier`. |
 
 `benchmark-calibrate` costs one model call. The module docstring in
-`src/sapi_config_lab/interfaces/judge_calibration.py` states this, and the
+`src/sapi_config_lab/evaluate/judge_calibration.py` states this, and the
 command prints the model it is about to bill to stderr immediately before
 dispatching. `calibration_fixture()` on its own is unpaid: it only swaps prose in
 an already recorded trace. Budget for the dispatch accordingly.
@@ -269,9 +282,9 @@ Historical reports and source manifests are not rewritten to use new paths.
 
 ## Frozen generated replay
 
-`interfaces/replay.py` validates the exact preselected historical artifacts and
+`coordinate/replay.py` validates the exact preselected historical artifacts and
 provenance. `stage_tasks(mode="replay", submissions=...)` preserves their bytes.
-`interfaces/live.py` reuses Harbor and the existing verifier/typed backend path,
+`coordinate/live.py` reuses Harbor and the existing verifier/typed backend path,
 with source/image gates, unpaid replay verification and serial live trials.
 
 Replay mode is reachable only through `sapi-lab live --submissions-manifest`.
@@ -281,6 +294,6 @@ Replay mode is reachable only through `sapi-lab live --submissions-manifest`.
 tag that the same `live` run freezes and pins into its hashes. Staged on its own
 with a default image tag, the package would carry no provenance anything checks.
 The `--mode` help text says so at the command.
-`runtime/agency.py::DispatchAudit` owns the outgoing budget and failure latch;
-`interfaces/live_evidence.py` reconciles it with independent native evidence.
+`execute/agency.py::DispatchAudit` owns the outgoing budget and failure latch;
+`coordinate/live_evidence.py` reconciles it with independent native evidence.
 There is no additional workflow executor. See [the replay command](GENERATED-LIVE.md).
