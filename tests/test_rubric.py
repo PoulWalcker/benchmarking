@@ -24,9 +24,12 @@ from verification.rubric_cards import CARDS, SUPPORT_REVIEW_PACKET, card_for
 ANCHORS = {"yes": "a", "maybe": "b", "no": "c"}
 
 
-# The published criteria of reports/checkout-live-20261005, as scored upstream.
-# Weights, answers and the resulting total are upstream's; the evidence sources
-# follow this module's rule that no llm criterion reads protected verification.
+# The published criteria of the 2026-10-05 checkout recovery run, as scored by the
+# original independent AutoWFBench judge. That run directory was never committed
+# and is archived outside the repository; nothing of it was extracted into
+# evidence/, so docs/CHECKOUT-EVALUATION.md records its 9.33/10 instead. Weights,
+# answers and the resulting total are upstream's; the evidence sources follow this
+# module's rule that no llm criterion reads protected verification.
 CHECKOUT = RubricCard(
     id="production-checkout-recovery",
     version="1.0.0",

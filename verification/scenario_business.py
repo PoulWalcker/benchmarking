@@ -5,6 +5,7 @@ operation implementations; native execution and submitted origins are checked at
 separate seams. Source facts are an explicitly bounded fixture lexical contract.
 """
 
+from collections.abc import Callable
 import json
 import re
 from pathlib import Path
@@ -14,6 +15,89 @@ if TYPE_CHECKING or __package__:
     from .contracts import WorkflowObservation, equal, require
 else:
     from contracts import WorkflowObservation, equal, require
+
+
+def _occurrence(observation: WorkflowObservation, role: str) -> dict:
+    sid = observation.roles[role]
+    require(observation.events[sid]["status"] == "completed", "Required occurrence did not complete: " + role)
+    require(sid in observation.states[sid]["steps"], "Missing occurrence output: " + role)
+    return observation.states[sid]["steps"][sid]
+
+
+def _ledger(
+    inputs: dict[str, Any], observation: WorkflowObservation, field: str, validate: str, total: str, report: str
+) -> dict:
+    invoices = inputs[field]
+    expected = {
+        "total_minor": sum(item["amount_minor"] for item in invoices),
+        "currency": invoices[0]["currency"],
+        "invoice_count": len(invoices),
+    }
+    equal(_occurrence(observation, validate), {"invoices": invoices}, "Validation changed ledger invoices")
+    equal(
+        _occurrence(observation, total),
+        {
+            "amount_minor": expected["total_minor"],
+            "currency": expected["currency"],
+            "count": expected["invoice_count"],
+        },
+        "Wrong ledger intermediate sum",
+    )
+    equal(_occurrence(observation, report), expected, "Wrong ledger report")
+    return expected
+
+
+def _routing(inputs: dict[str, Any], observation: WorkflowObservation) -> dict:
+    roles, events, states = observation.roles, observation.events, observation.states
+    high = inputs["ticket"]["days_overdue"] > 2
+    active, skipped = ("escalate", "normal") if high else ("normal", "escalate")
+    equal(
+        _occurrence(observation, "classify"),
+        {"category": "delivery", "priority": "high" if high else "normal"},
+        "Wrong classification",
+    )
+    require(events[roles[skipped]]["status"] == "skipped", "Wrong action branch executed")
+    expected = {
+        "ticket_id": inputs["ticket"]["id"],
+        "action": "escalate" if high else "normal_reply",
+        "mode": "draft",
+    }
+    equal(_occurrence(observation, active), expected, "Wrong selected action")
+    equal(_occurrence(observation, "select"), expected, "Wrong action selection")
+    require(roles[skipped] not in states[roles["select"]]["steps"], "Skipped action leaked output")
+    require(states[roles["select"]]["statuses"].get(roles[skipped]) == "skipped", "Missing skipped action status")
+    return expected
+
+
+def _reply_review(inputs: dict[str, Any], observation: WorkflowObservation) -> dict:
+    """The emitted review must equal the errors computed here from the draft itself."""
+    reply = _occurrence(observation, "draft")
+    require(set(reply) == {"text"} and isinstance(reply["text"], str) and reply["text"], "Invalid reply draft")
+    errors = []
+    if inputs["required_order_id"] not in reply["text"]:
+        errors.append("Include the order ID")
+    # JS string length counts UTF-16 code units, including surrogate pairs.
+    if len(reply["text"].encode("utf-16-le", errors="surrogatepass")) // 2 > inputs["max_characters"]:
+        errors.append("Shorten the reply")
+    review = {"pass": not errors, "errors": errors}
+    equal(_occurrence(observation, "check"), review, "Dishonest reply review")
+    return {"reply": reply, "review": review}
+
+
+def support_review_obligations(
+    inputs: dict[str, Any], observation: WorkflowObservation
+) -> dict[str, Callable[[], dict]]:
+    """The three named obligations of support-review-packet, in acceptance order.
+
+    Acceptance calls exactly these and lets the first Rejected propagate, as it
+    always has. rubric_facts.py calls them one at a time and reads raised / did
+    not raise as one named check each, so neither side restates the other.
+    """
+    return {
+        "routing_single_action": lambda: _routing(inputs, observation),
+        "ledger_report": lambda: _ledger(inputs, observation, "invoices", "validate", "total", "report"),
+        "review_matches": lambda: _reply_review(inputs, observation),
+    }
 
 
 def check_scenario_business_result(
@@ -27,50 +111,13 @@ def check_scenario_business_result(
     roles, events, states = observation.roles, observation.events, observation.states
 
     def value(role: str) -> dict:
-        sid = roles[role]
-        require(events[sid]["status"] == "completed", "Required occurrence did not complete: " + role)
-        require(sid in states[sid]["steps"], "Missing occurrence output: " + role)
-        return states[sid]["steps"][sid]
+        return _occurrence(observation, role)
 
     def ledger(field: str, validate: str, total: str, report: str) -> dict:
-        invoices = inputs[field]
-        expected = {
-            "total_minor": sum(item["amount_minor"] for item in invoices),
-            "currency": invoices[0]["currency"],
-            "invoice_count": len(invoices),
-        }
-        equal(value(validate), {"invoices": invoices}, "Validation changed ledger invoices")
-        equal(
-            value(total),
-            {
-                "amount_minor": expected["total_minor"],
-                "currency": expected["currency"],
-                "count": expected["invoice_count"],
-            },
-            "Wrong ledger intermediate sum",
-        )
-        equal(value(report), expected, "Wrong ledger report")
-        return expected
+        return _ledger(inputs, observation, field, validate, total, report)
 
     def routing() -> dict:
-        high = inputs["ticket"]["days_overdue"] > 2
-        active, skipped = ("escalate", "normal") if high else ("normal", "escalate")
-        equal(
-            value("classify"),
-            {"category": "delivery", "priority": "high" if high else "normal"},
-            "Wrong classification",
-        )
-        require(events[roles[skipped]]["status"] == "skipped", "Wrong action branch executed")
-        expected = {
-            "ticket_id": inputs["ticket"]["id"],
-            "action": "escalate" if high else "normal_reply",
-            "mode": "draft",
-        }
-        equal(value(active), expected, "Wrong selected action")
-        equal(value("select"), expected, "Wrong action selection")
-        require(roles[skipped] not in states[roles["select"]]["steps"], "Skipped action leaked output")
-        require(states[roles["select"]]["statuses"].get(roles[skipped]) == "skipped", "Missing skipped action status")
-        return expected
+        return _routing(inputs, observation)
 
     def facts(text: str, anchors: list, label: str, forbidden: list | tuple = ()) -> None:
         require(isinstance(text, str) and text.strip(), "Empty " + label)
@@ -151,25 +198,18 @@ def check_scenario_business_result(
                 state = states[roles[name + "_" + suffix]]
                 require(not other_ids.intersection(state["statuses"]), "Cross-ledger dependency data")
     elif scenario == "support-review-packet":
-        action = routing()
-        report = ledger("invoices", "validate", "total", "report")
-        reply = value("draft")
-        require(set(reply) == {"text"} and isinstance(reply["text"], str) and reply["text"], "Invalid reply draft")
-        errors = []
-        if inputs["required_order_id"] not in reply["text"]:
-            errors.append("Include the order ID")
-        # JS string length counts UTF-16 code units, including surrogate pairs.
-        if len(reply["text"].encode("utf-16-le", errors="surrogatepass")) // 2 > inputs["max_characters"]:
-            errors.append("Shorten the reply")
-        review = {"pass": not errors, "errors": errors}
-        equal(value("check"), review, "Dishonest reply review")
+        # The three named obligations, run in order; the first failure still raises.
+        obligations = support_review_obligations(inputs, observation)
+        action = obligations["routing_single_action"]()
+        report = obligations["ledger_report"]()
+        draft = obligations["review_matches"]()
         equal(
             output,
-            {"action": action, "invoice_report": report, "reply": reply, "review": review},
+            {"action": action, "invoice_report": report, **draft},
             "Wrong support review packet",
         )
         if mode == "stub":
-            equal(reply, {"text": "We are checking your order."}, "Wrong one-shot deterministic draft")
+            equal(draft["reply"], {"text": "We are checking your order."}, "Wrong one-shot deterministic draft")
         for role in ("select", "report"):
             require(states[roles["draft"]]["statuses"].get(roles[role]) == "completed", "Draft ran before packet join")
     elif scenario == "bulletin-market-brief":

@@ -25,6 +25,8 @@ if TYPE_CHECKING or __package__:
     from .extensions import refinement_corruptions, verify_refinement
     from .contracts import Rejected, require
     from .n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
+    from .rubric import SCHEMA, Judge
+    from .rubric_facts import NOT_EVALUATED, evaluate, observe
 else:  # Harbor executes its copied verifier directly.
     import sys
 
@@ -33,12 +35,27 @@ else:  # Harbor executes its copied verifier directly.
     from extensions import refinement_corruptions, verify_refinement
     from contracts import Rejected, require
     from n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
+    from rubric import SCHEMA, Judge
+    from rubric_facts import NOT_EVALUATED, evaluate, observe
 
 
 def check_execution(
-    scenario: str, inputs: dict, run: dict, mode: str = "stub", *, config: dict | None = None, case: dict | None = None
+    scenario: str,
+    inputs: dict,
+    run: dict,
+    mode: str = "stub",
+    *,
+    config: dict | None = None,
+    case: dict | None = None,
+    rubric_runs: list | None = None,
 ) -> dict:
-    """Both independent business acceptance and engine provenance must pass."""
+    """Both independent business acceptance and engine provenance must pass.
+
+    `rubric_runs` collects rubric facts for the cases the submission is scored
+    on. They are read off the observation before acceptance, so a case that is
+    rejected still reports which named obligation failed; corruption probes pass
+    no collector, because a deliberately broken run is not the submission.
+    """
     if scenario == "revise-answer":
         if config is None or case is None:
             raise Rejected("Refinement requires submitted config and frozen case")
@@ -50,6 +67,8 @@ def check_execution(
         require(result["exhausted"] == (case.get("expected") == "exhausted"), "Wrong refinement business outcome")
         return {key: value for key, value in result.items() if key != "calls"}
     observation, records = observe_execution(scenario, inputs, run, mode, config=config)
+    if rubric_runs is not None:
+        rubric_runs.append(observe(scenario, inputs, observation, case=case))
     result = check_business_result(scenario, inputs, observation, mode, case=case)
     check_operation_order(scenario, inputs, records, observation.roles)
     return {**result, "n8n_node_count": len(run["run_data"]), "engine_provenance_verified": True}
@@ -189,6 +208,7 @@ def verify_submission(
     selected_case: str | None = None,
     *,
     runner=None,
+    judge: Judge | None = None,
 ) -> dict:
     if scenario == "daily-digest":
         if TYPE_CHECKING or __package__:
@@ -197,6 +217,10 @@ def verify_submission(
             from lifecycle_submission import verify_submission as verify_digest
         return verify_digest(config_path, report_dir, mode=mode)
     report_dir.mkdir(parents=True, exist_ok=True)
+    # Declared outside the try: a submission that is rejected part way through
+    # still says how far the engine got and which obligations were measured.
+    rubric_runs: list[dict] = []
+    executions = 0
     report: dict[str, Any] = {
         "scenario": scenario,
         "mode": mode,
@@ -267,7 +291,18 @@ def verify_submission(
                 row.update(execution_summary(run))
                 try:
                     if kind == "positive":
-                        row.update(check_execution(scenario, case["inputs"], run, mode, config=candidate, case=case))
+                        executions += 1
+                        row.update(
+                            check_execution(
+                                scenario,
+                                case["inputs"],
+                                run,
+                                mode,
+                                config=candidate,
+                                case=case,
+                                rubric_runs=rubric_runs,
+                            )
+                        )
                         row["acceptance"] = record_acceptance(
                             run,
                             artifact_dir,
@@ -356,6 +391,27 @@ def verify_submission(
     except Exception as error:
         report["error"] = str(error)
         report["error_type"] = type(error).__name__
+    # Outside the acceptance try on purpose: the rubric reads the verdict and
+    # never sets it. `evaluate` returns None for a scenario with no card, and a
+    # stated non-score rather than raising, so neither can fail this submission.
+    # The engine ran every case the submission is scored on. Whether the
+    # obligations then held is the named checks' business, not this flag's.
+    executed = bool(rubric_runs) and len(rubric_runs) == executions
+    try:
+        evaluation = evaluate(scenario, rubric_runs, accepted=report["passed"], execution_pass=executed, judge=judge)
+    except Exception as error:
+        # `evaluate` is written not to raise. The guard is here anyway because an
+        # exception escaping this late would leave the container without a report
+        # and pay a correct submission zero: the one thing a rubric may not do.
+        evaluation = {
+            "schema": SCHEMA,
+            "status": NOT_EVALUATED,
+            "score_0_10": None,
+            "normalized_reward": None,
+            "reason": "Not scored: " + type(error).__name__ + ": " + str(error),
+        }
+    if evaluation is not None:
+        (report_dir / "evaluation.json").write_text(json.dumps(evaluation, ensure_ascii=False, indent=2) + "\n")
     (report_dir / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     return report
 
