@@ -84,6 +84,178 @@ def _reply_review(inputs: dict[str, Any], observation: WorkflowObservation) -> d
     return {"reply": reply, "review": review}
 
 
+def _facts(text: str, anchors: list, label: str, forbidden: list | tuple = ()) -> None:
+    """Lexical source-fact coverage: every required fact present, no absent one invented."""
+    require(isinstance(text, str) and text.strip(), "Empty " + label)
+    for alternatives in anchors:
+        require(
+            any(re.search(pattern, text, re.IGNORECASE) for pattern in alternatives),
+            label + " omitted a required source fact: " + " / ".join(alternatives),
+        )
+    for pattern in forbidden:
+        require(not re.search(pattern, text, re.IGNORECASE), label + " invented a controlled absent fact: " + pattern)
+
+
+def _fact_contract(scenario: str, inputs: dict[str, Any], case: dict | None) -> dict:
+    """The frozen fixture these inputs came from, which states the required facts."""
+    if case is not None:
+        equal(case.get("inputs"), inputs, "Independent fixture inputs differ")
+        return case
+    fixtures = json.loads((Path(__file__).parent / "cases.json").read_text())[scenario]["positive"]
+    matches = [item for item in fixtures if item["inputs"] == inputs]
+    require(matches, "No independent source fact contract for these inputs")
+    return matches[0]
+
+
+def _research(
+    observation: WorkflowObservation,
+    product_source: str,
+    marketing_source: str,
+    fixture: dict,
+    mode: str = "live",
+) -> dict:
+    """Two independent analyses, a join that keeps both, and a brief over them."""
+    roles, states = observation.roles, observation.states
+    product, marketing = _occurrence(observation, "product"), _occurrence(observation, "marketing")
+    for name, analysis, source in (
+        ("product", product, product_source),
+        ("marketing", marketing, marketing_source),
+    ):
+        require(set(analysis) == {"summary", "evidence"}, "Invalid analysis fields")
+        require(
+            isinstance(analysis["evidence"], str) and analysis["evidence"].strip() and analysis["evidence"] in source,
+            "Analysis evidence is absent from its actual source",
+        )
+        _facts(
+            analysis["summary"],
+            fixture[name + "_anchors"],
+            name + " analysis",
+            fixture.get("forbidden_anchors", []),
+        )
+        other = "marketing" if name == "product" else "product"
+        require(roles[other] not in states[roles[name]]["statuses"], "Research analyses are chained")
+        if mode == "stub":
+            equal(
+                analysis, {"summary": name.title() + ": " + source, "evidence": source}, "Wrong deterministic analysis"
+            )
+    equal(
+        _occurrence(observation, "combine"),
+        {"product": product, "marketing": marketing},
+        "Join changed analysis or evidence",
+    )
+    for role in ("product", "marketing"):
+        joined = states[roles["combine"]]
+        require(joined["statuses"].get(roles[role]) == "completed", "Join lost completed analysis status")
+        equal(joined["steps"].get(roles[role]), _occurrence(observation, role), "Join lost analysis output")
+    brief = _occurrence(observation, "write")
+    require(set(brief) == {"report", "evidence"}, "Invalid brief output")
+    equal(brief["evidence"], [product["evidence"], marketing["evidence"]], "Brief changed source evidence order")
+    _facts(
+        brief["report"],
+        fixture["product_anchors"] + fixture["marketing_anchors"],
+        "brief",
+        fixture.get("forbidden_anchors", []),
+    )
+    if mode == "stub":
+        equal(brief["report"], product["summary"] + "\n\n" + marketing["summary"], "Wrong deterministic brief")
+    return brief
+
+
+def _digest(inputs: dict[str, Any], observation: WorkflowObservation, case: dict | None) -> dict:
+    """The digest lists exactly the supplied articles, once each, and changed none."""
+    _fact_contract("bulletin-market-brief", inputs, case)
+    equal(_occurrence(observation, "prepare"), {"articles": inputs["articles"]}, "Preparation changed articles")
+    digest = _occurrence(observation, "summarize")
+    require(set(digest) == {"text", "article_ids"}, "Invalid digest fields")
+    ids = digest["article_ids"]
+    require(isinstance(ids, list) and all(isinstance(item, str) for item in ids), "Invalid digest article IDs")
+    require(len(ids) == len(set(ids)), "Duplicate digest article ID")
+    equal(sorted(ids), sorted(item["id"] for item in inputs["articles"]), "Unknown or missing digest article ID")
+    return digest
+
+
+def _digest_facts(inputs: dict[str, Any], observation: WorkflowObservation, case: dict | None) -> dict:
+    """The digest text states the facts the supplied articles require of it."""
+    fixture = _fact_contract("bulletin-market-brief", inputs, case)
+    digest = _occurrence(observation, "summarize")
+    _facts(digest["text"], fixture["product_anchors"], "digest", fixture.get("forbidden_anchors", []))
+    return digest
+
+
+def _preview(observation: WorkflowObservation) -> dict:
+    """The preview repeats the digest and adds only its own mode."""
+    preview = {"mode": "preview", **_occurrence(observation, "summarize")}
+    equal(_occurrence(observation, "preview"), preview, "Preview changed digest")
+    return preview
+
+
+def _actors(observation: WorkflowObservation) -> dict:
+    """Four distinct logical actors produced the four authored outputs."""
+    events, roles = observation.events, observation.roles
+    actors = [events[roles[role]].get("actor") for role in ("summarize", "product", "marketing", "write")]
+    require(
+        all(isinstance(actor, str) and actor for actor in actors) and len(set(actors)) == 4,
+        "Four distinct logical actors are required",
+    )
+    return {"actors": actors}
+
+
+def _bulletin_brief(inputs: dict[str, Any], observation: WorkflowObservation, case: dict | None, mode: str) -> dict:
+    """The brief merges the run's own digest with the supplied marketing material."""
+    fixture = _fact_contract("bulletin-market-brief", inputs, case)
+    digest = _occurrence(observation, "summarize")
+    return _research(observation, digest["text"], inputs["marketing_material"], fixture, mode)
+
+
+def _priority_research(
+    inputs: dict[str, Any], observation: WorkflowObservation, case: dict | None, mode: str
+) -> dict | None:
+    """High priority earns a grounded brief; normal priority runs no research at all."""
+    roles, events, states = observation.roles, observation.events, observation.states
+    if inputs["ticket"]["days_overdue"] > 2:
+        return _research(
+            observation,
+            inputs["product_material"],
+            inputs["marketing_material"],
+            _fact_contract("priority-support-brief", inputs, case),
+            mode,
+        )
+    for role in ("product", "marketing", "combine", "write"):
+        sid = roles[role]
+        require(events[sid]["status"] == "skipped", "Normal priority executed optional research")
+        require(sid not in states[sid]["steps"], "Skipped research leaked output")
+        require(states[roles["write"]]["statuses"].get(sid) == "skipped", "Lost skipped research envelope")
+    return None
+
+
+def bulletin_brief_obligations(
+    inputs: dict[str, Any], observation: WorkflowObservation, *, case: dict | None = None, mode: str = "live"
+) -> dict[str, Callable[[], Any]]:
+    """The five named obligations of bulletin-market-brief, in acceptance order.
+
+    `mode` defaults to live: the extra stub equalities are the harness checking
+    its own deterministic operations, not an obligation of the brief. Acceptance
+    passes the mode it was given, so its behaviour is unchanged.
+    """
+    return {
+        "digest_covers_every_article": lambda: _digest(inputs, observation, case),
+        "digest_grounded_in_articles": lambda: _digest_facts(inputs, observation, case),
+        "preview_repeats_the_digest": lambda: _preview(observation),
+        "four_distinct_actors": lambda: _actors(observation),
+        "brief_merges_both_sources": lambda: _bulletin_brief(inputs, observation, case, mode),
+    }
+
+
+def priority_support_obligations(
+    inputs: dict[str, Any], observation: WorkflowObservation, *, case: dict | None = None, mode: str = "live"
+) -> dict[str, Callable[[], Any]]:
+    """The two named obligations of priority-support-brief, in acceptance order."""
+    return {
+        "routing_single_action": lambda: _routing(inputs, observation),
+        "research_matches_priority": lambda: _priority_research(inputs, observation, case, mode),
+    }
+
+
 def support_review_obligations(
     inputs: dict[str, Any], observation: WorkflowObservation
 ) -> dict[str, Callable[[], dict]]:
@@ -110,80 +282,8 @@ def check_scenario_business_result(
 ) -> dict[str, Any]:
     roles, events, states = observation.roles, observation.events, observation.states
 
-    def value(role: str) -> dict:
-        return _occurrence(observation, role)
-
     def ledger(field: str, validate: str, total: str, report: str) -> dict:
         return _ledger(inputs, observation, field, validate, total, report)
-
-    def routing() -> dict:
-        return _routing(inputs, observation)
-
-    def facts(text: str, anchors: list, label: str, forbidden: list | tuple = ()) -> None:
-        require(isinstance(text, str) and text.strip(), "Empty " + label)
-        for alternatives in anchors:
-            require(
-                any(re.search(pattern, text, re.IGNORECASE) for pattern in alternatives),
-                label + " omitted a required source fact: " + " / ".join(alternatives),
-            )
-        for pattern in forbidden:
-            require(
-                not re.search(pattern, text, re.IGNORECASE), label + " invented a controlled absent fact: " + pattern
-            )
-
-    def fact_contract() -> dict:
-        if case is not None:
-            equal(case.get("inputs"), inputs, "Independent fixture inputs differ")
-            return case
-        fixtures = json.loads((Path(__file__).parent / "cases.json").read_text())[scenario]["positive"]
-        matches = [item for item in fixtures if item["inputs"] == inputs]
-        require(matches, "No independent source fact contract for these inputs")
-        return matches[0]
-
-    def research(product_source: str, marketing_source: str, fixture: dict) -> dict:
-        product, marketing = value("product"), value("marketing")
-        for name, analysis, source in (
-            ("product", product, product_source),
-            ("marketing", marketing, marketing_source),
-        ):
-            require(set(analysis) == {"summary", "evidence"}, "Invalid analysis fields")
-            require(
-                isinstance(analysis["evidence"], str)
-                and analysis["evidence"].strip()
-                and analysis["evidence"] in source,
-                "Analysis evidence is absent from its actual source",
-            )
-            facts(
-                analysis["summary"],
-                fixture[name + "_anchors"],
-                name + " analysis",
-                fixture.get("forbidden_anchors", []),
-            )
-            other = "marketing" if name == "product" else "product"
-            require(roles[other] not in states[roles[name]]["statuses"], "Research analyses are chained")
-            if mode == "stub":
-                equal(
-                    analysis,
-                    {"summary": name.title() + ": " + source, "evidence": source},
-                    "Wrong deterministic analysis",
-                )
-        equal(value("combine"), {"product": product, "marketing": marketing}, "Join changed analysis or evidence")
-        for role in ("product", "marketing"):
-            joined = states[roles["combine"]]
-            require(joined["statuses"].get(roles[role]) == "completed", "Join lost completed analysis status")
-            equal(joined["steps"].get(roles[role]), value(role), "Join lost analysis output")
-        brief = value("write")
-        require(set(brief) == {"report", "evidence"}, "Invalid brief output")
-        equal(brief["evidence"], [product["evidence"], marketing["evidence"]], "Brief changed source evidence order")
-        facts(
-            brief["report"],
-            fixture["product_anchors"] + fixture["marketing_anchors"],
-            "brief",
-            fixture.get("forbidden_anchors", []),
-        )
-        if mode == "stub":
-            equal(brief["report"], product["summary"] + "\n\n" + marketing["summary"], "Wrong deterministic brief")
-        return brief
 
     output = observation.final["output"]
     if scenario == "dual-ledger-closeout":
@@ -213,35 +313,19 @@ def check_scenario_business_result(
         for role in ("select", "report"):
             require(states[roles["draft"]]["statuses"].get(roles[role]) == "completed", "Draft ran before packet join")
     elif scenario == "bulletin-market-brief":
-        fixture = fact_contract()
-        equal(value("prepare"), {"articles": inputs["articles"]}, "Preparation changed articles")
-        digest = value("summarize")
-        require(set(digest) == {"text", "article_ids"}, "Invalid digest fields")
-        ids = digest["article_ids"]
-        require(isinstance(ids, list) and all(isinstance(item, str) for item in ids), "Invalid digest article IDs")
-        require(len(ids) == len(set(ids)), "Duplicate digest article ID")
-        equal(sorted(ids), sorted(item["id"] for item in inputs["articles"]), "Unknown or missing digest article ID")
-        facts(digest["text"], fixture["product_anchors"], "digest", fixture.get("forbidden_anchors", []))
-        preview = {"mode": "preview", **digest}
-        equal(value("preview"), preview, "Preview changed digest")
-        actors = [events[roles[role]].get("actor") for role in ("summarize", "product", "marketing", "write")]
-        require(
-            all(isinstance(actor, str) and actor for actor in actors) and len(set(actors)) == 4,
-            "Four distinct logical actors are required",
-        )
-        brief = research(digest["text"], inputs["marketing_material"], fixture)
+        # The five named obligations, run in order; the first failure still raises.
+        obligations = bulletin_brief_obligations(inputs, observation, case=case, mode=mode)
+        obligations["digest_covers_every_article"]()
+        obligations["digest_grounded_in_articles"]()
+        preview = obligations["preview_repeats_the_digest"]()
+        obligations["four_distinct_actors"]()
+        brief = obligations["brief_merges_both_sources"]()
         equal(output, {"digest": preview, "brief": brief}, "Wrong bulletin packet")
     elif scenario == "priority-support-brief":
-        action = routing()
-        if inputs["ticket"]["days_overdue"] > 2:
-            brief = research(inputs["product_material"], inputs["marketing_material"], fact_contract())
-        else:
-            brief = None
-            for role in ("product", "marketing", "combine", "write"):
-                sid = roles[role]
-                require(events[sid]["status"] == "skipped", "Normal priority executed optional research")
-                require(sid not in states[sid]["steps"], "Skipped research leaked output")
-                require(states[roles["write"]]["statuses"].get(sid) == "skipped", "Lost skipped research envelope")
+        # The two named obligations, run in order; the first failure still raises.
+        obligations = priority_support_obligations(inputs, observation, case=case, mode=mode)
+        action = obligations["routing_single_action"]()
+        brief = obligations["research_matches_priority"]()
         equal(output, {"action": action, "brief": brief}, "Wrong priority support packet")
     else:
         require(False, "Unknown expansion acceptance scenario")

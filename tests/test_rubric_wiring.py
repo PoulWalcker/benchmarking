@@ -11,9 +11,10 @@ from verification import rubric_facts
 from verification import verify as verifier
 from verification.contracts import Rejected
 from verification.rubric import RecordedJudge, RunFacts, _judge_view
-from verification.rubric_cards import card_for
+from verification.rubric_cards import CARDS, card_for
+from verification.business import check_business_result
 from verification.scenario_business import check_scenario_business_result
-from verification.scenario_contracts import CONTRACTS
+from verification.scenario_contracts import CONTRACTS, ROUTING_EDGES
 
 ROOT = Path(__file__).parents[1]
 SCENARIO = "support-review-packet"
@@ -119,7 +120,7 @@ class NamedCheckTests(unittest.TestCase):
 
     def test_a_scenario_with_no_named_checks_produces_none(self):
         values, output = packet()
-        self.assertEqual(rubric_facts.observe("ticket-routing", INPUTS, observe(values, output))["checks"], {})
+        self.assertEqual(rubric_facts.observe("revise-answer", INPUTS, observe(values, output))["checks"], {})
 
 
 class JudgeProseTests(unittest.TestCase):
@@ -214,7 +215,8 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(self.evaluate(RecordedJudge(ANSWERS), runs=runs)["score_0_10"], 8.0)
 
     def test_a_scenario_with_no_card_is_not_evaluated_at_all(self):
-        for scenario in ("ticket-routing", "competitor-report", "bulletin-market-brief", "revise-answer"):
+        # The two scenarios that are verified through a different path entirely.
+        for scenario in ("revise-answer", "daily-digest"):
             with self.subTest(scenario=scenario):
                 self.assertIsNone(rubric_facts.evaluate(scenario, [], accepted=True, execution_pass=True, judge=None))
 
@@ -261,8 +263,24 @@ class VerifierSeamTests(unittest.TestCase):
         self.assertEqual(json.loads((directory / "report.json").read_text()), report)
 
     def test_a_scenario_without_a_card_writes_no_evaluation(self):
-        directory, _ = self.verify("ticket-routing", "configs/02-ticket-routing.yaml")
+        directory, _ = self.verify("revise-answer", "configs/04-revise-answer.yaml")
         self.assertFalse((directory / "evaluation.json").exists())
+
+    def test_every_carded_scenario_writes_one_beside_the_report(self):
+        for scenario, config in (
+            ("ticket-routing", "configs/02-ticket-routing.yaml"),
+            ("competitor-report", "configs/03-competitor-report.yaml"),
+            ("bulletin-market-brief", "configs/08-bulletin-market-brief.yaml"),
+            ("priority-support-brief", "configs/09-priority-support-brief.yaml"),
+        ):
+            with self.subTest(scenario=scenario):
+                directory, report = self.verify(scenario, config)
+                self.assertFalse(report["passed"])
+                document = json.loads((directory / "evaluation.json").read_text())
+                self.assertEqual(document["rubric"]["id"], scenario)
+                self.assertEqual(document["status"], rubric_facts.NOT_EVALUATED)
+                self.assertIsNone(document["score_0_10"])
+                self.assertIn(reward(report), (0.0, 1.0))
 
     def test_the_rubric_cannot_change_the_verdict_or_the_reward(self):
         plain, without = self.verify(SCENARIO, "configs/07-support-review-packet.yaml")
@@ -342,11 +360,16 @@ class StandaloneDistributionTests(unittest.TestCase):
                 (Path(directory) / source.name).write_text(source.read_text())
             probe = (
                 "import sys;"
-                "import rubric_facts, rubric_cards, rubric, scenario_business;"
+                "import rubric_facts, rubric_cards, rubric, business, scenario_business;"
                 "assert rubric_facts.__package__ == '', 'imported as a package';"
                 # The copied files reach no third party and no installed project.
                 "assert not {'yaml', 'sapi_config_lab'} & set(sys.modules), sorted(sys.modules);"
-                "assert rubric_facts.evaluate('ticket-routing', [], accepted=True, execution_pass=True) is None;"
+                "assert rubric_facts.evaluate('revise-answer', [], accepted=True, execution_pass=True) is None;"
+                # Every carded scenario resolves flat, including the two whose
+                # obligations live in business.py rather than scenario_business.py.
+                "assert set(rubric_cards.CARDS) == " + repr(set(CARDS)) + ";"
+                "assert rubric_facts.evaluate('competitor-report', [], accepted=True,"
+                " execution_pass=True)['status'] == 'not_evaluated';"
                 "print(rubric_facts.evaluate('invoice-total', [], accepted=True, execution_pass=True)['score_0_10'])"
             )
             import subprocess
@@ -357,6 +380,312 @@ class StandaloneDistributionTests(unittest.TestCase):
             )
             self.assertEqual(run.returncode, 0, run.stderr)
             self.assertEqual(run.stdout.strip(), "10.0")
+
+
+# --- The scenarios carded after support-review-packet ------------------------
+#
+# Each states the same four things 07 does: an honest run holds every named
+# check, each check fails alone and acceptance agrees, the judge is handed the
+# declared prose and nothing else, and a judge answering "no" leaves exactly the
+# deterministic points standing.
+
+CASES = json.loads((ROOT / "verification/cases.json").read_text())
+
+
+def tagged(values, output, operations, **options):
+    """A business.py observation: its events also name the operation each role ran."""
+    run = observation(values, output, **options)
+    for role, sid in run.roles.items():
+        run.events[sid]["operation"] = operations[role]
+    return run
+
+
+ROUTING_CASE = CASES["ticket-routing"]["positive"][0]
+ROUTING_OPERATIONS = {
+    "classify": "ticket.classify",
+    "escalate": "ticket.escalation_draft",
+    "normal": "ticket.normal_draft",
+    "select": "branch.select_one",
+}
+
+
+def routing_run(broken=None):
+    """One high-priority routing run; `broken` fails exactly one named check."""
+    action = {"ticket_id": ROUTING_CASE["inputs"]["ticket"]["id"], "action": "escalate", "mode": "draft"}
+    values = {"classify": {"category": "delivery", "priority": "high"}, "escalate": action, "select": action}
+    output = dict(action)
+    skipped = ["normal"]
+    if broken == "classification_matches_boundary":
+        values["classify"] = {"category": "delivery", "priority": "normal"}
+    elif broken == "single_branch_executed":
+        skipped.append("classify")
+    elif broken == "draft_is_the_selected_action":
+        output = {**action, "action": "normal_reply"}
+    elif broken == "skipped_branch_left_no_trace":
+        values["normal"] = action
+    return tagged(values, output, ROUTING_OPERATIONS, skipped=tuple(skipped), dependencies=ROUTING_EDGES)
+
+
+REPORT_CASE = CASES["competitor-report"]["positive"][0]
+REPORT_OPERATIONS = {
+    "product": "research.product",
+    "marketing": "research.marketing",
+    "combine": "research.combine",
+    "write": "research.write",
+}
+REPORT_EDGES = [("product", "combine"), ("marketing", "combine"), ("combine", "write")]
+REPORT_TEXT = (
+    "Invoicing, stock tracking and a public API are what small shops get, "
+    "and webinars and partner referrals are how they hear about it."
+)
+
+
+def report_run(broken=None):
+    """One grounded competitor report; `broken` fails exactly one named check."""
+    product = {
+        "summary": "Invoicing, stock tracking and a public API.",
+        "evidence": "invoicing, stock tracking and a public API",
+    }
+    marketing = {
+        "summary": "Small shops reached by webinars and partner referrals.",
+        "evidence": "small shops using webinars and partner referrals",
+    }
+    actors = {"product": "product-sapi", "marketing": "marketing-sapi", "write": "writer-sapi"}
+    report = REPORT_TEXT
+    if broken == "analyses_independent":
+        actors["marketing"] = "product-sapi"
+    elif broken == "analyses_quote_their_source":
+        product = {**product, "evidence": "a phrase the product material never used"}
+    elif broken == "report_covers_both_sources":
+        report = "Both source materials were read."
+    combine = {"product": product, "marketing": marketing}
+    if broken == "join_preserves_both_analyses":
+        combine = {"product": {**product, "summary": "Something else entirely."}, "marketing": marketing}
+    evidence = [product["evidence"], marketing["evidence"]]
+    if broken == "report_carries_both_excerpts":
+        evidence = evidence[:1]
+    output = {"report": report, "evidence": evidence}
+    values = {"product": product, "marketing": marketing, "combine": combine, "write": output}
+    return tagged(values, output, REPORT_OPERATIONS, actors=actors, dependencies=REPORT_EDGES)
+
+
+BULLETIN_CASE = CASES["bulletin-market-brief"]["positive"][0]
+
+
+def bulletin_run(broken=None):
+    """One bulletin digest and brief; `broken` fails exactly one named check."""
+    digest = {"text": "Offline inventory and CSV export are supported.", "article_ids": ["BL-1", "BL-2"]}
+    product = {"summary": "Offline inventory and CSV export.", "evidence": "Offline inventory and CSV export"}
+    marketing = {
+        "summary": "Rural cooperatives receive printed catalogues.",
+        "evidence": "rural cooperatives through printed catalogues",
+    }
+    brief = {
+        "report": "Offline inventory and CSV export for rural cooperatives through printed catalogues.",
+        "evidence": [product["evidence"], marketing["evidence"]],
+    }
+    actors = {"summarize": "a", "product": "b", "marketing": "c", "write": "d"}
+    if broken == "digest_covers_every_article":
+        digest = {**digest, "article_ids": ["BL-1", "BL-1"]}
+    elif broken == "digest_grounded_in_articles":
+        digest = {**digest, "text": digest["text"] + " SMS appointments are included."}
+    elif broken == "four_distinct_actors":
+        actors["marketing"] = "b"
+    elif broken == "brief_merges_both_sources":
+        brief = {**brief, "report": "Everything looks good."}
+    preview = {"mode": "preview", **digest}
+    if broken == "preview_repeats_the_digest":
+        preview = {**preview, "mode": "final"}
+    values = {
+        "prepare": {"articles": BULLETIN_CASE["inputs"]["articles"]},
+        "summarize": digest,
+        "preview": preview,
+        "product": product,
+        "marketing": marketing,
+        "combine": {"product": product, "marketing": marketing},
+        "write": brief,
+    }
+    return observation(
+        values,
+        {"digest": preview, "brief": brief},
+        actors=actors,
+        dependencies=CONTRACTS["bulletin-market-brief"]["edges"],
+    )
+
+
+PRIORITY_CASE = CASES["priority-support-brief"]["positive"][0]
+
+
+def priority_run(broken=None):
+    """One escalated ticket and the brief it earned; `broken` fails one named check."""
+    action = {"ticket_id": PRIORITY_CASE["inputs"]["ticket"]["id"], "action": "escalate", "mode": "draft"}
+    product = {
+        "summary": "Barcode scanning and offline inventory.",
+        "evidence": "barcode scanning and offline inventory",
+    }
+    marketing = {
+        "summary": "Local shops reached through partner referrals.",
+        "evidence": "local shops through partner referrals",
+    }
+    brief = {
+        "report": "Barcode scanning and offline inventory for local shops reached through partner referrals.",
+        "evidence": [product["evidence"], marketing["evidence"]],
+    }
+    if broken == "routing_single_action":
+        action = {**action, "action": "normal_reply"}
+    elif broken == "research_matches_priority":
+        brief = {**brief, "report": "Everything looks good."}
+    values = {
+        "classify": {"category": "delivery", "priority": "high"},
+        "escalate": action,
+        "select": action,
+        "product": product,
+        "marketing": marketing,
+        "combine": {"product": product, "marketing": marketing},
+        "write": brief,
+    }
+    return observation(
+        values,
+        {"action": action, "brief": brief},
+        skipped=("normal",),
+        dependencies=CONTRACTS["priority-support-brief"]["edges"],
+    )
+
+
+CARDED_SCENARIOS = {
+    "ticket-routing": (ROUTING_CASE, routing_run),
+    "competitor-report": (REPORT_CASE, report_run),
+    "bulletin-market-brief": (BULLETIN_CASE, bulletin_run),
+    "priority-support-brief": (PRIORITY_CASE, priority_run),
+}
+
+
+def judged_criteria(scenario):
+    return [criterion for criterion in card_for(scenario).criteria if criterion.evaluator == "llm"]
+
+
+class CardedScenarioTests(unittest.TestCase):
+    """Every scenario carded beside 07, held to the promises 07 is held to."""
+
+    def facts(self, scenario, broken=None):
+        case, build = CARDED_SCENARIOS[scenario]
+        return rubric_facts.observe(scenario, case["inputs"], build(broken), case=case)
+
+    def test_the_card_names_exactly_the_obligations_the_run_measures(self):
+        for scenario in CARDED_SCENARIOS:
+            with self.subTest(scenario=scenario):
+                declared = {
+                    criterion.check_id
+                    for criterion in card_for(scenario).criteria
+                    if criterion.evaluator == "deterministic"
+                }
+                self.assertEqual(declared, set(self.facts(scenario)["checks"]))
+
+    def test_an_honest_run_holds_every_named_check(self):
+        for scenario in CARDED_SCENARIOS:
+            with self.subTest(scenario=scenario):
+                checks = self.facts(scenario)["checks"]
+                self.assertTrue(checks)
+                self.assertTrue(all(checks.values()), checks)
+
+    def test_each_named_check_fails_alone_and_acceptance_agrees(self):
+        for scenario, (case, build) in CARDED_SCENARIOS.items():
+            for name in self.facts(scenario)["checks"]:
+                with self.subTest(scenario=scenario, check=name):
+                    self.assertEqual(
+                        self.facts(scenario, name)["checks"],
+                        {other: other != name for other in self.facts(scenario)["checks"]},
+                    )
+                    # The same obligation, through the acceptance path that owns the reward.
+                    with self.assertRaises(Rejected):
+                        check_business_result(scenario, case["inputs"], build(name), "live", case=case)
+
+    def test_an_honest_run_is_accepted_unchanged(self):
+        for scenario, (case, build) in CARDED_SCENARIOS.items():
+            with self.subTest(scenario=scenario):
+                result = check_business_result(scenario, case["inputs"], build(), "live", case=case)
+                self.assertTrue(result["output_verified"])
+
+    def test_the_judge_is_handed_the_declared_prose_and_nothing_else(self):
+        for scenario in CARDED_SCENARIOS:
+            with self.subTest(scenario=scenario):
+                declared = sorted(
+                    {source for criterion in judged_criteria(scenario) for source in criterion.required_evidence}
+                )
+                run = self.facts(scenario)
+                if not declared:
+                    # ticket-routing is deterministic throughout and supplies no prose.
+                    self.assertEqual(run["prose"], {})
+                    continue
+                self.assertLessEqual(set(declared), set(run["prose"]))
+                self.assertIn("verification", run["prose"])
+                judge = RecordedJudge({criterion.id: "yes" for criterion in judged_criteria(scenario)})
+                rubric_facts.evaluate(scenario, [run], accepted=True, execution_pass=True, judge=judge)
+                self.assertEqual(sorted(judge.requests[0].facts.prose), declared)
+
+    def test_the_judge_sees_no_check_name_no_verdict_and_no_fixture_name(self):
+        for scenario, (case, build) in CARDED_SCENARIOS.items():
+            if not judged_criteria(scenario):
+                continue
+            with self.subTest(scenario=scenario):
+                runs = [self.facts(scenario), self.facts(scenario)]
+                judge = RecordedJudge({criterion.id: "yes" for criterion in judged_criteria(scenario)})
+                rubric_facts.evaluate(scenario, runs, accepted=True, execution_pass=True, judge=judge)
+                view = json.dumps(dict(judge.requests[0].facts.prose), ensure_ascii=False)
+                self.assertIn("Run 1:", view)
+                self.assertIn("Run 2:", view)
+                self.assertNotIn(case["name"], view)
+                for name in runs[0]["checks"]:
+                    self.assertNotIn(name, view)
+                self.assertNotIn(runs[0]["prose"]["verification"], view)
+
+    def test_a_judge_answering_no_leaves_exactly_the_deterministic_points(self):
+        for scenario in CARDED_SCENARIOS:
+            card = card_for(scenario)
+            judged = judged_criteria(scenario)
+            determined = float(sum(c.weight for c in card.criteria if c.evaluator == "deterministic"))
+            with self.subTest(scenario=scenario):
+                run = self.facts(scenario)
+                for answer, expected in (("yes", 10.0), ("no", determined)):
+                    judge = RecordedJudge({criterion.id: answer for criterion in judged}) if judged else None
+                    document = rubric_facts.evaluate(scenario, [run], accepted=True, execution_pass=True, judge=judge)
+                    self.assertEqual(document["status"], "complete")
+                    self.assertEqual(document["score_0_10"], expected)
+                    self.assertEqual(document["deterministic_points"], determined)
+
+    def test_a_case_whose_facts_cannot_be_collected_never_raises_and_is_not_scored(self):
+        """An unreadable fixture file is an environment fault, not a failed obligation."""
+        with unittest.mock.patch.object(rubric_facts, "_checks", side_effect=OSError("no fixture file")):
+            unmeasured = self.facts("competitor-report")
+        self.assertEqual(unmeasured["checks"], {})
+        self.assertEqual(unmeasured["prose"], {})
+        judge = RecordedJudge({criterion.id: "yes" for criterion in judged_criteria("competitor-report")})
+        for runs in ([unmeasured], [self.facts("competitor-report"), unmeasured]):
+            with self.subTest(cases=len(runs)):
+                document = rubric_facts.evaluate(
+                    "competitor-report", runs, accepted=True, execution_pass=True, judge=judge
+                )
+                self.assertEqual(document["status"], rubric_facts.NOT_EVALUATED)
+                self.assertIsNone(document["score_0_10"])
+                self.assertIsNone(document["normalized_reward"])
+
+    def test_a_failed_check_costs_its_weight_and_nothing_else(self):
+        for scenario in CARDED_SCENARIOS:
+            card = card_for(scenario)
+            judged = judged_criteria(scenario)
+            for criterion in card.criteria:
+                if criterion.evaluator != "deterministic":
+                    continue
+                with self.subTest(scenario=scenario, criterion=criterion.id):
+                    judge = RecordedJudge({item.id: "yes" for item in judged}) if judged else None
+                    document = rubric_facts.evaluate(
+                        scenario,
+                        [self.facts(scenario, criterion.check_id)],
+                        accepted=False,
+                        execution_pass=True,
+                        judge=judge,
+                    )
+                    self.assertEqual(document["score_0_10"], 10.0 - criterion.weight)
 
 
 if __name__ == "__main__":

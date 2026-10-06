@@ -117,14 +117,29 @@ these criteria. Live execution admits only each scenario's two declared
 one set of named checks and judge prose per executed case, then writes the
 returned document to `evaluation.json` beside `report.json`.
 
-A named check calls an obligation `scenario_business.py` already states and
-records raised / did not raise. The rule is never restated, so a check cannot
-drift from the acceptance it describes. The rubric reads the verdict and never
-sets it: acceptance stays binary, `reward.txt` still comes from the verifier's
-exit status alone, and the score rides alongside it.
+A named check calls an obligation `business.py` or `scenario_business.py`
+already states and records raised / did not raise. The rule is never restated,
+so a check cannot drift from the acceptance it describes. The rubric reads the
+verdict and never sets it: acceptance stays binary, `reward.txt` still comes
+from the verifier's exit status alone, and the score rides alongside it.
 
-Only `support-review-packet`, `invoice-total` and `dual-ledger-closeout` have
-cards; every other scenario writes no `evaluation.json`. A card with judged
-criteria is scored only when a judge is reachable, and there is none in the
-container: the document there states `not_evaluated` with its reason and a null
-score, never a zero and never a verifier failure.
+Seven scenarios have cards, each weighing ten points:
+
+| Scenario | Deterministic | Judged |
+| --- | --- | --- |
+| `ticket-routing` | 10 over four named checks | none: its only authored output is a classification acceptance pins exactly |
+| `competitor-report` | 6 over five named checks | 4: synthesis, invention |
+| `support-review-packet` | 6 over three named checks | 4: usefulness, honesty, actionability |
+| `bulletin-market-brief` | 6 over five named checks | 4: article reporting, concision |
+| `priority-support-brief` | 6 over two named checks | 4: invention, self-containedness |
+| `invoice-total` | 10, one pass/fail check | none |
+| `dual-ledger-closeout` | 10, one pass/fail check | none |
+
+`revise-answer` and `daily-digest` have no card: they are verified through
+`extensions.py` and `lifecycle_submission.py`, which produce no
+`WorkflowObservation` and so never reach this seam. They write no
+`evaluation.json`.
+
+A card with judged criteria is scored only when a judge is reachable, and there
+is none in the container: the document there states `not_evaluated` with its
+reason and a null score, never a zero and never a verifier failure.

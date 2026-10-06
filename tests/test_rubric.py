@@ -23,6 +23,18 @@ from verification.rubric_cards import CARDS, SUPPORT_REVIEW_PACKET, card_for
 
 ANCHORS = {"yes": "a", "maybe": "b", "no": "c"}
 
+# Every scenario that carries a card. A scenario is added by writing one card and
+# one branch in rubric_facts; this list is the roster that change has to pass.
+CARDED = {
+    "support-review-packet",
+    "competitor-report",
+    "bulletin-market-brief",
+    "priority-support-brief",
+    "ticket-routing",
+    "invoice-total",
+    "dual-ledger-closeout",
+}
+
 
 # The published criteria of the 2026-10-05 checkout recovery run, as scored by the
 # original independent AutoWFBench judge. That run directory was never committed
@@ -499,7 +511,7 @@ class ImmutabilityTests(unittest.TestCase):
             with self.subTest(operation=operation.__name__), self.assertRaises(TypeError):
                 operation()
         self.assertEqual(card_for("invoice-total").id, "invoice-total")
-        self.assertEqual(set(CARDS), {"support-review-packet", "invoice-total", "dual-ledger-closeout"})
+        self.assertEqual(set(CARDS), CARDED)
 
 
 class CardRewriteTests(unittest.TestCase):
@@ -671,8 +683,10 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(judge.requests, [])
 
     def test_an_unknown_scenario_has_no_card(self):
-        with self.assertRaisesRegex(RubricError, "No rubric card"):
-            card_for("bulletin-market-brief")
+        # The two scenarios verified through another path, and a name that is none.
+        for scenario in ("revise-answer", "daily-digest", "not-a-scenario"):
+            with self.subTest(scenario=scenario), self.assertRaisesRegex(RubricError, "No rubric card"):
+                card_for(scenario)
 
 
 def _every_reason(document):
@@ -1006,7 +1020,20 @@ class ArithmeticTests(unittest.TestCase):
             },
         )
         self.assertEqual(sum(criterion.weight for criterion in SUPPORT_REVIEW_PACKET.criteria), 10)
-        self.assertEqual(set(CARDS), {"support-review-packet", "invoice-total", "dual-ledger-closeout"})
+        self.assertEqual(set(CARDS), CARDED)
+
+    def test_every_card_weighs_ten_with_a_deterministic_majority(self):
+        """Ten points per card, and no card leaves the majority to a judge."""
+        for scenario, card in CARDS.items():
+            with self.subTest(scenario=scenario):
+                total = sum(criterion.weight for criterion in card.criteria)
+                determined = sum(
+                    criterion.weight for criterion in card.criteria if criterion.evaluator == "deterministic"
+                )
+                self.assertEqual(total, 10)
+                self.assertGreaterEqual(determined, total - determined)
+                self.assertEqual(card.version, "1.0.0")
+                self.assertEqual(card.origin, "local")
 
     def test_the_digest_covers_every_field_the_document_prints_beside_it(self):
         # The document prints `origin` next to the digest and the attribution
