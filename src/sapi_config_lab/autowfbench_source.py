@@ -16,11 +16,17 @@ from urllib.parse import quote
 from urllib.request import Request
 
 from sapi_config_lab.net import urlopen
+from sapi_config_lab.paths import workspace_root
 
 Document = dict[str, Any]
 PINNED_REVISION = "970bbc8645c4d503d35cb5df05363fb9de132519"
 MANIFEST = Path(__file__).with_name("autowfbench-source.json")
 MAX_BODY = 2_000_000
+
+
+def default_source() -> Path:
+    """The private cache an experiment reads the pinned checkout from."""
+    return workspace_root() / ".cache/autowfbench" / PINNED_REVISION
 
 
 def _get(url: str) -> bytes:

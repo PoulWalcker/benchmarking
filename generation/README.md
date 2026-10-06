@@ -53,8 +53,10 @@ are not started if controls fail.
    packaging settings, and dependency locks. It uses the same inventory as the
    control suite; new modules are included automatically. Hashes remain fixed
    across answers, and local environment snapshots are excluded.
-2. Prompts are assembled from `tasks.json`, `FORMAT.md`, `docs/PROFILE.md`, and
-   `src/sapi_config_lab/bindings.yaml`. Complete prompts are saved in
+2. Prompts are assembled from the scenario's `task.md`, `FORMAT.md`, `PROFILE.md`
+   (this directory; `docs/PROFILE.md` is documentation only) and
+   `src/sapi_config_lab/bindings.yaml`. Imported scenarios use their pinned upstream
+   task, `authoring-notes.md` and own `bindings.yaml` instead. Complete prompts are saved in
    the task packages and agent artifacts.
 3. Temporary Harbor packages contain neither `solution/` nor
    `environment/base.yaml`. Reference configs are removed from the running

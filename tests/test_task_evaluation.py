@@ -11,17 +11,15 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 
 from sapi_config_lab.evaluate.task_evaluation import (
-    SCHEMA,
     build_run_log,
     digest,
     evaluate,
+    evaluate_once,
     freeze_contract,
-    is_evaluation,
     normalized_reward,
-    summarize_evaluations,
-    summarize_stages,
     validate_task_package,
     write_evaluation,
 )
@@ -36,97 +34,6 @@ AVAILABLE = (SOURCE / "autowfbench/core/scoring.py").is_file() and importlib.uti
 
 
 class RewardArtifactTests(unittest.TestCase):
-    def test_stage_accounting_retains_nonselected_failures_and_unknown_costs(self):
-        result = summarize_stages(
-            [{"eligible": True, "duration_seconds": 3, "cli_reported_tokens": 12}, {"eligible": False}, None],
-            [{"status": "success", "duration_seconds": 4}],
-            [{"status": "complete", "duration_seconds": 2}],
-            calibrations=[{"status": "failed"}],
-        )
-        self.assertEqual(result["total_dispatches"], 6)
-        self.assertFalse(result["scores_pooled"])
-        authors = result["stages"]["authoring"]
-        self.assertEqual(
-            (authors["attempted"], authors["eligible"], authors["failed"], authors["outcome_missing"]), (3, 1, 1, 1)
-        )
-        self.assertEqual(authors["cli_reported_tokens"]["observed_sum"], 12)
-        self.assertIsNone(authors["cli_reported_tokens"]["total"])
-        self.assertIsNone(authors["cost_usd"]["total"])
-        with self.assertRaises(ValueError):
-            summarize_stages([{"duration_seconds": float("nan")}], [], [])
-
-    def test_summary_keeps_failures_and_unscored_attempts_in_denominators(self):
-        summary = summarize_evaluations(
-            [
-                {
-                    "schema": SCHEMA,
-                    "status": "complete",
-                    "normalized_reward": 0.8,
-                    "execution_pass": True,
-                    "evaluation_mode": "codex",
-                },
-                {
-                    "schema": SCHEMA,
-                    "status": "complete",
-                    "normalized_reward": 0.1,
-                    "execution_pass": False,
-                    "evaluation_mode": "codex",
-                },
-                {
-                    "schema": SCHEMA,
-                    "status": "judge_failed",
-                    "normalized_reward": None,
-                    "execution_pass": True,
-                    "evaluation_mode": "codex",
-                },
-                None,
-            ]
-        )
-        self.assertEqual(summary["attempted"], 4)
-        self.assertEqual(summary["scored"], 2)
-        self.assertEqual(summary["unscored"], 2)
-        self.assertEqual(summary["evaluation_missing"], 1)
-        self.assertEqual(summary["foreign_schema"], 0)
-        self.assertEqual(summary["judge_failed"], 1)
-        self.assertEqual(summary["execution_passed"], 2)
-        self.assertEqual(summary["mean_reward_scored"], 0.45)
-        self.assertIsNone(summarize_evaluations([])["mean_reward_scored"])
-
-    def test_a_rubric_document_is_never_counted_as_a_business_evaluation(self):
-        # A sapi-lab-rubric-evaluation/v1 document carries status,
-        # normalized_reward and execution_pass too, so only the schema tag
-        # separates the two. It must neither be scored nor crash the summary.
-        rubric = {
-            "schema": "sapi-lab-rubric-evaluation/v1",
-            "status": "complete",
-            "score_0_10": 10.0,
-            "normalized_reward": 1.0,
-            "execution_pass": True,
-        }
-        task = {
-            "schema": SCHEMA,
-            "status": "complete",
-            "normalized_reward": 0.5,
-            "execution_pass": True,
-            "evaluation_mode": "codex",
-        }
-        summary = summarize_evaluations([task, rubric])
-        self.assertEqual(summary["attempted"], 2)
-        self.assertEqual(summary["scored"], 1)
-        self.assertEqual(summary["unscored"], 1)
-        self.assertEqual(summary["foreign_schema"], 1)
-        self.assertEqual(summary["evaluation_missing"], 0)
-        self.assertEqual(summary["execution_passed"], 1)
-        self.assertEqual(summary["mean_reward_scored"], 0.5)
-        self.assertEqual(summary["evaluation_modes"], ["codex"])
-        alone = summarize_evaluations([rubric])
-        self.assertEqual((alone["scored"], alone["foreign_schema"]), (0, 1))
-        self.assertIsNone(alone["mean_reward_scored"])
-        self.assertEqual(alone["evaluation_modes"], [])
-        self.assertFalse(is_evaluation(rubric))
-        self.assertTrue(is_evaluation(task))
-        self.assertFalse(is_evaluation(None))
-
     def test_missing_judge_stays_unscored_and_cannot_reuse_a_prior_reward(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
@@ -338,6 +245,29 @@ json.dump(env.finalize(), sys.stdout)
         with self.assertRaises(ValueError):
             replace(self.contract, package_json=json.dumps(altered_package)).verify()
         self.assertEqual(self.contract.package["scorecard"]["criteria"][0]["weight"], 3)
+
+    def test_saved_judgement_rescores_without_dispatch_and_must_match_judge_and_run(self):
+        run = self.run_log()
+        saved = self.reply(run)
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            unittest.mock.patch(
+                "sapi_config_lab.evaluate.task_evaluation.judge", side_effect=AssertionError("dispatched")
+            ),
+        ):
+            report = evaluate_once(self.contract, run, Path(directory) / "first", judgement=saved)
+            self.assertEqual(report["status"], "complete")
+            self.assertFalse((Path(directory) / "first/judge-dispatch.json").exists())
+            unscored = evaluate_once(self.contract, run, Path(directory) / "none")
+            self.assertIsNone(unscored["normalized_reward"])
+            foreign = copy.deepcopy(saved)
+            foreign["provenance"]["model"] = "another-model"
+            other_run = self.run_log(narrative="Different prose")
+            for judgement, target in ((foreign, run), (saved, other_run)):
+                with self.assertRaisesRegex(ValueError, "Judge provenance"):
+                    evaluate_once(self.contract, target, Path(directory) / "rejected", judgement=judgement)
+            with self.assertRaises(ValueError):
+                evaluate_once(self.contract, run, Path(directory) / "both", judgement=saved, dispatch=True)
 
     def test_execution_pass_keeps_upstream_completion_requirement(self):
         run = self.run_log()

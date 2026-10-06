@@ -15,7 +15,7 @@ def workspace_root() -> Path:
     explicit = os.environ.get("SAPI_LAB_ROOT")
     candidates = [Path(explicit)] if explicit else [Path.cwd(), *Path.cwd().parents, *Path(__file__).resolve().parents]
     for path in candidates:
-        if (path / "benchmarks").is_dir() and (path / "docs/PROFILE.md").is_file():
+        if (path / "benchmarks").is_dir() and (path / "generation/PROFILE.md").is_file():
             if Path(__file__).resolve().parent != (path / "src/sapi_config_lab").resolve():
                 raise RuntimeError(
                     "Experiments require the editable package from this workspace. "

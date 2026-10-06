@@ -1,0 +1,64 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: checkout-reference
+  revision: 1
+  kind: Pipeline
+  inputs: {}
+  steps:
+  - id: incident
+    kind: Script
+    uses: incident.read
+    with: {}
+  - id: source
+    kind: Script
+    uses: source.read
+    with: {}
+  - id: before
+    kind: Script
+    uses: tests.run
+    with: {}
+  - id: patch
+    kind: Script
+    uses: checkout.patch
+    with:
+      old: charge_card(currency, amount)
+      new: charge_card(amount, currency)
+  - id: after
+    kind: Script
+    uses: tests.run
+    with: {}
+  dependencies:
+  - - incident
+    - source
+  - - source
+    - before
+  - - before
+    - patch
+  - - patch
+    - after
+  acceptance: Scripted calibration of original simulator
+  output:
+    final_answer: Checkout passed the amount and currency arguments to charge_card
+      in reverse order on the EUR branch. EUR transactions failed; previously working
+      USD transactions must continue working. The patch swaps the arguments in that
+      call and preserves validation. The attached before and after tool receipts record
+      verification; no production system was modified.
+    incident_summary: Checkout passed the amount and currency arguments to charge_card
+      in reverse order on the EUR branch. EUR transactions failed; previously working
+      USD transactions must continue working. The patch swaps the arguments in that
+      call and preserves validation. The attached before and after tool receipts record
+      verification; no production system was modified.
+activation:
+  kind: Callback
+  rule_id: invoices-requested
+  hook: benchmark.invoice_batch_requested
+  condition: valid_input
+  reaction: Trigger
+  workflow_ref:
+    id: checkout-reference
+    revision: 1
+execution:
+  concurrency: independent
+  deadline_seconds: 120
+  on_step_error: fail

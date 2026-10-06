@@ -10,7 +10,7 @@ import unittest
 from unittest.mock import patch
 
 from sapi_config_lab.coordinate import cli
-from sapi_config_lab.paths import CATALOG, workspace_root
+from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.contracts import CompiledWorkflow, CompileOptions
 from sapi_config_lab.coordinate.cases import run_case
 from sapi_config_lab.coordinate.backend import N8nBackend
@@ -126,13 +126,20 @@ class BackendContractTests(unittest.TestCase):
         self.assertNotIn("Traceback", stderr.getvalue())
 
     def test_n8n_adapter_preserves_supported_and_unsupported_profile(self):
+        from sapi_config_lab.coordinate.scenarios import SCENARIOS
+
         backend = N8nBackend()
-        bindings = profile.read_bindings(CATALOG)
-        for path in sorted((workspace_root() / "benchmarks").glob("*/config.yaml")):
+        for scenario in SCENARIOS.values():
+            path, bindings = scenario.config, profile.read_bindings(scenario.bindings)
             config = profile.read(path)
+            # Both environments compile through the same backend; a simulator's tools are bound at run time.
+            options = CompileOptions(
+                operation_url="http://tools/tools" if scenario.environment == "simulator" else None
+            )
             with self.subTest(config=path.parent.name):
                 if path.parent.name != "05-daily-digest":
-                    compiled = backend.compile(config, bindings, CompileOptions())
+                    compiled = backend.compile(config, bindings, options)
+                    self.assertNotIn("not-persisted", str(compiled.document))
                     self.assertEqual(compiled.engine, "n8n")
                     attempts = config["execution"].get("refinement", {}).get("max_attempts", 1)
                     self.assertEqual(len(compiled.mapping), attempts * len(config["workflow"]["steps"]))
