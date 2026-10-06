@@ -11,7 +11,7 @@ def ref(path: str, *, optional: bool = False) -> dict:
     return {"optional_ref" if optional else "ref": path}
 
 
-def role(operation: str, inputs: dict, *, when: dict | None = None) -> dict:
+def role(operation: str, inputs: dict, *, when: dict | None = None, actor: str | None = None) -> dict:
     result = {
         "operation": operation,
         "kind": "LLM"
@@ -29,6 +29,8 @@ def role(operation: str, inputs: dict, *, when: dict | None = None) -> dict:
     }
     if when is not None:
         result["when"] = when
+    if actor is not None:
+        result["actor"] = actor
     return result
 
 
@@ -55,6 +57,28 @@ def routing() -> dict:
 ROUTING_EDGES = [("classify", "escalate"), ("classify", "normal"), ("escalate", "select"), ("normal", "select")]
 
 CONTRACTS: dict[str, dict[str, Any]] = {
+    "invoice-total": {
+        "roles": {
+            "validate": role("invoices.validate", {"invoices": ref("inputs.invoices")}),
+            "total": role("invoices.sum", {"invoices": ref("steps.validate.invoices")}),
+            "report": role("invoices.report", {"total": ref("steps.total")}),
+        },
+        "edges": [("validate", "total"), ("total", "report")],
+        "output": ref("steps.report"),
+    },
+    "ticket-routing": {"roles": routing(), "edges": ROUTING_EDGES, "output": ref("steps.select")},
+    "competitor-report": {
+        "roles": {
+            "product": role("research.product", {"material": ref("inputs.product_material")}, actor="product-sapi"),
+            "marketing": role(
+                "research.marketing", {"material": ref("inputs.marketing_material")}, actor="marketing-sapi"
+            ),
+            "combine": role("research.combine", {"product": ref("steps.product"), "marketing": ref("steps.marketing")}),
+            "write": role("research.write", {"brief": ref("steps.combine")}, actor="writer-sapi"),
+        },
+        "edges": [("product", "combine"), ("marketing", "combine"), ("combine", "write")],
+        "output": ref("steps.write"),
+    },
     "dual-ledger-closeout": {
         "roles": {
             "domestic_validate": role("invoices.validate", {"invoices": ref("inputs.domestic_invoices")}),

@@ -24,82 +24,11 @@ class RoleContract(TypedDict):
     exclusive_actors: NotRequired[list[str]]
 
 
-INVOICE: RoleContract = {
-    "roles": {
-        "validate": {
-            "operation": "invoices.validate",
-            "kind": "Script",
-            "inputs": {"invoices": {"ref": "inputs.invoices"}},
-        },
-        "total": {
-            "operation": "invoices.sum",
-            "kind": "Script",
-            "inputs": {"invoices": {"ref": "steps.validate.invoices"}},
-        },
-        "report": {"operation": "invoices.report", "kind": "Script", "inputs": {"total": {"ref": "steps.total"}}},
-    },
-    "edges": [("validate", "total"), ("total", "report")],
-    "output": {"ref": "steps.report"},
-}
-TICKET: RoleContract = {
-    "roles": {
-        "classify": {"operation": "ticket.classify", "kind": "LLM", "inputs": {"ticket": {"ref": "inputs.ticket"}}},
-        "escalate": {
-            "operation": "ticket.escalation_draft",
-            "kind": "Script",
-            "inputs": {"ticket": {"ref": "inputs.ticket"}},
-            "when": {"ref": "steps.classify.priority", "eq": "high"},
-        },
-        "normal": {
-            "operation": "ticket.normal_draft",
-            "kind": "Script",
-            "inputs": {"ticket": {"ref": "inputs.ticket"}},
-            "when": {"ref": "steps.classify.priority", "eq": "normal"},
-        },
-        "select": {
-            "operation": "branch.select_one",
-            "kind": "Script",
-            "inputs": {"escalated": {"optional_ref": "steps.escalate"}, "normal": {"optional_ref": "steps.normal"}},
-        },
-    },
-    "edges": [("classify", "escalate"), ("classify", "normal"), ("escalate", "select"), ("normal", "select")],
-    "output": {"ref": "steps.select"},
-}
-RESEARCH: RoleContract = {
-    "roles": {
-        "product": {
-            "operation": "research.product",
-            "kind": "LLM",
-            "actor": "product-sapi",
-            "inputs": {"material": {"ref": "inputs.product_material"}},
-        },
-        "marketing": {
-            "operation": "research.marketing",
-            "kind": "LLM",
-            "actor": "marketing-sapi",
-            "inputs": {"material": {"ref": "inputs.marketing_material"}},
-        },
-        "combine": {
-            "operation": "research.combine",
-            "kind": "Script",
-            "inputs": {"product": {"ref": "steps.product"}, "marketing": {"ref": "steps.marketing"}},
-        },
-        "write": {
-            "operation": "research.write",
-            "kind": "LLM",
-            "actor": "writer-sapi",
-            "inputs": {"brief": {"ref": "steps.combine"}},
-        },
-    },
-    "edges": [("product", "combine"), ("marketing", "combine"), ("combine", "write")],
-    "output": {"ref": "steps.write"},
-}
-BASELINE_CONTRACTS = {"invoice-total": INVOICE, "ticket-routing": TICKET, "competitor-report": RESEARCH}
+# The three original scenarios, whose records predate submitted-graph binding.
+BASELINE_SCENARIOS = ("invoice-total", "ticket-routing", "competitor-report")
 
 
 def contract_for(scenario: str) -> RoleContract:
-    if scenario in BASELINE_CONTRACTS:
-        return BASELINE_CONTRACTS[scenario]
     if TYPE_CHECKING or __package__:
         from .scenario_contracts import CONTRACTS
     else:

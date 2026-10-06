@@ -4,10 +4,10 @@ import json
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING or __package__:
-    from .roles import BASELINE_CONTRACTS, bind_roles, contract_for, resolve
+    from .roles import BASELINE_SCENARIOS, bind_roles, contract_for, resolve
     from .contracts import Rejected, WorkflowObservation, equal, require
 else:  # Standalone Harbor distribution.
-    from roles import BASELINE_CONTRACTS, bind_roles, contract_for, resolve
+    from roles import BASELINE_SCENARIOS, bind_roles, contract_for, resolve
     from contracts import Rejected, WorkflowObservation, equal, require
 
 
@@ -85,7 +85,7 @@ def observe_execution(
         roles = bind_roles(scenario, config)
     else:
         # Compatibility for historical, unique-operation baseline records only.
-        require(scenario in BASELINE_CONTRACTS, "Submitted graph required for occurrence acceptance")
+        require(scenario in BASELINE_SCENARIOS, "Submitted graph required for occurrence acceptance")
         roles = {}
         for role, obligation in contract["roles"].items():
             matching = [sid for sid, event in events.items() if event.get("operation") == obligation["operation"]]
