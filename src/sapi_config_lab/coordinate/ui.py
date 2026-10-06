@@ -31,7 +31,7 @@ from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
 from sapi_config_lab.evidence import json_text, sha256, write_json
 from sapi_config_lab.execute.agency import MAX_OUTGOING_ATTEMPTS, WRAPPER_TIMEOUT_SECONDS, make_handler
-from sapi_config_lab.execute.host import HostConfig
+from sapi_config_lab.execute.host import HostConfig, local_address
 from sapi_config_lab.execute.ui_n8n import DockerUi, fingerprint
 from sapi_config_lab.net import urlopen
 from sapi_config_lab.paths import CATALOG, workspace_root
@@ -50,7 +50,13 @@ def _check_grant_seconds(seconds: int) -> None:
 def prepare(
     config_path: Path, directory: Path, *, host: HostConfig | None = None, deadline_seconds: int | None = None
 ) -> dict:
-    """Compile without execution; each new directory names one owned workflow."""
+    """Compile against the shared catalog without executing; each new directory names one owned workflow."""
+    hosted = next((s for s in SCENARIOS.values() if s.hosted and s.config.resolve() == config_path.resolve()), None)
+    if hosted is not None:
+        raise ValueError(
+            f"{hosted.name} is a hosted scenario: its tools and evaluator exist only inside a Harbor trial, "
+            "so the UI imports fixture scenarios only"
+        )
     host = host or HostConfig.from_environment()
     if not 1024 <= host.ui_bridge_port <= 65535:
         raise ValueError("Use a non-privileged valid bridge port")
@@ -65,7 +71,7 @@ def prepare(
     if deadline_seconds is not None:
         _check_grant_seconds(deadline_seconds)
         config["execution"]["deadline_seconds"] = deadline_seconds
-    bridge_url = f"http://{host.container_host}:{host.ui_bridge_port}/v1/agency/execute"
+    bridge_url = host.container_url(host.ui_bridge_port) + "/v1/agency/execute"
     compiled = default_backend().compile(config, bindings, CompileOptions("live", bridge_url))
     workflow = config["workflow"]
     refinement = config["execution"].get("refinement")
@@ -187,7 +193,6 @@ def serve(
     wrapper_evidence: Path,
     wrapper_files: dict[str, Path] | None = None,
     host: HostConfig | None = None,
-    bind: str = "127.0.0.1",
     on_ready: Callable[[], None] | None = None,
 ) -> None:
     """Foreground bridge for one prepared workflow; opening or importing the graph never executes it."""
@@ -232,11 +237,11 @@ def serve(
                 },
             )
 
-    server = HTTPServer((bind, prepared["port"]), Handler)
+    server = HTTPServer((host.listen_host, prepared["port"]), Handler)
     ready = {
         "workflow_id": budget["workflow_id"],
         "workflow_url": f"{host.n8n_url}/workflow/{budget['workflow_id']}",
-        "health_url": f"http://127.0.0.1:{prepared['port']}/health",
+        "health_url": f"http://{local_address(host.listen_host)}:{prepared['port']}/health",
         "max_attempts": max_attempts,
         "expires_at": budget["expires_at"],
         "wrapper_http_status": wrapper_status,
@@ -414,7 +419,6 @@ def open_command(parser: argparse.ArgumentParser, args: argparse.Namespace, host
         wrapper_evidence=wrapper[0],
         wrapper_files=wrapper[1],
         host=host,
-        bind=args.host,
         on_ready=ready,
     )
 
@@ -436,7 +440,7 @@ def main(argv=None) -> int:
     view.add_argument("--seconds", type=int, default=DEFAULT_GRANT_SECONDS, help="Live deadline and grant lifetime")
     view.add_argument("--wrapper-evidence", type=Path, help="Inspected wrapper identity; saved for subsequent live use")
     view.add_argument("--wrapper-file", action="append", help="NAME=PATH of an inspected wrapper file on this machine")
-    view.add_argument("--host", default="127.0.0.1", help="Address the UI bridge binds")
+    view.add_argument("--host", default=host.listen_host, help="UI bridge bind address (SAPI_LISTEN_HOST)")
     prep = commands.add_parser("prepare", help="Compile an inactive UI graph; never call a model")
     prep.add_argument("config", type=Path)
     prep.add_argument("--output-dir", type=Path, required=True)
@@ -449,11 +453,12 @@ def main(argv=None) -> int:
     run.add_argument("--seconds", type=int, default=DEFAULT_GRANT_SECONDS)
     run.add_argument("--wrapper-evidence", type=Path, required=True)
     run.add_argument("--wrapper-file", action="append", help="NAME=PATH of an inspected wrapper file on this machine")
-    run.add_argument("--host", default="127.0.0.1", help="Address the UI bridge binds")
+    run.add_argument("--host", default=host.listen_host, help="UI bridge bind address (SAPI_LISTEN_HOST)")
     args = parser.parse_args(argv)
-    host = replace(host, ui_bridge_port=args.port) if hasattr(args, "port") else host
-    if hasattr(args, "container"):
-        host = replace(host, n8n_container=args.container)
+    overrides = {"port": "ui_bridge_port", "container": "n8n_container", "host": "listen_host"}
+    host = replace(
+        host, **{field: getattr(args, option) for option, field in overrides.items() if hasattr(args, option)}
+    )
     try:
         if args.command == "prepare":
             print(json.dumps(prepare(args.config, args.output_dir, host=host)))
@@ -465,7 +470,6 @@ def main(argv=None) -> int:
                 wrapper_evidence=args.wrapper_evidence,
                 wrapper_files=parse_wrapper_files(args.wrapper_file),
                 host=host,
-                bind=args.host,
             )
         else:
             open_command(parser, args, host)

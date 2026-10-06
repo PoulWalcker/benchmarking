@@ -227,6 +227,15 @@ class UiTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 prepare(source, output, host=HostConfig())
 
+    def test_hosted_scenarios_are_refused_before_compilation(self):
+        source = workspace_root() / "benchmarks/10-checkout-recovery/config.yaml"
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("sapi_config_lab.coordinate.ui.default_backend") as backend:
+                with self.assertRaisesRegex(ValueError, "checkout-recovery is a hosted scenario"):
+                    prepare(source, Path(directory) / "run", host=HostConfig())
+                backend.assert_not_called()
+            self.assertFalse((Path(directory) / "run").exists())
+
     def test_admission_requires_explicit_cap_and_unmodified_files_and_cannot_resume(self):
         from sapi_config_lab.coordinate.ui import admit
 
