@@ -7,7 +7,7 @@ ROOT = workspace_root()
 
 
 def oracle_config(contract):
-    cfg = read(ROOT / "configs/01-invoice-total.yaml")
+    cfg = read(ROOT / "benchmarks/01-invoice-total/config.yaml")
 
     def ref(path):
         return {"ref": "steps." + path}

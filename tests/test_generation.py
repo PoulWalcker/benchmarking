@@ -45,7 +45,7 @@ class GenerationTests(unittest.TestCase):
                 self.assertFalse((task / "solution").exists())
                 self.assertEqual(list(task.rglob("*.yaml")), [])
                 prompt = (task / "instruction.md").read_text()
-                for config in (workspace_root() / "configs").glob("*.yaml"):
+                for config in (workspace_root() / "benchmarks").glob("*/config.yaml"):
                     self.assertNotIn(config.read_text().strip(), prompt)
                 self.assertNotIn((workspace_root() / "verification/verify.py").read_text(), prompt)
                 self.assertEqual(

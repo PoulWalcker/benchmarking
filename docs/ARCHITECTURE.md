@@ -115,12 +115,12 @@ separate experiments. This refactoring implements neither.
 
 | Source | Assembled package contents |
 | --- | --- |
-| `harbor/tasks/<scenario>/instruction.md` | `instruction.md` for oracle/live |
-| `generation/tasks.json`, `FORMAT.md`, profile, catalog | `instruction.md` for generation |
-| `configs/0N-*.yaml` or validated frozen replay mapping | `environment/base.yaml`, oracle/live/replay only |
+| `benchmarks/NN-<scenario>/instruction.md` | `instruction.md` for oracle/live |
+| `benchmarks/NN-<scenario>/task.md` (+ `prompt-extension.md`), `generation/FORMAT.md`, profile, catalog | `instruction.md` for generation |
+| `benchmarks/NN-<scenario>/config.yaml` or validated frozen replay mapping | `environment/base.yaml`, oracle/live/replay only |
 | `harbor/templates/` | task.toml, test.sh, solve.sh; solve is oracle/live only |
 | `verification/*.py` | hidden verifier modules in `tests/` |
-| `verification/cases.json` | `tests/cases.json` for the selected scenario only |
+| `benchmarks/NN-<scenario>/cases.json` | `tests/cases.json` for the selected scenario only |
 
 These are distribution copies for isolated execution, not separate maintained
 implementations. The destination directory must be new. Exact packages are saved
@@ -215,7 +215,7 @@ check. Terms used below are defined in the [glossary](GLOSSARY.md).
 | Command | What it does | Also needs | Costs model calls |
 | --- | --- | --- | --- |
 | `compile` | Validate one YAML and write the n8n JSON plus its step-to-node map. It does not execute anything. | — | No |
-| `build` | Compile every `configs/*.yaml` into `--output-dir` and record which were rejected. | — | No |
+| `build` | Compile every `benchmarks/*/config.yaml` into `--output-dir` and record which were rejected. | — | No |
 | `harbor` | The unpaid control suite: build the pinned image, run transport probes, then the oracle and nop trials. | `--extra harbor`, Docker | No |
 | `generate` | Model-authored YAML. Runs the control suite first and refuses to continue if it fails, then dispatches independent one-shot authoring attempts. | `--extra harbor`, Docker, the wrapper | Yes |
 | `live` | Replay frozen generated submissions with live runtime operations, after an unpaid source-matched gate. | `--extra harbor`, Docker, the wrapper | Yes |

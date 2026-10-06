@@ -105,7 +105,7 @@ def native_digest(config, admission, *, execution="1"):
 
 
 def snapshot(*, rejected=False, revision=1):
-    config = yaml.safe_load((Path(__file__).parents[1] / "configs/05-digest-lifecycle.yaml").read_text())
+    config = yaml.safe_load((Path(__file__).parents[1] / "benchmarks/05-daily-digest/config.yaml").read_text())
     if rejected:
         config["workflow"]["output"] = {"ref": "steps.summarize"}
     config["workflow"]["revision"] = revision
@@ -324,7 +324,7 @@ class LifecycleSubmissionTests(unittest.TestCase):
         self.assertEqual(tuple(select_scenarios()), ("invoice-total", "ticket-routing", "competitor-report"))
 
     def test_task_constraints_are_enforced(self):
-        config = profile.read(workspace_root() / "configs/05-digest-lifecycle.yaml")
+        config = profile.read(workspace_root() / "benchmarks/05-daily-digest/config.yaml")
         validate_task(config)
         config["lifecycle"]["on_test_fail"]["max_rebuilds"] = 3
         with self.assertRaises(AssertionError):

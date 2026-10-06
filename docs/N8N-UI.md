@@ -19,7 +19,7 @@ not silently omitted or presented as a complete standalone graph.
 In this checkout, you can [inspect the imported 09 graph](http://localhost:5678/workflow/2eade6ecad1d481f)
 directly after signing in.
 
-To view one config, use `uv run --locked sapi-lab ui open configs/09-priority-support-brief.yaml`;
+To view one config, use `uv run --locked sapi-lab ui open benchmarks/09-priority-support-brief/config.yaml`;
 that opens the selected graph directly. Add `--no-browser`
 to print links without opening a browser tab.
 Repeating the command for unchanged YAML reuses the project-owned graph. If n8n
@@ -31,7 +31,7 @@ overwritten.
 ## Prepare a manual live run
 
 ```sh
-uv run --locked sapi-lab ui open configs/09-priority-support-brief.yaml --live
+uv run --locked sapi-lab ui open benchmarks/09-priority-support-brief/config.yaml --live
 ```
 
 This creates a fresh inactive copy, derives its model-call ceiling, and starts

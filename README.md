@@ -14,7 +14,8 @@ Historical evidence, upstream source material, and task input data retain their
 original contents. Translating a document included in a model prompt changes
 future prompt hashes; saved prompts and previous results are never rewritten.
 
-Start with the guide for your task:
+Start with the guide for your task. Agents changing code read [AGENTS.md](AGENTS.md) first:
+it names the compile, execute and evaluate stages and what each may import.
 
 - [Learn the vocabulary first](docs/GLOSSARY.md): *admission*, *case*, *task*, *control*, *candidate* and *reward* each name several different things in this tree. The glossary fixes which one each document means, and states plainly why execution success, acceptance and quality are three separate facts.
 - [Add a scenario](docs/AUTHORING.md): the eight files a new task family touches, with the command to run as the gate after each one.
@@ -32,7 +33,7 @@ lifecycle controller.
 Repeating the command reuses existing links and preserves edits made in n8n;
 `--new-copy` creates a fresh copy from YAML.
 To prepare one manual live session, use
-`uv run --locked sapi-lab ui open configs/09-priority-support-brief.yaml --live`, then
+`uv run --locked sapi-lab ui open benchmarks/09-priority-support-brief/config.yaml --live`, then
 press **Execute workflow** in n8n. The [UI guide](docs/N8N-UI.md) covers login,
 the first-use wrapper identity, execution limits and result inspection.
 
@@ -72,7 +73,7 @@ uv run --locked mypy
 uv run --locked python infra/check_distribution.py
 
 # Compilation only; no execution
-uv run --locked sapi-lab compile configs/01-invoice-total.yaml --output /tmp/invoice.n8n.json
+uv run --locked sapi-lab compile benchmarks/01-invoice-total/config.yaml --output /tmp/invoice.n8n.json
 uv run --locked sapi-lab build --output-dir /tmp/sapi-generated
 
 # Full control suite, followed by a separate series with live model calls
@@ -135,14 +136,16 @@ upstream source rather than this wrapper, and is not affected by the gate above.
 
 ```text
 src/sapi_config_lab/
-  core/              shared rules: YAML format, validation, bindings.yaml, backend contract, provenance
-  runtime/           independent services: n8n compiler, executor, Agency adapter, evaluation
-  interfaces/        interaction surfaces: cli.py, Harbor, YAML generation, task packaging
-  paths.py           installed resources and checkout discovery
-configs/             nine examples; 04 adds bounded refinement, 05 needs a lifecycle controller
-verification/        independent checks, rubric cards, and cases.json test inputs
-harbor/              scenario instructions and shared task templates
-generation/          model tasks and format description, without reference YAML
+  compile/           YAML definition -> n8n JSON and step map; no I/O, no verdicts
+  execute/           run an artifact: n8n executor, Agency adapter, Harbor/Docker helpers
+  evaluate/          host-side scoring and reporting of recorded runs (AutoWFBench track)
+  author/            model-driven authoring and repair; produces YAML, never compiles it
+  coordinate/        cli.py, case selection, budgets, task packaging, the series runners
+  *.py, bindings.yaml shared contracts: profile, backend contract, evidence encoding, paths
+benchmarks/NN-<scenario>/  one scenario: config.yaml, task.md, instruction.md, cases.json, scenario.json
+verification/        the independent verifier: contracts, business checks, rubric cards
+harbor/templates/    shared Harbor task templates
+generation/          the authoring format description and the AutoWFBench catalogs
 tests/               local tests; support/ contains the JS driver
 infra/               pinned Docker image containing real n8n
 docs/                glossary, authoring guide, profile, architecture, research questions
@@ -167,9 +170,8 @@ checkout and are excluded from Git, Docker build context, and distributions.
 The public [results summary](docs/history/RESULTS.md) records selected outcomes and hashes;
 reproduction does not require the historical private output directories.
 
-Each source directory `harbor/tasks/<scenario>/` now contains only an instruction.
-**Complete packages are assembled before each run** from shared templates,
-the corresponding config, and the independent verifier. Exact copies are saved
+**Complete packages are assembled before each run** from the scenario's
+`benchmarks/` directory, the shared templates, and the independent verifier. Exact copies are saved
 in `reports/<run>/task-packages/` for reproducibility. Each package contains only
 its own scenario's test inputs. There is no manual synchronization step.
 
@@ -210,15 +212,15 @@ arbitrary workflow generation.
 
 | Config | Exact reference config: recorded native n8n coverage | Model-authored YAML: recorded native live coverage |
 | --- | --- | --- |
-| [01-invoice-total.yaml](configs/01-invoice-total.yaml) | Positive/negative controls; live-mode reference cases passed | [3 cases passed; 0 runtime model calls](evidence/20261004-generated-live-integration/SUMMARY.md) — Script-only |
-| [02-ticket-routing.yaml](configs/02-ticket-routing.yaml) | Positive/negative controls; reference live classification passed | [2 cases passed; 2 runtime model calls](evidence/20261004-generated-live-integration/SUMMARY.md) |
-| [03-competitor-report.yaml](configs/03-competitor-report.yaml) | Positive/negative controls; reference live research passed | [2 cases passed; 6 runtime model calls](evidence/20261004-generated-live-integration/SUMMARY.md) |
-| [04-revise-answer.yaml](configs/04-revise-answer.yaml) | One bounded native graph; stub controls show rejection, feedback, later acceptance and exhaustion | [3 one-shot YAMLs accepted; selected original used 4 runtime calls](evidence/20261004-open-tasks-integration/refinement-evaluation-2/SUMMARY.md): positive accepted first draft; impossible-limit case exhausted 3 attempts with no accepted output |
-| [05-digest-lifecycle.yaml](configs/05-digest-lifecycle.yaml) | Candidate execution and an explicit durable controller; native controls use an injected clock | 1 one-shot authoring, 5 runtime and 1 WBS repair call. [Unchanged authored revision passed Callback and actual-clock Cron](evidence/20261004-open-tasks-integration/lifecycle-evaluation-3/after-authored/authored/report.json); [separate deliberate mutation was rejected, then model repair passed a new Callback and actual-clock Cron](evidence/20261004-open-tasks-integration/lifecycle-evaluation-3/after-mutation/mutation/report.json) |
-| [06-dual-ledger-closeout.yaml](configs/06-dual-ledger-closeout.yaml) | Positive/negative native controls; Script-only | [2 cases passed; 0 runtime model calls](evidence/20261004-scenario-expansion-integration/sc01-live/report.json) — Script-only |
-| [07-support-review-packet.yaml](configs/07-support-review-packet.yaml) | Positive/negative native controls with stub LLM; exact reference not separately live-replayed | [2 cases passed; 4 runtime model calls](evidence/20261004-scenario-expansion-integration/sc02-live/report.json) |
-| [08-bulletin-market-brief.yaml](configs/08-bulletin-market-brief.yaml) | Positive/negative native controls with stub LLM; exact reference not separately live-replayed | [2 corrected-task cases passed; 8 runtime model calls](evidence/20261004-corrected-expansion-integration/sc03-live/report.json) |
-| [09-priority-support-brief.yaml](configs/09-priority-support-brief.yaml) | Positive/negative native controls with stub LLM; exact reference not separately live-replayed | [2 corrected-task cases passed; 5 runtime model calls](evidence/20261004-corrected-expansion-integration/sc04-live/report.json) |
+| [01-invoice-total](benchmarks/01-invoice-total/config.yaml) | Positive/negative controls; live-mode reference cases passed | [3 cases passed; 0 runtime model calls](evidence/20261004-generated-live-integration/SUMMARY.md) — Script-only |
+| [02-ticket-routing](benchmarks/02-ticket-routing/config.yaml) | Positive/negative controls; reference live classification passed | [2 cases passed; 2 runtime model calls](evidence/20261004-generated-live-integration/SUMMARY.md) |
+| [03-competitor-report](benchmarks/03-competitor-report/config.yaml) | Positive/negative controls; reference live research passed | [2 cases passed; 6 runtime model calls](evidence/20261004-generated-live-integration/SUMMARY.md) |
+| [04-revise-answer](benchmarks/04-revise-answer/config.yaml) | One bounded native graph; stub controls show rejection, feedback, later acceptance and exhaustion | [3 one-shot YAMLs accepted; selected original used 4 runtime calls](evidence/20261004-open-tasks-integration/refinement-evaluation-2/SUMMARY.md): positive accepted first draft; impossible-limit case exhausted 3 attempts with no accepted output |
+| [05-daily-digest](benchmarks/05-daily-digest/config.yaml) | Candidate execution and an explicit durable controller; native controls use an injected clock | 1 one-shot authoring, 5 runtime and 1 WBS repair call. [Unchanged authored revision passed Callback and actual-clock Cron](evidence/20261004-open-tasks-integration/lifecycle-evaluation-3/after-authored/authored/report.json); [separate deliberate mutation was rejected, then model repair passed a new Callback and actual-clock Cron](evidence/20261004-open-tasks-integration/lifecycle-evaluation-3/after-mutation/mutation/report.json) |
+| [06-dual-ledger-closeout](benchmarks/06-dual-ledger-closeout/config.yaml) | Positive/negative native controls; Script-only | [2 cases passed; 0 runtime model calls](evidence/20261004-scenario-expansion-integration/sc01-live/report.json) — Script-only |
+| [07-support-review-packet](benchmarks/07-support-review-packet/config.yaml) | Positive/negative native controls with stub LLM; exact reference not separately live-replayed | [2 cases passed; 4 runtime model calls](evidence/20261004-scenario-expansion-integration/sc02-live/report.json) |
+| [08-bulletin-market-brief](benchmarks/08-bulletin-market-brief/config.yaml) | Positive/negative native controls with stub LLM; exact reference not separately live-replayed | [2 corrected-task cases passed; 8 runtime model calls](evidence/20261004-corrected-expansion-integration/sc03-live/report.json) |
+| [09-priority-support-brief](benchmarks/09-priority-support-brief/config.yaml) | Positive/negative native controls with stub LLM; exact reference not separately live-replayed | [2 corrected-task cases passed; 5 runtime model calls](evidence/20261004-corrected-expansion-integration/sc04-live/report.json) |
 
 Runtime call counts exclude YAML-authoring and WBS repair calls. Zero calls for invoice-only
 workflows are expected, not missing LLM coverage. Negative controls pass when

@@ -1,0 +1,162 @@
+{
+  "positive": [
+    {
+      "name": "high-brief",
+      "inputs": {
+        "ticket": {
+          "id": "P-72",
+          "text": "Delivery is three days late.",
+          "days_overdue": 3
+        },
+        "product_material": "The product supports barcode scanning and offline inventory.",
+        "marketing_material": "The service targets local shops through partner referrals."
+      },
+      "product_anchors": [
+        [
+          "barcode"
+        ],
+        [
+          "scann"
+        ],
+        [
+          "offline"
+        ],
+        [
+          "inventory",
+          "stock"
+        ]
+      ],
+      "marketing_anchors": [
+        [
+          "local"
+        ],
+        [
+          "shop",
+          "retail"
+        ],
+        [
+          "partner"
+        ],
+        [
+          "referral"
+        ]
+      ]
+    },
+    {
+      "name": "normal-empty",
+      "inputs": {
+        "ticket": {
+          "id": "P-72",
+          "text": "Delivery is three days late.",
+          "days_overdue": 2
+        },
+        "product_material": "",
+        "marketing_material": ""
+      }
+    },
+    {
+      "name": "normal-zero",
+      "inputs": {
+        "ticket": {
+          "id": "P-72",
+          "text": "Delivery is three days late.",
+          "days_overdue": 0
+        },
+        "product_material": "The product supports barcode scanning and offline inventory.",
+        "marketing_material": "The service targets local shops through partner referrals."
+      }
+    },
+    {
+      "name": "normal-valid",
+      "inputs": {
+        "ticket": {
+          "id": "P-72",
+          "text": "Delivery is three days late.",
+          "days_overdue": 2
+        },
+        "product_material": "The product supports barcode scanning and offline inventory.",
+        "marketing_material": "The service targets local shops through partner referrals."
+      }
+    },
+    {
+      "name": "boundary-high",
+      "inputs": {
+        "ticket": {
+          "id": "P-72",
+          "text": "Delivery is three days late.",
+          "days_overdue": 3
+        },
+        "product_material": "The product supports barcode scanning and offline inventory.",
+        "marketing_material": "The service targets local shops through partner referrals."
+      },
+      "product_anchors": [
+        [
+          "barcode"
+        ],
+        [
+          "scann"
+        ],
+        [
+          "offline"
+        ],
+        [
+          "inventory",
+          "stock"
+        ]
+      ],
+      "marketing_anchors": [
+        [
+          "local"
+        ],
+        [
+          "shop",
+          "retail"
+        ],
+        [
+          "partner"
+        ],
+        [
+          "referral"
+        ]
+      ]
+    }
+  ],
+  "negative": [
+    {
+      "name": "high-empty-product",
+      "inputs": {
+        "ticket": {
+          "id": "P-72",
+          "text": "Delivery is three days late.",
+          "days_overdue": 3
+        },
+        "product_material": "",
+        "marketing_material": "The service targets local shops through partner referrals."
+      },
+      "error": "Missing product material",
+      "schema_error": "Schema violation at inputs.material",
+      "operation": "research.product",
+      "role": "product"
+    },
+    {
+      "name": "high-empty-marketing",
+      "inputs": {
+        "ticket": {
+          "id": "P-72",
+          "text": "Delivery is three days late.",
+          "days_overdue": 3
+        },
+        "product_material": "The product supports barcode scanning and offline inventory.",
+        "marketing_material": ""
+      },
+      "error": "Missing marketing material",
+      "schema_error": "Schema violation at inputs.material",
+      "operation": "research.marketing",
+      "role": "marketing"
+    }
+  ],
+  "live_cases": [
+    "high-brief",
+    "normal-empty"
+  ]
+}

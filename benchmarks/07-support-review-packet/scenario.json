@@ -1,0 +1,7 @@
+{
+  "group": "expansion",
+  "runtime_caps": {
+    "high-packet": 2,
+    "normal-packet": 2
+  }
+}

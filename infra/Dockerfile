@@ -18,7 +18,7 @@ ENV N8N_DIAGNOSTICS_ENABLED=false \
 WORKDIR /app
 COPY src /app/lab/src/
 COPY docs/PROFILE.md /app/lab/docs/PROFILE.md
-COPY configs /app/lab/configs/
+COPY benchmarks /app/lab/benchmarks/
 RUN mkdir -p /app/submission /app/scenario
 ENTRYPOINT []
 CMD ["sleep", "infinity"]

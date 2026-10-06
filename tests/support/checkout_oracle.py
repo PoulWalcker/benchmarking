@@ -8,7 +8,7 @@ ROOT = workspace_root()
 
 def oracle_config(contract):
     """Explicit scripted calibration, never supplied in the authoring prompt."""
-    cfg = read(ROOT / "configs/01-invoice-total.yaml")
+    cfg = read(ROOT / "benchmarks/01-invoice-total/config.yaml")
     w = cfg["workflow"]
     w.update(id="checkout-reference", inputs={}, acceptance="Scripted calibration of original simulator")
     steps = [

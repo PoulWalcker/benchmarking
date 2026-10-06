@@ -32,7 +32,7 @@ MODULES = {
 # What a person types at a normal checkout.
 PUBLIC = {
     "compile": "Validate one YAML; write the n8n JSON and its step-to-node map.",
-    "build": "Compile every configs/*.yaml and record which were rejected.",
+    "build": "Compile every benchmarks/*/config.yaml and record which were rejected.",
     "harbor": "Unpaid control suite: pinned image, transport probes, oracle and nop trials.",
     "generate": "Model-authored YAML after the control suite passes. Costs model calls.",
     "live": "Replay frozen submissions against live operations. Costs model calls.",
@@ -96,11 +96,11 @@ def build_command(argv: list[str], *, backend: WorkflowBackend | None = None) ->
     args.output_dir.mkdir(parents=True, exist_ok=True)
     bindings = read_bindings(CATALOG)
     selected = backend if backend is not None else default_backend()
-    for path in sorted((root / "configs").glob("*.yaml")):
+    for path in sorted((root / "benchmarks").glob("*/config.yaml")):
         cfg = read(path)
         order, _ = validate(cfg, bindings)
         row = {
-            "config": path.name,
+            "config": path.parent.name,
             "valid_profile": True,
             "steps": len(order),
             "runtime_tested": False,
@@ -108,7 +108,7 @@ def build_command(argv: list[str], *, backend: WorkflowBackend | None = None) ->
         }
         try:
             compiled = selected.compile(cfg, bindings, CompileOptions())
-            out = args.output_dir / (path.stem + "." + selected.name + ".json")
+            out = args.output_dir / (path.parent.name + "." + selected.name + ".json")
             write_json(out, compiled.document)
             write_json(out.with_suffix(".map.json"), compiled.mapping, ensure_ascii=True)
             row.update(demo_export="generated", artifact=out.name)

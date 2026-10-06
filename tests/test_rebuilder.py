@@ -17,7 +17,7 @@ from sapi_config_lab import profile
 
 class RebuilderTests(unittest.TestCase):
     def test_actual_response_is_preserved_and_same_reservation_cannot_repeat(self):
-        source = profile.read(workspace_root() / "configs/05-digest-lifecycle.yaml")
+        source = profile.read(workspace_root() / "benchmarks/05-daily-digest/config.yaml")
         target = {"id": "daily-digest", "revision": 2}
         candidate = copy.deepcopy(source)
         candidate["workflow"]["revision"] = 2
@@ -63,7 +63,7 @@ class RebuilderTests(unittest.TestCase):
             self.assertIsNone(audit["provider_call_count"])
 
     def test_unknown_wrapper_outcome_is_saved_and_not_retried(self):
-        source = profile.read(workspace_root() / "configs/05-digest-lifecycle.yaml")
+        source = profile.read(workspace_root() / "benchmarks/05-daily-digest/config.yaml")
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
             builder = WrapperRebuilder("http://127.0.0.1:8765/run")
@@ -76,7 +76,7 @@ class RebuilderTests(unittest.TestCase):
             self.assertEqual(json.loads((path / "dispatch.json").read_text())["status"], "failed_or_unknown")
 
     def test_missing_or_wrong_model_and_boolean_exit_code_fail_closed(self):
-        source = profile.read(workspace_root() / "configs/05-digest-lifecycle.yaml")
+        source = profile.read(workspace_root() / "benchmarks/05-daily-digest/config.yaml")
         for exit_code, stderr in [(False, "model: gpt-6-astra\n"), (0, ""), (0, "model: other-model\n")]:
             with self.subTest(exit_code=exit_code, stderr=stderr), tempfile.TemporaryDirectory() as directory:
                 response = {"ok": True, "exit_code": exit_code, "stderr": stderr, "output": yaml.safe_dump(source)}

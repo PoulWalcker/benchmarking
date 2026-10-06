@@ -20,7 +20,7 @@ or install an operating-system Cron job.
 
 ```bash
 python -m sapi_config_lab.runtime.lifecycle --registry reports/my-lifecycle \
-  register --config configs/05-digest-lifecycle.yaml
+  register --config benchmarks/05-daily-digest/config.yaml
 
 python -m sapi_config_lab.runtime.lifecycle --registry reports/my-lifecycle \
   callback --workflow-id daily-digest --revision 1 --event-id initial-test

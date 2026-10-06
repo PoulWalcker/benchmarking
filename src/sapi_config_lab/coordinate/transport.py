@@ -75,7 +75,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
 
 
 def probe_config(enabled=True, invalid_input=False):
-    config = profile.read(ROOT / "configs/02-ticket-routing.yaml")
+    config = profile.read(ROOT / "benchmarks/02-ticket-routing/config.yaml")
     workflow = config["workflow"]
     workflow["id"] = "agency-transport-probe"
     config["activation"]["workflow_ref"]["id"] = workflow["id"]

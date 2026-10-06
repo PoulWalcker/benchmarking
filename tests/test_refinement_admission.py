@@ -83,7 +83,7 @@ class RefinementAdmissionTests(unittest.TestCase):
             self.assertIn("runtime.previous", prompt)
             cases = json.loads((task / "tests/cases.json").read_text())["revise-answer"]
             self.assertEqual(cases["live_cases"], ["valid-reply", "impossible-limit"])
-            config = read(workspace_root() / "configs/04-revise-answer.yaml")
+            config = read(workspace_root() / "benchmarks/04-revise-answer/config.yaml")
             for case in cases["positive"]:
                 config["workflow"]["inputs"] = case["inputs"]
                 budget = case_budget("revise-answer", case["name"], config)

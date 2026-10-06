@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 from verification.contracts import Rejected
 from verification.scenario_business import check_scenario_business_result
+from sapi_config_lab.coordinate.scenarios import all_cases
 
 
 def observation(values, output, *, skipped=(), actors=None, dependencies=()):
@@ -111,13 +112,10 @@ class ExpansionBusinessTests(unittest.TestCase):
                 check_scenario_business_result("support-review-packet", inputs, broken, "live")
 
     def test_bulletin_brief_checks_derived_quotes_and_facts_separately(self):
-        import json
-        from pathlib import Path
         from verification.scenario_contracts import CONTRACTS
 
-        inputs = json.loads(Path("verification/cases.json").read_text())["bulletin-market-brief"]["positive"][0][
-            "inputs"
-        ]
+        case = all_cases()["bulletin-market-brief"]["positive"][0]
+        inputs = case["inputs"]
         digest = {"text": "Offline inventory and CSV export are supported.", "article_ids": ["BL-1", "BL-2"]}
         product = {"summary": "Offline inventory and CSV export.", "evidence": "Offline inventory and CSV export"}
         marketing = {
@@ -143,7 +141,9 @@ class ExpansionBusinessTests(unittest.TestCase):
             actors={"summarize": "a", "product": "b", "marketing": "c", "write": "d"},
             dependencies=CONTRACTS["bulletin-market-brief"]["edges"],
         )
-        self.assertTrue(check_scenario_business_result("bulletin-market-brief", inputs, obs, "live")["output_verified"])
+        self.assertTrue(
+            check_scenario_business_result("bulletin-market-brief", inputs, obs, "live", case=case)["output_verified"]
+        )
         for role, field, wrong in [
             ("summarize", "article_ids", ["BL-1", "UNKNOWN"]),
             ("product", "evidence", inputs["articles"][0]["text"]),
@@ -154,7 +154,7 @@ class ExpansionBusinessTests(unittest.TestCase):
             broken = copy.deepcopy(obs)
             broken.states[broken.roles[role]]["steps"][broken.roles[role]][field] = wrong
             with self.subTest(role=role, field=field), self.assertRaises(Rejected):
-                check_scenario_business_result("bulletin-market-brief", inputs, broken, "live")
+                check_scenario_business_result("bulletin-market-brief", inputs, broken, "live", case=case)
 
     def test_normal_priority_propagates_all_skips_and_returns_null_brief(self):
         from verification.scenario_contracts import CONTRACTS
@@ -188,15 +188,15 @@ class ExpansionLocalGraphTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        import json
         from sapi_config_lab.paths import CATALOG, workspace_root
         from sapi_config_lab.profile import read
 
         cls.root = workspace_root()
         cls.catalog = read(CATALOG)["operations"]
-        cls.cases = json.loads((cls.root / "verification/cases.json").read_text())
+        cls.cases = all_cases()
         cls.configs = {
-            read(path)["workflow"]["id"]: read(path) for path in sorted((cls.root / "configs").glob("0[6-9]-*.yaml"))
+            read(path)["workflow"]["id"]: read(path)
+            for path in sorted((cls.root / "benchmarks").glob("0[6-9]-*/config.yaml"))
         }
 
     def execute(self, scenario, inputs, *, mutate=None):

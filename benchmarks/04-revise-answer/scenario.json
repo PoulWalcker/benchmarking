@@ -1,0 +1,8 @@
+{
+  "group": "extension",
+  "runtime_caps": {
+    "valid-reply": 3,
+    "impossible-limit": 3
+  },
+  "prompt_extension": "TASK-SPECIFIC REFINEMENT EXTENSION"
+}

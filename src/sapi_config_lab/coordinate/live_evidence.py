@@ -12,6 +12,7 @@ from pathlib import Path
 from sapi_config_lab.evidence import sha256
 from sapi_config_lab.coordinate.replay import read_json, require
 from sapi_config_lab.paths import CATALOG, workspace_root
+from sapi_config_lab.coordinate.scenarios import all_cases
 from sapi_config_lab.evidence import digest
 from sapi_config_lab.execute.agency import MAX_BODY, build_prompt
 from sapi_config_lab.coordinate.backend import default_backend
@@ -156,7 +157,7 @@ def collect_native(
     # Same independent verifier used in Harbor; experiments require the checkout.
     verification, provenance = load_verifier()
 
-    cases = read_json(workspace_root() / "verification/cases.json") if cases is None else cases
+    cases = all_cases() if cases is None else cases
     selected_cases = LIVE_CASES if expected_cases is None else expected_cases
     native = []
     observed_cases = set()
@@ -260,7 +261,7 @@ def case_budget(scenario: str, case_name: str, config: dict, *, cases: dict | No
     require(
         scenario in {**EXPANSION_SCENARIOS, **EXTENSION_SCENARIOS}, "Occurrence admission requires a bounded scenario"
     )
-    scenario_cases = (read_json(workspace_root() / "verification/cases.json") if cases is None else cases)[scenario]
+    scenario_cases = (all_cases() if cases is None else cases)[scenario]
     require(case_name in scenario_cases["live_cases"], "Case is outside the frozen live cohort")
     fixture = next(case["inputs"] for case in scenario_cases["positive"] if case["name"] == case_name)
     require(config["workflow"]["inputs"] == fixture, "Case admission fixture mismatch")

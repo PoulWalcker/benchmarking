@@ -10,6 +10,7 @@ from unittest.mock import patch
 from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.coordinate.replay import expansion_selection, load_selection
 from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.coordinate.scenarios import all_cases
 
 ROOT = workspace_root()
 SCENARIO = "dual-ledger-closeout"
@@ -33,10 +34,10 @@ class ExpansionPackagingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             cases = root / "private.json"
-            original = json.loads((ROOT / "verification/cases.json").read_text())[SCENARIO]
+            original = all_cases()[SCENARIO]
             original["positive"][0]["inputs"]["domestic_invoices"][0]["id"] = "FRESH-PRIVATE"
             cases.write_text(json.dumps({SCENARIO: original}, indent=4) + "\n")
-            submission = ROOT / "configs/06-dual-ledger-closeout.yaml"
+            submission = ROOT / "benchmarks/06-dual-ledger-closeout/config.yaml"
             selected = {
                 SCENARIO: {
                     "path": submission,

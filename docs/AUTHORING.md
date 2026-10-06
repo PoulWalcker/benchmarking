@@ -1,49 +1,52 @@
 # Adding a scenario
 
-A *scenario* is one named task family: a reference YAML in [`configs/`](../configs/),
-a natural-language task, a set of test inputs, and an independent statement of
-what a correct answer must do. Taking one all the way through means editing
-**eight files in five directories**: six are needed for any scenario at all, a
-seventh for the model-authoring track, an eighth if it joins the bounded live
-series. Nothing discovers a scenario automatically, and each omission fails at a
-different point with a different message. This guide walks one concrete new
-scenario from an empty file to a passing control run, and says what success
-looks like at each gate.
+A *scenario* is one named task family: a reference YAML, a natural-language
+task, a set of test inputs, and an independent statement of what a correct
+answer must do. Taking one all the way through touches **three places**:
+
+1. one new directory, `benchmarks/NN-<scenario>/`, holding the scenario's data;
+2. a `CONTRACTS` entry in `verification/scenario_contracts.py`;
+3. a branch in `verification/scenario_business.py`.
+
+The directory is discovered by name; nothing else registers it. The two
+verifier edits are deliberately code, not data: they are the independent
+oracle, and they must not be derived from the reference workflow. This guide
+walks one concrete new scenario from an empty directory to a passing control
+run, and says what success looks like at each gate.
 
 Terms used here — *scenario*, *case*, *oracle*, *nop*, *acceptance*, *occurrence* —
 are fixed in the [glossary](GLOSSARY.md). Read the three framing facts it opens
 with before you start; two of them are restated below because they are what
 mislead people here.
 
-## The places a new scenario touches
+## The benchmark directory
 
-| # | File | What you add | What breaks if you skip it |
-| --- | --- | --- | --- |
-| 1 | `configs/NN-<scenario>.yaml` | The reference workflow | Nothing to compile; package staging fails to copy `environment/base.yaml` |
-| 2 | `src/sapi_config_lab/core/scenarios.py` | `"<scenario>": "NN-<scenario>.yaml"` in one group dict | `ValueError: Unknown, duplicate, or empty scenario selection`. The name is not offered by `sapi-lab harbor --scenario` or `verify.py --scenario` |
-| 3 | `harbor/tasks/<scenario>/instruction.md` | The container-facing instruction | `FileNotFoundError: .../harbor/tasks/<scenario>/instruction.md` during `package-tasks` |
-| 4 | `verification/cases.json` | `positive`, `negative`, and `live_cases` | `KeyError: '<scenario>'` in `stage_tasks`, and again in `verify.py` when it loads its fixtures |
-| 5 | `verification/scenario_contracts.py` | A `CONTRACTS` entry: roles, edges, output | `Rejected: Unknown acceptance scenario` from `contract_for()`, which both role binding and the native ordering check call |
-| 6 | `verification/scenario_business.py` | A branch in `check_scenario_business_result` | `Rejected: Unknown expansion acceptance scenario` — the catch-all at the end of the dispatch |
-| 7 | `generation/tasks.json` | The public task text | `KeyError: '<scenario>'` in `package-tasks --mode generation`. Only the model-authoring track needs this |
-| 8 | `src/sapi_config_lab/interfaces/expansion.py` | A `RUNTIME_CAPS` entry: case name → model-call ceiling | `KeyError: '<scenario>'` when an `ExpansionSeries` is constructed, and in `case_budget()`. Only needed if you registered in `EXPANSION_SCENARIOS` |
+| File | What it holds | Who reads it |
+| --- | --- | --- |
+| `config.yaml` | The reference workflow (the oracle's submission) | oracle and live packages, `build`, `ui` |
+| `task.md` | The public task text a model is given, exactly | generation packages |
+| `instruction.md` | The container-facing instruction for oracle and live packages | oracle and live packages |
+| `cases.json` | Evaluator-only fixtures: `positive`, `negative`, optional `live_cases` | the verifier, staged as `tests/cases.json` |
+| `scenario.json` | `group`, and for a paid series `runtime_caps` (live case → model-call ceiling); optional `prompt_extension` label for `prompt-extension.md` | the coordinator |
 
-Two more places, outside the eight:
+`NN` orders the scenario within its group. `cases.json` never enters the lab
+image (`.dockerignore`) and reaches a container only as its own package's
+`tests/cases.json`. A missing file fails `tests/test_packaging.py`.
 
-- `verification/rubric_cards.py` — genuinely optional. Without a card the
-  scenario simply writes no `evaluation.json`; `card_for()` raises `RubricError`
-  and `evaluate()` returns `None`, which is handled. See
-  [Rubric, optional](#rubric-optional).
-- Three unit tests hard-code the current size of the scenario set and will fail
-  until someone updates them — not optional, just not a registration:
-  `tests/test_ui.py` (the `--all` row count),
-  `tests/test_occurrence_budget.py` and `tests/test_expansion_runner.py` (the
-  frozen authoring and runtime ceilings). These numbers are deliberate: the
-  series ledger freezes a budget, so a changed budget must be a visible edit.
+`verification/rubric_cards.py` is genuinely optional. Without a card the
+scenario simply writes no `evaluation.json`; `card_for()` raises `RubricError`
+and `evaluate()` returns `None`, which is handled. See
+[Rubric, optional](#rubric-optional).
+
+Three unit tests hard-code the current size of the scenario set and will fail
+until someone updates them — not optional, just not a registration:
+`tests/test_ui.py` (the `--all` row count), `tests/test_occurrence_budget.py`
+and `tests/test_expansion_runner.py` (the frozen authoring and runtime
+ceilings). These numbers are deliberate: the series ledger freezes a budget,
+so a changed budget must be a visible edit.
 
 `verification/*.py` is copied into each task package by glob, so a *new verifier
-module* needs no registration anywhere. `verification/cases.json` is sliced per
-scenario at packaging time, so a package only ever carries its own fixtures.
+module* needs no registration anywhere.
 
 ## Before anything: the catalog is closed
 
@@ -91,20 +94,22 @@ need extra work, listed at the end.
 
 ### Step 1 — the reference config
 
-Write `configs/10-tri-ledger-closeout.yaml`. The field semantics are in
-[the profile](PROFILE.md#field-semantics) and the authoring rules a model is
-given are in [`generation/FORMAT.md`](../generation/FORMAT.md). `workflow.id`
-**must equal the scenario name**: `bind_roles()` rejects a submission whose
-`workflow.id` differs ("Wrong submitted workflow identity").
+Create `benchmarks/10-tri-ledger-closeout/` and write its `config.yaml`. The
+field semantics are in [the profile](PROFILE.md#field-semantics) and the
+authoring rules a model is given are in
+[`generation/FORMAT.md`](../generation/FORMAT.md). `workflow.id` **must equal
+the scenario name**: `bind_roles()` rejects a submission whose `workflow.id`
+differs ("Wrong submitted workflow identity").
 
-Number the file after the current highest. Numbering matters: `tests/test_workflows.py`
-addresses configs positionally by sorted filename, so appending is safe and
-inserting in the middle silently re-points existing tests.
+Number the directory after the current highest. Numbering matters:
+`tests/test_workflows.py` addresses configs positionally by sorted directory,
+so appending is safe and inserting in the middle silently re-points existing
+tests.
 
 Gate:
 
 ```bash
-uv run --locked sapi-lab compile configs/10-tri-ledger-closeout.yaml --output /tmp/tri.n8n.json
+uv run --locked sapi-lab compile benchmarks/10-tri-ledger-closeout/config.yaml --output /tmp/tri.n8n.json
 ```
 
 Success looks like one JSON line and two files written:
@@ -122,78 +127,55 @@ were rejected. Config 05 is expected to appear there with
 the demo compiler declines to export it because it needs a persistent
 orchestrator. That is a correct result, not a failure to fix.
 
-### Step 2 — register the scenario
+### Step 2 — the rest of the directory
 
-In `src/sapi_config_lab/core/scenarios.py`, add the name to **one** group:
+Add the other four files:
 
-- `BASELINE_SCENARIOS` is the default selection — the three tasks `./run.sh`
-  runs when you pass no `--scenario`. Do not add to it casually; every default
-  control run gets longer.
-- `EXPANSION_SCENARIOS` is the bounded, opt-in composition series described in
-  [the expansion guide](SCENARIO-EXPANSION.md). Registering here is what makes
-  a `RUNTIME_CAPS` entry (step 8) mandatory, and it joins the frozen series
-  budget.
-- `EXTENSION_SCENARIOS` and `LIFECYCLE_SCENARIOS` hold the two scenarios with
-  their own execution semantics (bounded refinement, durable lifecycle). A new
-  scenario almost certainly does not belong there.
-
-`SCENARIOS` is the union, and it is what `--scenario` on `sapi-lab harbor` and
-`verify.py` offers.
-
-Gate:
-
-```bash
-uv run --locked sapi-lab harbor --help
-```
-
-Your name appears in the `--scenario` choice list. That is the whole check.
-
-### Step 3 — the container instruction
-
-Create `harbor/tasks/tri-ledger-closeout/instruction.md`. This is the text the
-oracle and live packages carry. Copy the surrounding wording from an existing
-one — the header that names `/app/submission/config.yaml`, and the footer that
-points at the profile and catalog *inside the image* and forbids touching
-anything but the submission.
-
-The middle paragraph is the task itself, and it is normally the same sentence
-you will put in `generation/tasks.json` (step 7). That duplication is real and
-nothing enforces it; keep the two in step by hand.
-
-### Step 4 — the test inputs
-
-Add a `"tri-ledger-closeout"` key to `verification/cases.json` with three parts:
-
-- `positive` — a list of `{name, inputs}`. The verifier deep-copies the
-  submitted config and replaces `workflow.inputs` with each one. The reference
-  config's own inputs are only a sample; they are never what is graded.
-- `negative` — `{name, inputs, error, operation, role}`. These must fail
-  **inside n8n**, in the named operation. `check_rejection()` requires the run
-  to end in `error`, no `Result` node to be present, the error text to contain
-  your `error` string, and the node that `role` binds to to be the one that
-  carries the failure. `role` is a role name from your contract (step 5), not a
-  step ID. Add `schema_error` when a live-mode schema message differs.
-- `live_cases` — the subset of positive case names that live mode may run.
-  Omit it and live mode runs every positive case.
-
-For scenarios whose output is prose, positive cases also carry
-`product_anchors` / `marketing_anchors` / `forbidden_anchors` — the lexical fact
-contract. See [If your scenario uses an LLM operation](#if-your-scenario-uses-an-llm-operation).
+- `scenario.json` — `{"group": "expansion"}`, or `"baseline"` only if every
+  default control run should include it. `"extension"` and `"lifecycle"` hold
+  the two scenarios with their own execution semantics; a new scenario almost
+  certainly does not belong there. An `expansion` scenario also needs
+  `runtime_caps`: each live case name mapped to the model calls it may make.
+  Script-only cases take `0`; a cap of `0` is a real cap, not "unmeasured".
+  The series ledger sums these, which is why the two ceiling tests fail until
+  they are updated.
+- `task.md` — the prompt a model is given with no reference YAML: the logical
+  id, the input field names, the exact output shape, the rules that must hold,
+  and a sample input. It must not leak the reference step IDs — the contract
+  binds roles, so the model is free to choose its own. Its bytes become the
+  generation prompt; `tests/test_packaging.py` pins every existing prompt's hash.
+- `instruction.md` — what the oracle and live packages carry. Copy the header
+  and footer of an existing one: the header names `/app/submission/config.yaml`,
+  and the footer points at the profile and catalog *inside the image* and
+  forbids touching anything but the submission.
+- `cases.json` — `positive` (a list of `{name, inputs}`; the verifier replaces
+  `workflow.inputs` with each, so the reference config's own inputs are only a
+  sample), `negative` (`{name, inputs, error, operation, role}`; these must
+  fail **inside n8n**, in the named operation, and `role` is a role from your
+  contract, not a step ID; add `schema_error` when a live-mode message
+  differs), and optionally `live_cases`, the positive case names live mode may
+  run. For prose output, positive cases also carry `product_anchors` /
+  `marketing_anchors` / `forbidden_anchors`; see
+  [If your scenario uses an LLM operation](#if-your-scenario-uses-an-llm-operation).
 
 Gate:
 
 ```bash
 uv run --locked sapi-lab package-tasks /tmp/tri-oracle --scenario tri-ledger-closeout
+uv run --locked sapi-lab package-tasks /tmp/tri-generation --mode generation --scenario tri-ledger-closeout
 ```
 
-It prints the destination and exits 0. The destination must not already exist.
-Success looks like `tri-ledger-closeout/` holding `instruction.md`, `task.toml`,
-`environment/{Dockerfile,base.yaml}`, `solution/solve.sh` and a `tests/`
-directory with every `verification/*.py` plus a `cases.json` containing **only
-your scenario**. If `tests/cases.json` holds another scenario's fixtures,
-something is wrong with the slice, not with your data.
+Each prints its destination and exits 0; the destination must not already
+exist. The oracle package holds `instruction.md`, `task.toml`,
+`environment/{Dockerfile,base.yaml}`, `solution/solve.sh` and `tests/` with
+every `verification/*.py` plus a `cases.json` containing **only your
+scenario**. The generation package's `instruction.md` is your `task.md`
+followed by `FORMAT.md`, `docs/PROFILE.md` and the full catalog, and it has
+**no** `solution/` and **no** `environment/base.yaml`. If a reference config
+appears in a generation package, stop: `tests/test_packaging.py` exists to
+catch exactly that.
 
-### Step 5 — the independent contract
+### Step 3 — the independent contract
 
 Add an entry to `CONTRACTS` in `verification/scenario_contracts.py`:
 
@@ -215,7 +197,7 @@ It rejects missing, extra, swapped and ambiguous bindings.
 `check_operation_order()`, which requires each earlier node to have *finished*,
 by native n8n start and execution times, before the later one started.
 
-### Step 6 — the independent business check
+### Step 4 — the independent business check
 
 Add a branch to `check_scenario_business_result` in
 `verification/scenario_business.py`. The branch receives the fixture `inputs` and
@@ -239,42 +221,12 @@ Gate — run the unit suite:
 uv run --locked python -m unittest discover -s tests -v
 ```
 
-On a clean tree every test passes (330 tests, 23 skipped, at the time of
+On a clean tree every test passes (324 tests, 22 skipped, at the time of
 writing). After adding a scenario, expect exactly the three counting tests named
 above to fail, and nothing else. Anything else failing is your scenario, not the
 budget.
 
-### Step 7 — the natural-language task
-
-Add the task text to `generation/tasks.json`, keyed by scenario name. This is
-the prompt a model is given with no reference YAML: it must name the logical id,
-the input field names, the exact output shape, the rules that must hold, and a
-sample input. It must not leak the reference step IDs — the contract binds
-roles, so the model is free to choose its own.
-
-Gate:
-
-```bash
-uv run --locked sapi-lab package-tasks /tmp/tri-generation --mode generation --scenario tri-ledger-closeout
-```
-
-Success is a package whose `instruction.md` is your task text followed by
-`FORMAT.md`, `docs/PROFILE.md` and the full catalog, and which contains **no**
-`solution/` and **no** `environment/base.yaml`. Its Dockerfile removes
-`/app/lab/configs` and `/app/scenario` inside the container. If a reference
-config appears in a generation package, stop: `tests/test_packaging.py` exists
-to catch exactly that.
-
-### Step 8 — the series budget, if you joined the expansion series
-
-If you registered in `EXPANSION_SCENARIOS`, add a `RUNTIME_CAPS` entry in
-`src/sapi_config_lab/interfaces/expansion.py` mapping each *live* case name to
-the number of model calls that case may make. Script-only cases take `0`; a cap
-of `0` is a real cap, not "unmeasured". The series ledger derives its frozen
-ceiling by summing these, which is why the two ceiling tests fail until they are
-updated.
-
-### Step 9 — the real gate
+### Step 5 — the real gate
 
 Everything above runs without Docker. The actual gate is a control run:
 
@@ -376,12 +328,12 @@ Everything above still applies, plus:
   deterministic text `operations.js` produces. That is what makes the stub
   control meaningful rather than decorative.
 - **Occurrence budget.** Every model call a live case may make must be admitted
-  up front in `RUNTIME_CAPS`. An invocation that is not on the list is refused
-  by `runtime/agency.py`, and an under-count fails the run rather than silently
+  up front in `runtime_caps` in `scenario.json`. An invocation that is not on the list is refused
+  by `execute/agency.py`, and an under-count fails the run rather than silently
   spending more.
 - **Live replay is blocked today.** See
   [what does not run right now](../README.md#what-does-not-run-right-now).
-  Everything through step 9's stub control suite works. `sapi-lab live`,
+  Everything through step 5's stub control suite works. `sapi-lab live`,
   `sapi-lab ui open --live` and the expansion live series all check an inspected
   wrapper identity record first, and that record no longer matches this machine,
   so they refuse before dispatching.

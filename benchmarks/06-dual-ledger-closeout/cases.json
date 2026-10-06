@@ -1,0 +1,352 @@
+{
+  "positive": [
+    {
+      "name": "base-ledgers",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "id": "D-A",
+            "amount_minor": 1251,
+            "currency": "AED"
+          },
+          {
+            "id": "D-B",
+            "amount_minor": 0,
+            "currency": "AED"
+          }
+        ],
+        "export_invoices": [
+          {
+            "id": "X-A",
+            "amount_minor": 73,
+            "currency": "EUR"
+          },
+          {
+            "id": "X-B",
+            "amount_minor": 210,
+            "currency": "EUR"
+          }
+        ]
+      }
+    },
+    {
+      "name": "alternate-ledgers",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "id": "L-Q",
+            "amount_minor": 91,
+            "currency": "USD"
+          }
+        ],
+        "export_invoices": [
+          {
+            "id": "R-A",
+            "amount_minor": 5,
+            "currency": "GBP"
+          },
+          {
+            "id": "R-B",
+            "amount_minor": 0,
+            "currency": "GBP"
+          },
+          {
+            "id": "R-C",
+            "amount_minor": 8,
+            "currency": "GBP"
+          }
+        ]
+      }
+    },
+    {
+      "name": "reversed-ledgers",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "id": "D-B",
+            "amount_minor": 0,
+            "currency": "AED"
+          },
+          {
+            "id": "D-A",
+            "amount_minor": 1251,
+            "currency": "AED"
+          }
+        ],
+        "export_invoices": [
+          {
+            "id": "X-B",
+            "amount_minor": 210,
+            "currency": "EUR"
+          },
+          {
+            "id": "X-A",
+            "amount_minor": 73,
+            "currency": "EUR"
+          }
+        ]
+      }
+    },
+    {
+      "name": "domestic-zero-added",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "id": "D-A",
+            "amount_minor": 1251,
+            "currency": "AED"
+          },
+          {
+            "id": "D-B",
+            "amount_minor": 0,
+            "currency": "AED"
+          },
+          {
+            "id": "D-ZERO",
+            "amount_minor": 0,
+            "currency": "AED"
+          }
+        ],
+        "export_invoices": [
+          {
+            "id": "X-A",
+            "amount_minor": 73,
+            "currency": "EUR"
+          },
+          {
+            "id": "X-B",
+            "amount_minor": 210,
+            "currency": "EUR"
+          }
+        ]
+      }
+    },
+    {
+      "name": "export-amount-changed",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "id": "D-A",
+            "amount_minor": 1251,
+            "currency": "AED"
+          },
+          {
+            "id": "D-B",
+            "amount_minor": 0,
+            "currency": "AED"
+          }
+        ],
+        "export_invoices": [
+          {
+            "id": "X-A",
+            "amount_minor": 74,
+            "currency": "EUR"
+          },
+          {
+            "id": "X-B",
+            "amount_minor": 210,
+            "currency": "EUR"
+          }
+        ]
+      }
+    }
+  ],
+  "negative": [
+    {
+      "name": "domestic-duplicate",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "id": "DUP",
+            "amount_minor": 1,
+            "currency": "AED"
+          },
+          {
+            "id": "DUP",
+            "amount_minor": 2,
+            "currency": "AED"
+          }
+        ],
+        "export_invoices": [
+          {
+            "id": "X-A",
+            "amount_minor": 73,
+            "currency": "EUR"
+          },
+          {
+            "id": "X-B",
+            "amount_minor": 210,
+            "currency": "EUR"
+          }
+        ]
+      },
+      "error": "Duplicate invoice ID",
+      "operation": "invoices.validate",
+      "role": "domestic_validate"
+    },
+    {
+      "name": "domestic-mixed",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "id": "A",
+            "amount_minor": 1,
+            "currency": "AED"
+          },
+          {
+            "id": "B",
+            "amount_minor": 2,
+            "currency": "JPY"
+          }
+        ],
+        "export_invoices": [
+          {
+            "id": "X-A",
+            "amount_minor": 73,
+            "currency": "EUR"
+          },
+          {
+            "id": "X-B",
+            "amount_minor": 210,
+            "currency": "EUR"
+          }
+        ]
+      },
+      "error": "Mixed/invalid currency",
+      "operation": "invoices.validate",
+      "role": "domestic_validate"
+    },
+    {
+      "name": "domestic-overflow",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "id": "MAX",
+            "amount_minor": 9007199254740991,
+            "currency": "AED"
+          },
+          {
+            "id": "ONE",
+            "amount_minor": 1,
+            "currency": "AED"
+          }
+        ],
+        "export_invoices": [
+          {
+            "id": "X-A",
+            "amount_minor": 73,
+            "currency": "EUR"
+          },
+          {
+            "id": "X-B",
+            "amount_minor": 210,
+            "currency": "EUR"
+          }
+        ]
+      },
+      "error": "Total exceeds safe integer range",
+      "operation": "invoices.sum",
+      "role": "domestic_sum"
+    },
+    {
+      "name": "export-duplicate",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "id": "D-A",
+            "amount_minor": 1251,
+            "currency": "AED"
+          },
+          {
+            "id": "D-B",
+            "amount_minor": 0,
+            "currency": "AED"
+          }
+        ],
+        "export_invoices": [
+          {
+            "id": "DUP",
+            "amount_minor": 1,
+            "currency": "EUR"
+          },
+          {
+            "id": "DUP",
+            "amount_minor": 2,
+            "currency": "EUR"
+          }
+        ]
+      },
+      "error": "Duplicate invoice ID",
+      "operation": "invoices.validate",
+      "role": "export_validate"
+    },
+    {
+      "name": "export-mixed",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "id": "D-A",
+            "amount_minor": 1251,
+            "currency": "AED"
+          },
+          {
+            "id": "D-B",
+            "amount_minor": 0,
+            "currency": "AED"
+          }
+        ],
+        "export_invoices": [
+          {
+            "id": "A",
+            "amount_minor": 1,
+            "currency": "EUR"
+          },
+          {
+            "id": "B",
+            "amount_minor": 2,
+            "currency": "JPY"
+          }
+        ]
+      },
+      "error": "Mixed/invalid currency",
+      "operation": "invoices.validate",
+      "role": "export_validate"
+    },
+    {
+      "name": "export-overflow",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "id": "D-A",
+            "amount_minor": 1251,
+            "currency": "AED"
+          },
+          {
+            "id": "D-B",
+            "amount_minor": 0,
+            "currency": "AED"
+          }
+        ],
+        "export_invoices": [
+          {
+            "id": "MAX",
+            "amount_minor": 9007199254740991,
+            "currency": "EUR"
+          },
+          {
+            "id": "ONE",
+            "amount_minor": 1,
+            "currency": "EUR"
+          }
+        ]
+      },
+      "error": "Total exceeds safe integer range",
+      "operation": "invoices.sum",
+      "role": "export_sum"
+    }
+  ],
+  "live_cases": [
+    "base-ledgers",
+    "alternate-ledgers"
+  ]
+}

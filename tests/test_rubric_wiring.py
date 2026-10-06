@@ -15,6 +15,7 @@ from verification.rubric_cards import CARDS, card_for
 from verification.business import check_business_result
 from verification.scenario_business import check_scenario_business_result
 from verification.scenario_contracts import CONTRACTS, ROUTING_EDGES
+from sapi_config_lab.coordinate.scenarios import all_cases
 
 ROOT = Path(__file__).parents[1]
 SCENARIO = "support-review-packet"
@@ -246,14 +247,15 @@ class VerifierSeamTests(unittest.TestCase):
             scenario,
             ROOT / config,
             Path(directory),
-            selected_case=json.loads((ROOT / "verification/cases.json").read_text())[scenario]["positive"][0]["name"],
+            selected_case=all_cases()[scenario]["positive"][0]["name"],
             runner=stub_runner,
             judge=judge,
+            cases=all_cases()[scenario],
         )
         return Path(directory), report
 
     def test_the_evaluation_lands_beside_the_report(self):
-        directory, report = self.verify(SCENARIO, "configs/07-support-review-packet.yaml")
+        directory, report = self.verify(SCENARIO, "benchmarks/07-support-review-packet/config.yaml")
         self.assertFalse(report["passed"])
         document = json.loads((directory / "evaluation.json").read_text())
         self.assertEqual(document["schema"], "sapi-lab-rubric-evaluation/v1")
@@ -263,15 +265,15 @@ class VerifierSeamTests(unittest.TestCase):
         self.assertEqual(json.loads((directory / "report.json").read_text()), report)
 
     def test_a_scenario_without_a_card_writes_no_evaluation(self):
-        directory, _ = self.verify("revise-answer", "configs/04-revise-answer.yaml")
+        directory, _ = self.verify("revise-answer", "benchmarks/04-revise-answer/config.yaml")
         self.assertFalse((directory / "evaluation.json").exists())
 
     def test_every_carded_scenario_writes_one_beside_the_report(self):
         for scenario, config in (
-            ("ticket-routing", "configs/02-ticket-routing.yaml"),
-            ("competitor-report", "configs/03-competitor-report.yaml"),
-            ("bulletin-market-brief", "configs/08-bulletin-market-brief.yaml"),
-            ("priority-support-brief", "configs/09-priority-support-brief.yaml"),
+            ("ticket-routing", "benchmarks/02-ticket-routing/config.yaml"),
+            ("competitor-report", "benchmarks/03-competitor-report/config.yaml"),
+            ("bulletin-market-brief", "benchmarks/08-bulletin-market-brief/config.yaml"),
+            ("priority-support-brief", "benchmarks/09-priority-support-brief/config.yaml"),
         ):
             with self.subTest(scenario=scenario):
                 directory, report = self.verify(scenario, config)
@@ -283,8 +285,10 @@ class VerifierSeamTests(unittest.TestCase):
                 self.assertIn(reward(report), (0.0, 1.0))
 
     def test_the_rubric_cannot_change_the_verdict_or_the_reward(self):
-        plain, without = self.verify(SCENARIO, "configs/07-support-review-packet.yaml")
-        judged, with_judge = self.verify(SCENARIO, "configs/07-support-review-packet.yaml", RecordedJudge(ANSWERS))
+        plain, without = self.verify(SCENARIO, "benchmarks/07-support-review-packet/config.yaml")
+        judged, with_judge = self.verify(
+            SCENARIO, "benchmarks/07-support-review-packet/config.yaml", RecordedJudge(ANSWERS)
+        )
         self.assertEqual(
             json.dumps(without).replace(str(plain), "DIR"), json.dumps(with_judge).replace(str(judged), "DIR")
         )
@@ -337,7 +341,7 @@ class VerifierSeamTests(unittest.TestCase):
 
     def test_a_rubric_that_raises_still_leaves_a_report_and_a_verdict(self):
         with unittest.mock.patch.object(verifier, "evaluate", side_effect=RuntimeError("broken rubric")):
-            directory, report = self.verify(SCENARIO, "configs/07-support-review-packet.yaml")
+            directory, report = self.verify(SCENARIO, "benchmarks/07-support-review-packet/config.yaml")
         self.assertEqual(json.loads((directory / "report.json").read_text()), report)
         self.assertIn(reward(report), (0.0, 1.0))
         document = json.loads((directory / "evaluation.json").read_text())
@@ -402,7 +406,7 @@ class StandaloneDistributionTests(unittest.TestCase):
 # declared prose and nothing else, and a judge answering "no" leaves exactly the
 # deterministic points standing.
 
-CASES = json.loads((ROOT / "verification/cases.json").read_text())
+CASES = all_cases()
 
 
 def tagged(values, output, operations, **options):

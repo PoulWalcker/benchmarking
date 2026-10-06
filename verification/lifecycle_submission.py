@@ -56,7 +56,7 @@ def validate_task(config: dict) -> None:
     )
 
 
-def verify_submission(config_path: Path, report_dir: Path, *, mode="stub", backend=None) -> dict:
+def verify_submission(config_path: Path, report_dir: Path, *, mode="stub", backend=None, cases=None) -> dict:
     report_dir.mkdir(parents=True, exist_ok=True)
     report = {"scenario": "daily-digest", "mode": mode, "passed": False, "cases": []}
     runtime_root = Path(profile.__file__).resolve().parents[3]
@@ -73,15 +73,9 @@ def verify_submission(config_path: Path, report_dir: Path, *, mode="stub", backe
         config = yaml.load(raw, Loader=UniqueLoader)
         require(isinstance(config, dict), "Submission must be a YAML object")
         validate_task(config)
-        source = Path(__file__).with_name("cases.json")
-        corpus = json.loads(source.read_text()) if source.exists() else {}
-        if "daily-digest" not in corpus:
-            from sapi_config_lab.paths import workspace_root
-
-            source = workspace_root() / "generation/lifecycle-cases.json"
-            corpus = json.loads(source.read_text())
-        report["fixture_sha256"] = hashlib.sha256(source.read_bytes()).hexdigest()
-        cases = corpus["daily-digest"]["positive"]
+        require(isinstance(cases, dict), "Missing daily-digest fixtures")
+        report["fixture_sha256"] = hashlib.sha256(json.dumps(cases, sort_keys=True).encode()).hexdigest()
+        cases = cases["positive"]
         for case in cases:
             candidate = copy.deepcopy(config)
             candidate["workflow"]["inputs"] = case["inputs"]

@@ -11,7 +11,7 @@ from sapi_config_lab.coordinate.expansion import ExpansionSeries, RUNTIME_CAPS, 
 from sapi_config_lab.coordinate.generate import main as generate
 from sapi_config_lab.coordinate.live import main as live
 from sapi_config_lab.coordinate.replay import read_json
-from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.coordinate.scenarios import all_cases
 
 
 class ExpansionAdmissionTests(unittest.TestCase):
@@ -81,7 +81,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
         self.assertNotIn("Traceback", errors.getvalue())
 
     def test_private_overlay_changes_values_without_changing_acceptance_contracts(self):
-        canonical = read_json(workspace_root() / "verification/cases.json")
+        canonical = all_cases()
         for scenario in RUNTIME_CAPS:
             first = fresh_case_overlay(scenario)[scenario]
             second = fresh_case_overlay(scenario)[scenario]

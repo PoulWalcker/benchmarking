@@ -167,7 +167,7 @@ def _checks(
     if scenario == "ticket-routing":
         obligations = ticket_routing_obligations(inputs, observation)
     elif scenario == "competitor-report":
-        obligations = competitor_report_obligations(inputs, observation)
+        obligations = competitor_report_obligations(inputs, observation, case=case)
     elif scenario == "support-review-packet":
         obligations = support_review_obligations(inputs, observation)
     elif scenario == "bulletin-market-brief":

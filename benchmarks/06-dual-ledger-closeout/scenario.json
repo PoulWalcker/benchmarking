@@ -1,0 +1,7 @@
+{
+  "group": "expansion",
+  "runtime_caps": {
+    "base-ledgers": 0,
+    "alternate-ledgers": 0
+  }
+}
