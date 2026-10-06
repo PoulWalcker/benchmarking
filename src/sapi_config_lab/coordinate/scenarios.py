@@ -31,7 +31,7 @@ FIELDS = {
 
 @dataclass(frozen=True)
 class Provenance:
-    """Where an imported task comes from: a pinned source under provenance/ and its challenge."""
+    """Pinned external source and challenge identity; the source names a manifest under provenance/."""
 
     source: str
     challenge: str

@@ -13,9 +13,10 @@ from unittest.mock import patch
 from sapi_config_lab.coordinate.live import audit_records, main, validate_control
 from sapi_config_lab.coordinate.live_evidence import reconcile_dispatches
 from sapi_config_lab.coordinate.replay import load_selection
+from sapi_config_lab.coordinate.runs import Run
 from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
 from sapi_config_lab.evidence import digest, sha256
-from sapi_config_lab.execute.agency import DispatchAudit, execute
+from sapi_config_lab.execute.agency import DispatchAudit, execute, start_bridge
 from sapi_config_lab.execute.host import HostConfig
 from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.profile import read_bindings
@@ -212,3 +213,39 @@ class HostConfigTests(unittest.TestCase):
         self.assertEqual(configured.staging_dir, "/srv/stage")
         self.assertEqual(configured.wrapper_url, defaults.wrapper_url)
         self.assertEqual(HostConfig.from_environment({}), defaults)
+
+
+class BridgeBindingTests(unittest.TestCase):
+    def test_the_bridge_listens_where_containers_are_routed(self):
+        host = HostConfig.from_environment({"SAPI_CONTAINER_HOST": "172.17.0.1", "SAPI_LISTEN_HOST": "0.0.0.0"})
+        self.assertEqual(host.container_url(host.bridge_port), "http://172.17.0.1:18765")
+        root = Path(tempfile.mkdtemp())
+        run = Run(root / "run", {}, {}, "t", host)
+        run.output.mkdir()
+        with (
+            patch("sapi_config_lab.coordinate.runs.start_bridge") as start,
+            patch("sapi_config_lab.coordinate.runs.stop_bridge"),
+            run.bridge({"max_attempts": 0}, "case"),
+        ):
+            pass
+        self.assertEqual(start.call_args.args[:3], ("0.0.0.0", 18765, host.wrapper_url))
+
+    def test_the_bridge_process_binds_and_probes_the_configured_address(self):
+        for listen, probed in (("0.0.0.0", "127.0.0.1"), ("172.17.0.1", "172.17.0.1"), ("127.0.0.1", "127.0.0.1")):
+            with (
+                self.subTest(listen=listen),
+                tempfile.TemporaryDirectory() as directory,
+                patch("sapi_config_lab.execute.agency.subprocess.Popen") as popen,
+                patch("sapi_config_lab.execute.agency.urlopen") as urlopen,
+                patch("sapi_config_lab.execute.agency.time.sleep"),
+            ):
+                popen.return_value.poll.return_value = None
+                urlopen.return_value.__enter__.return_value = BytesIO(b'{"service": "sapi-lab-agency-adapter"}')
+                root = Path(directory)
+                start_bridge(listen, 18765, "http://wrapper", root / "a", root / "b", root / "log")
+                argv = popen.call_args.args[0]
+                self.assertEqual(argv[argv.index("--host") + 1], listen)
+                self.assertEqual(urlopen.call_args.args[0], f"http://{probed}:18765/health")
+
+    def test_loopback_stays_the_default(self):
+        self.assertEqual(HostConfig().listen_host, "127.0.0.1")

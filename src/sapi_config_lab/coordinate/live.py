@@ -286,7 +286,7 @@ def main(argv: list[str] | None = None) -> int:
         report["not_run"] = list(report["budget"]["cases"])
         report["judge_model"] = args.judge_model
         report_path = run.output / "report.json"
-        bridge_url = f"http://{host.container_host}:{host.bridge_port}"
+        bridge_url = host.container_url(host.bridge_port)
         for (scenario, name), (grant, config) in grants.items():
             run.check(f"before-{scenario}-{name}")
             budget = {**grant, "model": host.wrapper_model, "expires_at": time.time() + LIVE_CASE_TIMEOUT_SECONDS}

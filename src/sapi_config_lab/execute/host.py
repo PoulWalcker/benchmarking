@@ -27,7 +27,7 @@ class HostConfig:
     wrapper_url: str = "http://127.0.0.1:8765/run"  # SAPI_WRAPPER_URL: the local model wrapper
     wrapper_model: str = "gpt-6-astra"  # SAPI_WRAPPER_MODEL: the model the wrapper must report
     container_host: str = "host.docker.internal"  # SAPI_CONTAINER_HOST: how a container reaches the host
-    listen_host: str = "0.0.0.0"  # SAPI_LISTEN_HOST: where host services for containers listen
+    listen_host: str = "127.0.0.1"  # SAPI_LISTEN_HOST: where host services for containers listen
     bridge_port: int = 18765  # SAPI_BRIDGE_PORT: Agency bridge for live experiments
     ui_bridge_port: int = 18766  # SAPI_UI_BRIDGE_PORT: Agency bridge for manual UI runs
     n8n_url: str = "http://localhost:5678"  # SAPI_N8N_URL: the local n8n editor
@@ -42,6 +42,15 @@ class HostConfig:
             if raw is not None:
                 values[field.name] = int(raw) if field.type == "int" else raw
         return cls(**values)
+
+    def container_url(self, port: int) -> str:
+        """A host service as a task container addresses it."""
+        return f"http://{self.container_host}:{port}"
+
+
+def local_address(listen_host: str) -> str:
+    """Where this host reaches its own service bound to `listen_host`."""
+    return "127.0.0.1" if listen_host in ("0.0.0.0", "") else listen_host
 
 
 def harbor_command() -> list[str]:

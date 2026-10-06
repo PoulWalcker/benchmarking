@@ -23,7 +23,7 @@ from urllib.request import Request
 import yaml
 
 from sapi_config_lab.evidence import digest
-from sapi_config_lab.execute.host import HostConfig
+from sapi_config_lab.execute.host import HostConfig, local_address
 from sapi_config_lab.net import urlopen
 from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.wrapper_audit import reported_model, reported_tokens, stderr_sha256, tool_markers
@@ -412,6 +412,7 @@ def make_handler(catalog, upstream, timeout, audit_path, budget=None, reject_too
 
 
 def start_bridge(
+    host: str,
     port: int,
     upstream: str,
     audit: Path,
@@ -420,10 +421,11 @@ def start_bridge(
     bindings: Path = CATALOG,
     reject_tool_use: bool = False,
 ) -> subprocess.Popen:
-    """Start the bridge as a child process and wait for /health; fails if the port is already taken."""
+    """Start the bridge on `host:port` as a child process and wait for /health; fails if the port is taken."""
     with log.open("w") as stream:
         process = subprocess.Popen(
-            [sys.executable, "-m", "sapi_config_lab.execute.agency", "--port", str(port), "--upstream", upstream]
+            [sys.executable, "-m", "sapi_config_lab.execute.agency", "--host", host, "--port", str(port)]
+            + ["--upstream", upstream]
             + ["--timeout", str(WRAPPER_TIMEOUT_SECONDS), "--audit", str(audit), "--budget", str(budget)]
             + ["--bindings", str(bindings)]
             + (["--reject-tool-use"] if reject_tool_use else []),
@@ -435,7 +437,7 @@ def start_bridge(
         if process.poll() is not None:
             raise RuntimeError("Agency adapter exited before readiness")
         try:
-            with urlopen(f"http://127.0.0.1:{port}/health", timeout=1) as response:
+            with urlopen(f"http://{local_address(host)}:{port}/health", timeout=1) as response:
                 if json.load(response).get("service") == "sapi-lab-agency-adapter":
                     break
         except URLError, TimeoutError:
@@ -463,7 +465,7 @@ def stop_bridge(process: subprocess.Popen | None) -> None:
 def main():
     host = HostConfig.from_environment()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--host", default=host.listen_host, help="Bind address (SAPI_LISTEN_HOST)")
     parser.add_argument("--port", type=int, default=host.bridge_port)
     parser.add_argument("--upstream", default=host.wrapper_url)
     parser.add_argument("--timeout", type=int, default=WRAPPER_TIMEOUT_SECONDS)

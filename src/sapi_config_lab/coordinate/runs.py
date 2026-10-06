@@ -206,6 +206,7 @@ class Run:
         write_json(budget_path, budget)
         self.pin("budget " + name, budget_path)
         self.bridge_process = start_bridge(
+            self.host.listen_host,
             self.host.bridge_port,
             self.host.wrapper_url,
             audit,

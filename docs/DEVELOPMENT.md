@@ -58,8 +58,8 @@ Defaults describe one Docker Desktop host. Override them through the environment
 | `SAPI_LAB_ROOT` | discovered from the working directory | the checkout experiments read |
 | `SAPI_WRAPPER_URL` | `http://127.0.0.1:8765/run` | local model wrapper (`--upstream`) |
 | `SAPI_WRAPPER_MODEL` | `gpt-6-astra` | model the wrapper must report; a mismatch fails closed |
-| `SAPI_CONTAINER_HOST` | `host.docker.internal` | how a task container reaches host services (e.g. `172.17.0.1` on Linux) |
-| `SAPI_LISTEN_HOST` | `0.0.0.0` | where hosted-simulator services listen for containers |
+| `SAPI_CONTAINER_HOST` | `host.docker.internal` | how a task container reaches those services (e.g. `172.17.0.1` on Linux) |
+| `SAPI_LISTEN_HOST` | `127.0.0.1` | bind address of host services containers reach: Agency bridges and hosted simulators (`ui --host`); e.g. `0.0.0.0` on Linux |
 | `SAPI_BRIDGE_PORT` | `18765` | live Agency bridge (`live --bridge-port`) |
 | `SAPI_UI_BRIDGE_PORT` | `18766` | UI Agency bridge (`ui --port`) |
 | `SAPI_N8N_URL` | `http://localhost:5678` | local n8n editor |
