@@ -1,92 +1,91 @@
-# Working in this repository
+# Agent guide
 
-A workflow definition (`sapi-lab/v0` YAML) moves through three stages:
+Keep context small. Read this file first, then open only the document related to the change:
+
+- architecture or module boundaries -> `docs/ARCHITECTURE.md`
+- commands, scenarios, tests, reports, UI -> `docs/DEVELOPMENT.md`
+- YAML semantics or supported workflow behavior -> `docs/PROFILE.md`
+
+## System model
 
 ```text
-definition → COMPILE → n8n artifact + step map
-           → EXECUTE → recorded evidence (native n8n records, outputs, errors, timings)
-           → EVALUATE → acceptance, quality score, report
+definition -> COMPILE -> artifact -> EXECUTE -> evidence -> EVALUATE -> verdicts
+     ^
+     |
+  AUTHORING (optional)
 ```
 
-A thin **coordinator** picks cases, binds fixtures, enforces budgets and runs
-the stages in order. **Authoring** (a model writing YAML or repairing it) is a
-fourth, separate concern: it produces definitions and never compiles them itself.
+`coordinate/` selects cases, binds fixtures, enforces budgets, packages tasks, and runs the stages. Harbor is orchestration around the experiment, not a workflow implementation.
 
-## Where each stage lives
+## Ownership boundaries
 
-| Stage | Location | May import |
+| Concern | Location | Rule |
 | --- | --- | --- |
-| Shared contracts | `src/sapi_config_lab/*.py` and `bindings.yaml`: the backend contract, the YAML profile, evidence encoding, paths, outbound HTTP, the AutoWFBench source pin | each other only |
-| Compile | `src/sapi_config_lab/compile/` | shared contracts |
-| Execute | `src/sapi_config_lab/execute/` | shared contracts |
-| Evaluate (host side) | `src/sapi_config_lab/evaluate/` | shared contracts |
-| Evaluate (independent verifier) | `verification/` | its own siblings; never `compile`, `execute`, `coordinate` |
-| Authoring | `src/sapi_config_lab/author/` | shared contracts |
-| Coordinate | `src/sapi_config_lab/coordinate/` | anything above; nothing imports it except `__main__` |
+| Shared contracts/profile | `src/sapi_config_lab/*.py`, `bindings.yaml` | backend-neutral project semantics |
+| Author | `src/sapi_config_lab/author/` | produces definitions; does not compile them |
+| Compile | `src/sapi_config_lab/compile/` | validates and produces artifacts; no execution or verdicts |
+| Execute | `src/sapi_config_lab/execute/` | runs artifacts and records engine evidence; no business verdicts |
+| Evaluate | `src/sapi_config_lab/evaluate/` | scores recorded evidence; does not become the executor |
+| Coordinate | `src/sapi_config_lab/coordinate/` | composes stages and owns experiment flow |
+| Independent verifier | `verification/` | recomputes acceptance independently; never imports compiler/runtime logic |
+| Scenario data | `benchmarks/NN-<scenario>/` | task definition, fixtures, reference config and scenario metadata |
 
-Inside `coordinate/`: `cli.py` is the command table; `cases.py::run_case` runs one
-case through compile then execute; `backend.py` composes the n8n backend;
-`controls.py` is the unpaid oracle/nop suite; `generate.py`, `live.py` and
-`benchmark.py` are the paid tracks; `lifecycle.py` is the durable controller;
-`packages.py` assembles Harbor task packages.
-| Benchmark definitions | `benchmarks/NN-<scenario>/` | data only |
+`tests/test_boundaries.py` enforces import direction. Update architecture and the test together when a boundary intentionally changes.
 
-`tests/test_boundaries.py` enforces this table: `STAGES` assigns every module to
-one stage, `ALLOWED` is the table's last column, and only coordination may load
-modules through `importlib`. `KNOWN_VIOLATIONS` lists the edges that still break
-a rule; it may only shrink. Change
-the table and the test together, never one alone.
+## Invariants
 
-## Rules
+- Execution success, acceptance, and quality score are separate facts.
+- Evaluation must use recorded evidence. Do not make acceptance depend on rerunning the candidate.
+- The independent verifier must not reuse compiler or operation implementations to compute expected answers.
+- Evaluator-only material must not be exposed to the candidate agent.
+- Evidence is immutable once recorded. Derived evaluation files may reference evidence; they must not rewrite it.
+- Keep backend-specific behavior behind `WorkflowBackend`. Do not add registries, universal IRs, or placeholder backends without a real second implementation.
+- Share a helper after it has multiple real callers, not in anticipation of future reuse.
+- Model-call budgets and source/provenance gates are safety boundaries, not convenience checks.
 
-- **Compile** validates and produces the artifact and its mapping. It never starts
-  a process, opens a socket or computes a verdict.
-- **Execute** runs a compiled artifact and records what the engine did. Engine
-  success (`execution.succeeded`) never implies business correctness.
-- **Evaluate** reads recorded evidence and task criteria. It never launches n8n,
-  Docker or a model to obtain the evidence it judges. A judge call happens only
-  when explicitly requested, or from a saved judgement.
-- **Three separate facts**: execution status, acceptance, quality score. Missing
-  evaluation (`not_evaluated`, null score) is never a failure and never a zero.
-- **Evidence is immutable once written.** In a task container `test.sh` runs
-  `verify.py plan` (what must run), `coordinate/observe.py` (runs it, records
-  `<run>/evidence/` and its `observation.json`, which hashes every file), then
-  `verify.py evaluate` (requires exactly those files, the native artifacts the
-  recorded status implies and their agreement with `case.json`, then judges).
-  Evaluation writes only under `<run>/evaluation/` (`acceptance.json` with the
-  evaluator fingerprint, `evaluation.json`, `report.json`); corruption probes
-  mutate copies. `tests/support/native.py` records a complete accepted case
-  without n8n. Tests compose the three steps with a
-  fake runner through `tests/support/verifying.py`.
-- **Evaluator-only material** (`benchmarks/*/cases.json`, reference
-  `config.yaml`, verifier code) never reaches a candidate agent's container:
-  `.dockerignore` keeps fixtures out of the image, and generation packages
-  delete `/app/lab/benchmarks`. `tests/test_packaging.py` checks both.
-- **Independent verification is not duplication.** The verifier recomputes
-  expected answers in plain Python and must not import the compiler, operations
-  or runtime. Do not "deduplicate" it against the workflow implementation.
-- Keep backend-specific behavior behind `WorkflowBackend` (`contracts.py`).
-  No plugin registries, universal IRs or placeholder backends.
-- Share a helper only after it has two real callers; no catch-all `common` module.
+## Common change paths
 
-## Adding a scenario
+### Change workflow semantics
 
-A scenario is one `benchmarks/NN-<scenario>/` directory (reference
-`config.yaml`, public `task.md`, container `instruction.md`, evaluator-only
-`cases.json`, `scenario.json`) plus its role contract and business check in
-`verification/`. Nothing else registers it. See `docs/AUTHORING.md`.
+1. Update `docs/PROFILE.md` only if the supported contract changes.
+2. Update validation/compiler/runtime code required by that contract.
+3. Add behavioral and boundary tests.
+4. Run the local checks and a real Docker control if container behavior changed.
 
-## Never change
+### Add or change a benchmark scenario
 
-- `evidence/` and `docs/history/`: byte-exact historical records.
-- Generation prompt text: changing it changes recorded prompt hashes.
-- Frozen report schemas listed in `docs/GLOSSARY.md#frozen-schemas`.
+Follow `docs/DEVELOPMENT.md#adding-a-project-scenario`. Do not create a new documentation file for the scenario.
+
+### Add another benchmark source
+
+Treat source, environment, and evaluator as adapters around the same experiment flow. Add a separate architecture only if the execution model is genuinely different.
 
 ## Checks
 
 ```bash
-uv run --locked python -m unittest discover -s tests
-uv run --locked ruff check src tests verification infra && uv run --locked ruff format --check src tests verification infra
+uv run --locked python -m unittest discover -s tests -v
+uv run --locked ruff check src tests verification infra
+uv run --locked ruff format --check src tests verification infra
 uv run --locked mypy
-./run.sh --scenario <name>   # unpaid Docker control suite; the only proof for container behavior
+uv run --locked python infra/check_distribution.py
 ```
+
+For container/runtime behavior:
+
+```bash
+./run.sh --scenario <name>
+```
+
+## Documentation policy
+
+Documentation describes durable truth, not the history of how the project reached it.
+
+- `README.md` = entry point and happy path.
+- `AGENTS.md` = repository rules for coding agents.
+- `docs/ARCHITECTURE.md` = why the system is split this way.
+- `docs/DEVELOPMENT.md` = how to work with it.
+- `docs/PROFILE.md` = the supported workflow contract.
+
+Do not add status reports, migration diaries, experiment summaries, evaluation write-ups, or one-off research notes to `/docs`. Put run output in `reports/`, committed proof in `evidence/`, and historical discussion in Git/issues.
+
+Do not duplicate CLI help or implementation details that are easier to discover from code. Document constraints, invariants, ownership, and non-obvious workflow.

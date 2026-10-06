@@ -1,144 +1,134 @@
-# Experimental profile: sapi-lab/v0
+# `sapi-lab/v0` profile
 
-This is a concrete experimental interpretation of the pinned Haskell notation's
-leaf types, not an official Sapiens format. Config 04 uses bounded refinement
-compiled into one native graph. Config 05 requires the durable lifecycle
-controller around its native candidate graph; importing that graph alone does
-not implement lifecycle management.
+`sapi-lab/v0` is the workflow contract implemented by this research project.
 
-## Field semantics
+It is a bounded experimental interpretation inspired by the pinned Sapiens source, not an implementation of the complete Sapiens specification.
 
-| Area | Rule |
+The source of truth is the validator/runtime code. This document records the durable semantics that are non-obvious to a workflow author.
+
+## Core semantics
+
+| Area | Supported behavior |
 | --- | --- |
-| Identity | `workflow.id` and a positive `revision`; activation references exactly this pair |
-| Workflow type | `Pipeline` contains Script steps; `Gantt` allows Script and LLM steps |
-| Operation | `uses` selects an explicitly registered handler from `bindings.yaml` |
-| Inputs | `workflow.inputs` contains fixture values, not a schema; `with` binds operation inputs |
-| Data | `{ref: inputs.x}` or `{ref: steps.step_id.field}`; a step result is available only to descendants |
-| Order | `[a, b]` means b waits for a; YAML entry order does not define dependencies |
-| Condition | `when: {ref: ..., eq: ...}` uses exact equality; the examples compare scalar values |
-| Skip | A false condition produces `skipped`; the operation is not called, but the bookkeeping envelope still propagates |
-| Optional | `optional_ref` returns null only for `skipped`; a missing result remains an error |
-| Join | `all_terminal` waits for all specified branches, including skipped branches; a step error aborts the run |
-| Concurrency | `independent` allows sequential execution; `required_parallel` requires concurrent progress and is rejected by the demo backend |
-| Cycles | Ordinary dependencies form a DAG by our choice; the new source specification requires an explicit cycle policy |
-| Errors | Only fail-fast behavior is supported; transport retries are absent |
-| Result | `workflow.output` is resolved after all terminal steps finish |
-| Acceptance | A human-readable condition; a separate executable verifier is required |
-| Actors | Logical assignments and allowed-operation lists; no real Sapi processes or context isolation are provided here |
-| Activation | The profile supports Callback or Cron; the demo injects a fixture instead of admitting a real event |
+| Identity | workflow has an `id` and positive `revision`; activation targets that exact revision |
+| Workflow kinds | `Pipeline` and `Gantt` with the currently validated step restrictions |
+| Operations | `uses` selects an explicitly registered operation from `bindings.yaml` |
+| Inputs | fixture values are supplied through `workflow.inputs`; this is not a general input-schema language |
+| References | values may reference inputs or outputs of ancestor steps |
+| Dependencies | explicit edges define order; YAML file order does not |
+| Conditions | `when` uses exact equality over supported scalar references |
+| Skip | false condition marks a step skipped and does not call its operation |
+| Optional references | may resolve null for a skipped producer; missing unexpected data is still an error |
+| Join | `all_terminal` waits for listed branches including skipped branches |
+| Concurrency | independence does not guarantee parallel execution; required parallelism is not supported by the current backend |
+| Cycles | ordinary workflow dependencies are a DAG |
+| Errors | fail-fast; no general durable transport retry policy |
+| Output | workflow output resolves after terminal dependencies complete |
+| Actors | logical operation permissions; not isolated long-lived Sapi processes |
+| Activation | supported Callback/Cron subset used by the lab lifecycle path |
+| Acceptance | human-readable workflow acceptance is not trusted by itself; executable verifier logic is separate |
 
-Execution data is represented by one JSON envelope containing
-`inputs`, `steps`, `statuses`, `events`, and `simulation`. Arrays remain inside
-that envelope. This profile does not use one n8n item per input record.
-At a join, results with the same name from shared ancestors must agree.
+Execution uses one logical envelope containing inputs, step outputs/statuses, events, and simulation metadata. The profile does not model one n8n item per business record.
 
-The n8n wrapper executes each guarded Code node but does not call its operation
-when the condition is false. Merge append then collects the envelopes. This is a
-deliberate choice in the demo backend: it does not generate native IF nodes or
-wait for data from an inactive branch in stub mode.
+## Operation catalog
 
-In `stub` mode, LLM stubs in `operations.js` are deterministic. They do not execute
-prompt text from bindings. Classification therefore demonstrates routing, and
-the research report demonstrates data transfer; model quality is not evaluated.
+`src/sapi_config_lab/bindings.yaml` is the operation catalog for project scenarios.
 
-## Bounded refinement and candidate lifecycle
+A new operation requires:
 
-`execution.refinement` describes repeating one graph region with feedback.
-The `max_attempts: 3` limit includes the first generation. Success means `until`
-is true; only an accepted attempt can produce the result. Exhaustion means failed.
-`initial_state` and `carry` define how the result and feedback are passed on.
-The compiler unrolls the bounded whole graph into native attempt copies with
-IF continuation, separate invocation IDs and Checkpoint history. The same
-deadline covers all attempts. Later attempts never run after acceptance;
-exhaustion fails Result while native checkpoints remain available. The lowering
-is independent of operation names and scenario IDs.
+1. an explicit input/output contract;
+2. an implementation;
+3. a catalog binding;
+4. tests and verifier coverage where the operation changes observable behavior.
 
-`lifecycle` is outside WorkflowDefinition: it describes candidate management,
-testing, WBS rebuilds, archiving, and release. `max_rebuilds: 2` allows at most
-three candidates, including the initial one. Cron is enabled for the exact tested
-revision. Overlap, missed-run, and in-flight replacement policies are explicit.
-A SQLite registry and `runtime.lifecycle.LifecycleController` implement these
-policies. Definitions and their hashes are immutable. Callback events persist
-before execution and deduplicate by rule/event ID. Test results release the
-exact tested revision. A configured rebuilder receives the rejected candidate
-and findings, returns a new validated fork, and cannot weaken the frozen inputs,
-acceptance or lifecycle policy. Fork persistence, old-definition archive and
-next test Callback commit atomically. Exhaustion suspends the family and records
-Adhoc work. Restoring an archive neither replays nor releases it.
+The workflow profile does not infer hidden capabilities from arbitrary code.
 
-The supported Cron subset is one fixed minute and hour daily in an IANA timezone.
-The foreground scheduler admits the current minute, skips missed or overlapping
-runs, and deduplicates across restart. Runs retain their admitted revision;
-candidate executions serialize, so replacements cannot interrupt in-flight
-runs. Registered forks are distinguished from model-authored WBS rebuilds.
-The latter preserve returned YAML and an append-before-dispatch call record.
-Completed durable results can finish registry transactions after restart;
-uncertain native/model outcomes suspend instead of silently repeating work.
-See [the explicit lifecycle commands](LIFECYCLE.md). These are lab policies;
-the pinned upstream specification is unchanged.
+## Refinement
 
-## Validator limits
+Bounded refinement repeats one graph region with feedback until acceptance or exhaustion.
 
-Checks cover operation existence, step kinds, unique IDs and YAML keys,
-dependency endpoints, DAG structure, reference ancestry, first-level output
-fields, explicit joins, actor restrictions, exact activation revision, and
-selected extension fields.
+The current implementation:
 
-Checks do not cover full nested JSON Schema, LLM answer truthfulness,
-complete ReactionPolicy semantics, dynamic step collections or durable retries.
-Lifecycle admission additionally validates the supported daily Cron/timezone
-and exact policies; it rejects other lifecycle strings. Invalid types in
-some structures can raise an ordinary Python exception instead of a helpful
-diagnostic. This is a narrow research validator.
+- has an explicit maximum attempt count;
+- includes the first attempt in that count;
+- propagates selected prior result/feedback through declared carry state;
+- stops later attempts after acceptance;
+- fails the final workflow result on exhaustion;
+- lowers the bounded loop into native graph structure rather than creating an unbounded runtime loop.
 
-Pipeline validation trusts the catalog: forbidding a hidden LLM call inside a
-Script implementation requires reviewing its source and dependencies; `kind`
-alone is insufficient. The package's operation implementations were inspected
-and do not make network calls.
+Refinement is part of workflow execution semantics. It is different from the durable candidate lifecycle below.
 
-## Cost of extensions
+## Candidate lifecycle
 
-A new scenario using existing operations and constructs needs new YAML.
-A new operation needs a contract, implementation, and binding. New execution
-semantics require changes to the profile, validator, runtime, and tests.
-A new backend must implement supported constructs and reject the others.
+Lifecycle manages workflow definitions across executions: candidate registration, testing, repair/rebuild, release, scheduling, archive, and suspension.
 
-The prototype's IR is an ordinary Python dict after validation. There is no
-fully typed IR, Haskell parser, or independent second backend.
+It is outside the compiled candidate graph.
 
-## Research harness transport modes
+The current lifecycle implementation supports a narrow explicit policy set, including bounded rebuild count and a restricted daily Cron form. Definitions are immutable by hash/revision; a repair creates a new candidate rather than mutating the tested definition in place.
 
-`compile_n8n(..., llm_mode="stub"|"live")` uses one profile and catalog.
-`compile_demo` remains a compatible name for stub exports and unit tests.
+Do not interpret lifecycle support as a general distributed scheduler or full Sapiens WBS runtime.
 
-In `live` mode, an LLM step expands into Prepare → IF → HTTP Request → Restore.
-A false condition goes directly to Restore: the HTTP node does not execute,
-the step has no output, and its status is skipped. Separate real n8n probes
-check this behavior. Script steps retain their previous semantics.
+## Live LLM transport
 
-An HTTP request contains `invocation_id`, `operation`, `actor`, and `inputs`.
-The ID includes the logical revision/step and actual n8n workflow and execution
-IDs. A response contains `invocation_id`, `status: completed`, `output`, and
-optional `usage`. A mismatched ID, extra fields, an array instead of one response,
-an HTTP error, or an output-schema violation fails the run. Original context is
-restored from Prepare, not from the external service's response.
+In live mode an LLM operation is represented in n8n by transport nodes around the external Agency bridge.
 
-LLM bindings have `input_schema` and `output_schema`. The supported JSON Schema
-subset is explicit: `type` (including unions with null), `properties`, `required`,
-`additionalProperties: false`, `enum`, `items`, `minLength`, `minItems`, `maxItems`,
-and `minimum`. The compiler rejects unsupported keywords. This is not a complete
-JSON Schema validator. Script operations validate their domain inputs and exact
-output field set; a nested schema is not implied for them. JavaScript `integer`
-values are restricted to safe integers.
+A runtime request identifies the logical invocation, operation, actor, and validated inputs. The response must match the invocation and declared output contract.
 
-`Result` contains `output`, `trace`, `steps`, `statuses`, `workflow_ref`,
-`spec_revision`, `llm_mode`, and `simulation`. The last field remains true because
-inputs are injected as fixtures; `llm_mode` distinguishes live models from stubs.
-Live deadlines are explicit; transport timeouts do not extend them.
+Important properties:
 
-The catalog does not select a model or credentials; the existing wrapper owns
-those settings. Refinement is compiled; lifecycle and event deduplication belong
-to the explicit controller. Neither path adds transport retries, actor memory
-or a Sapiens harness. n8n's
-`executionOrder: v1` is retained: independent analyses do not imply parallelism.
+- model/provider selection belongs to the external wrapper, not the workflow catalog;
+- runtime call counts are admitted before execution;
+- skipped guarded LLM steps do not dispatch;
+- malformed/mismatched responses fail the run;
+- original workflow context is restored from trusted pre-request state, not from arbitrary response fields;
+- live execution has explicit deadlines;
+- there is no general transparent retry layer for ambiguous model outcomes.
+
+## AutoWFBench environment
+
+The AutoWFBench adapter does not change `sapi-lab/v0` workflow semantics.
+
+It changes the external task environment available to the candidate: operations are proxied to the pinned upstream simulator through a run-scoped authenticated tool interface. Environment administration, finalization, source verification, and scoring remain on the trusted side.
+
+## Validation boundaries
+
+The validator checks the supported subset, including:
+
+- known operations and allowed step kinds;
+- unique IDs and expected YAML keys;
+- dependency endpoints and DAG structure;
+- reference ancestry;
+- output-field availability at the supported depth;
+- explicit joins;
+- actor restrictions;
+- activation revision;
+- supported refinement/lifecycle fields.
+
+It is not a complete JSON Schema engine or a general semantic verifier.
+
+The project does not currently guarantee:
+
+- arbitrary nested schema validation everywhere;
+- LLM answer truthfulness;
+- full ReactionPolicy semantics;
+- dynamic collections of workflow steps;
+- durable general retries;
+- real actor memory/context isolation;
+- arbitrary cycle semantics;
+- executor-independent native provenance.
+
+## Backend support
+
+n8n is the implemented production backend.
+
+The compiler may reject a valid profile feature when the backend cannot preserve its semantics. That is preferable to silently compiling different behavior.
+
+A future backend must define capability support and native evidence explicitly; passing the common Python protocol alone is not proof of semantic equivalence.
+
+## Specification provenance
+
+The repository pins the Sapiens source revision used as the conceptual baseline and keeps the public source snapshot under `provenance/`.
+
+Changing project code does not automatically change the upstream specification pin. Update the pin only when the project intentionally adopts a different external source baseline and can explain the semantic difference.
+
+The model-facing authoring rules in `generation/FORMAT.md` must remain compatible with this profile. Because that file participates in prompts, changing it also changes future prompt hashes and should be treated as an experiment change, not copy editing.
