@@ -12,7 +12,6 @@ import json
 from pathlib import Path
 import secrets
 import shutil
-import subprocess
 import sys
 import tempfile
 import threading
@@ -28,7 +27,7 @@ from sapi_config_lab.core.benchmark_tasks import TASKS, task_definition
 from sapi_config_lab.core.evidence import sha256, write_json
 from sapi_config_lab.interfaces.generation.common import audit_stderr
 from sapi_config_lab.interfaces.harbor import command, load_trials
-from sapi_config_lab.core.host import harbor_command
+from sapi_config_lab.core.host import harbor_command, image_id, running_containers
 from sapi_config_lab.core.provenance import source_manifest, host_environment
 from sapi_config_lab.runtime.task_evaluation import (
     build_run_log,
@@ -519,12 +518,12 @@ def main():
         print(json.dumps({"plan": str(output / "plan.json"), "model_calls": 0}))
         return 0
     started = time.monotonic()
-    before = subprocess.check_output(["docker", "ps", "--format", "{{.ID}} {{.Names}} {{.Image}}"], text=True)
+    before = running_containers()
     (output / "containers-before.txt").write_text(before)
     if not args.skip_build:
         if command(["docker", "build", "-f", "infra/Dockerfile", "-t", IMAGE, "."], output / "image-build.log", 1200):
             raise RuntimeError("Image build failed")
-    image_id = subprocess.check_output(["docker", "image", "inspect", IMAGE, "--format", "{{.Id}}"], text=True).strip()
+    base_image_id = image_id(IMAGE)
     if args.mode == "live":
         controls = args.controls_report
         if controls is None:
@@ -560,7 +559,7 @@ def main():
             or not gate.get("source_unchanged")
             or gate.get("actual_model_attempts") != 0
             or json.loads((controls.parent / "source-manifest.json").read_text()) != manifest
-            or gate.get("image_id") != image_id
+            or gate.get("image_id") != base_image_id
         ):
             raise ValueError("Live dispatch requires fresh source/image-matched unpaid controls")
         save(output / "controls-gate.json", {"report": str(controls.resolve()), "sha256": sha256(controls)})
@@ -568,7 +567,7 @@ def main():
         "mode": args.mode,
         "task": task.key,
         "seed": args.seed,
-        "image_id": image_id,
+        "image_id": base_image_id,
         "started_at": now(),
         "authoring": [],
         "status": "failed",
@@ -605,9 +604,7 @@ def main():
         report["full_pipeline_seconds"] = time.monotonic() - started
         report["source_unchanged"] = source_manifest() == manifest
         report["finished_at"] = now()
-        (output / "containers-after.txt").write_text(
-            subprocess.check_output(["docker", "ps", "--format", "{{.ID}} {{.Names}} {{.Image}}"], text=True)
-        )
+        (output / "containers-after.txt").write_text(running_containers())
         evaluated_names = (
             ["reference", "nop"]
             if args.mode == "controls"

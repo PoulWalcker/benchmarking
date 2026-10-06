@@ -16,7 +16,7 @@ import tempfile
 
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.core.scenarios import EXPANSION_SCENARIOS, EXTENSION_SCENARIOS, select_scenarios
-from sapi_config_lab.core.host import harbor_command
+from sapi_config_lab.core.host import harbor_command, image_id, pin_base_image
 from sapi_config_lab.core.evidence import write_json
 from sapi_config_lab.interfaces.generation.common import fingerprints, prepare_tasks, summarize_trials
 from sapi_config_lab.interfaces.expansion import (
@@ -227,14 +227,9 @@ def main(argv: list[str] | None = None):
         if fingerprints() != frozen:
             raise RuntimeError("Frozen compiler/catalog/verifier changed during controls")
         harbor = harbor_command()
-        image = subprocess.check_output(
-            ["docker", "image", "inspect", "sapi-config-lab-n8n:2.41.5", "--format", "{{.Id}}"], text=True
-        ).strip()
+        image = image_id("sapi-config-lab-n8n:2.41.5")
         report["base_image_id"] = image
-        # Give this image a run-specific local tag so Dockerfiles can use it.
-        # Dockerfile FROM does not reliably accept a raw local image ID.
-        frozen_image = "sapi-config-lab-generation-base:" + image.split(":")[-1][:16]
-        subprocess.check_call(["docker", "tag", image, frozen_image])
+        frozen_image = pin_base_image(image, "sapi-config-lab-generation")
         report["frozen_image"] = frozen_image
         staging = Path(
             tempfile.mkdtemp(
