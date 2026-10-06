@@ -49,10 +49,14 @@ def _branches(inputs: dict[str, Any]) -> tuple[str, str]:
     return "ticket.normal_draft", "ticket.escalation_draft"
 
 
+def expected_classification(inputs: dict[str, Any]) -> dict[str, Any]:
+    """What reading this ticket must yield: the overdue boundary chooses the priority."""
+    return {"category": "delivery", "priority": "high" if inputs["ticket"]["days_overdue"] > 2 else "normal"}
+
+
 def _classification(inputs: dict[str, Any], observation: WorkflowObservation) -> dict[str, Any]:
     """The classifier read this ticket and the overdue boundary chose the priority."""
-    high = inputs["ticket"]["days_overdue"] > 2
-    expected = {"category": "delivery", "priority": "high" if high else "normal"}
+    expected = expected_classification(inputs)
     equal(_produced(observation, "ticket.classify"), expected, "Wrong classification")
     return expected
 

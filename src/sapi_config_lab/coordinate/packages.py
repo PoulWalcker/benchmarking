@@ -1,11 +1,11 @@
 """Assemble disposable Harbor packages from a single set of owned sources."""
 
 import hashlib
-import json
 from pathlib import Path
 import shutil
 
 from sapi_config_lab.evidence import sha256, write_json
+from sapi_config_lab.execute.host import LAB_IMAGE
 from sapi_config_lab.paths import CATALOG, workspace_root
 
 from sapi_config_lab.coordinate.scenarios import select_scenarios
@@ -32,32 +32,24 @@ def stage_tasks(
     destination: Path,
     *,
     mode="oracle",
-    image="sapi-config-lab-n8n:2.41.5",
-    submissions=None,
+    image=LAB_IMAGE,
+    submissions: dict | None = None,
     scenarios: tuple[str, ...] | None = None,
+    cases: dict[str, dict] | None = None,
 ) -> dict:
-    """Create immutable input packages for one run; never modify source fixtures.
-
-    Oracle/live packages contain reference YAML and solve.sh. Generation packages
-    contain only prompts and hidden verifier inputs; no reference or solution.
-    Copies here are Harbor's distribution format, not independently maintained code.
-    """
+    """Create immutable input packages for one run; never modify source fixtures."""
     selected = select_scenarios(scenarios)
     if mode not in {"oracle", "generation", "replay"}:
         raise ValueError("Task mode must be oracle, generation or replay")
     if mode == "replay":
         if not isinstance(submissions, dict) or set(submissions) != set(selected):
             raise ValueError("Replay requires exactly one submission for every scenario")
-        for item in submissions.values():
-            if (
-                set(item) not in ({"path", "sha256"}, {"path", "sha256", "cases_path", "cases_sha256"})
-                or sha256(item["path"]) != item["sha256"]
-            ):
-                raise ValueError("Replay submission hash mismatch")
-            if "cases_path" in item and sha256(item["cases_path"]) != item["cases_sha256"]:
-                raise ValueError("Replay fixture hash mismatch")
+        if any(sha256(item["path"]) != item["sha256"] for item in submissions.values()):
+            raise ValueError("Replay submission hash mismatch")
     elif submissions is not None:
         raise ValueError("Submissions require replay mode")
+    if cases is not None and not set(cases) <= set(selected):
+        raise ValueError("Fixtures given for a scenario that is not staged")
     root = workspace_root()
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=False)
@@ -94,9 +86,10 @@ def stage_tasks(
             instruction = (definition.directory / "instruction.md").read_text()
             (task / "solution").mkdir()
             shutil.copyfile(templates / "solve.sh", task / "solution/solve.sh")
-            source = Path(submissions[scenario]["path"]) if mode == "replay" else definition.config
+            replayed = submissions[scenario] if submissions is not None else None
+            source = Path(replayed["path"]) if replayed is not None else definition.config
             shutil.copyfile(source, task / "environment/base.yaml")
-            if mode == "replay" and sha256(task / "environment/base.yaml") != submissions[scenario]["sha256"]:
+            if replayed is not None and sha256(task / "environment/base.yaml") != replayed["sha256"]:
                 raise ValueError("Staged replay submission hash mismatch")
             dockerfile = (
                 f"FROM {image}\nUSER root\nWORKDIR /app\n"
@@ -109,7 +102,7 @@ def stage_tasks(
             (templates / "task.toml").read_text().replace('name = "invoice-total"', f'name = "{scenario}"')
         )
         test_script = (templates / "test.sh").read_text().replace("@SCENARIO@", scenario)
-        if mode == "replay":
+        if submissions is not None:
             test_script = test_script.replace(
                 "set -uo pipefail",
                 "set -uo pipefail\nexport SAPI_EXPECTED_SUBMISSION_SHA256=" + submissions[scenario]["sha256"],
@@ -118,14 +111,6 @@ def stage_tasks(
         write_json(task / "tests/runtime-sources.json", runtime)
         for verifier_source in (root / "verification").glob("*.py"):
             shutil.copyfile(verifier_source, task / "tests" / verifier_source.name)
-        case_path = task / "tests/cases.json"
-        if mode == "replay" and "cases_path" in submissions[scenario]:
-            private_cases = Path(submissions[scenario]["cases_path"])
-            if set(json.loads(private_cases.read_text())) != {scenario}:
-                raise ValueError("Replay fixture scenario mismatch")
-            shutil.copyfile(private_cases, case_path)
-            if sha256(case_path) != submissions[scenario]["cases_sha256"]:
-                raise ValueError("Staged replay fixture hash mismatch")
-        else:
-            write_json(case_path, {scenario: definition.cases()})
+        chosen = cases.get(scenario) if cases is not None else None
+        write_json(task / "tests/cases.json", {scenario: definition.cases() if chosen is None else chosen})
     return hashes

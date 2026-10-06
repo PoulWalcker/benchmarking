@@ -1,10 +1,4 @@
-"""A WorkflowBackend test adapter that records what the n8n adapter records.
-
-It compiles with the real compiler and executes the generated stub-mode
-JavaScript under node (tests/support/n8n-sim.mjs) instead of n8n, then writes
-the same native files `execute/n8n.py` writes. Evaluation can therefore judge a
-complete, successful recorded case without Docker or the engine.
-"""
+"""A WorkflowBackend test adapter that records what the n8n adapter records."""
 
 import copy
 import hashlib

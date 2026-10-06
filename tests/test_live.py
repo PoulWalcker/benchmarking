@@ -1,4 +1,4 @@
-"""Unpaid guards for the frozen replay runner; no Docker or real wrapper calls."""
+"""Unpaid guards for the live replay runner; no Docker or real wrapper calls."""
 
 import contextlib
 import copy
@@ -10,8 +10,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.coordinate.live import BUDGET, audit_records, finalize_report, main, validate_control
-from sapi_config_lab.coordinate.provenance import source_manifest
+from sapi_config_lab.coordinate.live import audit_records, main, validate_control
 from sapi_config_lab.coordinate.live_evidence import reconcile_dispatches
 from sapi_config_lab.coordinate.replay import load_selection
 from sapi_config_lab.paths import CATALOG
@@ -32,7 +31,8 @@ class LiveEvidenceTests(unittest.TestCase):
         response = {"invocation_id": request["invocation_id"], "status": "completed", "output": output, "usage": None}
         native = [{"request": request, "response": response}]
         with tempfile.TemporaryDirectory() as directory:
-            audit = DispatchAudit(Path(directory) / "audit.jsonl", BUDGET)
+            budget = {"max_attempts": 1, "operations": {"ticket.classify": 1}, "model": "gpt-6-astra"}
+            audit = DispatchAudit(Path(directory) / "audit.jsonl", budget)
             wrapper = {
                 "ok": True,
                 "exit_code": 0,
@@ -118,7 +118,7 @@ class LiveEvidenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             path = root / "selection.json"
-            with patch("sapi_config_lab.coordinate.live.subprocess.Popen") as dispatch:
+            with patch("sapi_config_lab.execute.agency.subprocess.Popen") as dispatch:
                 for manifest in (
                     {},
                     {"schema": "fake", "entries": []},
@@ -127,11 +127,16 @@ class LiveEvidenceTests(unittest.TestCase):
                     path.write_text(json.dumps(manifest))
                     with self.assertRaises((ValueError, FileNotFoundError)):
                         load_selection(path)
-                with contextlib.redirect_stderr(io.StringIO()) as errors:
-                    with self.assertRaises(SystemExit) as caught:
-                        main(["--stub-report", str(root / "absent"), "--report-dir", str(root)])
-                self.assertEqual(caught.exception.code, 2)
-                self.assertIn("every existing output directory is immutable", errors.getvalue())
+                for argv, message in (
+                    (["--report-dir", str(root), "--preflight-only"], "never overwritten"),
+                    (["--report-dir", str(root / "new"), "--max-calls", "8"], "requires --wrapper-evidence"),
+                ):
+                    with contextlib.redirect_stderr(io.StringIO()) as errors:
+                        with self.assertRaises(SystemExit) as caught:
+                            main(["--stub-report", str(root / "absent"), "--max-calls", "8", *argv])
+                    self.assertEqual(caught.exception.code, 2)
+                    self.assertIn(message, errors.getvalue())
+                self.assertFalse((root / "new").exists())
                 dispatch.assert_not_called()
 
     def test_truncated_audit_is_never_accepted(self):
@@ -141,28 +146,6 @@ class LiveEvidenceTests(unittest.TestCase):
                 path.write_text(invalid)
                 with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                     audit_records(path)
-
-    def test_finalization_preserves_failure_report_when_audit_case_and_docker_are_unreadable(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            (root / "bridge-audit.jsonl").write_text('{"event":"completion"')
-            case = root / "jobs/live-ticket-routing/trial/verifier/evidence/cases/failed/case.json"
-            case.parent.mkdir(parents=True)
-            case.write_text("{")
-            (root / "existing-containers.txt").write_text("existing")
-            report = {"status": "passed", "counts": {"provider_call_count": None}}
-            with patch(
-                "sapi_config_lab.coordinate.live.subprocess.check_output", side_effect=OSError("Docker unavailable")
-            ):
-                finalize_report(report, root, None, None, source_manifest())
-            saved = json.loads((root / "report.json").read_text())
-            self.assertEqual(saved["status"], "failed")
-            self.assertEqual(
-                {error["stage"] for error in saved["collection_errors"]},
-                {"audit", "native_attempt_count", "container_identity"},
-            )
-            self.assertIsNone(saved["counts"]["wrapper_completions"])
-            self.assertEqual((root / "bridge-audit.jsonl").read_text(), '{"event":"completion"')
 
     def test_canonical_input_hash_is_key_order_independent_and_rejects_nonfinite(self):
         self.assertEqual(digest({"b": [2], "a": "é"}), digest({"a": "é", "b": [2]}))

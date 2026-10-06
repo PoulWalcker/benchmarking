@@ -8,7 +8,6 @@ from unittest.mock import patch
 from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.execute.agency import ContractError, DispatchAudit, execute
 from sapi_config_lab.profile import read_bindings
-from sapi_config_lab.coordinate.scenarios import all_cases
 
 
 class OccurrenceBudgetTests(unittest.TestCase):
@@ -58,25 +57,52 @@ class OccurrenceBudgetTests(unittest.TestCase):
                         execute(request, read_bindings(CATALOG), "http://unused", 1, audit=audit)
                     dispatch.assert_not_called()
 
-    def test_named_case_admission_covers_all_seventeen_expected_occurrences(self):
-        from sapi_config_lab.coordinate.live_evidence import case_budget
-        from sapi_config_lab.coordinate.scenarios import EXPANSION_SCENARIOS
+    def test_case_grants_are_the_verifiers_expected_calls_for_every_live_case(self):
+        from sapi_config_lab.coordinate.live_evidence import case_budget, live_cohort
+        from sapi_config_lab.coordinate.scenarios import SCENARIOS
         from sapi_config_lab.profile import read
 
-        cases = all_cases()
-        counts = []
-        for scenario, definition in EXPANSION_SCENARIOS.items():
-            config = read(definition.config)
-            for name in cases[scenario]["live_cases"]:
+        caps = {}
+        for scenario, definition in SCENARIOS.items():
+            if definition.group == "lifecycle":
+                continue
+            submission = {"path": definition.config, "cases": definition.cases()}
+            for name in live_cohort(scenario, submission):
+                config = read(definition.config)
                 config["workflow"]["inputs"] = next(
-                    case["inputs"] for case in cases[scenario]["positive"] if case["name"] == name
+                    case["inputs"] for case in definition.cases()["positive"] if case["name"] == name
                 )
-                budget = case_budget(scenario, name, config)
-                counts.append(budget["max_attempts"])
+                budget = case_budget(scenario, name, config, definition.cases())
+                caps[f"{scenario}/{name}"] = budget["max_attempts"]
                 if name == "normal-empty":
                     self.assertEqual(budget["operations"], {"ticket.classify": 1})
-        self.assertEqual(counts, [0, 0, 2, 2, 4, 4, 4, 1])
-        self.assertEqual(sum(counts), 17)
+                if scenario == "revise-answer":
+                    self.assertEqual(
+                        list(budget["occurrences"]), [f"revise-answer/r1/draft/attempt{n}" for n in (1, 2, 3)]
+                    )
+        # The same caps the recorded series ran under, now derived rather than stored.
+        self.assertEqual(
+            caps,
+            {
+                "invoice-total/original-38000": 0,
+                "invoice-total/alternate-values-zero": 0,
+                "invoice-total/maximum-safe-total": 0,
+                "ticket-routing/high-three-days": 1,
+                "ticket-routing/normal-boundary-two": 1,
+                "competitor-report/original-evidence": 3,
+                "competitor-report/unseen-source-markers": 3,
+                "revise-answer/valid-reply": 3,
+                "revise-answer/impossible-limit": 3,
+                "dual-ledger-closeout/base-ledgers": 0,
+                "dual-ledger-closeout/alternate-ledgers": 0,
+                "support-review-packet/high-packet": 2,
+                "support-review-packet/normal-packet": 2,
+                "bulletin-market-brief/base-bulletins": 4,
+                "bulletin-market-brief/alternate-bulletins": 4,
+                "priority-support-brief/high-brief": 4,
+                "priority-support-brief/normal-empty": 1,
+            },
+        )
 
     def test_refinement_attempts_have_distinct_bounded_native_occurrences(self):
         budget = {

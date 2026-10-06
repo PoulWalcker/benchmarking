@@ -68,5 +68,9 @@
       "operation": "ticket.classify",
       "schema_error": "Schema violation at inputs.ticket.days_overdue"
     }
+  ],
+  "live_cases": [
+    "high-three-days",
+    "normal-boundary-two"
   ]
 }

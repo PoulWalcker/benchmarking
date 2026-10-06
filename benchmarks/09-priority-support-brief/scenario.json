@@ -1,7 +1,5 @@
 {
   "group": "expansion",
-  "runtime_caps": {
-    "high-brief": 4,
-    "normal-empty": 1
-  }
+  "fixture_overlay": "fresh",
+  "human_review": true
 }

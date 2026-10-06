@@ -7,19 +7,20 @@ from pathlib import Path
 import sys
 
 from sapi_config_lab.evidence import write_json
+from sapi_config_lab.execute.host import LAB_IMAGE
 from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.profile import read, read_bindings, validate, Invalid, Unsupported
 from sapi_config_lab.coordinate.backend import default_backend
 from sapi_config_lab.contracts import CompileOptions, WorkflowBackend
 
-# Commands dispatched by importing a module and calling its main(). The four
-# remaining names are handled inline below.
+# Commands dispatched by importing a module and calling its main(); the rest are inline below.
 MODULES = {
     "harbor": "coordinate.controls",
     "benchmark": "coordinate.benchmark",
     "benchmark-series": "evaluate.benchmark_series",
     "benchmark-calibrate": "evaluate.judge_calibration",
     "live": "coordinate.live",
+    "select": "coordinate.replay",
     "generate": "coordinate.generate",
     "bridge": "execute.agency",
     "transport": "coordinate.transport",
@@ -35,7 +36,8 @@ PUBLIC = {
     "build": "Compile every benchmarks/*/config.yaml and record which were rejected.",
     "harbor": "Unpaid control suite: pinned image, transport probes, oracle and nop trials.",
     "generate": "Model-authored YAML after the control suite passes. Costs model calls.",
-    "live": "Replay frozen submissions against live operations. Costs model calls.",
+    "select": "Select generated submissions for replay by a fixed rule; runs nothing.",
+    "live": "Replay saved or reference submissions against live operations. Costs model calls.",
     "benchmark": "AutoWFBench evaluation, --task checkout|crm. --mode live costs model calls.",
     "benchmark-series": "Build a comparison manifest from existing reports; reruns nothing.",
     "benchmark-calibrate": "Judge against frozen controls. Costs one judge call unless --prepare-only.",
@@ -135,7 +137,7 @@ def package_tasks_command(argv: list[str]) -> int:
             "Use 'sapi-lab live --submissions-manifest' for it."
         ),
     )
-    options.add_argument("--image", default="sapi-config-lab-n8n:2.41.5")
+    options.add_argument("--image", default=LAB_IMAGE)
     options.add_argument("--scenario", action="append", dest="scenarios")
     selected = options.parse_args(argv)
     stage_tasks(

@@ -1,54 +1,31 @@
 #!/usr/bin/env python3
-"""Run bounded real-wrapper Harbor trials after fresh source-matched controls."""
+"""Live replay of saved submissions: one bounded Agency grant per case, after unpaid controls."""
 
 from __future__ import annotations
 
 import argparse
-import copy
 from datetime import datetime, timezone
 import json
 from pathlib import Path
 import shutil
-import subprocess
 import time
 import tomllib
 from typing import Any
 
-from sapi_config_lab.execute.agency import start_bridge, stop_bridge, strict_json
-from sapi_config_lab.evidence import sha256, write_json
-from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.coordinate.packages import stage_tasks
-from sapi_config_lab.coordinate.scenarios import BASELINE_SCENARIOS as SCENARIOS
-from sapi_config_lab.execute.host import (
-    checked_harbor,
-    collect_jobs,
-    harbor_run_args,
-    image_id,
-    pin_base_image,
-    run_logged,
-    running_containers,
-    staging_dir,
-)
-from sapi_config_lab.coordinate.controls import IMAGE, load_trials, trial_accepted
-from sapi_config_lab.coordinate.provenance import host_environment, source_manifest
+from sapi_config_lab.coordinate.controls import trial_accepted
+from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
+from sapi_config_lab.coordinate.live_evidence import case_budget, collect_native, live_cohort, reconcile_dispatches
 from sapi_config_lab.coordinate.replay import load_selection, read_json, require
-from sapi_config_lab.coordinate.live_evidence import LIVE_CASES, OPERATIONS, collect_native, reconcile_dispatches
-from sapi_config_lab.coordinate.expansion import (
-    ExpansionSeries,
-    RefinementSeries,
-    RUNTIME_CAPS,
-    select_series_scenarios,
-)
-from sapi_config_lab.coordinate.live_evidence import case_budget
-from sapi_config_lab.coordinate.scenarios import EXPANSION_SCENARIOS, EXTENSION_SCENARIOS
+from sapi_config_lab.coordinate.runs import Run, run_experiment
+from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
+from sapi_config_lab.evidence import sha256
+from sapi_config_lab.execute.agency import WRAPPER_MODEL, WRAPPER_UPSTREAM, strict_json
+from sapi_config_lab.execute.host import LAB_IMAGE
+from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import read
 
 ROOT = workspace_root()
-BUDGET: dict[str, Any] = {"max_attempts": 8, "operations": OPERATIONS, "model": "gpt-6-astra"}
-
-
-def tree_hashes(path: Path) -> dict[str, str]:
-    return {str(item.relative_to(path)): sha256(item) for item in sorted(path.rglob("*")) if item.is_file()}
+CASE_SECONDS = 600
 
 
 def validate_control(path: Path, current: dict[str, str], identity: str) -> dict:
@@ -85,7 +62,7 @@ def wrapper_identity(path: Path, endpoint: str) -> dict:
         evidence.get("dispatch") == "codex-exec"
         and evidence.get("response_substitution") is False
         and evidence.get("wrapper_retries") == 0
-        and evidence.get("model") == BUDGET["model"],
+        and evidence.get("model") == WRAPPER_MODEL,
         "Wrapper dispatch inspection is missing or incompatible",
     )
     require(
@@ -104,6 +81,8 @@ def validate_packages(path: Path, submissions: dict, image: str):
     for scenario, selected in submissions.items():
         task = path / scenario
         require(sha256(task / "environment/base.yaml") == selected["sha256"], "Staged submission hash mismatch")
+        if "cases_sha256" in selected:
+            require(sha256(task / "tests/cases.json") == selected["cases_sha256"], "Staged fixture hash mismatch")
         settings = tomllib.loads((task / "task.toml").read_text())
         require(
             settings["agent"]["timeout_sec"] == 600 and settings["verifier"]["timeout_sec"] == 1800,
@@ -140,11 +119,9 @@ def check_trials(trials: list[dict], submissions: dict, *, mode: str, expected_c
             acceptance.get("cases") and all(row.get("passed") is True for row in acceptance["cases"]),
             "Missing independent case acceptance",
         )
-        if mode == "live":
-            cohort = LIVE_CASES if expected_cases is None else expected_cases
+        if expected_cases is not None:
             require(
-                {row["name"] for row in acceptance["cases"]} == cohort[scenario]
-                and len(acceptance["cases"]) == len(cohort[scenario]),
+                [row["name"] for row in acceptance["cases"]] == sorted(expected_cases[scenario]),
                 "Required live-case subset changed",
             )
 
@@ -153,26 +130,6 @@ def audit_records(path: Path) -> list[dict]:
     records = [strict_json(line) for line in path.read_text().splitlines()] if path.exists() else []
     require(all(isinstance(row, dict) for row in records), "Audit records must be objects")
     return records
-
-
-def check_generated_stub_gates(trials: list[dict], scenario: str, expected_case_count: int) -> None:
-    """Each independent authoring answer is checked against its own exact bytes."""
-    for trial in trials:
-        directory = Path(trial["result_path"]).parent
-        own_submission = directory / "agent/submission.yaml"
-        check_trials(
-            [
-                {
-                    "task_name": trial["scenario"],
-                    **{key: trial[key] for key in ("rewards", "exception", "acceptance", "result_path")},
-                }
-            ],
-            {scenario: {"sha256": sha256(own_submission)}},
-            mode="stub",
-        )
-        require(
-            len(trial["acceptance"]["cases"]) == expected_case_count, "Generated stub control coverage is incomplete"
-        )
 
 
 def failure_category(trials: list[dict], audit: list[dict], default: str) -> str:
@@ -195,557 +152,164 @@ def failure_category(trials: list[dict], audit: list[dict], default: str) -> str
     return default
 
 
-def native_attempt_count(output: Path) -> int:
-    count = 0
-    for path in (output / "jobs").glob("live-*/*/verifier/evidence/cases/*/case.json"):
-        run = read_json(path)
-        count += sum(
-            len(records)
-            for name, records in run.get("run_data", {}).items()
-            if name.startswith("Agency ") or " / Agency " in name
-        )
-    return count
-
-
-def finalize_report(report: dict, output: Path, staging: Path | None, adapter, original_sources: dict) -> None:
-    """Preserve partial evidence and always emit a failure report on collection errors."""
-
-    def attempt(stage, operation):
-        try:
-            return operation()
-        except Exception as error:
-            report.setdefault("collection_errors", []).append(
-                {"stage": stage, "error": f"{type(error).__name__}: {error}"}
-            )
-            report["status"] = "failed"
-            report.setdefault("failure_category", "evidence_correlation")
-            return None
-
-    attempt("adapter_stop", lambda: stop_bridge(adapter))
-    if staging:
-
-        def preserve_jobs():
-            collect_jobs(staging, output / "jobs")
-            return True
-
-        if attempt("preserve_jobs", preserve_jobs):
-            attempt("cleanup_owned_staging", lambda: shutil.rmtree(staging))
-        else:
-            report["retained_staging"] = str(staging)
-    audit = attempt("audit", lambda: audit_records(output / "bridge-audit.jsonl"))
-    report["audit"] = audit if audit is not None else []
-    report["counts"].update(
-        {
-            "agency_http_attempts": attempt("native_attempt_count", lambda: native_attempt_count(output)),
-            "wrapper_attempts": sum(row.get("event") == "dispatch_attempt" for row in audit)
-            if audit is not None
-            else None,
-            "wrapper_completions": sum(row.get("event") == "completion" for row in audit)
-            if audit is not None
-            else None,
-        }
-    )
-    snapshot = attempt("source_manifest", source_manifest)
-    report["source_unchanged"] = snapshot == original_sources
-    if snapshot is not None:
-        attempt("final_source_manifest", lambda: write_json(output / "final-source-manifest.json", snapshot))
-    if not report["source_unchanged"]:
-        report.update({"status": "failed", "failure_category": "provenance_preflight"})
-    if (output / "existing-containers.txt").exists():
-
-        def preserve_containers():
-            after = running_containers()
-            (output / "existing-containers-after.txt").write_text(after)
-            return set((output / "existing-containers.txt").read_text().splitlines()) <= set(after.splitlines())
-
-        report["existing_container_identities_preserved"] = attempt("container_identity", preserve_containers)
-        if report["existing_container_identities_preserved"] is not True:
-            report.update({"status": "failed", "failure_category": "provenance_preflight"})
-    report["finished_at"] = datetime.now(timezone.utc).isoformat()
-    write_json(output / "report.json", report)
-
-
-def run_expansion(args) -> int:
-    """Replay one frozen scenario with separate fail-closed per-case grants."""
-    scenario = args.scenario
-    refinement = scenario in EXTENSION_SCENARIOS
-    caps = RefinementSeries.runtime_caps[scenario] if refinement else RUNTIME_CAPS[scenario]
-    output = (args.report_dir or args.stub_report.resolve().parent / (scenario + "-live")).resolve()
-    require(not output.exists(), "Choose a new immutable expansion report directory")
-    output.mkdir(parents=True)
-    sources = source_manifest()
-    write_json(output / "source-manifest.json", sources)
-    report: dict[str, Any] = {
-        "schema": "sapi-lab-refinement-live/v1" if refinement else "sapi-lab-expansion-live/v1",
-        "experiment_kind": "bounded_refinement" if refinement else "bounded_expansion",
-        "scenario": scenario,
-        "mode": "preflight" if args.preflight_only else "live",
-        "status": "failed",
-        "source_manifest": "source-manifest.json",
-        "started_at": datetime.now(timezone.utc).isoformat(),
-        "trials": [],
-        "not_run": list(caps),
-        "correlation": [],
-        "phases": [],
-        "generation_calls": 0,
-        "budget": {
-            "max_attempts": sum(caps.values()),
-            "cases": caps,
-            "counts_are_upper_bounds": refinement,
-            "series_max_attempts": None,
-        },
-        "counts": {
-            "agency_http_attempts": 0,
-            "wrapper_attempts": 0,
-            "wrapper_completions": 0,
-            "provider_call_count": None,
-        },
-        "human_review": "pending"
-        if scenario in {"bulletin-market-brief", "priority-support-brief"}
-        else "not_applicable",
-        "limitations": [
-            "Call/time caps are enforced; currency cost and provider-internal retries remain unknown.",
-            "Lexical and citation checks are bounded; they are separate from human text review.",
-            "Authoring tool restrictions are cooperative prompt/audit controls, not a secure sandbox.",
-        ],
-    }
-    staging = None
-    adapter = None
-    series = None
-    reservation = None
-    active_audit = None
-    try:
-        series = (
-            RefinementSeries(args.series_dir)
-            if refinement
-            else ExpansionSeries(args.series_dir, scenarios=getattr(args, "series_scenarios", None))
-        )
-        report["series_ledger"] = str(series.path)
-        report["series_scenarios"] = list(series.scenarios)
-        report["series_ceilings"] = dict(series.ceilings)
-        report["budget"]["series_max_attempts"] = series.ceilings["runtime"]
-        harbor, _ = checked_harbor()
-        identity = image_id(IMAGE)
-        gate = validate_control(args.stub_report.resolve(), sources, identity)
-        controlled = {trial["task_name"] for trial in gate["oracle"]["trials"]}
-        require(scenario in controlled, "Prepared control report does not cover this scenario")
-        report["stub_report_sha256"] = sha256(args.stub_report)
-        report["image_id"] = identity
-        shutil.copyfile(args.stub_report, output / "control-report.json")
-        before = running_containers()
-        (output / "existing-containers.txt").write_text(before)
-        submissions = load_selection(args.submissions_manifest, copy_to=output / "selection", scenarios=(scenario,))
-        selected = submissions[scenario]
-        report["selection_sha256"] = sha256(args.submissions_manifest)
-        private_cases = read_json(Path(selected["cases_path"]))
-        require(sha256(Path(selected["cases_path"])) == selected["cases_sha256"], "Private fixtures changed")
-        require(private_cases[scenario]["live_cases"] == list(caps), "Frozen runtime cohort changed")
-        report["private_cases_sha256"] = selected["cases_sha256"]
-        if not args.preflight_only:
-            require(args.wrapper_evidence is not None, "Expansion requires wrapper identity evidence")
-        if args.wrapper_evidence:
-            report["wrapper_identity"] = wrapper_identity(args.wrapper_evidence, args.upstream)
-            shutil.copyfile(args.wrapper_evidence, output / "wrapper-identity.json")
-        frozen_image = pin_base_image(identity, "sapi-config-lab-expansion")
-        staging = staging_dir("sapi-lab-expansion-")
-        stage_tasks(
-            staging / "tasks", mode="replay", image=frozen_image, submissions=submissions, scenarios=(scenario,)
-        )
-        validate_packages(staging / "tasks", submissions, frozen_image)
-        shutil.copytree(staging / "tasks", output / "task-packages")
-        package_hashes = tree_hashes(staging / "tasks")
-        selection_hashes = tree_hashes(output / "selection")
-        write_json(output / "task-package-hashes.json", package_hashes)
-
-        def freeze(phase):
-            require(source_manifest() == sources, "Expansion sources changed")
-            require(
-                tree_hashes(staging / "tasks") == package_hashes == tree_hashes(output / "task-packages"),
-                "Expansion task package changed",
-            )
-            require(tree_hashes(output / "selection") == selection_hashes, "Preserved selection changed")
-            require(sha256(args.submissions_manifest) == report["selection_sha256"], "Selection manifest changed")
-            require(
-                load_selection(args.submissions_manifest, scenarios=(scenario,)) == submissions,
-                "Selected evidence changed",
-            )
-            require(image_id(frozen_image) == identity, "Expansion image changed")
-            if args.wrapper_evidence:
-                require(
-                    wrapper_identity(args.wrapper_evidence, args.upstream) == report.get("wrapper_identity"),
-                    "Wrapper identity changed",
-                )
-            report["phases"].append({"phase": phase, "source_unchanged": True, "packages_unchanged": True})
-
-        # Selection independently rechecks both generated stub gates and their exact bytes.
-        selection = read_json(args.submissions_manifest)
-        generated = read_json(Path(selection["source_report"]["path"]))
-        expected_count = len(private_cases[scenario]["positive"]) + len(private_cases[scenario]["negative"]) + 4
-        check_generated_stub_gates(generated["trials"], scenario, expected_count)
-        report["preflight"] = {
-            "passed": True,
-            "source": f"{series.authoring_attempts} preserved generated stub trials",
-            "source_report_sha256": selection["source_report"]["sha256"],
-        }
-        freeze("before-live")
-        if args.preflight_only:
-            report["status"] = "passed"
-        else:
-            (output / "case-budgets").mkdir()
-            (output / "case-audits").mkdir()
-            for case_name, call_cap in caps.items():
-                freeze("before-" + case_name)
-                config = copy.deepcopy(read(Path(selected["path"])))
-                case = next(row for row in private_cases[scenario]["positive"] if row["name"] == case_name)
-                config["workflow"]["inputs"] = case["inputs"]
-                budget = case_budget(scenario, case_name, config, cases=private_cases)
-                require(budget["max_attempts"] == call_cap, "Case grant differs from frozen call count")
-                budget["expires_at"] = time.time() + 600
-                budget_path = output / "case-budgets" / (case_name + ".json")
-                write_json(budget_path, budget)
-                active_audit = output / "case-audits" / (case_name + ".jsonl")
-                reservation = series.reserve(scenario, "runtime", case_name, output / "report.json")
-                adapter = start_bridge(
-                    args.bridge_port, args.upstream, active_audit, budget_path, output / (case_name + "-bridge.log")
-                )
-                name = "live-" + scenario + "-" + case_name
-                command = harbor_run_args(
-                    harbor,
-                    staging / "tasks" / scenario,
-                    staging / "jobs",
-                    name,
-                    "oracle",
-                    verifier_env=[
-                        "SAPI_LLM_MODE=live",
-                        "SAPI_CASE_NAME=" + case_name,
-                        f"SAPI_BRIDGE_URL=http://host.docker.internal:{args.bridge_port}",
-                    ],
-                )
-                report.setdefault("commands", []).append(command)
-                print(f"Live expansion: {scenario}/{case_name}; max {call_cap} outgoing attempts", flush=True)
-                try:
-                    exit_code = run_logged(
-                        command, output / (name + ".log"), timeout=max(1, budget["expires_at"] - time.time())
-                    )
-                finally:
-                    collect_jobs(staging, output / "jobs")
-                    stop_bridge(adapter)
-                trials = load_trials(output / "jobs" / name)
-                report["trials"].extend(trials)
-                require(exit_code == 0 and len(trials) == 1, "Expansion Harbor case failed")
-                check_trials(trials, submissions, mode="live", expected_cases={scenario: {case_name}})
-                native = collect_native(
-                    trials, submissions, expected_cases={scenario: {case_name}}, cases=private_cases
-                )
-                audit = audit_records(active_audit)
-                correlation = reconcile_dispatches(native, audit, budget["model"])
-                require(
-                    1 <= len(correlation) <= call_cap if refinement else len(correlation) == call_cap,
-                    "Unexpected case occurrence count",
-                )
-                require(read_json(budget_path) == budget, "Case admission grant changed")
-                freeze("after-" + case_name)
-                report["correlation"].extend(correlation)
-                report["not_run"].remove(case_name)
-                series.finish(reservation, True)
-                reservation = None
-            require(
-                len(report["correlation"]) <= report["budget"]["max_attempts"]
-                if refinement
-                else len(report["correlation"]) == report["budget"]["max_attempts"],
-                "Incomplete or over-budget runtime cohort",
-            )
-            write_json(output / "correlation.json", report["correlation"])
-            report["status"] = "passed"
-    except Exception as error:
-        if reservation is not None and series is not None:
-            series.finish(reservation, False)
-        report["error"] = f"{type(error).__name__}: {error}"
-        report["failure_category"] = (
-            "timeout_unknown_outcome" if isinstance(error, subprocess.TimeoutExpired) else "expansion_gate"
-        )
-    finally:
-        combined = []
-        for path in (output / "case-audits").glob("*.jsonl"):
-            try:
-                combined.extend(audit_records(path))
-            except Exception as error:
-                report["status"] = "failed"
-                report.setdefault("collection_errors", []).append({"stage": "case_audit", "error": str(error)})
-        try:
-            (output / "bridge-audit.jsonl").write_text("".join(json.dumps(row) + "\n" for row in combined))
-        except Exception as error:
-            report["status"] = "failed"
-            report.setdefault("collection_errors", []).append(
-                {"stage": "bridge_audit_aggregation", "error": str(error)}
-            )
-        finally:
-            finalize_report(report, output, staging, adapter, sources)
-    print(
-        json.dumps({"status": report["status"], "report": str(output / "report.json"), "counts": report["counts"]}),
-        flush=True,
-    )
-    return 0 if report["status"] == "passed" else 1
-
-
-def main(argv: list[str] | None = None):
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stub-report", type=Path, required=True)
+    parser.add_argument("--stub-report", type=Path, required=True, help="A passing control report for this image")
+    parser.add_argument("--submissions-manifest", type=Path, help="From `sapi-lab select`; default: reference configs")
+    parser.add_argument("--scenario", action="append", help="Reference scenarios when no manifest is given")
+    parser.add_argument("--max-calls", type=int, required=True, help="Aggregate model-call ceiling for this run")
     parser.add_argument("--report-dir", type=Path)
-    parser.add_argument("--submissions-manifest", type=Path)
     parser.add_argument("--preflight-only", action="store_true")
     parser.add_argument("--wrapper-evidence", type=Path)
-    parser.add_argument("--upstream", default="http://127.0.0.1:8765/run")
+    parser.add_argument("--upstream", default=WRAPPER_UPSTREAM)
     parser.add_argument("--bridge-port", type=int, default=18765)
-    parser.add_argument("--scenario", choices=tuple({**EXPANSION_SCENARIOS, **EXTENSION_SCENARIOS}))
-    parser.add_argument("--series-dir", type=Path)
-    parser.add_argument(
-        "--series-scenario",
-        action="append",
-        help="Freeze this ordered series subset; repeat per scenario, default all four",
-    )
+    parser.add_argument("--series-dir", type=Path, help="Reserve in a ledger shared with other runs")
+    parser.add_argument("--series-ceiling", action="append", help="PHASE=N, fixed when a series ledger is created")
+    parser.add_argument("--stop-after-failure", action="store_true", help="A failed case blocks later reservations")
     args = parser.parse_args(argv)
-    if args.scenario in EXTENSION_SCENARIOS:
-        if args.series_scenario or not args.submissions_manifest or not args.series_dir:
-            parser.error("Refinement requires --submissions-manifest and --series-dir, without expansion cohort flags")
-        return run_expansion(args)
-    if args.scenario:
-        try:
-            args.series_scenarios = select_series_scenarios(
-                tuple(args.series_scenario) if args.series_scenario else None
-            )
-            if args.scenario not in args.series_scenarios:
-                raise ValueError("Task scenario is not selected for this expansion series")
-        except ValueError as error:
-            parser.error(str(error))
-        if not args.submissions_manifest or not args.series_dir:
-            parser.error("Expansion requires --submissions-manifest and --series-dir")
-        return run_expansion(args)
-    if args.series_scenario:
-        parser.error("--series-scenario requires an expansion --scenario")
-    if args.preflight_only and not args.submissions_manifest:
-        parser.error("--preflight-only requires --submissions-manifest")
-    output = (args.report_dir or args.stub_report.resolve().parent / "live").resolve()
-    if output.exists():
-        parser.error("Choose a new report directory; every existing output directory is immutable")
-    output.mkdir(parents=True, exist_ok=False)
-    original_sources = source_manifest()
-    write_json(output / "source-manifest.json", original_sources)
+    if args.submissions_manifest and args.scenario:
+        parser.error("A manifest selects its own scenarios")
+    if not args.preflight_only and args.wrapper_evidence is None:
+        parser.error("Live dispatch requires --wrapper-evidence")
+    try:
+        series_ceilings = parse_ceilings(args.series_ceiling)
+        reference = select_scenarios(args.scenario) if not args.submissions_manifest else {}
+    except ValueError as error:
+        parser.error(str(error))
+    output = args.report_dir or ROOT / "reports" / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-live")
     report: dict[str, Any] = {
-        "schema": "sapi-lab-generated-live/v1" if args.submissions_manifest else "sapi-lab-live/v2",
-        "experiment_kind": "frozen_generated_replay" if args.submissions_manifest else "reference_live",
+        "schema": "sapi-lab-live/v3",
         "mode": "preflight" if args.preflight_only else "live",
-        "status": "failed",
-        "started_at": datetime.now(timezone.utc).isoformat(),
-        "host_environment": host_environment(),
         "stub_report": str(args.stub_report.resolve()),
-        "stub_report_sha256": None,
-        "source_manifest": "source-manifest.json",
-        "n8n_version": "2.41.5",
         "generation_calls": 0,
-        "budget": BUDGET,
+        "budget": {"max_calls": args.max_calls, "cases": {}},
         "trials": [],
-        "not_run": list(SCENARIOS),
-        "phases": [],
+        "not_run": [],
+        "correlation": [],
         "audit": [],
-        "counts": {
-            "agency_http_attempts": 0,
-            "wrapper_attempts": 0,
-            "wrapper_completions": 0,
-            "provider_call_count": None,
-        },
         "limitations": [
-            "Frozen historical generated replay is not fresh generation or held-out generalization.",
-            "The wrapper is trusted; provider-internal requests/retries and currency cost are not established.",
-            "CLI token telemetry is incomplete and is not a cost estimate.",
+            "Call and time caps are enforced; currency cost and provider-internal retries remain unknown.",
+            "The wrapper is trusted; its tool restrictions are cooperative, not a sandbox.",
             "Timeout cancellation is not propagated; an upstream model outcome can remain unknown.",
-            "Quotation and factual-anchor checks do not establish exhaustive semantic correctness.",
         ],
     }
-    adapter = None
-    staging = None
-    current_stage = "provenance_preflight"
-    frozen_image = None
-    try:
+
+    def body(run: Run) -> None:
         report["stub_report_sha256"] = sha256(args.stub_report)
-        harbor, report["harbor_version"] = checked_harbor()
-        identity = image_id(IMAGE)
-        gate = validate_control(args.stub_report.resolve(), original_sources, identity)
-        report["image_id"] = identity
-        shutil.copyfile(args.stub_report, output / "control-report.json")
-        shutil.copyfile(args.stub_report.parent / gate["source_manifest"], output / "control-source-manifest.json")
-        shutil.copyfile(args.stub_report.parent / "runtime-versions.txt", output / "runtime-versions.txt")
-        before = running_containers()
-        (output / "existing-containers.txt").write_text(before)
+        identity = run.use_image(LAB_IMAGE)
+        gate = validate_control(args.stub_report.resolve(), run.sources, identity)
+        shutil.copyfile(args.stub_report, run.output / "control-report.json")
         if args.submissions_manifest:
-            submissions = load_selection(args.submissions_manifest, copy_to=output / "selection")
+            submissions = load_selection(args.submissions_manifest, copy_to=run.output / "selection")
             report["selection_sha256"] = sha256(args.submissions_manifest)
+            run.pin("selection", run.output / "selection")
+            run.pin("selection manifest", args.submissions_manifest)
         else:
             submissions = {
-                scenario: {"path": definition.config, "sha256": sha256(definition.config)}
-                for scenario, definition in SCENARIOS.items()
+                name: {"path": s.config, "sha256": sha256(s.config), "cases": s.cases()}
+                for name, s in reference.items()
             }
+        scenarios = tuple(submissions)
+        controlled = {trial["task_name"] for trial in gate["oracle"]["trials"]}
+        require(set(scenarios) <= controlled, "The control report does not cover every scenario")
+        grants = {}
+        for scenario, submission in submissions.items():
+            for name in live_cohort(scenario, submission):
+                config = read(Path(submission["path"]))
+                config["workflow"]["inputs"] = next(
+                    case["inputs"] for case in submission["cases"]["positive"] if case["name"] == name
+                )
+                grants[scenario, name] = (case_budget(scenario, name, config, submission["cases"]), config)
+        report["budget"]["cases"] = {f"{s}/{c}": grant["max_attempts"] for (s, c), (grant, _) in grants.items()}
+        needed = sum(report["budget"]["cases"].values())
+        require(
+            needed <= args.max_calls,
+            f"The cohort needs up to {needed} model calls; --max-calls allows {args.max_calls}",
+        )
+        report["human_review"] = {s: SCENARIOS[s].human_review for s in scenarios}
+        ledger = open_ledger(
+            run.output, args.series_dir, {"runtime": args.max_calls}, args.stop_after_failure, series_ceilings
+        )
+        report["ledger"] = str(ledger.path)
         if args.wrapper_evidence:
             report["wrapper_identity"] = wrapper_identity(args.wrapper_evidence, args.upstream)
-            shutil.copyfile(args.wrapper_evidence, output / "wrapper-identity.json")
-        if args.submissions_manifest and not args.preflight_only:
-            require(
-                args.wrapper_evidence is not None,
-                "Generated live dispatch requires read-only wrapper inspection evidence",
-            )
-        frozen_image = pin_base_image(identity, "sapi-config-lab-live")
-        report["frozen_image"] = frozen_image
-        staging = staging_dir("sapi-lab-live-")
-        stage_tasks(
-            staging / "tasks",
-            mode="replay" if args.submissions_manifest else "oracle",
-            image=frozen_image,
-            submissions=submissions if args.submissions_manifest else None,
+            shutil.copyfile(args.wrapper_evidence, run.output / "wrapper-identity.json")
+            run.pin("wrapper identity", args.wrapper_evidence)
+        run.stage(
+            "replay" if args.submissions_manifest else "oracle",
+            scenarios,
+            submissions={s: {"path": v["path"], "sha256": v["sha256"]} for s, v in submissions.items()}
+            if args.submissions_manifest
+            else None,
+            cases={s: v["cases"] for s, v in submissions.items()},
         )
-        validate_packages(staging / "tasks", submissions, frozen_image)
-        shutil.copytree(staging / "tasks", output / "task-packages")
-        selection_hashes = tree_hashes(output / "selection") if args.submissions_manifest else {}
-        package_hashes = tree_hashes(staging / "tasks")
-        write_json(output / "task-package-hashes.json", package_hashes)
-        write_json(output / "budget.json", BUDGET)
-
-        def freeze(phase):
-            snapshot = source_manifest()
-            write_json(output / (phase + "-sources.json"), snapshot)
-            require(snapshot == original_sources, "Public sources changed during experiment")
-            require(
-                tree_hashes(staging / "tasks") == package_hashes == tree_hashes(output / "task-packages"),
-                "Task package changed during experiment",
-            )
-            require(image_id(frozen_image) == identity, "Frozen image changed")
-            require(read_json(output / "budget.json") == BUDGET, "Outgoing budget file changed")
-            if args.submissions_manifest:
-                require(tree_hashes(output / "selection") == selection_hashes, "Preserved selection artifacts changed")
-                require(sha256(args.submissions_manifest) == report["selection_sha256"], "Selection manifest changed")
-                require(load_selection(args.submissions_manifest) == submissions, "Selected source changed")
-            if args.wrapper_evidence:
-                require(
-                    wrapper_identity(args.wrapper_evidence, args.upstream) == report["wrapper_identity"],
-                    "Wrapper inspection changed",
-                )
-            report["phases"].append(
-                {"phase": phase, "source_unchanged": True, "packages_unchanged": True, "image_id": identity}
-            )
-
-        def run_harbor(name: str, task_path: Path, mode: str, timeout: float = 2400):
-            bridge = [f"SAPI_BRIDGE_URL=http://host.docker.internal:{args.bridge_port}"] if mode == "live" else []
-            command = harbor_run_args(
-                harbor, task_path, staging / "jobs", name, "oracle", verifier_env=["SAPI_LLM_MODE=" + mode, *bridge]
-            )
-            report.setdefault("commands", []).append(command)
-            try:
-                exit_code = run_logged(command, output / (name + ".log"), timeout=timeout)
-            finally:
-                collect_jobs(staging, output / "jobs")
-            return exit_code, load_trials(output / "jobs" / name)
-
-        freeze("before-stub")
-        current_stage = "harbor_environment"
-        print(f"Generated replay unpaid verification; logs: {output}", flush=True)
-        rc, stub_trials = run_harbor("stub-replay", staging / "tasks", "stub")
-        report["preflight"] = {"harbor_exit_code": rc, "trials": stub_trials, "passed": False}
-        freeze("after-stub")
+        validate_packages(run.tasks, submissions, run.image or "")
+        run.check("before-stub")
+        exit_code, stub_trials = run.harbor(
+            "stub-replay", run.tasks, "oracle", timeout=2400, verifier_env=["SAPI_LLM_MODE=stub"]
+        )
+        report["preflight"] = {"harbor_exit_code": exit_code, "trials": stub_trials}
         require(
-            rc == 0 and len(stub_trials) == 3 and {trial["task_name"] for trial in stub_trials} == set(SCENARIOS),
-            "Replay stub Harbor trials failed",
+            exit_code == 0 and sorted(t["task_name"] for t in stub_trials) == sorted(scenarios),
+            "Unpaid stub replay failed",
         )
         check_trials(stub_trials, submissions, mode="stub")
-        rows = [row for trial in stub_trials for row in trial["acceptance"]["cases"]]
-        executions = sum(bool(row.get("execution_id")) for row in rows)
-        rejections = sum(row.get("execution", {}).get("status") == "compile_error" for row in rows)
-        require(
-            (len(rows), executions, rejections) == (32, 23, 9),
-            "Full generated replay control coverage differs from 32/23/9",
-        )
-        report["preflight"].update(
-            {"passed": True, "cases": len(rows), "n8n_executions": executions, "compile_rejections": rejections}
-        )
         if args.preflight_only:
             report["status"] = "passed"
-            report["not_run"] = list(SCENARIOS)
-        else:
-            current_stage = "provenance_preflight"
-            freeze("before-live")
-            print(
-                json.dumps(
-                    {
-                        "experiment_kind": report["experiment_kind"],
-                        "selected_submissions": {name: item["sha256"] for name, item in submissions.items()},
-                        "live_cases": 7,
-                        "maximum_outgoing_attempts": 8,
-                        "operation_limits": OPERATIONS,
-                        "generation_calls": 0,
-                        "wrapper_identity_verified": bool(args.wrapper_evidence),
-                        "provider_call_count": None,
-                    }
-                ),
-                flush=True,
-            )
-            adapter = start_bridge(
-                args.bridge_port,
-                args.upstream,
-                output / "bridge-audit.jsonl",
-                output / "budget.json",
-                output / "bridge.log",
-            )
-            live_deadline = time.monotonic() + 2400
-            for scenario in SCENARIOS:
-                freeze("before-live-" + scenario)
-                audit = audit_records(output / "bridge-audit.jsonl")
-                require(not any(row.get("event") == "failure" for row in audit), "Outgoing failure latch is set")
-                current_stage = "harbor_environment"
-                remaining = live_deadline - time.monotonic()
-                require(remaining > 0, "Live Harbor series deadline expired")
-                print(f"Live frozen replay: {scenario}", flush=True)
-                report["not_run"].remove(scenario)
-                rc, trials = run_harbor("live-" + scenario, staging / "tasks" / scenario, "live", remaining)
+            return
+        report["not_run"] = list(report["budget"]["cases"])
+        report_path = run.output / "report.json"
+        for (scenario, name), (grant, config) in grants.items():
+            run.check(f"before-{scenario}-{name}")
+            budget = {**grant, "expires_at": time.time() + CASE_SECONDS}
+            upper_bound = "refinement" in config["execution"]
+            label = f"{scenario}-{name}"
+            with ledger.reserved(
+                "runtime", f"{run.output.name}/{scenario}/{name}", grant["max_attempts"], report_path, args.max_calls
+            ) as outcome:
+                with run.bridge(args.bridge_port, args.upstream, budget, label) as audit:
+                    exit_code, trials = run.harbor(
+                        "live-" + label,
+                        run.tasks / scenario,
+                        "oracle",
+                        timeout=budget["expires_at"] - time.time(),
+                        verifier_env=[
+                            "SAPI_LLM_MODE=live",
+                            "SAPI_CASE_NAME=" + name,
+                            f"SAPI_BRIDGE_URL=http://host.docker.internal:{args.bridge_port}",
+                        ],
+                    )
                 report["trials"].extend(trials)
-                freeze("after-live-" + scenario)
-                require(rc == 0 and len(trials) == 1 and trials[0]["task_name"] == scenario, "Live Harbor trial failed")
-                check_trials(trials, submissions, mode="live")
-                current_stage = "evidence_correlation"
-                native = collect_native(report["trials"], submissions)
-                report["correlation"] = reconcile_dispatches(
-                    native, audit_records(output / "bridge-audit.jsonl"), BUDGET["model"]
+                records = audit_records(audit)
+                report["audit"].extend(records)
+                require(exit_code == 0 and len(trials) == 1, "Live Harbor case failed")
+                check_trials(trials, submissions, mode="live", expected_cases={scenario: {name}})
+                native = collect_native(trials, submissions, {scenario: {name}})
+                correlation = reconcile_dispatches(native, records, grant["model"])
+                calls, cap = len(correlation), grant["max_attempts"]
+                require(
+                    calls <= cap and (calls >= min(1, cap) if upper_bound else calls == cap), "Unexpected call count"
                 )
-                write_json(output / "correlation.json", report["correlation"])
-            require(len(report["trials"]) == 3 and len(report["correlation"]) == 8, "Incomplete live series")
-            counts = {
-                operation: sum(row["operation"] == operation for row in report["correlation"])
-                for operation in OPERATIONS
-            }
-            require(
-                counts == OPERATIONS and not any(row["scenario"] == "invoice-total" for row in report["correlation"]),
-                "Unexpected live operation counts",
-            )
-            report["operation_counts"] = counts
-            freeze("after-live")
-            report["status"] = "passed"
-    except Exception as error:
-        try:
-            audit = audit_records(output / "bridge-audit.jsonl")
-        except Exception as collection_error:
-            audit = []
-            report.setdefault("collection_errors", []).append({"stage": "audit", "error": str(collection_error)})
-        report["failure_category"] = (
-            "timeout_unknown_outcome"
-            if isinstance(error, subprocess.TimeoutExpired)
-            else failure_category(
-                report["trials"] + report.get("preflight", {}).get("trials", []), audit, current_stage
-            )
+                run.check(f"after-{scenario}-{name}")
+                report["correlation"].extend(correlation)
+                report["not_run"].remove(f"{scenario}/{name}")
+                outcome.passed = True
+        report["counts"] = {
+            event: sum(row.get("event") == event for row in report["audit"])
+            for event in ("dispatch_attempt", "completion", "failure")
+        }
+        report["status"] = "passed"
+
+    def classify(error: Exception) -> str:
+        return failure_category(
+            report["trials"] + report.get("preflight", {}).get("trials", []), report["audit"], "live_gate"
         )
-        report["error"] = f"{type(error).__name__}: {error}"
-    finally:
-        finalize_report(report, output, staging, adapter, original_sources)
-    print(
-        json.dumps({"status": report["status"], "report": str(output / "report.json"), "counts": report["counts"]}),
-        flush=True,
-    )
+
+    try:
+        run_experiment(output, report, body, prefix="sapi-lab-live", classify=classify)
+    except ValueError as error:
+        parser.error(str(error))
+    print(json.dumps({"status": report["status"], "report": str(Path(output).resolve() / "report.json")}), flush=True)
     return 0 if report["status"] == "passed" else 1
 
 

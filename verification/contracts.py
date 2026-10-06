@@ -29,12 +29,7 @@ def require(condition: Any, message: str) -> None:
 
 @dataclass(frozen=True)
 class Recorded:
-    """One run's checked evidence, and where decisions about it are written.
-
-    `evidence` is read-only: `files` holds the hash of every file of each plan
-    entry, already compared with the disk. Decisions go under `evaluation`,
-    a sibling directory, so judging twice never touches what was observed.
-    """
+    """One run's checked evidence, and where decisions about it are written."""
 
     evidence: Path
     evaluation: Path

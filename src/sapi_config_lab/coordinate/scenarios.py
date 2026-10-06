@@ -2,15 +2,16 @@
 
 Each directory holds one scenario's definition: the reference `config.yaml`,
 the public `task.md`, the container `instruction.md`, the evaluator-only
-`cases.json`, and `scenario.json` (its group and, for paid series, the per-case
-runtime model-call caps). The number prefix fixes the order within a group.
+`cases.json`, and `scenario.json` (its group, prompt extension, whether
+generation stages a fresh fixture overlay, and whether outputs need human
+review). The number prefix fixes the order within a group.
 Registration never extends workflow semantics.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import json
 from pathlib import Path
 
@@ -24,8 +25,9 @@ class Scenario:
     name: str
     directory: Path
     group: str
-    runtime_caps: dict[str, int] = field(default_factory=dict)
     prompt_extension: str | None = None
+    fixture_overlay: str | None = None
+    human_review: bool = False
 
     @property
     def config(self) -> Path:
@@ -50,16 +52,18 @@ def _discover() -> dict[str, Scenario]:
         if name in found or meta.get("group") not in GROUPS:
             raise ValueError(f"Invalid benchmark definition: {directory.name}")
         found[name] = Scenario(
-            name, directory, meta["group"], meta.get("runtime_caps", {}), meta.get("prompt_extension")
+            name,
+            directory,
+            meta["group"],
+            meta.get("prompt_extension"),
+            meta.get("fixture_overlay"),
+            meta.get("human_review", False),
         )
     return found
 
 
 SCENARIOS = _discover()
 BASELINE_SCENARIOS = {name: s for name, s in SCENARIOS.items() if s.group == "baseline"}
-EXPANSION_SCENARIOS = {name: s for name, s in SCENARIOS.items() if s.group == "expansion"}
-EXTENSION_SCENARIOS = {name: s for name, s in SCENARIOS.items() if s.group == "extension"}
-LIFECYCLE_SCENARIOS = {name: s for name, s in SCENARIOS.items() if s.group == "lifecycle"}
 
 
 def select_scenarios(names: Iterable[str] | None = None) -> dict[str, Scenario]:
