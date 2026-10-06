@@ -124,7 +124,7 @@ class UiTests(unittest.TestCase):
                 open_workflow(source, state, adapter=adapter)
             self.assertEqual(adapter.imports, 0)
 
-    def test_all_imports_eight_inactive_graphs_without_running_and_reports_lifecycle(self):
+    def test_imports_eight_of_nine_inactive_graphs_and_defers_the_lifecycle_one(self):
         adapter = FakeN8n()
         with tempfile.TemporaryDirectory() as temporary:
             output = io.StringIO()

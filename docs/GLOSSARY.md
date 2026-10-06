@@ -37,13 +37,14 @@ one "it worked".
   (`src/sapi_config_lab/runtime/task_evaluation.py:342`), scored out of ten.
   On the project's own nine scenarios it is the rubric layer in
   `verification/rubric.py`, which scores a weighted card out of ten and writes
-  it to `evaluation.json` under `sapi-lab-rubric-evaluation/v1`. Only three
-  scenarios have a card (`verification/rubric_cards.py:95-101`); the rest write
-  no evaluation at all. A card's judged criteria are **not scored in the
-  container**: `verify.py` constructs no judge, so a judged card returns status
-  `not_evaluated` with a null score, never a zero. Prose checks inside
-  acceptance remain lexical coverage checks, and human review is still tracked
-  as `human_review: pending`.
+  it to `evaluation.json` under `sapi-lab-rubric-evaluation/v1`. Seven of the
+  nine scenarios have a card (`verification/rubric_cards.py:314-324`): five
+  authored, plus `invoice-total` and `dual-ledger-closeout` as binary cards.
+  The remaining two, `daily-digest` and `revise-answer`, write no evaluation at
+  all. A card's judged criteria are **not scored in the container**: `verify.py`
+  constructs no judge, so a judged card returns status `not_evaluated` with a
+  null score, never a zero. Prose checks inside acceptance remain lexical
+  coverage checks, and human review is still tracked as `human_review: pending`.
 
 A graph that runs, passes acceptance, and produces a weak answer is a normal and
 fully recorded outcome. See the [report field guide](REPORTS.md) for the field
@@ -267,7 +268,7 @@ the ambiguous terms are defined against.
   scored benchmark trial, `sapi-lab-task-evaluation/v1`, written once and
   immutable thereafter (`task_evaluation.py:423-445`). On the project's own
   scenarios it is the rubric document, `sapi-lab-rubric-evaluation/v1`, written
-  beside the verifier's `report.json` for the three carded scenarios
+  beside the verifier's `report.json` for the seven carded scenarios
   (`verification/verify.py:414`). The second one is read by nobody in the reward
   chain: it rides alongside acceptance and cannot change it.
 - **criterion** — one scored line of an upstream scorecard, with its own weight
