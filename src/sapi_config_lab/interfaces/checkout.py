@@ -25,6 +25,7 @@ import uuid
 import yaml
 
 from sapi_config_lab.core.benchmark_tasks import TASKS, task_definition
+from sapi_config_lab.core.evidence import write_json
 from sapi_config_lab.interfaces.generation.common import audit_stderr
 from sapi_config_lab.interfaces.harbor import command, load_trials
 from sapi_config_lab.core.host import harbor_command
@@ -68,8 +69,10 @@ def oracle_scrub() -> str:
 
 
 def save(path, data):
+    # Unlike the shared writer, every checkout artifact may name a directory
+    # that this run is the first to need.
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+    write_json(path, data)
 
 
 def now():

@@ -11,12 +11,12 @@ import copy
 import fcntl
 from functools import wraps
 import hashlib
-import json
 import os
 from pathlib import Path
 import secrets
 
 from sapi_config_lab.core.provenance import source_manifest
+from sapi_config_lab.core.evidence import json_text
 from sapi_config_lab.interfaces.replay import read_json, require
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.core.scenarios import EXPANSION_SCENARIOS
@@ -168,7 +168,7 @@ class ExpansionSeries:
         )
 
     def _save(self, *, exclusive=False):
-        payload = json.dumps(self.data, indent=2) + "\n"
+        payload = json_text(self.data, ensure_ascii=True)
         if exclusive:
             with self.path.open("x") as stream:
                 stream.write(payload)
@@ -253,7 +253,7 @@ class ExpansionSeries:
 
 
 def overlay_sha256(cases: dict) -> str:
-    return hashlib.sha256((json.dumps(cases, indent=2) + "\n").encode()).hexdigest()
+    return hashlib.sha256(json_text(cases, ensure_ascii=True).encode()).hexdigest()
 
 
 class RefinementSeries(ExpansionSeries):

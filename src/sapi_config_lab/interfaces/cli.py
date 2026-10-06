@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import sys
 
+from sapi_config_lab.core.evidence import write_json
 from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.core.profile import read, read_bindings, validate, Invalid, Unsupported
 from sapi_config_lab.runtime.composition import default_backend
@@ -84,8 +85,8 @@ def compile_command(argv: list[str], *, backend: WorkflowBackend | None = None) 
         CompileOptions(args.llm_mode, args.bridge_url, args.request_timeout_seconds),
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(compiled.document, ensure_ascii=False, indent=2) + "\n")
-    args.output.with_suffix(".map.json").write_text(json.dumps(compiled.mapping, indent=2) + "\n")
+    write_json(args.output, compiled.document)
+    write_json(args.output.with_suffix(".map.json"), compiled.mapping, ensure_ascii=True)
     print(json.dumps({"compiled": True, "executed": False, "artifact": str(args.output), "llm_mode": args.llm_mode}))
     return 0
 
@@ -111,13 +112,13 @@ def build_command(argv: list[str], *, backend: WorkflowBackend | None = None) ->
         try:
             compiled = selected.compile(cfg, bindings, CompileOptions())
             out = args.output_dir / (path.stem + "." + selected.name + ".json")
-            out.write_text(json.dumps(compiled.document, ensure_ascii=False, indent=2) + "\n")
-            out.with_suffix(".map.json").write_text(json.dumps(compiled.mapping, indent=2) + "\n")
+            write_json(out, compiled.document)
+            write_json(out.with_suffix(".map.json"), compiled.mapping, ensure_ascii=True)
             row.update(demo_export="generated", artifact=out.name)
         except Unsupported as error:
             row.update(demo_export="rejected", reason=str(error))
         rows.append(row)
-    (args.output_dir / "build-results.json").write_text(json.dumps(rows, indent=2) + "\n")
+    write_json(args.output_dir / "build-results.json", rows, ensure_ascii=True)
     print(json.dumps(rows, ensure_ascii=False, indent=2))
     return 0
 

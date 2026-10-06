@@ -13,6 +13,7 @@ import tempfile
 import uuid
 from typing import Any
 
+from sapi_config_lab.core.evidence import write_json
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.interfaces.tasks import stage_tasks
 from sapi_config_lab.core.scenarios import SCENARIOS, select_scenarios
@@ -22,10 +23,6 @@ from sapi_config_lab.core.provenance import host_environment, source_manifest
 ROOT = workspace_root()
 IMAGE = "sapi-config-lab-n8n:2.41.5"
 TASKS = {"invoice-total", "ticket-routing", "competitor-report"}
-
-
-def write_json(path, data):
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
 
 
 def command(args, log, timeout=2400):

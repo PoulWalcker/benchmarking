@@ -15,6 +15,7 @@ import threading
 import time
 from typing import Any
 
+from sapi_config_lab.core.evidence import write_json
 from sapi_config_lab.interfaces.expansion import ExpansionSeries
 from sapi_config_lab.interfaces.generation.common import summarize_trials
 from sapi_config_lab.interfaces.harbor import load_trials
@@ -98,7 +99,7 @@ def stage(destination, scenario, image, *, controls=False):
         (task / "tests/test.sh").write_text(script)
         for path in (root / "verification").glob("*.py"):
             shutil.copyfile(path, task / "tests" / path.name)
-        (task / "tests/cases.json").write_text(json.dumps({scenario: cases[scenario]}, indent=2) + "\n")
+        write_json(task / "tests/cases.json", {scenario: cases[scenario]}, ensure_ascii=True)
     return hashes
 
 

@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import shutil
 
+from sapi_config_lab.core.evidence import write_json
 from sapi_config_lab.paths import CATALOG, workspace_root
 
 from sapi_config_lab.core.scenarios import BASELINE_SCENARIOS, select_scenarios
@@ -124,5 +125,5 @@ def stage_tasks(
             if hashlib.sha256(case_path.read_bytes()).hexdigest() != submissions[scenario]["cases_sha256"]:
                 raise ValueError("Staged replay fixture hash mismatch")
         else:
-            case_path.write_text(json.dumps({scenario: cases[scenario]}, ensure_ascii=False, indent=2) + "\n")
+            write_json(case_path, {scenario: cases[scenario]})
     return hashes

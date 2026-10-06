@@ -4,7 +4,8 @@ from pathlib import Path
 import json
 from urllib.request import Request, urlopen
 
-from sapi_config_lab.runtime.execution import run_case, write_json
+from sapi_config_lab.core.evidence import write_record_json
+from sapi_config_lab.runtime.execution import run_case
 from sapi_config_lab.core.profile import read, read_bindings
 
 
@@ -40,9 +41,9 @@ def main():
             record = {"status": "error", "output": None, "error": {"type": type(error).__name__}}
     else:
         record = {"status": "missing_submission", "output": None}
-    write_json(output / "case.json", record)
+    write_record_json(output / "case.json", record)
     result = post("/finish", {"record": record})
-    write_json(output / "evaluation.json", result)
+    write_record_json(output / "evaluation.json", result)
     if result.get("normalized_reward") is not None:
         (output / "reward.txt").write_text(str(result["normalized_reward"]) + "\n")
     return 0
