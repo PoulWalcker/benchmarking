@@ -39,6 +39,20 @@ the test expectations were satisfied, including negative tests. They are not
 aliases for every workflow having accepted business output. Harbor reward 1
 means the complete task suite passed; nop controls are expected to receive 0.
 
+## The rubric document beside the report
+
+For the three scenarios that have a rubric card, the verifier also writes
+`evaluation.json` next to `report.json`, under `sapi-lab-rubric-evaluation/v1`.
+It is a weighted quality score out of ten and it is **not** the acceptance
+decision: `reward.txt` still comes from the verifier's exit status alone, and
+nothing in the reward chain reads this file. A card whose criteria include a
+judged question is reported as `not_evaluated` with a null score, because no
+judge is reachable from the task container — never as a zero. Scenarios without
+a card write no `evaluation.json` at all. The benchmark track writes a different
+document under the same filename; tell them apart by `schema`, not by path. See
+[`verification/README.md`](../verification/README.md) for the card structure and
+[the glossary](GLOSSARY.md#frozen-schemas) for the schema table.
+
 ## Local evidence and source identity
 
 New control runs create `reports/<timestamp>/report.json`, a public-source hash

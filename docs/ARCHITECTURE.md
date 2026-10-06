@@ -80,6 +80,13 @@ rejected, so it cannot sit inside a group.
   substitutes test inputs, and records the acceptance decision. Runtime never
   imports it. The independent verifier accepts `runner=` for local orchestration
   tests; this does not make native n8n evidence portable to other engines.
+- `verification/rubric.py`, `rubric_cards.py`, `rubric_facts.py`: a weighted
+  quality score written to `evaluation.json` beside the acceptance report, under
+  `sapi-lab-rubric-evaluation/v1`. It reads the acceptance verdict and never
+  sets it; the reward still comes from the verifier's exit status alone.
+
+[Adding a scenario](AUTHORING.md) lists every file a new task family touches
+across these groups, with the gate to run after each one.
 
 `tests/test_packaging.py` protects import direction and excludes reference
 solutions from generation packages. Existing behavioral tests are retained.
