@@ -17,12 +17,9 @@ from typing import Any
 from functools import lru_cache
 
 from sapi_config_lab.core.contracts import CompiledWorkflow, ExecutionRecord
+from sapi_config_lab.core.evidence import write_record_json
 
 PINNED_N8N_VERSION = "2.41.5"
-
-
-def write_json(path, value):
-    Path(path).write_text(json.dumps(value, indent=2, ensure_ascii=False, default=str) + "\n")
 
 
 def process(args, env, timeout):
@@ -109,8 +106,8 @@ def execute_compiled(compiled: CompiledWorkflow, artifact_dir: Path) -> Executio
         "mapping": compiled.mapping,
         "llm_mode": compiled.options.llm_mode,
     }
-    write_json(artifact_dir / "workflow.json", artifact)
-    write_json(artifact_dir / "mapping.json", compiled.mapping)
+    write_record_json(artifact_dir / "workflow.json", artifact)
+    write_record_json(artifact_dir / "mapping.json", compiled.mapping)
     record["workflow_sha256"] = hashlib.sha256((artifact_dir / "workflow.json").read_bytes()).hexdigest()
     with tempfile.TemporaryDirectory(prefix="sapi-lab-n8n-") as user_folder:
         env = os.environ.copy()
@@ -177,12 +174,12 @@ def execute_compiled(compiled: CompiledWorkflow, artifact_dir: Path) -> Executio
                         ).fetchone()
                         if data_row:
                             persisted = decode_flatted(data_row["data"])
-                            write_json(artifact_dir / "execution.persisted.json", persisted)
+                            write_record_json(artifact_dir / "execution.persisted.json", persisted)
                             if execution is None:
                                 execution = {"data": persisted, "status": row["status"]}
-                write_json(artifact_dir / "execution.metadata.json", db_execution)
+                write_record_json(artifact_dir / "execution.metadata.json", db_execution)
             if execution:
-                write_json(artifact_dir / "execution.json", execution)
+                write_record_json(artifact_dir / "execution.json", execution)
                 result_data = execution.get("data", {}).get("resultData", {})
                 record["run_data"] = result_data.get("runData", {})
                 record["result_node_present"] = bool(record["run_data"].get("Result"))

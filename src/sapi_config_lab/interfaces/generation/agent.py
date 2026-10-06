@@ -9,7 +9,8 @@ import time
 from urllib.request import Request, urlopen
 
 from harbor.agents.base import BaseAgent
-from sapi_config_lab.interfaces.generation.common import audit_stderr, write_json
+from sapi_config_lab.core.evidence import write_json
+from sapi_config_lab.interfaces.generation.common import audit_stderr
 
 
 class WrapperYamlAgent(BaseAgent):

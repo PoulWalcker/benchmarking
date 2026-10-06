@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import shutil
 
+from sapi_config_lab.core.evidence import json_text
 from sapi_config_lab.runtime.agency import strict_json
 
 SCHEMA = "sapi-lab-generated-selection/v1"
@@ -156,7 +157,7 @@ def main():
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("x") as stream:
-        stream.write(json.dumps(manifest, indent=2) + "\n")
+        stream.write(json_text(manifest, ensure_ascii=True))
     load_selection(args.output, scenarios=(args.scenario,) if args.scenario else None)
     print(
         json.dumps(

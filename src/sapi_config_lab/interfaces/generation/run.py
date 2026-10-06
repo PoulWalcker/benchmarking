@@ -17,7 +17,8 @@ import tempfile
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.core.scenarios import EXPANSION_SCENARIOS, EXTENSION_SCENARIOS, select_scenarios
 from sapi_config_lab.core.host import harbor_command
-from sapi_config_lab.interfaces.generation.common import fingerprints, prepare_tasks, summarize_trials, write_json
+from sapi_config_lab.core.evidence import write_json
+from sapi_config_lab.interfaces.generation.common import fingerprints, prepare_tasks, summarize_trials
 from sapi_config_lab.interfaces.expansion import (
     ExpansionSeries,
     RefinementSeries,

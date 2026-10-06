@@ -19,6 +19,7 @@ from urllib.error import URLError
 from urllib.request import urlopen
 
 from sapi_config_lab.runtime.agency import strict_json
+from sapi_config_lab.core.evidence import write_json
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.interfaces.tasks import SCENARIOS, stage_tasks
 from sapi_config_lab.core.host import harbor_command
@@ -38,10 +39,6 @@ from sapi_config_lab.core.profile import read
 
 ROOT = workspace_root()
 BUDGET: dict[str, Any] = {"max_attempts": 8, "operations": OPERATIONS, "model": "gpt-6-astra"}
-
-
-def write_json(path: Path, data):
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
 
 
 def tree_hashes(path: Path) -> dict[str, str]:
