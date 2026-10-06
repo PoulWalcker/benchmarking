@@ -226,10 +226,7 @@ check. Terms used below are defined in the [glossary](GLOSSARY.md).
 | `lifecycle` | The durable lifecycle controller: `register`, `callback`, `restore`, `status`, `tick`, `drain`, `serve` against a registry directory. Same entry point as the `python -m sapi_config_lab.runtime.lifecycle` form used in the [lifecycle guide](LIFECYCLE.md). | — | Only with `--llm-mode live` or `--rebuilder-url` |
 | `review-export` | Write a derived `analysis.md` beside recorded evaluations so the Harbor viewer can display them. It adds files only; `evaluation.json` is read-only to it. | a Harbor jobs directory | No |
 
-`checkout` is a deprecated hidden alias of `benchmark`. It still works and prints
-a deprecation line to stderr. The module serves two tasks selected by `--task`,
-so the old name advertised one of them as if it were the whole command. Use
-`benchmark`; `checkout` will be removed.
+The former `checkout` alias of `benchmark` was removed; see [retired runners](RETIRED.md).
 
 ### Internal and in-container commands
 

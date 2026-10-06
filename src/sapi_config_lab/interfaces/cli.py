@@ -55,9 +55,6 @@ INTERNAL = {
     "checkout-worker": "Trusted verifier inside the task container; needs /tests and /logs.",
 }
 
-# Retired names kept working for existing scripts. Hidden from --help.
-DEPRECATED = {"checkout": "benchmark"}
-
 
 def command_help() -> str:
     """Render the two tiers for the epilog; argparse must not reflow this."""
@@ -157,13 +154,10 @@ def dispatch(argv: list[str] | None = None, *, backend: WorkflowBackend | None =
         epilog=command_help(),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("command", metavar="command", choices=[*PUBLIC, *INTERNAL, *DEPRECATED])
+    parser.add_argument("command", metavar="command", choices=[*PUBLIC, *INTERNAL])
     parser.add_argument("arguments", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
     command = args.command
-    if command in DEPRECATED:
-        command = DEPRECATED[command]
-        print(f"sapi-lab {args.command} is deprecated; use sapi-lab {command}.", file=sys.stderr)
     if command == "compile":
         return compile_command(args.arguments, backend=backend)
     if command == "build":

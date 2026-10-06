@@ -146,9 +146,7 @@ def main(argv: list[str] | None = None):
     try:
         scenarios = tuple(select_scenarios(tuple(args.scenario) if args.scenario else None))
         if "daily-digest" in scenarios:
-            parser.error(
-                "daily-digest requires sapi_config_lab.interfaces.lifecycle_run and its 1+2+6 admission policy"
-            )
+            parser.error("daily-digest authoring needs the retired lifecycle series runner; see docs/RETIRED.md")
     except ValueError as error:
         parser.error(str(error))
     expansion = any(name in EXPANSION_SCENARIOS for name in scenarios)
