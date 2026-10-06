@@ -18,6 +18,7 @@ SOURCE_FILES = (
     ".gitignore",
     ".dockerignore",
     "README.md",
+    "AGENTS.md",
     "run.sh",
     "run-generation.sh",
     "provenance/SapiensSpecNotation.hs",
