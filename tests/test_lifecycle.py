@@ -1,6 +1,8 @@
 """Durable lifecycle decisions through its public interface; no Docker or models."""
 
 import copy
+import json
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 import tempfile
@@ -11,10 +13,14 @@ from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.contracts import CompiledWorkflow
 from sapi_config_lab.coordinate.lifecycle import LifecycleController
 from sapi_config_lab.evidence import durable_json
-from sapi_config_lab.coordinate.backend import N8nBackend
-from sapi_config_lab.contracts import CompileOptions
+from sapi_config_lab.contracts import CompileOptions, RunBinding
 from sapi_config_lab.paths import CATALOG
 from sapi_config_lab import profile
+from tests.support.native import SimulatedN8n
+
+
+def record_error(record):
+    return json.dumps(record["error"])
 
 
 class DigestBackend:
@@ -22,14 +28,16 @@ class DigestBackend:
 
     def __init__(self):
         self.calls = []
+        self.bindings = []
         self.reject_count = 0
 
     def compile(self, config, bindings, options):
         profile.validate(config, bindings)
         return CompiledWorkflow(self.name, copy.deepcopy(config), {}, 120, options)
 
-    def execute(self, compiled, artifact_dir):
+    def execute(self, compiled, artifact_dir, binding):
         self.calls.append(compiled)
+        self.bindings.append(binding)
         articles = compiled.document["workflow"]["inputs"]["articles"]
         output = {
             "mode": "preview",
@@ -62,8 +70,8 @@ class LifecycleTests(unittest.TestCase):
             restarted = LifecycleController(Path(directory), backend=self.backend)
             self.assertEqual(restarted.callback(ref, "test-001"), event)
             self.assertEqual(len(self.backend.calls), 1)
-            self.assertEqual(self.backend.calls[0].options.admission["kind"], "Callback")
-            self.assertEqual(self.backend.calls[0].options.admission["workflow_ref"], ref)
+            self.assertEqual(self.backend.bindings[0].admission["kind"], "Callback")
+            self.assertEqual(self.backend.bindings[0].admission["workflow_ref"], ref)
             self.assertEqual(restarted.snapshot()["definitions"]["daily-digest@1"]["config"], self.config)
 
     def test_rejection_builds_a_persisted_fork_then_archives_and_tests_new_revision(self):
@@ -90,7 +98,7 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(state["definitions"]["daily-digest@2"]["forked_from"], "daily-digest@1")
         kinds = [transition["kind"] for transition in state["transitions"]]
         self.assertLess(kinds.index("fork_persisted"), kinds.index("archived"))
-        self.assertEqual([call.options.admission["workflow_ref"]["revision"] for call in self.backend.calls], [1, 2])
+        self.assertEqual([binding.admission["workflow_ref"]["revision"] for binding in self.backend.bindings], [1, 2])
 
     def test_cron_admits_only_current_due_minute_and_deduplicates_across_restart(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -126,7 +134,7 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(state["adhoc"][0]["reason"], "Rebuild limit exhausted")
 
     def test_crash_after_reservation_is_unknown_on_restart_and_never_repeats(self):
-        def crash(compiled, artifacts):
+        def crash(compiled, artifacts, binding):
             raise SystemExit("simulated process loss after admission")
 
         self.backend.execute = crash
@@ -168,9 +176,9 @@ class LifecycleTests(unittest.TestCase):
             execute = self.backend.execute
             overlaps = []
 
-            def during_run(compiled, artifacts):
+            def during_run(compiled, artifacts, binding):
                 overlaps.extend(controller.tick(datetime(2026, 10, 6, 5, 0, tzinfo=timezone.utc)))
-                return execute(compiled, artifacts)
+                return execute(compiled, artifacts, binding)
 
             self.backend.execute = during_run
             result = controller.tick(datetime(2026, 10, 5, 5, 0, tzinfo=timezone.utc))
@@ -195,7 +203,7 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(list(state["definitions"]), ["daily-digest@1"])
         self.assertEqual(state["definitions"]["daily-digest@1"]["config"], self.config)
 
-    def test_admitted_candidate_compiles_with_exact_event_provenance_and_deadline(self):
+    def test_admitted_candidate_compiles_once_and_takes_its_event_and_deadline_at_run_time(self):
         admission = {
             "kind": "Callback",
             "rule_id": "digest-test-requested",
@@ -203,23 +211,50 @@ class LifecycleTests(unittest.TestCase):
             "workflow_ref": {"id": "daily-digest", "revision": 1},
             "purpose": "test",
         }
-        backend = N8nBackend()
+        backend = SimulatedN8n()
         bindings = profile.read_bindings(CATALOG)
         with self.assertRaises(profile.Unsupported):
             backend.compile(self.config, bindings, CompileOptions())
-        compiled = backend.compile(self.config, bindings, CompileOptions(admission=admission, deadline_at=9000000000))
-        fixture = next(n for n in compiled.document["nodes"] if n["name"] == "Fixture")
-        self.assertIn('"input_source": "event"', fixture["parameters"]["jsCode"])
-        self.assertIn('"event_id": "actual-event"', fixture["parameters"]["jsCode"])
-        with self.assertRaisesRegex(profile.Invalid, "Admission revision"):
-            backend.compile(
-                self.config,
-                bindings,
-                CompileOptions(
-                    admission={**admission, "workflow_ref": {"id": "daily-digest", "revision": 2}},
-                    deadline_at=9000000000,
-                ),
-            )
+        with self.assertRaises(ValueError):
+            CompileOptions(activation="event")
+        options = CompileOptions(activation="event", bound_deadline=True)
+        compiled = backend.compile(self.config, bindings, options)
+        # Identical definition and options give byte-identical artifacts; no run value is inside.
+        self.assertEqual(
+            json.dumps(backend.compile(self.config, bindings, options).document), json.dumps(compiled.document)
+        )
+        self.assertNotIn("actual-event", json.dumps(compiled.document))
+
+        def run(binding):
+            directory = Path(tempfile.mkdtemp())
+            self.addCleanup(shutil.rmtree, directory)
+            return backend.execute(compiled, directory, binding)
+
+        with self.assertRaisesRegex(RuntimeError, "absolute deadline"):
+            run(RunBinding(admission=admission))
+        with self.assertRaisesRegex(RuntimeError, "admitted event"):
+            run(RunBinding(deadline_at=9000000000))
+        record = run(RunBinding(deadline_at=9000000000.5, admission=admission))
+        self.assertEqual(record["result"]["admission"], admission)
+        self.assertEqual(record["result"]["input_source"], "event")
+        fixture = record["run_data"]["Fixture"][0]["data"]["main"][0][0]["json"]
+        self.assertEqual(fixture["deadline_at_ms"], 9000000000.5 * 1000)
+        other = {**admission, "workflow_ref": {"id": "daily-digest", "revision": 2}}
+        self.assertIn(
+            "Admission revision differs", record_error(run(RunBinding(deadline_at=9000000000, admission=other)))
+        )
+        wrong_rule = {**admission, "rule_id": "digest-scheduled"}
+        self.assertIn("Invalid lifecycle admission", record_error(run(RunBinding(9000000000, wrong_rule))))
+
+    def test_an_ordinary_case_needs_no_binding_and_ignores_a_supplied_event(self):
+        config = profile.read(workspace_root() / "benchmarks/01-invoice-total/config.yaml")
+        backend = SimulatedN8n()
+        compiled = backend.compile(config, profile.read_bindings(CATALOG), CompileOptions())
+        self.assertNotIn("SAPI_RUN_BINDING", json.dumps(compiled.document))
+        with tempfile.TemporaryDirectory() as directory:
+            record = backend.execute(compiled, Path(directory), RunBinding())
+        self.assertEqual(record["status"], "success")
+        self.assertNotIn("deadline_at_ms", record["run_data"]["Fixture"][0]["data"]["main"][0][0]["json"])
 
     def test_new_candidate_waits_for_in_flight_cron_and_restore_does_not_replay(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -231,13 +266,13 @@ class LifecycleTests(unittest.TestCase):
             proposed["workflow"]["revision"] = 2
             proposed["activation"]["workflow_ref"]["revision"] = 2
 
-            def during_old_run(compiled, artifacts):
-                if compiled.options.admission["kind"] == "Cron":
+            def during_old_run(compiled, artifacts, binding):
+                if binding.admission["kind"] == "Cron":
                     new_ref = controller.register(proposed, forked_from=original_ref)
                     queued = controller.callback(new_ref, "test-new-candidate")
                     self.assertEqual(queued["state"], "queued")
-                    self.assertEqual(compiled.options.admission["workflow_ref"], original_ref)
-                return execute(compiled, artifacts)
+                    self.assertEqual(binding.admission["workflow_ref"], original_ref)
+                return execute(compiled, artifacts, binding)
 
             self.backend.execute = during_old_run
             controller.tick(datetime(2026, 10, 5, 5, 0, tzinfo=timezone.utc))

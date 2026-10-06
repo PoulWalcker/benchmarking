@@ -9,12 +9,14 @@ complete, successful recorded case without Docker or the engine.
 import copy
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 
-from sapi_config_lab.contracts import CompiledWorkflow, CompileOptions, Document, ExecutionRecord
+from sapi_config_lab.contracts import CompiledWorkflow, CompileOptions, Document, ExecutionRecord, RunBinding
 from sapi_config_lab.coordinate.backend import N8nBackend
 from sapi_config_lab.evidence import write_record_json
+from sapi_config_lab.execute.n8n import binding_environment
 from sapi_config_lab.paths import workspace_root
 
 SIMULATOR = workspace_root() / "tests/support/n8n-sim.mjs"
@@ -26,7 +28,8 @@ class SimulatedN8n:
     def compile(self, config: Document, bindings: Document, options: CompileOptions) -> CompiledWorkflow:
         return N8nBackend().compile(config, bindings, options)
 
-    def execute(self, compiled: CompiledWorkflow, artifact_dir: Path, binding=None) -> ExecutionRecord:
+    def execute(self, compiled: CompiledWorkflow, artifact_dir: Path, binding: RunBinding) -> ExecutionRecord:
+        environment = {**os.environ, **binding_environment(compiled, binding)}
         artifact = copy.deepcopy(compiled.document)
         artifact["id"], artifact["active"] = "simulated000001", False
         write_record_json(artifact_dir / "workflow.json", artifact)
@@ -38,6 +41,7 @@ class SimulatedN8n:
             text=True,
             timeout=30,
             check=True,
+            env=environment,
         ).stdout
         (artifact_dir / "execution.stdout.log").write_text(stdout)
         (artifact_dir / "execution.stderr.log").write_text("")

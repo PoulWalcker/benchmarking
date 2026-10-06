@@ -443,7 +443,6 @@ def author(prompt, directory, identity, task=None):
                 llm_mode="live",
                 bridge_url="http://localhost:1",
                 operation_url="http://localhost:2/tools",
-                operation_token="preflight",
             ),
         )
         record["eligible"] = True

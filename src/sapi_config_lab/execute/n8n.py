@@ -16,8 +16,8 @@ import uuid
 from typing import Any
 from functools import lru_cache
 
-from sapi_config_lab.contracts import CompiledWorkflow, ExecutionRecord
-from sapi_config_lab.evidence import write_record_json
+from sapi_config_lab.contracts import CompiledWorkflow, ExecutionRecord, RunBinding
+from sapi_config_lab.evidence import canonical, write_record_json
 
 PINNED_N8N_VERSION = "2.41.5"
 
@@ -83,8 +83,31 @@ def decode_flatted(raw):
     return resolve(0)
 
 
-def execute_compiled(compiled: CompiledWorkflow, artifact_dir: Path) -> ExecutionRecord:
+def binding_environment(compiled: CompiledWorkflow, binding: RunBinding) -> dict[str, str]:
+    """The variables that carry a run's binding into n8n; refuse what the artifact needs but lacks."""
+    options = compiled.options
+    if options.bound_deadline and binding.deadline_at is None:
+        raise RuntimeError("Run binding needs an absolute deadline")
+    if options.activation == "event" and binding.admission is None:
+        raise RuntimeError("Event activation needs an admitted event")
+    if options.operation_url is not None and binding.operation_token is None:
+        raise RuntimeError("HTTP operations need an access token")
+    env = {}
+    if options.bound_deadline:
+        assert binding.deadline_at is not None
+        env["SAPI_RUN_BINDING"] = canonical(
+            {"deadline_at_ms": binding.deadline_at * 1000, "admission": binding.admission}
+        )
+    if binding.operation_token is not None:
+        env["SAPI_OPERATION_TOKEN"] = binding.operation_token
+    if env:
+        env["N8N_BLOCK_ENV_ACCESS_IN_NODE"] = "false"
+    return env
+
+
+def execute_compiled(compiled: CompiledWorkflow, artifact_dir: Path, binding: RunBinding) -> ExecutionRecord:
     """Import and execute in a fresh database, retaining native engine evidence."""
+    bound = binding_environment(compiled, binding)
     artifact_dir = Path(artifact_dir).resolve()
     artifact_dir.mkdir(parents=True, exist_ok=True)
     artifact = copy.deepcopy(compiled.document)
@@ -128,16 +151,14 @@ def execute_compiled(compiled: CompiledWorkflow, artifact_dir: Path) -> Executio
                 "EXECUTIONS_DATA_PRUNE": "false",
             }
         )
-        if compiled.options.operation_token is not None:
-            env["SAPI_OPERATION_TOKEN"] = compiled.options.operation_token
-            env["N8N_BLOCK_ENV_ACCESS_IN_NODE"] = "false"
+        env.update(bound)
         # Force local SQLite even if the caller inherited database settings.
         env["DB_SQLITE_DATABASE"] = str(Path(user_folder) / "database.sqlite")
 
         def remaining(limit):
-            if compiled.options.deadline_at is None:
+            if binding.deadline_at is None:
                 return limit
-            left = compiled.options.deadline_at - time.time()
+            left = binding.deadline_at - time.time()
             if left <= 0:
                 raise RuntimeError("Workflow deadline exceeded")
             return min(limit, left)

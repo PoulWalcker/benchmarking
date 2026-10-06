@@ -7,7 +7,7 @@ import json
 import uuid
 
 from sapi_config_lab.contracts import Document, LlmMode
-from sapi_config_lab.compile.n8n import RESOURCES, compile_n8n
+from sapi_config_lab.compile.n8n import RESOURCES, bind_run, compile_n8n
 from sapi_config_lab.profile import SPEC
 
 
@@ -17,8 +17,8 @@ def compile_refinement(
     mode: LlmMode,
     bridge_url: str | None,
     timeout: int,
-    admission: Document | None = None,
-    deadline_at: float | None = None,
+    activation: str = "fixture",
+    bound_deadline: bool = False,
 ) -> tuple[Document, dict[str, str]]:
     """Unroll attempts, retaining native early exit and a single accepted result.
 
@@ -57,8 +57,8 @@ def compile_refinement(
             bridge_url=bridge_url,
             request_timeout_seconds=timeout,
             _refinement_attempt=number,
-            admission=admission,
-            deadline_at=deadline_at,
+            activation=activation,
+            bound_deadline=bound_deadline,
         )
         names = {n["name"]: f"Attempt {number} / {n['name']}" for n in graph["nodes"]}
         names["Result"] = f"Checkpoint {number}"
@@ -94,18 +94,10 @@ def compile_refinement(
                         )
                         + "; ctx.deadline_at_ms = Date.now() + "
                         + str(config["execution"]["deadline_seconds"] * 1000)
-                        + "; return [{json:ctx}];"
+                        + ";\n"
+                        + (bind_run(config, activation) if bound_deadline else "")
+                        + "return [{json:ctx}];"
                     )
-                    if admission is not None:
-                        assert deadline_at is not None
-                        item["parameters"]["jsCode"] = item["parameters"]["jsCode"].replace(
-                            "; return [{json:ctx}];",
-                            "; ctx.admission = "
-                            + json.dumps(admission)
-                            + "; ctx.simulation = false; ctx.input_source = 'event'; ctx.deadline_at_ms = Math.min(ctx.deadline_at_ms, "
-                            + str(deadline_at * 1000)
-                            + "); return [{json:ctx}];",
-                        )
                 else:
                     item["parameters"]["jsCode"] = (
                         helpers
@@ -201,14 +193,15 @@ def compile_refinement(
         "spec_revision": SPEC,
         "workflow_ref": {"id": workflow["id"], "revision": workflow["revision"]},
     }
-    if admission is not None:
-        metadata.update(simulation=False, input_source="event", admission=admission)
+    if activation == "event":
+        metadata.update(simulation=False, input_source="event")
     body = "const ctx = mergeEnvelopes($input.all()); checkDeadline(ctx);\n"
     body += "need(ctx.refinement.accepted_attempt !== null, 'Refinement exhausted without an accepted result');\n"
     body += "const accepted = ctx.refinement.attempts[ctx.refinement.accepted_attempt - 1];\n"
     body += (
         "return [{json:{..."
         + json.dumps(metadata)
+        + (", admission:ctx.admission" if activation == "event" else "")
         + ", output:accepted.output, steps:accepted.steps, statuses:accepted.statuses, trace:accepted.trace, refinement:ctx.refinement}}];"
     )
     artifact["nodes"].append(code("Result", body, 2650))

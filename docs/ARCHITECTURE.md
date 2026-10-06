@@ -50,8 +50,14 @@ installed from somewhere else is rejected.
   dependencies, actors, and profile validation. It knows nothing about n8n,
   Harbor, or Docker. `bindings.yaml` is the single source operation catalog.
 - `contracts.py`: the typed `WorkflowBackend` interface, `CompileOptions`,
-  `CompiledWorkflow`, and `ExecutionRecord`. Compilation and execution are the
-  two operations; expected business answers never enter this interface.
+  `RunBinding`, `CompiledWorkflow`, and `ExecutionRecord`. Compilation and
+  execution are the two operations; expected business answers never enter this
+  interface. `CompileOptions` holds only definition-time choices, so the same
+  definition and options always give the same artifact. Per-run values (the
+  absolute deadline the caller reserved, the admitted lifecycle event, the
+  operation token) travel in `RunBinding` to `execute`, which passes them to
+  n8n as environment variables and refuses a run that lacks a value the
+  artifact requires.
 - `compile/n8n.py`: `compile_n8n(config, bindings, ...) -> (artifact, mapping)`.
   Applies backend capability limits and generates JSON; `compile/refinement.py`
   expands bounded refinement. Adjacent JS files are included in the wheel. The

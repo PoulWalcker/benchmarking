@@ -35,8 +35,8 @@ while (pending.size && !error) {
       if (node.type.endsWith('.manualTrigger')) items = [{json: {}}];
       else if (node.type.endsWith('.merge')) items = inputs;
       else if (node.type.endsWith('.code')) {
-        const execute = new AsyncFunction('$input', node.parameters.jsCode);
-        items = await execute({all: () => JSON.parse(JSON.stringify(inputs))});
+        const execute = new AsyncFunction('$input', '$env', node.parameters.jsCode);
+        items = await execute({all: () => JSON.parse(JSON.stringify(inputs))}, process.env);
       } else throw new Error('Unsupported test-double node: ' + node.type);
       record.data = {main: [items]};
       outputs.set(name, items);

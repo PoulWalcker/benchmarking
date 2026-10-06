@@ -31,7 +31,7 @@ class RecordingBackend:
         profile.validate(config, bindings)
         return CompiledWorkflow(self.name, {"test_document": True}, {"report": "end"}, 60, options)
 
-    def execute(self, compiled, artifact_dir):
+    def execute(self, compiled, artifact_dir, binding):
         self.executed.append((compiled, artifact_dir))
         return {
             "status": "success",
