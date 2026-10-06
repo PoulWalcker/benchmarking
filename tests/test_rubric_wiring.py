@@ -16,6 +16,7 @@ from verification.business import check_business_result
 from verification.scenario_business import check_scenario_business_result
 from verification.scenario_contracts import CONTRACTS, ROUTING_EDGES
 from sapi_config_lab.coordinate.scenarios import all_cases
+from tests.support.verifying import verify_with_runner
 
 ROOT = Path(__file__).parents[1]
 SCENARIO = "support-review-packet"
@@ -243,7 +244,8 @@ class VerifierSeamTests(unittest.TestCase):
 
     def verify(self, scenario, config, judge=None):
         directory = tempfile.mkdtemp()
-        report = verifier.verify_submission(
+        report = verify_with_runner(
+            verifier,
             scenario,
             ROOT / config,
             Path(directory),
@@ -340,7 +342,7 @@ class VerifierSeamTests(unittest.TestCase):
             self.assertFalse((trial / "reward.json").exists())
 
     def test_a_rubric_that_raises_still_leaves_a_report_and_a_verdict(self):
-        with unittest.mock.patch.object(verifier, "evaluate", side_effect=RuntimeError("broken rubric")):
+        with unittest.mock.patch.object(verifier, "score_rubric", side_effect=RuntimeError("broken rubric")):
             directory, report = self.verify(SCENARIO, "benchmarks/07-support-review-packet/config.yaml")
         self.assertEqual(json.loads((directory / "report.json").read_text()), report)
         self.assertIn(reward(report), (0.0, 1.0))

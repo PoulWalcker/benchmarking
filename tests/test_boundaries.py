@@ -43,14 +43,7 @@ STAGES = {
     "coordinate": "coordinate",
 }
 
-# The in-container verifier still runs n8n itself; the evidence-only split removes these.
-KNOWN_VIOLATIONS = {
-    ("verification.lifecycle_submission", "profile"),
-    ("verification.lifecycle_submission", "coordinate.provenance"),
-    ("verification.lifecycle_submission", "evidence"),
-    ("verification.lifecycle_submission", "coordinate.lifecycle"),
-    ("verification.verify", "coordinate.cases"),
-}
+KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
 
 
 def stage_of(module: str) -> str:

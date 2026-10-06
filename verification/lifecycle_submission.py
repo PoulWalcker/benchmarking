@@ -1,37 +1,34 @@
-"""Execute the submitted lifecycle through the native backend, then audit it.
+"""Plan and judge the daily-digest lifecycle submission.
 
-This runner owns fixture application; business acceptance remains in lifecycle.py.
-No reference graph or expected model answer is supplied to the backend.
+The plan asks the trusted execution step to register each fixture-applied
+candidate with the durable lifecycle controller, send its Callback test, and
+advance the clock past its Cron minute; and to register one deliberately wrong
+output. Judging reads the recorded registry snapshots and callback events.
+Business acceptance itself remains in lifecycle.py.
 """
 
 from __future__ import annotations
 
 import copy
-from datetime import datetime, timezone
 import hashlib
 import json
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING
-import yaml
-
-from sapi_config_lab.coordinate.lifecycle import LifecycleController, validate_lifecycle
-from sapi_config_lab.evidence import durable_json
-from sapi_config_lab.coordinate.provenance import source_manifest
-from sapi_config_lab import profile
 
 if TYPE_CHECKING or __package__:
     from .contracts import require
     from .lifecycle import digest_native, verify_lifecycle
-    from .verify import UniqueLoader
 else:
     from contracts import require
     from lifecycle import digest_native, verify_lifecycle
-    from verify import UniqueLoader
+
+# The fixed instant the Callback-tested candidate's 09:00 Asia/Dubai Cron fires.
+CRON_TICK = "2026-10-04T05:00:00+00:00"
+MUTATION = "intentional-output-mutation"
 
 
 def validate_task(config: dict) -> None:
-    validate_lifecycle(config)
+    """The task's fixed identity and policy; the controller validates the profile."""
     workflow = config["workflow"]
     require(workflow["id"] == "daily-digest" and workflow["revision"] == 1, "Wrong lifecycle task identity")
     require(config["lifecycle"]["on_test_fail"]["max_rebuilds"] == 2, "Lifecycle task requires two rebuilds maximum")
@@ -56,59 +53,83 @@ def validate_task(config: dict) -> None:
     )
 
 
-def verify_submission(config_path: Path, report_dir: Path, *, mode="stub", backend=None, cases=None) -> dict:
-    report_dir.mkdir(parents=True, exist_ok=True)
-    report = {"scenario": "daily-digest", "mode": mode, "passed": False, "cases": []}
-    runtime_root = Path(profile.__file__).resolve().parents[3]
-    report["runtime_source_manifest"] = {
-        path: value for path, value in source_manifest(runtime_root).items() if path.startswith("src/")
+def plan_lifecycle(config: dict, cases: dict) -> list[dict]:
+    validate_task(config)
+    entries = []
+    for case in cases["positive"]:
+        candidate = copy.deepcopy(config)
+        candidate["workflow"]["inputs"] = case["inputs"]
+        entries.append(
+            {
+                "name": case["name"],
+                "kind": "positive",
+                "procedure": "lifecycle",
+                "config": candidate,
+                "callback": "stub-test",
+                "tick": CRON_TICK,
+            }
+        )
+    # Engine-successful wrong output must be a rejected business result.
+    broken = copy.deepcopy(config)
+    broken["workflow"]["inputs"] = cases["positive"][-1]["inputs"]
+    broken["workflow"]["output"] = {"mode": "preview", "text": "Unrelated fixed digest", "article_ids": ["wrong"]}
+    entries.append(
+        {
+            "name": MUTATION,
+            "kind": "mutated-generated-workflow",
+            "procedure": "lifecycle",
+            "config": broken,
+            "callback": "wrong-output",
+            "tick": None,
+        }
+    )
+    return entries
+
+
+def evaluate_lifecycle(entries: list[dict], evidence: Path, identity: dict, rows: list[dict]) -> None:
+    """Judge each recorded lifecycle entry, appending its row; the first rejection raises."""
+    for entry in entries:
+        directory = evidence / "cases" / entry["name"]
+        row: dict = {"name": entry["name"], "passed": False}
+        rows.append(row)
+        passed = False
+        reason = None
+        try:
+            snapshot = json.loads((directory / "snapshot.json").read_text())
+            event = json.loads((directory / "event.json").read_text())
+            if entry["kind"] == "positive":
+                require(event["state"] == "passed", "Authored candidate failed its native Callback test")
+                checked = verify_lifecycle(snapshot, mode="stub", require_wall_clock=False)
+                require(len(checked["native_executions"]) == 2, "Stub gate needs both Callback and Cron")
+                row.update(checked)
+                passed = True
+            else:
+                require(event["record"]["status"] == "success", "Negative control did not succeed natively")
+                checked = digest_native(entry["config"], event["record"], event["admission"], mode="stub")
+                require(checked["passed"] is False and event["state"] == "failed", "Wrong output was accepted")
+                require(snapshot["families"]["daily-digest"]["active"] is None, "Rejected candidate was released")
+                row["business_rejected"] = True
+                reason = "Expected business rejection of a deliberately wrong output"
+        except Exception as error:
+            reason = str(error)
+            raise
+        finally:
+            _write_acceptance(directory, passed, reason, identity)
+        row["passed"] = True
+
+
+def _write_acceptance(directory: Path, passed: bool, reason: str | None, identity: dict) -> None:
+    evidence = {
+        name: hashlib.sha256((directory / name).read_bytes()).hexdigest()
+        for name in ("snapshot.json", "event.json")
+        if (directory / name).is_file()
     }
-    try:
-        require(mode == "stub", "Live lifecycle requires the bounded lifecycle experiment driver")
-        raw = config_path.read_bytes()
-        (report_dir / "submission.yaml").write_bytes(raw)
-        report["submission_sha256"] = hashlib.sha256(raw).hexdigest()
-        expected = os.environ.get("SAPI_EXPECTED_SUBMISSION_SHA256")
-        require(not expected or expected == report["submission_sha256"], "Submission hash mismatch")
-        config = yaml.load(raw, Loader=UniqueLoader)
-        require(isinstance(config, dict), "Submission must be a YAML object")
-        validate_task(config)
-        require(isinstance(cases, dict), "Missing daily-digest fixtures")
-        report["fixture_sha256"] = hashlib.sha256(json.dumps(cases, sort_keys=True).encode()).hexdigest()
-        cases = cases["positive"]
-        for case in cases:
-            candidate = copy.deepcopy(config)
-            candidate["workflow"]["inputs"] = case["inputs"]
-            directory = report_dir / "cases" / case["name"]
-            controller = LifecycleController(directory, backend=backend)
-            ref = controller.register(candidate)
-            event = controller.callback(ref, "stub-test")
-            require(event["state"] == "passed", "Authored candidate failed its native Callback test")
-            controller.tick(datetime(2026, 10, 4, 5, 0, tzinfo=timezone.utc))
-            snapshot = controller.snapshot()
-            durable_json(directory / "snapshot.json", snapshot)
-            checked = verify_lifecycle(snapshot, mode="stub", require_wall_clock=False)
-            require(len(checked["native_executions"]) == 2, "Stub gate needs both Callback and Cron")
-            report["cases"].append({"name": case["name"], "passed": True, **checked})
-        # Engine-successful wrong output must be a rejected business result.
-        broken = copy.deepcopy(config)
-        broken["workflow"]["inputs"] = cases[-1]["inputs"]
-        broken["workflow"]["output"] = {"mode": "preview", "text": "Unrelated fixed digest", "article_ids": ["wrong"]}
-        directory = report_dir / "cases" / "intentional-output-mutation"
-        controller = LifecycleController(directory, backend=backend)
-        ref = controller.register(broken)
-        event = controller.callback(ref, "wrong-output")
-        snapshot = controller.snapshot()
-        durable_json(directory / "snapshot.json", snapshot)
-        require(event["record"]["status"] == "success", "Negative control did not succeed natively")
-        checked = digest_native(broken, event["record"], event["admission"], mode="stub")
-        require(checked["passed"] is False and event["state"] == "failed", "Wrong output was accepted")
-        require(snapshot["families"]["daily-digest"]["active"] is None, "Rejected candidate was released")
-        report["cases"].append({"name": "intentional-output-mutation", "passed": True, "business_rejected": True})
-        report["passed"] = True
-    except Exception as error:
-        report["error"] = str(error)
-        report["error_type"] = type(error).__name__
-    # Harbor owns this shared mount; registry durability remains inside each case.
-    (report_dir / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
-    return report
+    decision = {"status": "accepted" if passed else "rejected", "passed": passed, "reason": reason}
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "acceptance.json").write_text(
+        json.dumps(
+            {"schema": "sapi-lab-acceptance/v1", **decision, "evidence": evidence, "evaluator": identity["name"]},
+            indent=2,
+        )
+        + "\n"
+    )

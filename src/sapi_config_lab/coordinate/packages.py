@@ -11,6 +11,23 @@ from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.coordinate.scenarios import select_scenarios
 
 
+# What the lab image copies from src/ and the verifier re-hashes in the container.
+RUNTIME_SUFFIXES = (".py", ".js", ".yaml", ".json", ".md")
+
+
+def runtime_sources(root: Path) -> dict:
+    """The runtime a package's verifier expects to have executed its plan."""
+    src = root / "src"
+    return {
+        "suffixes": list(RUNTIME_SUFFIXES),
+        "files": {
+            str(path.relative_to(src)): sha256(path)
+            for path in sorted(src.rglob("*"))
+            if path.is_file() and "__pycache__" not in path.parts and path.suffix in RUNTIME_SUFFIXES
+        },
+    }
+
+
 def stage_tasks(
     destination: Path,
     *,
@@ -46,6 +63,7 @@ def stage_tasks(
     destination.mkdir(parents=True, exist_ok=False)
     templates = root / "harbor/templates"
     hashes = {}
+    runtime = runtime_sources(root)
     for scenario, definition in selected.items():
         task = destination / scenario
         (task / "environment").mkdir(parents=True)
@@ -97,6 +115,7 @@ def stage_tasks(
                 "set -uo pipefail\nexport SAPI_EXPECTED_SUBMISSION_SHA256=" + submissions[scenario]["sha256"],
             )
         (task / "tests/test.sh").write_text(test_script)
+        write_json(task / "tests/runtime-sources.json", runtime)
         for verifier_source in (root / "verification").glob("*.py"):
             shutil.copyfile(verifier_source, task / "tests" / verifier_source.name)
         case_path = task / "tests/cases.json"

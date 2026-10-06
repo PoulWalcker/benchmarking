@@ -193,7 +193,7 @@ def collect_native(
             require(
                 row.get("passed") is True
                 and row.get("acceptance", {}).get("passed") is (case.get("expected") != "exhausted")
-                and run.get("acceptance", {}).get("passed") is (case.get("expected") != "exhausted")
+                and read_json(artifact / "acceptance.json").get("passed") is (case.get("expected") != "exhausted")
                 and run.get("execution", {}).get("succeeded") is (case.get("expected") != "exhausted"),
                 "Execution and independent acceptance differ from expected case outcome",
             )

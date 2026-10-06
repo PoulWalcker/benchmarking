@@ -1,6 +1,7 @@
 """Acceptance tests use fabricated records, never claim to execute n8n."""
 
 import copy
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -9,7 +10,7 @@ import unittest
 from verification.business import check_business_result
 from verification.contracts import Rejected
 from verification.n8n_provenance import check_rejection, observe_execution
-from verification.verify import check_execution, corruption_checks, record_acceptance
+from verification.verify import check_execution, corruption_checks, evaluator_identity, write_acceptance
 
 
 SPEC = "06ddd3333109cea8a2cb3071609070d7a3c0d3ff"
@@ -92,11 +93,19 @@ class VerificationContractTests(unittest.TestCase):
         with self.assertRaisesRegex(Rejected, "Wrong invoice result") as rejected:
             check_execution("invoice-total", inputs, run, "live")
         with tempfile.TemporaryDirectory() as directory:
-            record_acceptance(run, Path(directory), False, str(rejected.exception))
-            persisted = json.loads((Path(directory) / "case.json").read_text())
+            evidence = Path(directory) / "case.json"
+            evidence.write_text(json.dumps(run))
+            before = evidence.read_bytes()
+            write_acceptance(Path(directory), False, str(rejected.exception), evaluator_identity())
+            decision = json.loads((Path(directory) / "acceptance.json").read_text())
+            # The decision is its own document; the recorded execution is untouched.
+            self.assertEqual(evidence.read_bytes(), before)
+        persisted = json.loads(before)
         self.assertTrue(persisted["execution"]["succeeded"])
-        self.assertEqual(persisted["acceptance"]["status"], "rejected")
-        self.assertFalse(persisted["acceptance"]["passed"])
+        self.assertEqual(persisted["acceptance"], {"status": "not_evaluated", "passed": None})
+        self.assertEqual(decision["status"], "rejected")
+        self.assertFalse(decision["passed"])
+        self.assertEqual(decision["evidence"]["case.json"], hashlib.sha256(before).hexdigest())
         self.assertEqual(persisted["llm"]["selected_mode"], "live")
         self.assertEqual(persisted["llm"]["agency_http_call_count"], 0)
 

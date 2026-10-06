@@ -13,6 +13,7 @@ from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.provenance import source_manifest as inventory
 from sapi_config_lab.coordinate.scenarios import BASELINE_SCENARIOS as SCENARIOS
 from sapi_config_lab.paths import workspace_root
+from tests.support.verifying import verify_with_runner
 from sapi_config_lab.coordinate.scenarios import all_cases
 
 ROOT = workspace_root()
@@ -132,7 +133,7 @@ class PackagingTests(unittest.TestCase):
             self.assertTrue((ROOT / "src" / relative).exists(), relative)
             self.assertIn(f"/app/lab/src/{relative}", scrub)
 
-    def test_verifier_injects_runner_but_does_not_trust_its_success(self):
+    def test_evaluation_does_not_trust_a_recorded_engine_success(self):
         spec = importlib.util.spec_from_file_location("independent_verifier", ROOT / "verification/verify.py")
         verifier = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(verifier)
@@ -145,7 +146,8 @@ class PackagingTests(unittest.TestCase):
         fixtures = all_cases()["invoice-total"]
         cases = fixtures["positive"]
         with tempfile.TemporaryDirectory() as directory:
-            result = verifier.verify_submission(
+            result = verify_with_runner(
+                verifier,
                 "invoice-total",
                 ROOT / "benchmarks/01-invoice-total/config.yaml",
                 Path(directory),
