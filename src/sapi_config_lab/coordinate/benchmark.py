@@ -13,7 +13,6 @@ from pathlib import Path
 import secrets
 import shutil
 import sys
-import tempfile
 import threading
 import time
 import tomllib
@@ -26,8 +25,16 @@ import yaml
 from sapi_config_lab.coordinate.benchmark_tasks import TASKS, task_definition
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.author.agent import audit_stderr
-from sapi_config_lab.coordinate.controls import command, load_trials
-from sapi_config_lab.execute.host import harbor_command, harbor_run_args, image_id, running_containers
+from sapi_config_lab.coordinate.controls import load_trials
+from sapi_config_lab.execute.host import (
+    build_image,
+    harbor_command,
+    harbor_run_args,
+    image_id,
+    run_logged,
+    running_containers,
+    staging_dir,
+)
 from sapi_config_lab.coordinate.provenance import source_manifest, host_environment
 from sapi_config_lab.evaluate.task_evaluation import (
     build_run_log,
@@ -45,7 +52,6 @@ from sapi_config_lab.coordinate.backend import N8nBackend
 from sapi_config_lab.profile import read, read_bindings
 
 ROOT = workspace_root()
-CHALLENGE = "production-checkout-recovery"
 UPSTREAM = "http://127.0.0.1:8765/run"
 IMAGE = "sapi-config-lab-checkout:2.41.5"
 CATALOG = ROOT / "generation/checkout-bindings.yaml"
@@ -347,7 +353,7 @@ def native_trial(directory, source, contract, mode, wrapper, config, *, seed=0):
     server = TrialServer(directory, source, contract, mode, wrapper, seed)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    staging = Path(tempfile.mkdtemp(prefix="sapi-checkout-", dir="/private/tmp"))
+    staging = staging_dir("sapi-checkout-")
     try:
         task = staging / "tasks" / definition.challenge_id
         for name in ("environment", "tests", "solution"):
@@ -382,7 +388,7 @@ def native_trial(directory, source, contract, mode, wrapper, config, *, seed=0):
         argv = harbor_run_args(
             harbor_command(), staging / "tasks", staging / "jobs", "trial", "oracle" if config else "nop"
         )
-        rc = command(argv, directory / "harbor.log", timeout=900)
+        rc = run_logged(argv, directory / "harbor.log", timeout=900)
         if (staging / "jobs").exists():
             shutil.copytree(staging / "jobs", directory / "jobs")
         trials = load_trials(directory / "jobs/trial")
@@ -509,14 +515,13 @@ def main():
     before = running_containers()
     (output / "containers-before.txt").write_text(before)
     if not args.skip_build:
-        if command(["docker", "build", "-f", "infra/Dockerfile", "-t", IMAGE, "."], output / "image-build.log", 1200):
-            raise RuntimeError("Image build failed")
+        build_image(IMAGE, output / "image-build.log")
     base_image_id = image_id(IMAGE)
     if args.mode == "live":
         controls = args.controls_report
         if controls is None:
             controls = output / "controls/report.json"
-            rc = command(
+            rc = run_logged(
                 [
                     sys.executable,
                     "-m",
@@ -534,7 +539,7 @@ def main():
                     "--skip-build",
                 ],
                 output / "controls.log",
-                900,
+                timeout=900,
             )
             if rc:
                 raise RuntimeError("Unpaid controls failed; no authoring dispatched")

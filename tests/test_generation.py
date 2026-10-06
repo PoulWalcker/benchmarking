@@ -7,8 +7,10 @@ import tempfile
 import unittest
 
 from sapi_config_lab.author.agent import audit_stderr
-from sapi_config_lab.coordinate.generation import ROOT, prepare_tasks, summarize_trials
-from sapi_config_lab.coordinate.packages import SCENARIOS, stage_tasks
+from sapi_config_lab.coordinate.controls import summarize_trials
+from sapi_config_lab.coordinate.packages import stage_tasks
+from sapi_config_lab.coordinate.scenarios import BASELINE_SCENARIOS as SCENARIOS
+from sapi_config_lab.paths import workspace_root
 
 
 class GenerationTests(unittest.TestCase):
@@ -37,17 +39,17 @@ class GenerationTests(unittest.TestCase):
     def test_packages_have_no_solutions_or_reference_configs(self):
         with tempfile.TemporaryDirectory() as directory:
             tasks = Path(directory) / "tasks"
-            hashes = prepare_tasks(tasks, "test-n8n:fixed")
+            hashes = stage_tasks(tasks, mode="generation", image="test-n8n:fixed")
             self.assertEqual(len(hashes), 3)
             for task in tasks.iterdir():
                 self.assertFalse((task / "solution").exists())
                 self.assertEqual(list(task.rglob("*.yaml")), [])
                 prompt = (task / "instruction.md").read_text()
-                for config in (ROOT / "configs").glob("*.yaml"):
+                for config in (workspace_root() / "configs").glob("*.yaml"):
                     self.assertNotIn(config.read_text().strip(), prompt)
-                self.assertNotIn((ROOT / "verification/verify.py").read_text(), prompt)
+                self.assertNotIn((workspace_root() / "verification/verify.py").read_text(), prompt)
                 self.assertEqual(
-                    (task / "tests/verify.py").read_bytes(), (ROOT / "verification/verify.py").read_bytes()
+                    (task / "tests/verify.py").read_bytes(), (workspace_root() / "verification/verify.py").read_bytes()
                 )
 
     def test_observed_tools_cannot_be_called_clean(self):

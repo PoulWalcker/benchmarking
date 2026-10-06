@@ -9,7 +9,6 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-import tempfile
 import uuid
 from typing import Any
 
@@ -17,7 +16,16 @@ from sapi_config_lab.evidence import write_json
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
-from sapi_config_lab.execute.host import harbor_command, harbor_run_args, image_id, running_containers
+from sapi_config_lab.execute.host import (
+    build_image,
+    checked_harbor,
+    collect_jobs,
+    harbor_run_args,
+    image_id,
+    run_logged,
+    running_containers,
+    staging_dir,
+)
 from sapi_config_lab.coordinate.provenance import host_environment, source_manifest
 
 ROOT = workspace_root()
@@ -25,13 +33,8 @@ IMAGE = "sapi-config-lab-n8n:2.41.5"
 TASKS = {"invoice-total", "ticket-routing", "competitor-report"}
 
 
-def command(args, log, timeout=2400):
-    with log.open("w") as stream:
-        completed = subprocess.run(args, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT, timeout=timeout)
-    return completed.returncode
-
-
-def load_trials(job):
+def load_trials(job: Path) -> list[dict]:
+    """One row per Harbor trial: its reward, exception and the verifier's report."""
     trials = []
     for path in sorted(job.glob("*/result.json")):
         trial = json.loads(path.read_text())
@@ -47,6 +50,61 @@ def load_trials(job):
             }
         )
     return trials
+
+
+def trial_accepted(trial: dict) -> bool:
+    """Harbor rewarded the trial 1.0 without an exception and the verifier accepted it."""
+    return (
+        not trial["exception"]
+        and trial["rewards"] == CONTROL_REWARDS["oracle"]
+        and bool(trial["acceptance"])
+        and trial["acceptance"].get("passed") is True
+    )
+
+
+def summarize_trials(job: Path) -> list[dict]:
+    """load_trials for model-authored submissions, plus where a failed one stopped."""
+    rows = []
+    for trial in load_trials(job):
+        directory = Path(trial["result_path"]).parent
+        agent_path = directory / "agent/generation.json"
+        agent = json.loads(agent_path.read_text()) if agent_path.exists() else {}
+        acceptance = trial["acceptance"]
+        passed = agent.get("status") == "submitted" and trial_accepted(trial)
+        stage = None
+        if not passed:
+            if agent.get("status") != "submitted":
+                stage = "generation_or_transport"
+            elif not acceptance:
+                stage = "test_infrastructure"
+            elif not acceptance.get("cases"):
+                stage = "yaml_parsing_or_definition"
+            else:
+                stage = "acceptance"
+                for case in acceptance["cases"]:
+                    if case.get("passed"):
+                        continue
+                    case_path = directory / "verifier/cases" / Path(case["artifacts"]).name / "case.json"
+                    if case_path.exists():
+                        status = json.loads(case_path.read_text()).get("status")
+                        if status == "compile_error":
+                            stage = "compilation"
+                        elif status in {"error", "import_error"} and case.get("kind") == "positive":
+                            stage = "import_or_execution"
+                    break
+        rows.append(
+            {
+                "scenario": trial["task_name"],
+                "passed": passed,
+                "failure_stage": stage,
+                "generation": agent,
+                "rewards": trial["rewards"],
+                "exception": trial["exception"],
+                "acceptance": acceptance,
+                "result_path": trial["result_path"],
+            }
+        )
+    return rows
 
 
 CONTROL_REWARDS = {"oracle": {"reward": 1.0}, "nop": {"reward": 0.0}}
@@ -102,10 +160,7 @@ def main():
     report["source_manifest"] = "source-manifest.json"
     staging = None
     try:
-        harbor = harbor_command()
-        actual = subprocess.check_output([*harbor, "--version"], text=True).strip()
-        if actual != "0.21.0":
-            raise RuntimeError(f"Expected Harbor 0.21.0, got {actual}")
+        harbor, _ = checked_harbor()
         report["docker_version"] = subprocess.check_output(
             ["docker", "version", "--format", "{{.Server.Version}}"], text=True
         ).strip()
@@ -113,21 +168,17 @@ def main():
         before = running_containers()
         (output / "existing-containers.txt").write_text(before)
         print(f"Local regression tests; report directory: {output}", flush=True)
-        rc = command(
+        rc = run_logged(
             [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v", "-p", "test_*.py"],
             output / "local-tests.log",
-            300,
+            timeout=300,
         )
         report["checks"].append({"name": "local_tests", "passed": rc == 0, "exit_code": rc})
         if rc:
             raise RuntimeError("Local tests failed; see local-tests.log")
         if not args.skip_build:
             print("Building isolated pinned n8n image", flush=True)
-            rc = command(
-                ["docker", "build", "-f", "infra/Dockerfile", "-t", IMAGE, "."], output / "image-build.log", 1200
-            )
-            if rc:
-                raise RuntimeError("Image build failed; see image-build.log")
+            build_image(IMAGE, output / "image-build.log")
         report["image_id"] = image_id(IMAGE)
         versions = subprocess.check_output(
             [
@@ -159,24 +210,20 @@ def main():
             ]
         )
         try:
-            rc = command(["docker", "start", "--attach", probe_name], output / "transport.log", 1800)
+            rc = run_logged(["docker", "start", "--attach", probe_name], output / "transport.log", timeout=1800)
             subprocess.check_call(["docker", "cp", probe_name + ":/probe", str(output / "transport")])
         finally:
             subprocess.run(["docker", "rm", "--force", probe_name], capture_output=True, check=False)
         probe = json.loads((output / "transport/summary.json").read_text())
         report["transport"] = probe
         report["checks"].append({"name": "real_n8n_transport", "passed": rc == 0 and probe.get("passed") is True})
-        # macOS Desktop mounts may be blocked for the Docker VM. Stage only lab tasks
-        # and logs under /private/tmp; never mount the user's existing n8n folders.
-        staging = Path(
-            tempfile.mkdtemp(prefix="sapi-lab-harbor-", dir="/private/tmp" if Path("/private/tmp").exists() else None)
-        )
+        staging = staging_dir("sapi-lab-harbor-")
         stage_tasks(staging / "tasks", scenarios=tuple(selected))
         shutil.copytree(staging / "tasks", output / "task-packages")
         for agent in ("oracle", "nop"):
             print(f"Harbor {agent}: {len(selected)} tasks through real n8n", flush=True)
             argv = harbor_run_args(harbor, staging / "tasks", staging / "jobs", agent, agent)
-            rc = command(argv, output / f"harbor-{agent}.log")
+            rc = run_logged(argv, output / f"harbor-{agent}.log", timeout=2400)
             shutil.copytree(staging / "jobs" / agent, output / "jobs" / agent)
             trials = load_trials(output / "jobs" / agent)
             passed = (
@@ -195,8 +242,7 @@ def main():
     finally:
         if staging and staging.exists():
             # Preserve a failed job before cleaning only this invocation's temp tree.
-            if (staging / "jobs").exists():
-                shutil.copytree(staging / "jobs", output / "jobs", dirs_exist_ok=True)
+            collect_jobs(staging, output / "jobs")
             shutil.rmtree(staging)
         report["finished_at"] = datetime.now(timezone.utc).isoformat()
         report["source_unchanged"] = source_manifest() == original_sources

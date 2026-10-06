@@ -8,16 +8,37 @@ import unittest
 from unittest.mock import patch
 
 from sapi_config_lab.coordinate.benchmark import ORACLE_MODULES, oracle_scrub
-from sapi_config_lab.coordinate.packages import SCENARIOS, stage_tasks
-from sapi_config_lab.coordinate.generation import fingerprints
-from sapi_config_lab.coordinate.controls import source_manifest
+from sapi_config_lab.coordinate.packages import stage_tasks
+from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.provenance import source_manifest as inventory
+from sapi_config_lab.coordinate.scenarios import BASELINE_SCENARIOS as SCENARIOS
 from sapi_config_lab.paths import workspace_root
 
 ROOT = workspace_root()
 
 
+# sha256 of each generation package's instruction.md: the exact prompt a model
+# is given. Recorded authoring evidence pins these hashes, so a change here is a
+# change to the benchmark and must be deliberate.
+GENERATION_PROMPTS = {
+    "bulletin-market-brief": "f1e595a18f8500edffa61029811a9e949107bd160b410a56150e1beb54ad7297",
+    "competitor-report": "2d17a6ddd01a5261f62ba421906a600c2774cd23ab0bcbcbba1ff04184dff0d4",
+    "daily-digest": "70d11e29f5910912e9fd70947e41a7a1f31ac0f4a1396e12f511e3a1a0c197b6",
+    "dual-ledger-closeout": "7f2baad6cf11d00e45db9230ed1063ca9b722dcef3e9188ca27cfa08621a09e6",
+    "invoice-total": "d1e72a8298a682f09c6198beb8e26f54beaf086f56a65a79a7cc68e0a0625f49",
+    "priority-support-brief": "446aefbcbfdbe3dcb4b37116241ca0964a3112943d95f3d2b7d48cf1f8dccd94",
+    "revise-answer": "94a2fa3749b2c3be6355247ae36d7759f71db995c9e4b54212d1c2e4dd6f5e96",
+    "support-review-packet": "8817f0794c1f945059287ec85503d6d517e6f571f0f8c00233dc182a76e7a9f0",
+    "ticket-routing": "21ea6dc4070a0070ee7f1cb59d9556ba262d6919eae426ed9f56f5743bdc4a77",
+}
+
+
 class PackagingTests(unittest.TestCase):
+    def test_generation_prompts_are_byte_identical_to_the_recorded_ones(self):
+        with tempfile.TemporaryDirectory() as directory:
+            hashes = stage_tasks(Path(directory) / "tasks", mode="generation", scenarios=tuple(GENERATION_PROMPTS))
+        self.assertEqual(hashes, GENERATION_PROMPTS)
+
     def test_experiments_reject_code_from_a_different_installation(self):
         with patch("sapi_config_lab.paths.__file__", "/different/site-packages/sapi_config_lab/paths.py"):
             with patch.dict("os.environ", {"SAPI_LAB_ROOT": str(ROOT)}):
@@ -60,8 +81,6 @@ class PackagingTests(unittest.TestCase):
 
     def test_source_provenance_covers_relocated_behavior_and_dependencies(self):
         manifest = source_manifest()
-        self.assertTrue(fingerprints())
-        self.assertTrue(set(fingerprints()) <= manifest.keys())
         for path in (ROOT / "src").rglob("*"):
             if path.suffix in {".py", ".js", ".yaml"}:
                 self.assertIn(str(path.relative_to(ROOT)), manifest)

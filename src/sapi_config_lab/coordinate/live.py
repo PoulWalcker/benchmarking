@@ -10,20 +10,26 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
-import sys
-import tempfile
 import time
 import tomllib
 from typing import Any
-from urllib.error import URLError
-from urllib.request import urlopen
 
-from sapi_config_lab.execute.agency import strict_json
+from sapi_config_lab.execute.agency import start_bridge, stop_bridge, strict_json
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.coordinate.packages import SCENARIOS, stage_tasks
-from sapi_config_lab.execute.host import harbor_command, harbor_run_args, image_id, pin_base_image, running_containers
-from sapi_config_lab.coordinate.controls import IMAGE, load_trials
+from sapi_config_lab.coordinate.packages import stage_tasks
+from sapi_config_lab.coordinate.scenarios import BASELINE_SCENARIOS as SCENARIOS
+from sapi_config_lab.execute.host import (
+    checked_harbor,
+    collect_jobs,
+    harbor_run_args,
+    image_id,
+    pin_base_image,
+    run_logged,
+    running_containers,
+    staging_dir,
+)
+from sapi_config_lab.coordinate.controls import IMAGE, load_trials, trial_accepted
 from sapi_config_lab.coordinate.provenance import host_environment, source_manifest
 from sapi_config_lab.coordinate.replay import load_selection, read_json, require
 from sapi_config_lab.coordinate.live_evidence import LIVE_CASES, OPERATIONS, collect_native, reconcile_dispatches
@@ -117,13 +123,7 @@ def check_trials(trials: list[dict], submissions: dict, *, mode: str, expected_c
     names = [trial["task_name"] for trial in trials]
     require(len(names) == len(set(names)) and set(names) <= set(submissions), "Unexpected or duplicate Harbor trial")
     for trial in trials:
-        require(
-            trial["rewards"] == {"reward": 1.0}
-            and not trial["exception"]
-            and trial["acceptance"]
-            and trial["acceptance"].get("passed") is True,
-            "Harbor or independent acceptance failed",
-        )
+        require(trial_accepted(trial), "Harbor or independent acceptance failed")
         acceptance = trial["acceptance"]
         scenario = trial["task_name"]
         verifier = Path(trial["result_path"]).parent / "verifier"
@@ -221,21 +221,11 @@ def finalize_report(report: dict, output: Path, staging: Path | None, adapter, o
             report.setdefault("failure_category", "evidence_correlation")
             return None
 
-    def stop_adapter():
-        if adapter and adapter.poll() is None:
-            adapter.terminate()
-            try:
-                adapter.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                adapter.kill()
-                adapter.wait(timeout=5)
-
-    attempt("adapter_stop", stop_adapter)
+    attempt("adapter_stop", lambda: stop_bridge(adapter))
     if staging:
 
         def preserve_jobs():
-            if (staging / "jobs").exists():
-                shutil.copytree(staging / "jobs", output / "jobs", dirs_exist_ok=True)
+            collect_jobs(staging, output / "jobs")
             return True
 
         if attempt("preserve_jobs", preserve_jobs):
@@ -334,10 +324,7 @@ def run_expansion(args) -> int:
         report["series_scenarios"] = list(series.scenarios)
         report["series_ceilings"] = dict(series.ceilings)
         report["budget"]["series_max_attempts"] = series.ceilings["runtime"]
-        harbor = harbor_command()
-        require(
-            subprocess.check_output([*harbor, "--version"], text=True).strip() == "0.21.0", "Expected Harbor 0.21.0"
-        )
+        harbor, _ = checked_harbor()
         identity = image_id(IMAGE)
         gate = validate_control(args.stub_report.resolve(), sources, identity)
         controlled = {trial["task_name"] for trial in gate["oracle"]["trials"]}
@@ -360,11 +347,7 @@ def run_expansion(args) -> int:
             report["wrapper_identity"] = wrapper_identity(args.wrapper_evidence, args.upstream)
             shutil.copyfile(args.wrapper_evidence, output / "wrapper-identity.json")
         frozen_image = pin_base_image(identity, "sapi-config-lab-expansion")
-        staging = Path(
-            tempfile.mkdtemp(
-                prefix="sapi-lab-expansion-", dir="/private/tmp" if Path("/private/tmp").exists() else None
-            )
-        )
+        staging = staging_dir("sapi-lab-expansion-")
         stage_tasks(
             staging / "tasks", mode="replay", image=frozen_image, submissions=submissions, scenarios=(scenario,)
         )
@@ -422,87 +405,34 @@ def run_expansion(args) -> int:
                 write_json(budget_path, budget)
                 active_audit = output / "case-audits" / (case_name + ".jsonl")
                 reservation = series.reserve(scenario, "runtime", case_name, output / "report.json")
-                with (output / (case_name + "-bridge.log")).open("w") as log:
-                    adapter = subprocess.Popen(
-                        [
-                            sys.executable,
-                            "-m",
-                            "sapi_config_lab.execute.agency",
-                            "--port",
-                            str(args.bridge_port),
-                            "--upstream",
-                            args.upstream,
-                            "--timeout",
-                            "185",
-                            "--audit",
-                            str(active_audit),
-                            "--budget",
-                            str(budget_path),
-                        ],
-                        cwd=ROOT,
-                        stdout=log,
-                        stderr=subprocess.STDOUT,
-                    )
-                for _ in range(50):
-                    require(adapter.poll() is None, "Case adapter exited before readiness")
-                    try:
-                        with urlopen(f"http://127.0.0.1:{args.bridge_port}/health", timeout=1) as response:
-                            if json.load(response).get("service") == "sapi-lab-agency-adapter":
-                                break
-                    except URLError, TimeoutError:
-                        time.sleep(0.1)
-                else:
-                    raise RuntimeError("Case adapter readiness timeout")
-                time.sleep(0.1)
-                require(adapter.poll() is None, "Case adapter port is already in use")
+                adapter = start_bridge(
+                    args.bridge_port, args.upstream, active_audit, budget_path, output / (case_name + "-bridge.log")
+                )
                 name = "live-" + scenario + "-" + case_name
-                command = [
-                    *harbor,
-                    "run",
-                    "--path",
-                    str(staging / "tasks" / scenario),
-                    "--agent",
-                    "oracle",
-                    "--n-concurrent",
-                    "1",
-                    "--max-retries",
-                    "0",
-                    "--jobs-dir",
-                    str(staging / "jobs"),
-                    "--job-name",
+                command = harbor_run_args(
+                    harbor,
+                    staging / "tasks" / scenario,
+                    staging / "jobs",
                     name,
-                    "--verifier-env",
-                    "SAPI_LLM_MODE=live",
-                    "--verifier-env",
-                    "SAPI_CASE_NAME=" + case_name,
-                    "--verifier-env",
-                    f"SAPI_BRIDGE_URL=http://host.docker.internal:{args.bridge_port}",
-                    "--force-build",
-                ]
+                    "oracle",
+                    verifier_env=[
+                        "SAPI_LLM_MODE=live",
+                        "SAPI_CASE_NAME=" + case_name,
+                        f"SAPI_BRIDGE_URL=http://host.docker.internal:{args.bridge_port}",
+                    ],
+                )
                 report.setdefault("commands", []).append(command)
                 print(f"Live expansion: {scenario}/{case_name}; max {call_cap} outgoing attempts", flush=True)
                 try:
-                    with (output / (name + ".log")).open("w") as log:
-                        completed = subprocess.run(
-                            command,
-                            cwd=ROOT,
-                            stdout=log,
-                            stderr=subprocess.STDOUT,
-                            timeout=max(1, budget["expires_at"] - time.time()),
-                        )
+                    exit_code = run_logged(
+                        command, output / (name + ".log"), timeout=max(1, budget["expires_at"] - time.time())
+                    )
                 finally:
-                    if (staging / "jobs").exists():
-                        shutil.copytree(staging / "jobs", output / "jobs", dirs_exist_ok=True)
-                    if adapter.poll() is None:
-                        adapter.terminate()
-                        try:
-                            adapter.wait(timeout=5)
-                        except subprocess.TimeoutExpired:
-                            adapter.kill()
-                            adapter.wait(timeout=5)
+                    collect_jobs(staging, output / "jobs")
+                    stop_bridge(adapter)
                 trials = load_trials(output / "jobs" / name)
                 report["trials"].extend(trials)
-                require(completed.returncode == 0 and len(trials) == 1, "Expansion Harbor case failed")
+                require(exit_code == 0 and len(trials) == 1, "Expansion Harbor case failed")
                 check_trials(trials, submissions, mode="live", expected_cases={scenario: {case_name}})
                 native = collect_native(
                     trials, submissions, expected_cases={scenario: {case_name}}, cases=private_cases
@@ -562,7 +492,7 @@ def main(argv: list[str] | None = None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stub-report", type=Path, required=True)
     parser.add_argument("--report-dir", type=Path)
-    parser.add_argument("--submissions-manifest", "--submission-manifest", dest="submissions_manifest", type=Path)
+    parser.add_argument("--submissions-manifest", type=Path)
     parser.add_argument("--preflight-only", action="store_true")
     parser.add_argument("--wrapper-evidence", type=Path)
     parser.add_argument("--upstream", default="http://127.0.0.1:8765/run")
@@ -638,10 +568,7 @@ def main(argv: list[str] | None = None):
     frozen_image = None
     try:
         report["stub_report_sha256"] = sha256(args.stub_report)
-        harbor = harbor_command()
-        version = subprocess.check_output([*harbor, "--version"], text=True).strip()
-        require(version == "0.21.0", "Expected Harbor 0.21.0")
-        report["harbor_version"] = version
+        harbor, report["harbor_version"] = checked_harbor()
         identity = image_id(IMAGE)
         gate = validate_control(args.stub_report.resolve(), original_sources, identity)
         report["image_id"] = identity
@@ -668,9 +595,7 @@ def main(argv: list[str] | None = None):
             )
         frozen_image = pin_base_image(identity, "sapi-config-lab-live")
         report["frozen_image"] = frozen_image
-        staging = Path(
-            tempfile.mkdtemp(prefix="sapi-lab-live-", dir="/private/tmp" if Path("/private/tmp").exists() else None)
-        )
+        staging = staging_dir("sapi-lab-live-")
         stage_tasks(
             staging / "tasks",
             mode="replay" if args.submissions_manifest else "oracle",
@@ -708,25 +633,16 @@ def main(argv: list[str] | None = None):
             )
 
         def run_harbor(name: str, task_path: Path, mode: str, timeout: float = 2400):
+            bridge = [f"SAPI_BRIDGE_URL=http://host.docker.internal:{args.bridge_port}"] if mode == "live" else []
             command = harbor_run_args(
-                harbor,
-                task_path,
-                staging / "jobs",
-                name,
-                "oracle",
-                verifier_env=["SAPI_LLM_MODE=" + mode],
+                harbor, task_path, staging / "jobs", name, "oracle", verifier_env=["SAPI_LLM_MODE=" + mode, *bridge]
             )
-            if mode == "live":
-                command += ["--verifier-env", f"SAPI_BRIDGE_URL=http://host.docker.internal:{args.bridge_port}"]
             report.setdefault("commands", []).append(command)
             try:
-                with (output / (name + ".log")).open("w") as log:
-                    completed = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, timeout=timeout)
+                exit_code = run_logged(command, output / (name + ".log"), timeout=timeout)
             finally:
-                if (staging / "jobs").exists():
-                    shutil.copytree(staging / "jobs", output / "jobs", dirs_exist_ok=True)
-            trials = load_trials(output / "jobs" / name)
-            return completed.returncode, trials
+                collect_jobs(staging, output / "jobs")
+            return exit_code, load_trials(output / "jobs" / name)
 
         freeze("before-stub")
         current_stage = "harbor_environment"
@@ -770,39 +686,13 @@ def main(argv: list[str] | None = None):
                 ),
                 flush=True,
             )
-            with (output / "bridge.log").open("w") as bridge_log:
-                adapter = subprocess.Popen(
-                    [
-                        sys.executable,
-                        "-m",
-                        "sapi_config_lab.execute.agency",
-                        "--port",
-                        str(args.bridge_port),
-                        "--upstream",
-                        args.upstream,
-                        "--timeout",
-                        "185",
-                        "--audit",
-                        str(output / "bridge-audit.jsonl"),
-                        "--budget",
-                        str(output / "budget.json"),
-                    ],
-                    cwd=ROOT,
-                    stdout=bridge_log,
-                    stderr=subprocess.STDOUT,
-                )
-            for _ in range(50):
-                require(adapter.poll() is None, "Local adapter exited before readiness")
-                try:
-                    with urlopen(f"http://127.0.0.1:{args.bridge_port}/health", timeout=1) as response:
-                        if json.load(response).get("service") == "sapi-lab-agency-adapter":
-                            break
-                except URLError, TimeoutError:
-                    time.sleep(0.1)
-            else:
-                raise RuntimeError("Local adapter readiness timeout")
-            time.sleep(0.1)
-            require(adapter.poll() is None, "Adapter port is already in use")
+            adapter = start_bridge(
+                args.bridge_port,
+                args.upstream,
+                output / "bridge-audit.jsonl",
+                output / "budget.json",
+                output / "bridge.log",
+            )
             live_deadline = time.monotonic() + 2400
             for scenario in SCENARIOS:
                 freeze("before-live-" + scenario)

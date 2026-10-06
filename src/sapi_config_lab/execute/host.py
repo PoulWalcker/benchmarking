@@ -1,15 +1,21 @@
 """The host tools an experiment drives: the pinned Harbor, and Docker.
 
-Harbor is taken from this interpreter, never from a global tool. The Docker
-helpers are the read-and-tag operations every experiment repeats; anything that
-runs a container stays with the experiment that owns that container.
+Harbor is taken from this interpreter, never from a global tool. The helpers
+here are the operations every experiment repeats; anything that runs a
+container stays with the experiment that owns that container.
 """
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
+import shutil
 import subprocess
 import sys
+import tempfile
+
+from sapi_config_lab.paths import workspace_root
+
+HARBOR_VERSION = "0.21.0"
 
 
 def harbor_command() -> list[str]:
@@ -17,9 +23,45 @@ def harbor_command() -> list[str]:
         installed = version("harbor")
     except PackageNotFoundError as error:
         raise RuntimeError("Run uv sync --extra harbor before experiments") from error
-    if installed != "0.21.0":
-        raise RuntimeError(f"Expected Harbor 0.21.0, got {installed}")
+    if installed != HARBOR_VERSION:
+        raise RuntimeError(f"Expected Harbor {HARBOR_VERSION}, got {installed}")
     return [sys.executable, "-c", "from harbor.cli.main import app; app()"]
+
+
+def checked_harbor() -> tuple[list[str], str]:
+    """The Harbor argv, after the executable itself reports the pinned version."""
+    harbor = harbor_command()
+    reported = subprocess.check_output([*harbor, "--version"], text=True).strip()
+    if reported != HARBOR_VERSION:
+        raise RuntimeError(f"Expected Harbor {HARBOR_VERSION}, got {reported}")
+    return harbor, reported
+
+
+def run_logged(command: Sequence[str], log: Path, *, timeout: float, env: Mapping[str, str] | None = None) -> int:
+    """Run from the checkout with stdout and stderr in one log; return the exit code."""
+    with log.open("w") as stream:
+        completed = subprocess.run(
+            list(command), cwd=workspace_root(), env=env, stdout=stream, stderr=subprocess.STDOUT, timeout=timeout
+        )
+    return completed.returncode
+
+
+def build_image(tag: str, log: Path) -> None:
+    """Build the pinned n8n lab image from infra/Dockerfile."""
+    if run_logged(["docker", "build", "-f", "infra/Dockerfile", "-t", tag, "."], log, timeout=1200):
+        raise RuntimeError(f"Image build failed; see {log.name}")
+
+
+def staging_dir(prefix: str) -> Path:
+    """A fresh directory Docker can mount. macOS Desktop mounts may be blocked for
+    the Docker VM, so stage under /private/tmp; never under the user's n8n folders."""
+    return Path(tempfile.mkdtemp(prefix=prefix, dir="/private/tmp" if Path("/private/tmp").exists() else None))
+
+
+def collect_jobs(staging: Path, destination: Path) -> None:
+    """Copy Harbor's job tree out of staging, including a failed job's partial output."""
+    if (staging / "jobs").exists():
+        shutil.copytree(staging / "jobs", destination, dirs_exist_ok=True)
 
 
 def harbor_run_args(

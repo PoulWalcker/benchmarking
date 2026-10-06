@@ -59,7 +59,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
     def test_expansion_cli_cannot_start_without_named_caps_and_shared_series(self):
         with (
             contextlib.redirect_stderr(io.StringIO()) as errors,
-            patch("sapi_config_lab.coordinate.generate.subprocess.run") as outgoing,
+            patch("sapi_config_lab.execute.host.subprocess.run") as outgoing,
         ):
             for args in (
                 ["--scenario", "dual-ledger-closeout"],
@@ -72,7 +72,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
             outgoing.assert_not_called()
         with (
             contextlib.redirect_stderr(errors),
-            patch("sapi_config_lab.coordinate.live.subprocess.run") as outgoing,
+            patch("sapi_config_lab.execute.host.subprocess.run") as outgoing,
         ):
             with self.assertRaises(SystemExit) as caught:
                 live(["--scenario", "dual-ledger-closeout", "--stub-report", "/unused.json"])
@@ -154,7 +154,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
 
     def test_two_distinct_generated_answers_keep_independent_stub_byte_identities(self):
         from sapi_config_lab.coordinate.live import check_generated_stub_gates
-        from sapi_config_lab.coordinate.replay import sha256
+        from sapi_config_lab.evidence import sha256
 
         with tempfile.TemporaryDirectory() as tmp:
             trials = []
@@ -370,7 +370,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
             with (
                 self.subTest(entry=entry),
                 contextlib.redirect_stderr(io.StringIO()),
-                patch("sapi_config_lab.coordinate.generate.subprocess.run") as outgoing,
+                patch("sapi_config_lab.execute.host.subprocess.run") as outgoing,
             ):
                 with self.assertRaises(SystemExit) as caught:
                     generate(["--scenario", selected[0], "--attempts", "2", "--series-dir", "/unused", *flags])
@@ -405,7 +405,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
             with (
                 contextlib.redirect_stdout(io.StringIO()),
                 patch(
-                    "sapi_config_lab.coordinate.generate.subprocess.run",
+                    "sapi_config_lab.execute.host.subprocess.run",
                     side_effect=RuntimeError("unpaid control unavailable"),
                 ),
             ):
@@ -428,7 +428,7 @@ class ExpansionAdmissionTests(unittest.TestCase):
             with (
                 contextlib.redirect_stdout(io.StringIO()),
                 patch(
-                    "sapi_config_lab.coordinate.live.harbor_command",
+                    "sapi_config_lab.coordinate.live.checked_harbor",
                     side_effect=RuntimeError("unpaid preflight unavailable"),
                 ),
             ):

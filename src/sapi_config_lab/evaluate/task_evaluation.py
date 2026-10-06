@@ -21,7 +21,6 @@ from typing import Any, TypeIs
 Document = dict[str, Any]
 SCHEMA = "sapi-lab-task-evaluation/v1"
 PROMPT_VERSION = "1.0.1"
-CONFIGURED_TASKS = ("production-checkout-recovery", "crm-lead-qualification")
 
 
 def digest(value: Any) -> str:
@@ -56,17 +55,6 @@ if operation == 'package':
     result = load_challenge(request['challenge'])
 elif operation == 'validate':
     result = validate('run-log', request['run_log'])
-elif operation == 'seed_inputs':
-    from autowfbench.core.common import digest
-    from autowfbench.runtime.environment import ChallengeEnvironment
-    package = load_challenge(request['challenge'])
-    rows = []
-    for seed in request['seeds']:
-        env = ChallengeEnvironment(package, seed)
-        probes = ([case['name'] for case in env.test_results(hidden=True)['cases']]
-                  if env.kind == 'checkout' else env.fixtures)
-        rows.append({'seed': seed, 'fixture_digest': digest(env.fixtures), 'probe_digest': digest(probes)})
-    result = {'rows': rows}
 elif operation == 'score':
     validate('run-log', request['run_log'])
     result = calculate(request['run_log'], request['scorecard'], request.get('judgement'),
@@ -193,35 +181,6 @@ def validate_task_package(package: Document) -> None:
             raise ValueError("Deterministic criterion requires an independent check")
     if sum(c["weight"] for c in criteria) != 10:
         raise ValueError("Original benchmark requires a ten-point rubric")
-
-
-def configured_contracts(
-    source_root: Path, *, judge_model: str, judge_mode: str = "codex"
-) -> dict[str, FrozenTaskContract]:
-    """Both source-backed tasks use the same contract, scorer and compiler seam."""
-    return {
-        name: freeze_contract(source_root, name, judge_model=judge_model, judge_mode=judge_mode)
-        for name in CONFIGURED_TASKS
-    }
-
-
-def seed_variation(contract: FrozenTaskContract, seeds: list[int]) -> Document:
-    """Measure fixture/probe variation; seed count is never a new-task count."""
-    if not seeds or any(type(seed) is not int or seed < 0 for seed in seeds):
-        raise ValueError("Supply nonnegative integer seeds")
-    contract.verify()
-    rows = _upstream(
-        contract.source_root,
-        {"operation": "seed_inputs", "challenge": contract.package["definition"]["id"], "seeds": seeds},
-    )["rows"]
-    return {
-        "task_count": 1,
-        "seed_count": len(seeds),
-        "unique_fixture_count": len({r["fixture_digest"] for r in rows}),
-        "unique_protected_probe_count": len({r["probe_digest"] for r in rows}),
-        "rows": rows,
-        "interpretation": "Repeated task with measured input/probe variation; not independent new business tasks",
-    }
 
 
 def freeze_contract(

@@ -43,6 +43,28 @@ def read_json(path: Path):
     return strict_json(path.read_bytes())
 
 
+def native_stub_passed(native: dict, scenario: str) -> bool:
+    """A recorded Harbor result for this scenario, rewarded 1.0 without an exception."""
+    return (
+        native.get("task_name") == scenario
+        and not native.get("exception_info")
+        and (native.get("verifier_result") or {}).get("rewards") == {"reward": 1.0}
+    )
+
+
+def authored_once(generation: dict, submission_sha256: str, prompt_sha256: str) -> bool:
+    """One wrapper call, no repair, no tools, and the exact recorded prompt and answer."""
+    return (
+        generation.get("status") == "submitted"
+        and generation.get("generation_calls") == 1
+        and generation.get("repairs") == 0
+        and generation.get("model") == "gpt-6-astra"
+        and generation.get("observed_tool_markers") == []
+        and generation.get("submission_sha256") == submission_sha256
+        and generation.get("prompt_sha256") == prompt_sha256
+    )
+
+
 def selection_manifest(source_report: Path) -> dict:
     """Produce the one permitted selection from the preserved source report."""
     source_report = source_report.resolve()
@@ -59,24 +81,10 @@ def selection_manifest(source_report: Path) -> dict:
         require(sha256(submission) == submission_hash, "Frozen submission hash mismatch")
         require(sha256(directory / "agent/prompt.txt") == prompt_hash, "Original prompt hash mismatch")
         generation = read_json(directory / "agent/generation.json")
-        require(
-            generation.get("status") == "submitted"
-            and generation.get("generation_calls") == 1
-            and generation.get("repairs") == 0
-            and generation.get("model") == "gpt-6-astra"
-            and generation.get("observed_tool_markers") == []
-            and generation.get("submission_sha256") == submission_hash
-            and generation.get("prompt_sha256") == prompt_hash,
-            "Historical generation provenance mismatch",
-        )
+        require(authored_once(generation, submission_hash, prompt_hash), "Historical generation provenance mismatch")
         native = read_json(directory / "result.json")
         acceptance = read_json(directory / "verifier/report.json")
-        require(
-            native.get("task_name") == scenario
-            and not native.get("exception_info")
-            and (native.get("verifier_result") or {}).get("rewards") == {"reward": 1.0},
-            "Historical Harbor acceptance missing",
-        )
+        require(native_stub_passed(native, scenario), "Historical Harbor acceptance missing")
         require(
             acceptance.get("scenario") == scenario
             and acceptance.get("mode") == "stub"
@@ -196,21 +204,9 @@ def expansion_selection(source_report: Path, scenario: str) -> dict:
         acceptance = read_json(directory / "verifier/report.json")
         submission = directory / "agent/submission.yaml"
         prompt = directory / "agent/prompt.txt"
+        require(native_stub_passed(native, scenario), "Native stub trial failed")
         require(
-            native.get("task_name") == scenario
-            and not native.get("exception_info")
-            and (native.get("verifier_result") or {}).get("rewards") == {"reward": 1.0},
-            "Native stub trial failed",
-        )
-        require(
-            generation.get("status") == "submitted"
-            and generation.get("generation_calls") == 1
-            and generation.get("repairs") == 0
-            and generation.get("model") == "gpt-6-astra"
-            and generation.get("observed_tool_markers") == []
-            and generation.get("submission_sha256") == sha256(submission)
-            and generation.get("prompt_sha256") == sha256(prompt),
-            "Expansion authoring provenance mismatch",
+            authored_once(generation, sha256(submission), sha256(prompt)), "Expansion authoring provenance mismatch"
         )
         require(
             acceptance.get("scenario") == scenario

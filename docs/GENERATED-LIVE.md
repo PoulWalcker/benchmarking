@@ -39,7 +39,7 @@ The explicit live command already runs the full unpaid replay gate; a separate
 `--preflight-only` run is optional and is useful for inspection before authorizing
 live execution.
 
-The singular `--submission-manifest` is also accepted. Without a submissions
+Without a submissions
 manifest, the existing `sapi-lab live --stub-report ...` command uses reference
 YAML. Fresh generation remains the separate `run-generation.sh` experiment.
 
