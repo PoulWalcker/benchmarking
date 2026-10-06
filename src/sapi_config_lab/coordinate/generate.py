@@ -7,18 +7,25 @@ import argparse
 from collections import Counter
 from datetime import datetime, timezone
 import json
-import os
 from pathlib import Path
 import shutil
-import subprocess
 import sys
-import tempfile
 
 from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.coordinate.controls import summarize_trials
+from sapi_config_lab.coordinate.packages import stage_tasks
+from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.scenarios import EXPANSION_SCENARIOS, EXTENSION_SCENARIOS, select_scenarios
-from sapi_config_lab.execute.host import harbor_command, harbor_run_args, image_id, pin_base_image
+from sapi_config_lab.execute.host import (
+    collect_jobs,
+    harbor_command,
+    harbor_run_args,
+    image_id,
+    pin_base_image,
+    run_logged,
+    staging_dir,
+)
 from sapi_config_lab.evidence import write_json
-from sapi_config_lab.coordinate.generation import fingerprints, prepare_tasks, summarize_trials
 from sapi_config_lab.coordinate.expansion import (
     ExpansionSeries,
     RefinementSeries,
@@ -53,8 +60,7 @@ def finalize_generation(
     if staging:
 
         def preserve():
-            if (staging / "jobs").exists():
-                shutil.copytree(staging / "jobs", output / "jobs", dirs_exist_ok=True)
+            collect_jobs(staging, output / "jobs")
             return True
 
         if collect("preserve_jobs", preserve):
@@ -62,7 +68,7 @@ def finalize_generation(
         else:
             report["retained_staging"] = str(staging)
     report["trials"] = collect("trial_summary", lambda: summarize_trials(output / "jobs/generated")) or []
-    report["frozen_core_unchanged"] = collect("source_manifest", fingerprints) == frozen
+    report["frozen_core_unchanged"] = collect("source_manifest", source_manifest) == frozen
     trials = report["trials"]
     report["passed_trials"] = sum(trial["passed"] for trial in trials)
     report["total_trials"] = len(trials)
@@ -175,7 +181,7 @@ def main(argv: list[str] | None = None):
     if output.exists():
         parser.error("Choose a new report directory; an existing directory is never overwritten")
     output.mkdir(parents=True)
-    frozen = fingerprints()
+    frozen = source_manifest()
     write_json(output / "frozen-core.json", frozen)
     report = {
         "schema": "sapi-lab-generation/v1",
@@ -210,31 +216,26 @@ def main(argv: list[str] | None = None):
             report["series_scenarios"] = list(series.scenarios)
             report["series_ceilings"] = dict(series.ceilings)
         print(f"Control suite first; reports: {output}", flush=True)
-        with (output / "control.log").open("w") as log:
-            control = subprocess.run(
-                [sys.executable, "-m", "sapi_config_lab.coordinate.controls", "--report-dir", str(output / "control")]
-                + [arg for scenario in scenarios for arg in ("--scenario", scenario)],
-                cwd=ROOT,
-                stdout=log,
-                stderr=subprocess.STDOUT,
-                timeout=3600,
-            )
+        control = run_logged(
+            [sys.executable, "-m", "sapi_config_lab.coordinate.controls", "--report-dir", str(output / "control")]
+            + [arg for scenario in scenarios for arg in ("--scenario", scenario)],
+            output / "control.log",
+            timeout=3600,
+        )
         baseline = json.loads((output / "control/report.json").read_text())
-        if control.returncode or baseline.get("status") != "passed":
+        if control or baseline.get("status") != "passed":
             raise RuntimeError("Control suite failed; model generation was not started")
-        if fingerprints() != frozen:
+        if source_manifest() != frozen:
             raise RuntimeError("Frozen compiler/catalog/verifier changed during controls")
         harbor = harbor_command()
         image = image_id("sapi-config-lab-n8n:2.41.5")
         report["base_image_id"] = image
         frozen_image = pin_base_image(image, "sapi-config-lab-generation")
         report["frozen_image"] = frozen_image
-        staging = Path(
-            tempfile.mkdtemp(
-                prefix="sapi-yaml-generation-", dir="/private/tmp" if Path("/private/tmp").exists() else None
-            )
+        staging = staging_dir("sapi-yaml-generation-")
+        report["prompt_sha256"] = stage_tasks(
+            staging / "tasks", mode="generation", image=frozen_image, scenarios=scenarios
         )
-        report["prompt_sha256"] = prepare_tasks(staging / "tasks", frozen_image, scenarios=scenarios)
         if expansion or refinement:
             # Freeze every author-visible byte before producing fresh evaluation inputs.
             write_json(output / "frozen-prompts.json", report["prompt_sha256"])
@@ -246,16 +247,19 @@ def main(argv: list[str] | None = None):
             write_json(staging / "tasks" / scenarios[0] / "tests/cases.json", private_cases)
             report["private_cases_sha256"] = {scenarios[0]: overlay_sha256(private_cases)}
         shutil.copytree(staging / "tasks", output / "task-packages")
-        env = os.environ.copy()
-        argv = harbor_run_args(
-            harbor,
-            staging / "tasks",
-            staging / "jobs",
-            "generated",
-            "sapi_config_lab.author.agent:WrapperYamlAgent",
-            agent_key="upstream=" + args.upstream,
-            attempts=str(args.attempts),
-        )
+
+        def authoring_run(job: str, attempts: int) -> list[str]:
+            return harbor_run_args(
+                harbor,
+                staging / "tasks",
+                staging / "jobs",
+                job,
+                "sapi_config_lab.author.agent:WrapperYamlAgent",
+                agent_key="upstream=" + args.upstream,
+                attempts=str(attempts),
+            )
+
+        argv = authoring_run("generated", args.attempts)
         report["command"] = argv
         write_json(output / "experiment.json", report)
         print(
@@ -266,35 +270,28 @@ def main(argv: list[str] | None = None):
             assert series is not None
             report["commands"] = []
             for attempt in range(1, args.attempts + 1):
-                if fingerprints() != frozen:
+                if source_manifest() != frozen:
                     raise RuntimeError("Frozen sources changed before authoring")
                 reservation = series.reserve(scenarios[0], "authoring", str(attempt), output / "report.json")
-                command = list(argv)
-                command[command.index("--n-attempts") + 1] = "1"
                 job = "generated-attempt-" + str(attempt)
-                command[command.index("--job-name") + 1] = job
+                command = authoring_run(job, 1)
                 report["commands"].append(command)
-                with (output / (job + ".log")).open("w") as log:
-                    completed = subprocess.run(
-                        command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, timeout=1200
-                    )
+                exit_code = run_logged(command, output / (job + ".log"), timeout=1200)
                 # Stable evidence location for selection, including failed attempts.
                 for path in (staging / "jobs" / job).glob("*/result.json"):
                     shutil.copytree(path.parent, output / "jobs/generated" / path.parent.name)
                 trials = summarize_trials(output / "jobs/generated")
-                passed = completed.returncode == 0 and len(trials) == attempt and all(t["passed"] for t in trials)
-                passed = passed and fingerprints() == frozen
+                passed = exit_code == 0 and len(trials) == attempt and all(t["passed"] for t in trials)
+                passed = passed and source_manifest() == frozen
                 series.finish(reservation, passed)
                 reservation = None
-                report["harbor_exit_code"] = completed.returncode
+                report["harbor_exit_code"] = exit_code
                 if not passed:
                     raise RuntimeError("Authoring/stub gate failed; remaining paid attempts were not started")
         else:
-            with (output / "harbor-generation.log").open("w") as log:
-                completed = subprocess.run(
-                    argv, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, timeout=1200 * args.attempts
-                )
-            report["harbor_exit_code"] = completed.returncode
+            report["harbor_exit_code"] = run_logged(
+                argv, output / "harbor-generation.log", timeout=1200 * args.attempts
+            )
     except Exception as error:
         if reservation is not None and series is not None:
             series.finish(reservation, False)

@@ -13,6 +13,8 @@ import json
 import math
 import os
 import re
+import subprocess
+import sys
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -22,7 +24,7 @@ from urllib.request import Request
 import yaml
 from sapi_config_lab.evidence import digest
 from sapi_config_lab.net import urlopen
-from sapi_config_lab.paths import CATALOG
+from sapi_config_lab.paths import CATALOG, workspace_root
 
 MAX_BODY = 1_048_576
 
@@ -413,6 +415,48 @@ def make_handler(catalog, upstream, timeout, audit_path, budget=None):
                 pass
 
     return Handler
+
+
+def start_bridge(port: int, upstream: str, audit: Path, budget: Path, log: Path) -> subprocess.Popen:
+    """Start this adapter as a child process and wait until it answers /health.
+
+    Fails if the process exits or another service already holds the port.
+    """
+    with log.open("w") as stream:
+        process = subprocess.Popen(
+            [sys.executable, "-m", "sapi_config_lab.execute.agency", "--port", str(port), "--upstream", upstream]
+            + ["--timeout", "185", "--audit", str(audit), "--budget", str(budget)],
+            cwd=workspace_root(),
+            stdout=stream,
+            stderr=subprocess.STDOUT,
+        )
+    for _ in range(50):
+        if process.poll() is not None:
+            raise RuntimeError("Agency adapter exited before readiness")
+        try:
+            with urlopen(f"http://127.0.0.1:{port}/health", timeout=1) as response:
+                if json.load(response).get("service") == "sapi-lab-agency-adapter":
+                    break
+        except URLError, TimeoutError:
+            time.sleep(0.1)
+    else:
+        stop_bridge(process)
+        raise RuntimeError("Agency adapter readiness timeout")
+    time.sleep(0.1)
+    if process.poll() is not None:
+        raise RuntimeError("Agency adapter port is already in use")
+    return process
+
+
+def stop_bridge(process: subprocess.Popen | None) -> None:
+    if process is None or process.poll() is not None:
+        return
+    process.terminate()
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=5)
 
 
 def main():

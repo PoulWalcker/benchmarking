@@ -296,8 +296,3 @@ def compile_n8n(
         "tags": [],
     }
     return artifact, mapping
-
-
-def compile_demo(cfg, bindings):
-    """Backward-compatible stub compiler used by the narrow local JS tests."""
-    return compile_n8n(cfg, bindings)

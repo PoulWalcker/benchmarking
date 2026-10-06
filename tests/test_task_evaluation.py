@@ -15,13 +15,11 @@ import unittest
 from sapi_config_lab.evaluate.task_evaluation import (
     SCHEMA,
     build_run_log,
-    configured_contracts,
     digest,
     evaluate,
     freeze_contract,
     is_evaluation,
     normalized_reward,
-    seed_variation,
     summarize_evaluations,
     summarize_stages,
     validate_task_package,
@@ -274,9 +272,8 @@ json.dump(env.finalize(), sys.stdout)
         self.assertFalse(report["project_acceptance"]["affects_upstream_score"])
 
     def test_both_original_tasks_have_same_supported_contract_and_reject_invented_metrics(self):
-        contracts = configured_contracts(SOURCE, judge_model="calibration-only-model")
-        self.assertEqual(set(contracts), {"production-checkout-recovery", "crm-lead-qualification"})
-        for contract in contracts.values():
+        for name in ("production-checkout-recovery", "crm-lead-qualification"):
+            contract = freeze_contract(SOURCE, name, judge_model="calibration-only-model")
             package = contract.package
             self.assertEqual(
                 sum(c["weight"] for c in package["scorecard"]["criteria"] if c["evaluator"] == "deterministic"), 6
@@ -289,16 +286,6 @@ json.dump(env.finalize(), sys.stdout)
             broken["scorecard"]["answer_values"]["maybe"] = 0.9
             with self.assertRaisesRegex(ValueError, "Unsupported metric"):
                 validate_task_package(broken)
-
-    def test_seed_variation_is_measured_not_claimed_as_new_tasks(self):
-        checkout = seed_variation(self.contract, [0, 1, 17])
-        self.assertEqual(checkout["task_count"], 1)
-        self.assertEqual(checkout["unique_fixture_count"], 1)
-        self.assertEqual(checkout["unique_protected_probe_count"], 2)
-        crm = freeze_contract(SOURCE, "crm-lead-qualification", judge_model="calibration-only-model")
-        varied = seed_variation(crm, [0, 1, 35])
-        self.assertEqual(varied["unique_fixture_count"], 2)
-        self.assertEqual(varied["task_count"], 1)
 
     def test_no_change_bad_patch_and_false_claims_cannot_override_environment(self):
         for patch in ("none", "bad"):

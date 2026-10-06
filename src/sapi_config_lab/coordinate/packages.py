@@ -8,9 +8,7 @@ import shutil
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.paths import CATALOG, workspace_root
 
-from sapi_config_lab.coordinate.scenarios import BASELINE_SCENARIOS, select_scenarios
-
-SCENARIOS = BASELINE_SCENARIOS
+from sapi_config_lab.coordinate.scenarios import select_scenarios
 
 
 def stage_tasks(

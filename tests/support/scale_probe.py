@@ -62,7 +62,7 @@ def main():
     cfg = make_config()
     bindings = profile.read(CATALOG)["operations"]
     start = time.perf_counter()
-    artifact, _ = compiler.compile_demo(cfg, bindings)
+    artifact, _ = compiler.compile_n8n(cfg, bindings)
     elapsed = time.perf_counter() - start
     path = ROOT / "validation/static-scale-probe.n8n.json"
     raw = json.dumps(artifact, ensure_ascii=False, indent=2) + "\n"

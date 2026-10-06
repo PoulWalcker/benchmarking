@@ -204,9 +204,9 @@ class ExpansionLocalGraphTests(unittest.TestCase):
         from pathlib import Path
         import subprocess
         import tempfile
-        from sapi_config_lab.compile.n8n import compile_demo
+        from sapi_config_lab.compile.n8n import compile_n8n
 
-        artifact, mapping = compile_demo(self.configs[scenario], self.catalog)
+        artifact, mapping = compile_n8n(self.configs[scenario], self.catalog)
         if mutate:
             mutate(artifact, mapping)
         with tempfile.TemporaryDirectory() as tmp:

@@ -21,7 +21,7 @@ class LabTests(unittest.TestCase):
         cls.configs = [profile.read(p) for p in sorted((ROOT / "configs").glob("*.yaml"))]
 
     def run_config(self, index, inputs=None, mutate_export=None):
-        artifact, _ = compiler.compile_demo(copy.deepcopy(self.configs[index]), self.bindings)
+        artifact, _ = compiler.compile_n8n(copy.deepcopy(self.configs[index]), self.bindings)
         if mutate_export:
             mutate_export(artifact)
         with tempfile.TemporaryDirectory() as tmp:
@@ -196,11 +196,11 @@ class LabTests(unittest.TestCase):
     def test_unsupported_semantics_rejected_by_backend(self):
         for index, reason in [(4, "E_LIFECYCLE")]:
             with self.subTest(index=index), self.assertRaisesRegex(profile.Unsupported, reason):
-                compiler.compile_demo(self.configs[index], self.bindings)
+                compiler.compile_n8n(self.configs[index], self.bindings)
         cfg = copy.deepcopy(self.configs[2])
         cfg["execution"]["concurrency"] = "required_parallel"
         with self.assertRaisesRegex(profile.Unsupported, "E_PARALLEL"):
-            compiler.compile_demo(cfg, self.bindings)
+            compiler.compile_n8n(cfg, self.bindings)
 
     def runtime_js(self, body):
         """Exercise envelope contracts locally, without claiming n8n execution."""
@@ -305,11 +305,11 @@ class LabTests(unittest.TestCase):
         bindings = copy.deepcopy(self.bindings)
         bindings["ticket.classify"]["output_schema"]["patternProperties"] = {}
         with self.assertRaisesRegex(profile.Invalid, "unsupported schema keywords"):
-            compiler.compile_demo(self.configs[1], bindings)
+            compiler.compile_n8n(self.configs[1], bindings)
         bindings = copy.deepcopy(self.bindings)
         bindings["ticket.classify"].pop("output_schema")
         with self.assertRaisesRegex(profile.Invalid, "output_schema required"):
-            compiler.compile_demo(self.configs[1], bindings)
+            compiler.compile_n8n(self.configs[1], bindings)
 
 
 if __name__ == "__main__":
