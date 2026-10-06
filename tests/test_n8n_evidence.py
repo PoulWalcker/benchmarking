@@ -2,7 +2,7 @@
 
 import unittest
 
-from sapi_config_lab.runtime.n8n.execution import decode_flatted
+from sapi_config_lab.execute.n8n import decode_flatted
 
 
 class PersistedEvidenceTests(unittest.TestCase):

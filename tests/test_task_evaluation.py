@@ -12,7 +12,7 @@ import sys
 import tempfile
 import unittest
 
-from sapi_config_lab.runtime.task_evaluation import (
+from sapi_config_lab.evaluate.task_evaluation import (
     SCHEMA,
     build_run_log,
     configured_contracts,

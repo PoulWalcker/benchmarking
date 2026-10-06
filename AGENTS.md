@@ -16,19 +16,25 @@ fourth, separate concern: it produces definitions and never compiles them itself
 
 | Stage | Location | May import |
 | --- | --- | --- |
-| Shared contracts | `src/sapi_config_lab/{contracts,profile,evidence,paths}.py`, `bindings.yaml` | nothing in the package |
+| Shared contracts | `src/sapi_config_lab/*.py` and `bindings.yaml`: the backend contract, the YAML profile, evidence encoding, paths, outbound HTTP, the AutoWFBench source pin | each other only |
 | Compile | `src/sapi_config_lab/compile/` | shared contracts |
 | Execute | `src/sapi_config_lab/execute/` | shared contracts |
 | Evaluate (host side) | `src/sapi_config_lab/evaluate/` | shared contracts |
 | Evaluate (independent verifier) | `verification/` | its own siblings; never `compile`, `execute`, `coordinate` |
 | Authoring | `src/sapi_config_lab/author/` | shared contracts |
 | Coordinate | `src/sapi_config_lab/coordinate/` | anything above; nothing imports it except `__main__` |
+
+Inside `coordinate/`: `cli.py` is the command table; `cases.py::run_case` runs one
+case through compile then execute; `backend.py` composes the n8n backend;
+`controls.py` is the unpaid oracle/nop suite; `generate.py`, `live.py` and
+`benchmark.py` are the paid tracks; `lifecycle.py` is the durable controller;
+`packages.py` assembles Harbor task packages.
 | Benchmark definitions | `benchmarks/<scenario>/` | data only |
 
 `tests/test_boundaries.py` enforces this table: `STAGES` assigns every module to
 one stage, `ALLOWED` is the table's last column, and only coordination may load
 modules through `importlib`. `KNOWN_VIOLATIONS` lists the edges that still break
-a rule while the code moves into these directories; it may only shrink. Change
+a rule; it may only shrink. Change
 the table and the test together, never one alone.
 
 ## Rules

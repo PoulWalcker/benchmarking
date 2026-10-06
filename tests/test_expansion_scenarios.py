@@ -190,7 +190,7 @@ class ExpansionLocalGraphTests(unittest.TestCase):
     def setUpClass(cls):
         import json
         from sapi_config_lab.paths import CATALOG, workspace_root
-        from sapi_config_lab.core.profile import read
+        from sapi_config_lab.profile import read
 
         cls.root = workspace_root()
         cls.catalog = read(CATALOG)["operations"]
@@ -204,7 +204,7 @@ class ExpansionLocalGraphTests(unittest.TestCase):
         from pathlib import Path
         import subprocess
         import tempfile
-        from sapi_config_lab.runtime.n8n.compiler import compile_demo
+        from sapi_config_lab.compile.n8n import compile_demo
 
         artifact, mapping = compile_demo(self.configs[scenario], self.catalog)
         if mutate:
@@ -251,7 +251,7 @@ class ExpansionLocalGraphTests(unittest.TestCase):
                     )
 
     def test_fresh_private_overlay_keeps_all_positive_and_negative_obligations(self):
-        from sapi_config_lab.interfaces.expansion import fresh_case_overlay
+        from sapi_config_lab.coordinate.expansion import fresh_case_overlay
 
         self.cases = {scenario: fresh_case_overlay(scenario)[scenario] for scenario in self.configs}
         self.test_all_positive_fixtures_satisfy_independent_business_obligations()
@@ -310,7 +310,7 @@ class ExpansionLocalGraphTests(unittest.TestCase):
                 bind_roles("priority-support-brief", broken)
 
     def test_full_classification_ticket_cannot_enter_reply_closed_schema(self):
-        from sapi_config_lab.runtime.n8n.compiler import compile_n8n
+        from sapi_config_lab.compile.n8n import compile_n8n
 
         config = copy.deepcopy(self.configs["support-review-packet"])
         next(step for step in config["workflow"]["steps"] if step["uses"] == "reply.generate")["with"]["ticket"] = {

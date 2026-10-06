@@ -1,6 +1,5 @@
 """Regression checks for task distribution and separation of responsibilities."""
 
-import ast
 import importlib.util
 import json
 from pathlib import Path
@@ -8,11 +7,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.interfaces.checkout import ORACLE_MODULES, oracle_scrub
-from sapi_config_lab.interfaces.tasks import SCENARIOS, stage_tasks
-from sapi_config_lab.interfaces.generation.common import fingerprints
-from sapi_config_lab.interfaces.harbor import source_manifest
-from sapi_config_lab.core.provenance import source_manifest as inventory
+from sapi_config_lab.coordinate.benchmark import ORACLE_MODULES, oracle_scrub
+from sapi_config_lab.coordinate.packages import SCENARIOS, stage_tasks
+from sapi_config_lab.coordinate.generation import fingerprints
+from sapi_config_lab.coordinate.controls import source_manifest
+from sapi_config_lab.coordinate.provenance import source_manifest as inventory
 from sapi_config_lab.paths import workspace_root
 
 ROOT = workspace_root()
@@ -90,32 +89,6 @@ class PackagingTests(unittest.TestCase):
             before = inventory(root)
             (root / public[0]).write_text("changed behavior")
             self.assertNotEqual(inventory(root), before)
-
-    def test_imports_respect_responsibilities(self):
-        # core holds the shared rules, runtime the independent services, interfaces the
-        # interaction surfaces. Dependencies only ever point inward: core knows about
-        # neither of the others, and runtime knows nothing about an interaction surface.
-        package = ROOT / "src/sapi_config_lab"
-        forbidden = {
-            "core": ("sapi_config_lab.runtime", "sapi_config_lab.interfaces", "verification", "harbor"),
-            "runtime": ("sapi_config_lab.interfaces", "verification", "harbor"),
-        }
-        for group in ("core", "runtime", "interfaces"):
-            # Without this the rules above silently stop applying to anything.
-            self.assertTrue((package / group).is_dir(), group)
-        for path in package.rglob("*.py"):
-            relative = path.relative_to(package)
-            rules = forbidden.get(relative.parts[0])
-            if rules is None:
-                continue
-            for node in ast.walk(ast.parse(path.read_text())):
-                imports = (
-                    [node.module or ""]
-                    if isinstance(node, ast.ImportFrom)
-                    else ([a.name for a in node.names] if isinstance(node, ast.Import) else [])
-                )
-                for name in imports:
-                    self.assertFalse(name.startswith(rules), (relative, name))
 
     def test_agent_image_still_deletes_every_scoring_oracle_module(self):
         # rm -rf exits 0 on a missing path, so a stale entry would leave the oracle

@@ -33,7 +33,7 @@ shops, webinars and partner referrals. For alternate source material retain
 its corresponding named capabilities, audience and channels. The verifier
 checks factual terms with bounded alternatives, not exact generated prose.
 
-Read `/app/lab/docs/PROFILE.md` and `/app/lab/src/sapi_config_lab/core/bindings.yaml`. Pin specification
+Read `/app/lab/docs/PROFILE.md` and `/app/lab/src/sapi_config_lab/bindings.yaml`. Pin specification
 revision `06ddd3333109cea8a2cb3071609070d7a3c0d3ff`; use Gantt, callback
 fixtures, fail-fast errors and independent concurrency. The verifier imports
 and executes generated JSON in pinned, isolated real n8n, checks both

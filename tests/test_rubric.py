@@ -7,7 +7,7 @@ import inspect
 import math
 import unittest
 
-from sapi_config_lab.runtime import task_evaluation
+from sapi_config_lab.evaluate import task_evaluation
 from verification import rubric
 from verification import rubric_cards
 from verification.rubric import (

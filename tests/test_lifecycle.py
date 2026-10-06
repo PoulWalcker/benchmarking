@@ -8,13 +8,13 @@ import unittest
 from unittest.mock import patch
 
 from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.core.contracts import CompiledWorkflow
-from sapi_config_lab.runtime.lifecycle import LifecycleController
-from sapi_config_lab.runtime.lifecycle import durable_json
-from sapi_config_lab.runtime.n8n.adapter import N8nBackend
-from sapi_config_lab.core.contracts import CompileOptions
+from sapi_config_lab.contracts import CompiledWorkflow
+from sapi_config_lab.coordinate.lifecycle import LifecycleController
+from sapi_config_lab.evidence import durable_json
+from sapi_config_lab.coordinate.backend import N8nBackend
+from sapi_config_lab.contracts import CompileOptions
 from sapi_config_lab.paths import CATALOG
-from sapi_config_lab.core import profile
+from sapi_config_lab import profile
 
 
 class DigestBackend:
@@ -258,7 +258,7 @@ class LifecycleTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             controller = LifecycleController(Path(directory), backend=self.backend)
             ref = controller.register(self.config)
-            with patch("sapi_config_lab.runtime.lifecycle.durable_json", side_effect=lose_process_after_write):
+            with patch("sapi_config_lab.coordinate.lifecycle.durable_json", side_effect=lose_process_after_write):
                 with self.assertRaises(SystemExit):
                     controller.callback(ref, "recover-result")
             restarted = LifecycleController(Path(directory), backend=self.backend)

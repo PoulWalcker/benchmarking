@@ -8,13 +8,13 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.interfaces.expansion import ExpansionSeries, RefinementSeries
-from sapi_config_lab.interfaces.generation.run import main as generate
-from sapi_config_lab.interfaces.live import main as live
-from sapi_config_lab.interfaces.live_evidence import case_budget
-from sapi_config_lab.interfaces.tasks import stage_tasks
+from sapi_config_lab.coordinate.expansion import ExpansionSeries, RefinementSeries
+from sapi_config_lab.coordinate.generate import main as generate
+from sapi_config_lab.coordinate.live import main as live
+from sapi_config_lab.coordinate.live_evidence import case_budget
+from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.core.profile import read
+from sapi_config_lab.profile import read
 from tests.test_extension_verification import evidence
 from verification.verify import check_execution
 

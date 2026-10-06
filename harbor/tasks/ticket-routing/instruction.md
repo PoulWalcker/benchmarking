@@ -22,7 +22,7 @@ must work when the verifier replaces the input ticket.
 
 The source specification revision is
 `06ddd3333109cea8a2cb3071609070d7a3c0d3ff`. Read `/app/lab/docs/PROFILE.md` and
-`/app/lab/src/sapi_config_lab/core/bindings.yaml`. Use Gantt, callback fixture activation, fail-fast
+`/app/lab/src/sapi_config_lab/bindings.yaml`. Use Gantt, callback fixture activation, fail-fast
 errors and independent concurrency. LLM calls default to deterministic
 stubs; a separately configured live trial uses the same operation contracts.
 

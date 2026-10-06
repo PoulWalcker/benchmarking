@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 
-CATALOG = Path(__file__).resolve().parent / "core" / "bindings.yaml"
+CATALOG = Path(__file__).resolve().parent / "bindings.yaml"
 
 
 def workspace_root() -> Path:

@@ -11,7 +11,7 @@ harbor = ["harbor==0.21.0"]
 benchmark = ["fastjsonschema>=2.21,<3"]
 
 [project.scripts]
-sapi-lab = "sapi_config_lab.interfaces.cli:main"
+sapi-lab = "sapi_config_lab.coordinate.cli:main"
 
 [build-system]
 requires = ["hatchling>=1.27,<2"]

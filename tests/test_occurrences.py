@@ -4,7 +4,7 @@ import copy
 import unittest
 
 from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.core.profile import read, read_bindings, validate, Invalid
+from sapi_config_lab.profile import read, read_bindings, validate, Invalid
 from verification.contracts import Rejected
 from verification.verify import invalid_configs
 
@@ -17,7 +17,7 @@ class OccurrenceTests(unittest.TestCase):
         config["workflow"]["steps"].reverse()
         bad = dict(invalid_configs(config))["cycle"]
         with self.assertRaisesRegex(Invalid, "Cyclic|cycle|Cycle"):
-            validate(bad, read_bindings(ROOT / "src/sapi_config_lab/core/bindings.yaml"))
+            validate(bad, read_bindings(ROOT / "src/sapi_config_lab/bindings.yaml"))
 
     def test_role_binding_accepts_renamed_ids_but_rejects_wrong_input_origin(self):
         from verification.roles import bind_roles

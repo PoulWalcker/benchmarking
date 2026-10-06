@@ -7,7 +7,7 @@ observation to native n8n records, including persisted success, node envelopes
 and execution timing. Both checks must pass. The business checker imports no
 compiler, operation or engine implementation.
 
-The verifier uses `src/sapi_config_lab/runtime/execution.py` to compile and
+The verifier uses `src/sapi_config_lab/coordinate/cases.py` to compile and
 execute each case through the selected backend. It supplies fixture inputs but
 never expected answers to the runner. Only the n8n evidence adapter is currently
 implemented: new versioned reports require matching `n8n` engine and native

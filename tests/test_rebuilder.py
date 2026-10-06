@@ -11,8 +11,8 @@ from unittest.mock import patch
 import yaml
 
 from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.runtime.rebuilder import WrapperRebuilder
-from sapi_config_lab.core import profile
+from sapi_config_lab.author.rebuilder import WrapperRebuilder
+from sapi_config_lab import profile
 
 
 class RebuilderTests(unittest.TestCase):
@@ -47,7 +47,7 @@ class RebuilderTests(unittest.TestCase):
                 return Response()
 
             builder = WrapperRebuilder("http://127.0.0.1:8765/run")
-            with patch("sapi_config_lab.runtime.rebuilder.urlopen", side_effect=dispatch) as outgoing:
+            with patch("sapi_config_lab.author.rebuilder.urlopen", side_effect=dispatch) as outgoing:
                 result = builder(source, {"passed": False, "findings": ["wrong IDs"]}, target, artifacts)
                 self.assertEqual(result, candidate)
                 self.assertEqual((artifacts / "candidate.yaml").read_text(), answer)
@@ -67,7 +67,7 @@ class RebuilderTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
             builder = WrapperRebuilder("http://127.0.0.1:8765/run")
-            with patch("sapi_config_lab.runtime.rebuilder.urlopen", side_effect=TimeoutError) as outgoing:
+            with patch("sapi_config_lab.author.rebuilder.urlopen", side_effect=TimeoutError) as outgoing:
                 with self.assertRaises(TimeoutError):
                     builder(source, {}, {"id": "daily-digest", "revision": 2}, path)
                 with self.assertRaises(FileExistsError):
@@ -81,7 +81,7 @@ class RebuilderTests(unittest.TestCase):
             with self.subTest(exit_code=exit_code, stderr=stderr), tempfile.TemporaryDirectory() as directory:
                 response = {"ok": True, "exit_code": exit_code, "stderr": stderr, "output": yaml.safe_dump(source)}
                 with patch(
-                    "sapi_config_lab.runtime.rebuilder.urlopen", return_value=io.BytesIO(json.dumps(response).encode())
+                    "sapi_config_lab.author.rebuilder.urlopen", return_value=io.BytesIO(json.dumps(response).encode())
                 ) as outgoing:
                     with self.assertRaises(profile.Invalid):
                         WrapperRebuilder("http://127.0.0.1:8765/run")(

@@ -34,20 +34,8 @@ STAGES = {
     "profile": SHARED,
     "evidence": SHARED,
     "paths": SHARED,
-    "core.contracts": SHARED,
-    "core.profile": SHARED,
-    "core.evidence": SHARED,
-    "runtime.n8n.compiler": "compile",
-    "runtime.n8n.refinement": "compile",
-    "runtime.n8n.execution": "execute",
-    "runtime.agency": "execute",
-    "runtime.ui_n8n": "execute",
-    "core.host": "execute",
-    "runtime.task_evaluation": "evaluate",
-    "interfaces.review_export": "evaluate",
-    "interfaces.benchmark_series": "evaluate",
-    "runtime.rebuilder": "author",
-    "interfaces.generation.agent": "author",
+    "net": SHARED,
+    "autowfbench_source": SHARED,
     "compile": "compile",
     "execute": "execute",
     "evaluate": "evaluate",
@@ -55,18 +43,15 @@ STAGES = {
     "coordinate": "coordinate",
 }
 
+# The in-container verifier still runs n8n itself; the evidence-only split removes these.
 KNOWN_VIOLATIONS = {
-    ("interfaces.generation.agent", "interfaces.generation.common"),
-    ("runtime.n8n.execution", "runtime.execution"),
-    ("runtime.rebuilder", "runtime.agency"),
-    ("runtime.rebuilder", "runtime.lifecycle"),
-    ("runtime.task_evaluation", "runtime.autowfbench"),
-    ("verification.lifecycle_submission", "core.profile"),
-    ("verification.lifecycle_submission", "core.provenance"),
+    ("verification.lifecycle_submission", "profile"),
+    ("verification.lifecycle_submission", "coordinate.provenance"),
+    ("verification.lifecycle_submission", "evidence"),
     ("verification.lifecycle_submission", "paths"),
-    ("verification.lifecycle_submission", "runtime.lifecycle"),
-    ("verification.verify", "core.scenarios"),
-    ("verification.verify", "runtime.execution"),
+    ("verification.lifecycle_submission", "coordinate.lifecycle"),
+    ("verification.verify", "coordinate.scenarios"),
+    ("verification.verify", "coordinate.cases"),
 }
 
 
@@ -151,5 +136,21 @@ class StageBoundaryTests(unittest.TestCase):
             )
 
     def test_every_module_has_a_stage(self):
-        stages = {stage_of(module) for module, _, _ in modules()}
-        self.assertLessEqual(stages, set(ALLOWED))
+        # A module outside the stage directories would silently be "coordinate".
+        stages = ("compile", "execute", "evaluate", "author", "coordinate")
+        loose = {module for module, _, verifier in modules() if not verifier and "." not in module}
+        shared = {name for name, stage in STAGES.items() if stage == SHARED}
+        self.assertEqual(loose - shared - set(stages) - {"__main__", ""}, set())
+        for stage in stages:
+            self.assertTrue((ROOT / "src" / PACKAGE / stage).is_dir(), stage)
+
+    def test_only_authoring_and_coordination_import_harbor(self):
+        # Harbor is an optional extra; compile, execute and evaluate must work without it.
+        for module, path, _ in modules():
+            if module == "author.agent" or stage_of(module) == "coordinate":
+                continue
+            for node in ast.walk(ast.parse(path.read_text())):
+                if isinstance(node, ast.ImportFrom) and not node.level:
+                    self.assertFalse((node.module or "").split(".")[0] == "harbor", module)
+                if isinstance(node, ast.Import):
+                    self.assertFalse(any(a.name.split(".")[0] == "harbor" for a in node.names), module)

@@ -15,9 +15,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 import yaml
 
-from sapi_config_lab.runtime.lifecycle import LifecycleController, durable_json, validate_lifecycle
-from sapi_config_lab.core.provenance import source_manifest
-from sapi_config_lab.core import profile
+from sapi_config_lab.coordinate.lifecycle import LifecycleController, validate_lifecycle
+from sapi_config_lab.evidence import durable_json
+from sapi_config_lab.coordinate.provenance import source_manifest
+from sapi_config_lab import profile
 
 if TYPE_CHECKING or __package__:
     from .contracts import require
