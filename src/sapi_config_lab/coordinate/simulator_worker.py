@@ -15,6 +15,8 @@ from sapi_config_lab.profile import Invalid, Unsupported, check, read, read_bind
 SUBMISSION = Path("/app/submission/config.yaml")
 TESTS = Path("/tests")
 LOGS = Path("/logs/verifier")
+# Each of /begin and /finish; /finish includes the host's evaluation.
+HTTP_TIMEOUT_SECONDS = 240
 
 
 def submission_sha256() -> str | None:
@@ -57,7 +59,7 @@ def run() -> dict:
             json.dumps(body).encode(),
             {"Content-Type": "application/json", "Authorization": "Bearer " + settings["token"]},
         )
-        with urlopen(request, timeout=240) as response:
+        with urlopen(request, timeout=HTTP_TIMEOUT_SECONDS) as response:
             return json.load(response)
 
     admitted = post("/begin", {})

@@ -96,7 +96,7 @@ class VerificationContractTests(unittest.TestCase):
             evidence.parent.mkdir(parents=True)
             evidence.write_text(json.dumps(run))
             before = evidence.read_bytes()
-            identity = evaluator_identity()
+            identity = evaluator_identity("invoice-total")
             files = {"original": {"case.json": hashlib.sha256(before).hexdigest()}}
             recorded = Recorded(Path(directory) / "evidence", Path(directory) / "evaluation", files, identity)
             recorded.accept("original", False, str(rejected.exception))

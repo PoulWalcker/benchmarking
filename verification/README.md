@@ -1,6 +1,6 @@
 # Independent verifier
 
-These modules are copied flat into every fixture task's `tests/` and judge a submission without importing the compiler, operations, runtime or coordinator. Duplicating business rules here is deliberate: reusing the implementation under test would make a shared bug look like correctness.
+These modules are copied flat into every fixture task's `tests/`, with that scenario's `evaluation/` data under `tests/evaluation/<scenario>/`, and judge a submission without importing the compiler, operations, runtime or coordinator. Duplicating business rules here is deliberate: reusing the implementation under test would make a shared bug look like correctness.
 
 ## Flow
 
@@ -16,12 +16,12 @@ These modules are copied flat into every fixture task's `tests/` and judge a sub
 | --- | --- |
 | `verify.py` | plan, evidence integrity, case judging, CLI |
 | `business.py` | invoice-total, ticket-routing, competitor-report obligations |
-| `scenario_contracts.py`, `roles.py` | role contracts; bind any unambiguous submitted step IDs to them |
+| `roles.py` | bind any unambiguous submitted step IDs to the scenario's `evaluation/contract.json`; rejections carry a stable `code` |
 | `scenario_business.py` | obligations of the composed scenarios (06-09) |
 | `extensions.py` | bounded refinement (revise-answer) |
 | `lifecycle.py`, `lifecycle_submission.py` | daily-digest lifecycle snapshots |
 | `n8n_provenance.py` | ties observations to native n8n records |
-| `rubric.py`, `rubric_cards.py`, `rubric_facts.py` | optional quality score beside acceptance |
+| `rubric.py`, `rubric_cards.py`, `rubric_facts.py` | optional quality score beside acceptance; cards are the scenario's `evaluation/rubric.json` |
 
 ## Rules
 

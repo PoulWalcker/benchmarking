@@ -4,13 +4,14 @@ import argparse
 import importlib
 import json
 from pathlib import Path
+import subprocess
 import sys
 
 from sapi_config_lab.contracts import CompileOptions, WorkflowBackend
 from sapi_config_lab.coordinate.backend import default_backend
 from sapi_config_lab.evidence import write_json
 from sapi_config_lab.execute.host import LAB_IMAGE
-from sapi_config_lab.paths import CATALOG
+from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.profile import Invalid, Unsupported, read, read_bindings, validate
 
 MODULES = {
@@ -28,6 +29,7 @@ MODULES = {
 }
 
 PUBLIC = {
+    "check": "Run every required local check (tests, lint, format, types, distribution); no Docker.",
     "compile": "Validate one YAML; write the n8n JSON and its step-to-node map.",
     "build": "Compile every benchmarks/*/config.yaml and record which were rejected.",
     "harbor": "Unpaid control suite: pinned image, transport probes, oracle and nop trials.",
@@ -59,6 +61,30 @@ def command_help() -> str:
     rows += [f"  {name:<21}{text}" for name, text in INTERNAL.items()]
     rows += ["", "Every command accepts --help."]
     return "\n".join(rows)
+
+
+# The required local checks, in order; each is the plain command docs/DEVELOPMENT.md used to list.
+LINTED = ("src", "tests", "verification", "infra")
+CHECKS = {
+    "unittest": ("-m", "unittest", "discover", "-s", "tests", "-v"),
+    "ruff check": ("-m", "ruff", "check", *LINTED),
+    "ruff format": ("-m", "ruff", "format", "--check", *LINTED),
+    "mypy": ("-m", "mypy"),
+    "distribution": ("infra/check_distribution.py",),
+}
+
+
+def check_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sapi-lab check", description="Run every required local check.")
+    parser.parse_args(argv)
+    failed = []
+    for index, (name, arguments) in enumerate(CHECKS.items(), 1):
+        print(f"[{index}/{len(CHECKS)}] {name}", file=sys.stderr, flush=True)
+        if subprocess.run([sys.executable, *arguments], cwd=workspace_root(), check=False).returncode:
+            failed.append(name)
+            print(f"[{index}/{len(CHECKS)}] {name}: FAILED", file=sys.stderr, flush=True)
+    print("check " + ("failed: " + ", ".join(failed) if failed else "passed"), file=sys.stderr, flush=True)
+    return 1 if failed else 0
 
 
 def compile_command(argv: list[str], *, backend: WorkflowBackend | None = None) -> int:
@@ -136,12 +162,14 @@ def package_tasks_command(argv: list[str]) -> int:
     )
     options.add_argument("--image", default=LAB_IMAGE)
     options.add_argument("--scenario", action="append", dest="scenarios")
+    options.add_argument("--catalog", choices=["full", "scenario"], default="full", help="generation catalog arm")
     selected = options.parse_args(argv)
     stage_tasks(
         selected.destination,
         mode=selected.mode,
         image=selected.image,
         scenarios=tuple(selected.scenarios) if selected.scenarios else None,
+        catalog=selected.catalog,
     )
     print(selected.destination)
     return 0
@@ -166,6 +194,8 @@ def dispatch(argv: list[str] | None = None, *, backend: WorkflowBackend | None =
     parser.add_argument("arguments", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
     command = args.command
+    if command == "check":
+        return check_command(args.arguments)
     if command == "compile":
         return compile_command(args.arguments, backend=backend)
     if command == "build":

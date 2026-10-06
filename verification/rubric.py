@@ -127,24 +127,6 @@ class RubricCard:
     def needs_judge(self) -> bool:
         return any(criterion.evaluator == "llm" for criterion in self.criteria)
 
-    @classmethod
-    def binary(cls, scenario: str) -> RubricCard:
-        """One deterministic criterion, so a pass/fail scenario keeps 10.0 or 0.0."""
-        return cls(
-            id=scenario,
-            version="1.0.0",
-            origin="local",
-            criteria=(
-                Criterion(
-                    id="acceptance",
-                    question="Does the result satisfy the independent acceptance contract for " + scenario + "?",
-                    weight=10,
-                    evaluator="deterministic",
-                    check_id="accepted",
-                ),
-            ),
-        )
-
 
 @dataclass(frozen=True)
 class RunFacts:

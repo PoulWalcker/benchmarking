@@ -10,11 +10,11 @@ from zoneinfo import ZoneInfo
 if TYPE_CHECKING or __package__:
     from .contracts import WorkflowObservation, equal, require
     from .n8n_provenance import check_graph_evidence, check_provenance, live_operations, one_run
-    from .roles import resolve
+    from .roles import resolve, whole_results
 else:  # Standalone Harbor distribution.
     from contracts import WorkflowObservation, equal, require
     from n8n_provenance import check_graph_evidence, check_provenance, live_operations, one_run
-    from roles import resolve
+    from roles import resolve, whole_results
 
 
 def _hash(value: Any) -> str:
@@ -49,9 +49,11 @@ def digest_native(config: dict, run: dict, admission: dict, *, mode: str) -> dic
         summarize: {"articles": {"ref": f"steps.{prepare}.articles"}},
         preview: {"summary": {"ref": "steps." + summarize}},
     }
+    uses = {sid: operation for operation, sid in roles.items()}
     source_bindings_valid = True
     for step in steps:
-        source_bindings_valid = source_bindings_valid and step.get("with") == expected_bindings[step["id"]]
+        submitted = {key: whole_results(value, uses) for key, value in (step.get("with") or {}).items()}
+        source_bindings_valid = source_bindings_valid and submitted == expected_bindings[step["id"]]
         require(not step.get("when"), "Digest task cannot silently skip an operation")
     events = {event["step_id"]: event for event in final.get("trace", [])}
     require(len(final.get("trace", [])) == 3, "Incomplete digest trace")
@@ -91,7 +93,7 @@ def digest_native(config: dict, run: dict, admission: dict, *, mode: str) -> dic
     output = final["output"]
     passed = (
         source_bindings_valid
-        and workflow["output"] == {"ref": "steps." + preview}
+        and whole_results(workflow["output"], uses) == {"ref": "steps." + preview}
         and isinstance(summary.get("text"), str)
         and bool(summary["text"].strip())
         and summary.get("article_ids") == [article["id"] for article in arguments[summarize]["articles"]]

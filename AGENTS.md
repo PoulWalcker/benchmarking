@@ -25,7 +25,7 @@ definition -> COMPILE -> artifact -> EXECUTE -> evidence -> EVALUATE -> verdicts
 | Evaluate | `evaluate/` | scores recorded evidence; never reruns |
 | Coordinate | `coordinate/` | orchestration; nothing imports it |
 | Verifier | `verification/` | recomputes acceptance from fixtures; imports only itself |
-| Benchmarks | `benchmarks/NN-<name>/` | the only scenario registry, via `scenario.json` |
+| Benchmarks | `benchmarks/NN-<name>/` | the only scenario registry, via `scenario.json`; `evaluation/` holds its evaluator-only contract and rubric data |
 
 `tests/test_boundaries.py` enforces import direction; change it together with `docs/ARCHITECTURE.md` when a boundary intentionally moves.
 
@@ -51,10 +51,6 @@ definition -> COMPILE -> artifact -> EXECUTE -> evidence -> EVALUATE -> verdicts
 ## Checks
 
 ```bash
-uv run --locked python -m unittest discover -s tests -v
-uv run --locked ruff check src tests verification infra
-uv run --locked ruff format --check src tests verification infra
-uv run --locked mypy
-uv run --locked python infra/check_distribution.py
-./run.sh --scenario <name>   # when execution, packaging, containers, evidence or verification change
+uv run --locked sapi-lab check   # tests, ruff, ruff format, mypy, distribution
+./run.sh --scenario <name>       # when execution, packaging, containers, evidence or verification change
 ```

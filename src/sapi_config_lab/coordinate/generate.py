@@ -7,22 +7,27 @@ import argparse
 from collections import Counter
 import copy
 from datetime import UTC, datetime
+import hashlib
 import json
 from pathlib import Path
 import secrets
 import sys
+import time
 from typing import Any
 
+import yaml
+
+from sapi_config_lab.coordinate.controls import suite_seconds
 from sapi_config_lab.coordinate.evaluation import trial_accepted
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
-from sapi_config_lab.coordinate.runs import Run, load_trials, run_experiment
+from sapi_config_lab.coordinate.packages import AUTHOR_AGENT, CATALOG_VARIANTS, scenario_catalog
+from sapi_config_lab.coordinate.runs import Run, load_trials, progress, run_experiment, trial_seconds
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
 from sapi_config_lab.evidence import sha256
 from sapi_config_lab.execute.host import LAB_IMAGE, HostConfig, run_logged
 from sapi_config_lab.paths import workspace_root
 
 ROOT = workspace_root()
-AUTHOR = "sapi_config_lab.author.agent:WrapperYamlAgent"
 MAX_ATTEMPTS = 10
 
 
@@ -112,6 +117,7 @@ def write_summary(report: dict, output: Path) -> None:
         "# YAML generation experiment",
         "",
         f"Status: {report['status']}. Completed: {report['experiment_completed']}.",
+        f"Operation catalog: {report['catalog']['variant']}.",
         f"Passed: {report['passed_trials']}/{report['total_trials']}.",
         "",
         "| Task | Passed | Failure stage | Artifacts |",
@@ -137,6 +143,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--series-dir", type=Path, help="Reserve in a ledger shared with other runs")
     parser.add_argument("--series-ceiling", action="append", help="PHASE=N, fixed when a series ledger is created")
     parser.add_argument("--stop-after-failure", action="store_true", help="A failed attempt blocks later ones")
+    parser.add_argument(
+        "--catalog",
+        choices=CATALOG_VARIANTS,
+        default="full",
+        help="Experiment arm: the full operation catalog (default) or only the operations the scenario's reference uses",
+    )
     args = parser.parse_args(argv)
     try:
         scenarios = tuple(select_scenarios(tuple(args.scenario) if args.scenario else None))
@@ -149,6 +161,8 @@ def main(argv: list[str] | None = None) -> int:
     capped = [s for s, budget in budgets.items() if budget is not None and args.attempts > budget]
     if capped:
         parser.error("--attempts exceeds the authoring budget of " + ", ".join(capped))
+    if args.catalog != "full" and any(SCENARIOS[s].hosted for s in scenarios):
+        parser.error("--catalog scenario applies to fixture scenarios only")
     output = args.report_dir or ROOT / "reports" / (datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-generation")
     ceiling = len(scenarios) * args.attempts
     report: dict[str, Any] = {
@@ -158,6 +172,7 @@ def main(argv: list[str] | None = None) -> int:
         "scenarios": list(scenarios),
         "authoring_attempt_ceiling": ceiling,
         "runtime_llm_mode": "stub",
+        "catalog": {"variant": args.catalog},
         "trials": [],
         "harbor_exit_codes": [],
         "limitations": [
@@ -170,15 +185,17 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     def body(run: Run) -> None:
-        print(f"Control suite first; reports: {run.output}", flush=True)
+        progress(f"controls: unpaid control suite first; log {run.output / 'control.log'}")
+        started = time.monotonic()
         control = run_logged(
             [sys.executable, "-m", "sapi_config_lab.coordinate.controls", "--report-dir", str(run.output / "control")]
             + [arg for scenario in scenarios for arg in ("--scenario", scenario)],
             run.output / "control.log",
-            timeout=3600,
+            timeout=suite_seconds(scenarios),
         )
         if control or json.loads((run.output / "control/report.json").read_text()).get("status") != "passed":
             raise RuntimeError("Control suite failed; model generation was not started")
+        progress(f"controls: passed ({round(time.monotonic() - started)}s)")
         run.check("after-controls")
         ledger = open_ledger(
             run.output, args.series_dir, {"authoring": ceiling}, args.stop_after_failure, series_ceilings
@@ -186,7 +203,14 @@ def main(argv: list[str] | None = None) -> int:
         report["ledger"] = str(ledger.path)
         run.use_image(LAB_IMAGE)
         overlays = {s: fresh_case_overlay(s) for s in scenarios if SCENARIOS[s].fresh_fixtures}
-        report["prompt_sha256"] = run.stage("generation", scenarios, cases=overlays)
+        progress(f"staging: {len(scenarios)} generation task packages")
+        report["prompt_sha256"] = run.stage("generation", scenarios, cases=overlays, catalog=args.catalog)
+        if args.catalog == "scenario":
+            shown = {s: scenario_catalog(SCENARIOS[s]) for s in scenarios}
+            report["catalog"]["operations"] = {
+                s: sorted(yaml.safe_load(text)["operations"]) for s, text in shown.items()
+            }
+            report["catalog"]["sha256"] = {s: hashlib.sha256(text.encode()).hexdigest() for s, text in shown.items()}
         report["fixture_overlay"] = sorted(overlays)
         report["private_cases_sha256"] = {
             s: sha256(run.tasks / s / "tests/cases.json") for s in scenarios if SCENARIOS[s].environment == "fixtures"
@@ -195,15 +219,21 @@ def main(argv: list[str] | None = None) -> int:
         jobs = []
         for attempt in range(1, args.attempts + 1):
             run.check(f"before-attempt-{attempt}")
+            step = f"[{attempt}/{args.attempts}]"
+            progress(f"{step} authoring, then verifying: {', '.join(scenarios)}")
             job = f"generated-{attempt}"
             jobs.append(run.output / "jobs" / job)
             with ledger.reserved(
                 "authoring", f"{run.output.name}/{job}", len(scenarios), report_path, ceiling
             ) as outcome:
                 exit_code, _ = run.harbor(
-                    job, run.tasks, AUTHOR, timeout=1200, agent_key="upstream=" + args.upstream, attempts="1"
+                    job, run.tasks, AUTHOR_AGENT, agent_key="upstream=" + args.upstream, attempts="1"
                 )
                 rows = summarize_trials(jobs[-1])
+                for row in rows:
+                    verdict = "passed" if row["passed"] else f"failed at {row['failure_stage']}"
+                    seconds = trial_seconds(row)
+                    progress(f"{step} {row['scenario']}: {verdict}" + (f" ({seconds}s)" if seconds is not None else ""))
                 report["harbor_exit_codes"].append(exit_code)
                 report["trials"].extend(rows)
                 outcome.passed = exit_code == 0 and len(rows) == len(scenarios) and all(r["passed"] for r in rows)

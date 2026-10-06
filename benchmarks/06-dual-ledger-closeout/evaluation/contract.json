@@ -1,0 +1,84 @@
+{
+  "roles": {
+    "domestic_validate": {
+      "operation": "invoices.validate",
+      "kind": "Script",
+      "inputs": {
+        "invoices": {
+          "ref": "inputs.domestic_invoices"
+        }
+      }
+    },
+    "domestic_sum": {
+      "operation": "invoices.sum",
+      "kind": "Script",
+      "inputs": {
+        "invoices": {
+          "ref": "steps.domestic_validate.invoices"
+        }
+      }
+    },
+    "domestic_report": {
+      "operation": "invoices.report",
+      "kind": "Script",
+      "inputs": {
+        "total": {
+          "ref": "steps.domestic_sum"
+        }
+      }
+    },
+    "export_validate": {
+      "operation": "invoices.validate",
+      "kind": "Script",
+      "inputs": {
+        "invoices": {
+          "ref": "inputs.export_invoices"
+        }
+      }
+    },
+    "export_sum": {
+      "operation": "invoices.sum",
+      "kind": "Script",
+      "inputs": {
+        "invoices": {
+          "ref": "steps.export_validate.invoices"
+        }
+      }
+    },
+    "export_report": {
+      "operation": "invoices.report",
+      "kind": "Script",
+      "inputs": {
+        "total": {
+          "ref": "steps.export_sum"
+        }
+      }
+    }
+  },
+  "edges": [
+    [
+      "domestic_validate",
+      "domestic_sum"
+    ],
+    [
+      "domestic_sum",
+      "domestic_report"
+    ],
+    [
+      "export_validate",
+      "export_sum"
+    ],
+    [
+      "export_sum",
+      "export_report"
+    ]
+  ],
+  "output": {
+    "domestic": {
+      "ref": "steps.domestic_report"
+    },
+    "export": {
+      "ref": "steps.export_report"
+    }
+  }
+}

@@ -13,12 +13,14 @@ from verification import rubric_facts
 from verification import verify as verifier
 from verification.business import check_business_result
 from verification.contracts import Rejected
+from verification.roles import contract_for
 from verification.rubric import RecordedJudge, RunFacts, _judge_view
-from verification.rubric_cards import CARDS, card_for
+from verification.rubric_cards import card_for
 from verification.scenario_business import check_scenario_business_result
-from verification.scenario_contracts import CONTRACTS, ROUTING_EDGES
 
 ROOT = Path(__file__).parents[1]
+ROUTING_EDGES = contract_for("ticket-routing")["edges"]
+CARDS = {path.parent.parent.name.split("-", 1)[1] for path in ROOT.glob("benchmarks/*/evaluation/rubric.json")}
 SCENARIO = "support-review-packet"
 INPUTS = {
     "ticket": {"id": "S-31", "text": "Please check order A9137, delayed three days.", "days_overdue": 3},
@@ -58,7 +60,7 @@ def observe(values, output):
         values,
         output,
         skipped=("normal",),
-        dependencies=CONTRACTS[SCENARIO]["edges"],
+        dependencies=contract_for(SCENARIO)["edges"],
     )
 
 
@@ -378,6 +380,11 @@ class StandaloneDistributionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             for source in (ROOT / "verification").glob("*.py"):
                 (Path(directory) / source.name).write_text(source.read_text())
+            # As packaged: each scenario's evaluation data under evaluation/<scenario>/.
+            for card in ROOT.glob("benchmarks/*/evaluation/rubric.json"):
+                target = Path(directory) / "evaluation" / card.parent.parent.name.split("-", 1)[1] / card.name
+                target.parent.mkdir(parents=True)
+                target.write_text(card.read_text())
             probe = (
                 "import sys;"
                 "import rubric_facts, rubric_cards, rubric, business, scenario_business;"
@@ -387,7 +394,7 @@ class StandaloneDistributionTests(unittest.TestCase):
                 "assert rubric_facts.evaluate('revise-answer', [], accepted=True, execution_pass=True) is None;"
                 # Every carded scenario resolves flat, including the two whose
                 # obligations live in business.py rather than scenario_business.py.
-                "assert set(rubric_cards.CARDS) == " + repr(set(CARDS)) + ";"
+                "assert all(rubric_cards.card_for(s).id == s for s in " + repr(sorted(CARDS)) + ");"
                 "assert rubric_facts.evaluate('competitor-report', [], accepted=True,"
                 " execution_pass=True)['status'] == 'not_evaluated';"
                 "print(rubric_facts.evaluate('invoice-total', [], accepted=True, execution_pass=True)['score_0_10'])"
@@ -529,7 +536,7 @@ def bulletin_run(broken=None):
         values,
         {"digest": preview, "brief": brief},
         actors=actors,
-        dependencies=CONTRACTS["bulletin-market-brief"]["edges"],
+        dependencies=contract_for("bulletin-market-brief")["edges"],
     )
 
 
@@ -568,7 +575,7 @@ def priority_run(broken=None):
         values,
         {"action": action, "brief": brief},
         skipped=("normal",),
-        dependencies=CONTRACTS["priority-support-brief"]["edges"],
+        dependencies=contract_for("priority-support-brief")["edges"],
     )
 
 

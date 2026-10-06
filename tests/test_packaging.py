@@ -7,12 +7,16 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import yaml
+
 from sapi_config_lab.coordinate.packages import EVALUATOR_MODULES, stage_tasks
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.provenance import source_manifest as inventory
 from sapi_config_lab.coordinate.scenarios import DEFAULT_SCENARIOS as SCENARIOS
+from sapi_config_lab.coordinate.scenarios import SCENARIOS as SCENARIOS_ALL
 from sapi_config_lab.coordinate.scenarios import all_cases
 from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.profile import read
 from tests.support.pinned import AVAILABLE
 from tests.support.verifying import verify_with_runner
 
@@ -35,6 +39,21 @@ GENERATION_PROMPTS = {
 }
 
 
+# The reduced-catalog experiment arm (`--catalog scenario`): the same prompts with only the
+# operations each scenario's reference uses. Not the default; a change here is an experiment change.
+SCENARIO_CATALOG_PROMPTS = {
+    "bulletin-market-brief": "598364e7e198d500f0681d10531040e2f1b84af1623feb981d28b147d7c509a7",
+    "competitor-report": "d2f4f1f23e30d2827bebec8d6ba7bb667a9829b142a400b478533f49268a4838",
+    "daily-digest": "6c75dc16c94b96da52686b3f18c04e44ad0fb0cbca88b8157211bf81d28ebf5a",
+    "dual-ledger-closeout": "df78227a3807963556ca2e2ee43d3d3b413746c3a714a857eb6910d536a9151f",
+    "invoice-total": "8c43ed0f1fd947ba5430cd95cb5555a0575b183fa0d6fbc2883ca2c98981150a",
+    "priority-support-brief": "968125d5376c2c8cd006ea1f982787db6ac06e5e8d4b6abc84c749a79c868789",
+    "revise-answer": "6ecdd336c2df7988c7ef7eedbec15b008eddbde4c8d23270f81e98aee45a27b4",
+    "support-review-packet": "098993bd827c98e10629b34bed3da9ffecc60d526e90cb44170c49c4ce9e9171",
+    "ticket-routing": "dbe964d99ebb1cd0a2dee4d3bed13a05afcda353f0d693c5e7e33c89b6b743b4",
+}
+
+
 # The checkout and CRM prompts are the bytes recorded authoring runs sent.
 HOSTED_PROMPTS = {
     "checkout-recovery": "232d941d78f8c733b6f58aa6bc708a2577aad7e9c1eb5186df2a0497677a0892",
@@ -47,6 +66,30 @@ class PackagingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             hashes = stage_tasks(Path(directory) / "tasks", mode="generation", scenarios=tuple(GENERATION_PROMPTS))
         self.assertEqual(hashes, GENERATION_PROMPTS)
+
+    def test_the_reduced_catalog_arm_changes_only_the_catalog_section(self):
+        with tempfile.TemporaryDirectory() as directory:
+            names = tuple(SCENARIO_CATALOG_PROMPTS)
+            full = Path(directory) / "full"
+            self.assertEqual(stage_tasks(full, mode="generation", scenarios=names), GENERATION_PROMPTS)
+            reduced = Path(directory) / "reduced"
+            self.assertEqual(
+                stage_tasks(reduced, mode="generation", scenarios=names, catalog="scenario"), SCENARIO_CATALOG_PROMPTS
+            )
+            for name in names:
+                before, catalog = (full / name / "instruction.md").read_text().split("\n\nOPERATION CATALOG\n")
+                after, subset = (reduced / name / "instruction.md").read_text().split("\n\nOPERATION CATALOG\n")
+                self.assertEqual(before, after)
+                used = {step["uses"] for step in read(SCENARIOS_ALL[name].config)["workflow"]["steps"]}
+                self.assertEqual(set(yaml.safe_load(subset)["operations"]), used)
+                self.assertLess(len(subset), len(catalog))
+            with self.assertRaises(ValueError):
+                stage_tasks(Path(directory) / "oracle", scenarios=names, catalog="scenario")
+
+    @unittest.skipUnless(AVAILABLE, "Requires the pinned upstream source and benchmark extra")
+    def test_hosted_catalogs_have_no_reduced_arm(self):
+        with tempfile.TemporaryDirectory() as directory, self.assertRaisesRegex(ValueError, "fixture scenarios only"):
+            stage_tasks(Path(directory) / "t", mode="generation", scenarios=("checkout-recovery",), catalog="scenario")
 
     def test_documentation_is_not_part_of_any_prompt(self):
         real = Path.read_text
@@ -78,6 +121,15 @@ class PackagingTests(unittest.TestCase):
                 for verifier_source in (ROOT / "verification").glob("*.py"):
                     self.assertEqual((task / "tests" / verifier_source.name).read_bytes(), verifier_source.read_bytes())
                 self.assertEqual(json.loads((task / "tests/cases.json").read_text()), {name: source_cases[name]})
+                # Only this scenario's evaluation data, and only in the trusted tests area.
+                source = definition.directory / "evaluation"
+                packaged = task / "tests/evaluation"
+                expected = {f"{name}/{path.name}": path.read_bytes() for path in source.glob("*")}
+                found = {str(path.relative_to(packaged)): path.read_bytes() for path in packaged.rglob("*.json")}
+                self.assertEqual(found, expected)
+                self.assertEqual(
+                    [p for p in task.rglob("*.json") if "evaluation" in p.parts and "tests" not in p.parts], []
+                )
                 self.assertIn(f"--scenario {name}", (task / "tests/test.sh").read_text())
                 self.assertIn(
                     "cp /app/scenario/base.yaml /app/submission/config.yaml", (task / "solution/solve.sh").read_text()
@@ -163,6 +215,7 @@ class PackagingTests(unittest.TestCase):
         # evaluator-only and reaches a container only as a staged tests/ file.
         self.assertIn("COPY benchmarks /app/lab/benchmarks/", (ROOT / "infra/Dockerfile").read_text())
         self.assertIn("benchmarks/*/cases.json", (ROOT / ".dockerignore").read_text().splitlines())
+        self.assertIn("benchmarks/*/evaluation/", (ROOT / ".dockerignore").read_text().splitlines())
 
     def test_every_scrubbed_evaluator_module_still_exists(self):
         # rm -rf exits 0 on a missing path, so a stale entry would leave the evaluator

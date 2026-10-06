@@ -11,10 +11,11 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 from typing import Any
 
 from sapi_config_lab.coordinate.evaluation import trial_result
-from sapi_config_lab.coordinate.packages import stage_tasks
+from sapi_config_lab.coordinate.packages import UPLOAD_ONLY_AGENTS, job_seconds, stage_tasks, verifier_bounds
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.evidence import sha256, write_json
@@ -40,6 +41,21 @@ def fingerprint(path: Path) -> dict[str, str]:
     if path.is_file():
         return {"": sha256(path)}
     return {str(item.relative_to(path)): sha256(item) for item in sorted(path.rglob("*")) if item.is_file()}
+
+
+def progress(message: str) -> None:
+    """Human progress on stderr; stdout stays machine-readable."""
+    print(message, file=sys.stderr, flush=True)
+
+
+def trial_seconds(trial: dict) -> int | None:
+    """Wall-clock seconds Harbor recorded for one trial, if it recorded both ends."""
+    recorded = json.loads(Path(trial["result_path"]).read_text())
+    try:
+        started, finished = (datetime.fromisoformat(recorded[key]) for key in ("started_at", "finished_at"))
+    except KeyError, TypeError, ValueError:
+        return None
+    return round((finished - started).total_seconds())
 
 
 def load_trials(job: Path, hosted: dict[str, Path] | None = None) -> list[dict]:
@@ -86,6 +102,7 @@ class Run:
     staging: Path | None = None
     bridge_process: subprocess.Popen | None = None
     pinned: dict[str, tuple[Path, dict[str, str]]] = field(default_factory=dict)
+    bounds: dict[str, int] = field(default_factory=dict)
 
     @property
     def tasks(self) -> Path:
@@ -106,6 +123,7 @@ class Run:
             raise RuntimeError("Pin an image before staging task packages")
         self.staging = staging_dir(self.prefix + "-", self.host)
         prompts = stage_tasks(self.tasks, mode=mode, image=self.image, scenarios=scenarios, **inputs)
+        self.bounds = verifier_bounds(scenarios, mode, inputs.get("submissions"), inputs.get("cases"))
         shutil.copytree(self.tasks, self.output / "task-packages")
         self.pin("task-packages", self.output / "task-packages")
         write_json(self.output / "task-package-hashes.json", self.pinned["task-packages"][1])
@@ -129,17 +147,26 @@ class Run:
         self.report.setdefault("phases", []).append({"phase": phase, "unchanged": True})
 
     def harbor(
-        self, job: str, tasks: Path, agent: str, *, timeout: float, hosting: Hosting | None = None, **arguments: Any
+        self, job: str, tasks: Path, agent: str, *, hosting: Hosting | None = None, **arguments: Any
     ) -> tuple[int, list[dict]]:
-        """One `harbor run`; its jobs are copied out even when it fails or times out."""
+        """One `harbor run`, bounded by its trials' own limits; its jobs are copied out even when it fails."""
         if self.staging is None:
             raise RuntimeError("No task packages were staged")
+        if agent not in UPLOAD_ONLY_AGENTS:
+            raise RuntimeError(f"Agent {agent} may run commands beside the shared verifier environment")
+        names = [task.name for task in task_dirs(tasks)]
+        if not set(names) <= set(self.bounds):
+            raise RuntimeError(
+                "Tasks this run did not stage have no time bound: " + ", ".join(sorted(set(names) - set(self.bounds)))
+            )
+        timeout = job_seconds({name: self.bounds[name] for name in names}, int(arguments.get("attempts") or 1))
+        self.report.setdefault("harbor_timeouts", {})[job] = timeout
         records = self.output / "environments" / job
         with self.hosted(job, tasks, records, hosting) as (job_tasks, hosted):
             argv = harbor_run_args(self.harbor_argv, job_tasks, self.staging / "jobs", job, agent, **arguments)
             self.report.setdefault("commands", []).append(argv)
             try:
-                exit_code = run_logged(argv, self.output / (job + ".log"), timeout=max(1.0, timeout))
+                exit_code = run_logged(argv, self.output / (job + ".log"), timeout=timeout)
             finally:
                 collect_jobs(self.staging, self.output / "jobs")
         return exit_code, load_trials(self.output / "jobs" / job, hosted)
@@ -290,10 +317,12 @@ def run_experiment(
     except Exception as error:  # A run always ends with a written report
         report["status"] = "failed"
         report["error"] = f"{type(error).__name__}: {error}"
+        progress(f"failed: {report['error']}")
         if isinstance(error, subprocess.TimeoutExpired):
             report["failure_category"] = "timeout_unknown_outcome"
         elif classify is not None:
             report["failure_category"] = classify(error)
     finally:
+        progress("finalizing: cleanup, final source check and report")
         run.close()
     return report

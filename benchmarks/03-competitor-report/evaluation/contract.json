@@ -1,0 +1,63 @@
+{
+  "roles": {
+    "product": {
+      "operation": "research.product",
+      "kind": "LLM",
+      "inputs": {
+        "material": {
+          "ref": "inputs.product_material"
+        }
+      },
+      "actor": "product-sapi"
+    },
+    "marketing": {
+      "operation": "research.marketing",
+      "kind": "LLM",
+      "inputs": {
+        "material": {
+          "ref": "inputs.marketing_material"
+        }
+      },
+      "actor": "marketing-sapi"
+    },
+    "combine": {
+      "operation": "research.combine",
+      "kind": "Script",
+      "inputs": {
+        "product": {
+          "ref": "steps.product"
+        },
+        "marketing": {
+          "ref": "steps.marketing"
+        }
+      }
+    },
+    "write": {
+      "operation": "research.write",
+      "kind": "LLM",
+      "inputs": {
+        "brief": {
+          "ref": "steps.combine"
+        }
+      },
+      "actor": "writer-sapi"
+    }
+  },
+  "edges": [
+    [
+      "product",
+      "combine"
+    ],
+    [
+      "marketing",
+      "combine"
+    ],
+    [
+      "combine",
+      "write"
+    ]
+  ],
+  "output": {
+    "ref": "steps.write"
+  }
+}

@@ -8,6 +8,7 @@ import math
 import unittest
 
 from sapi_config_lab.evaluate import task_evaluation
+from sapi_config_lab.paths import workspace_root
 from verification import rubric, rubric_cards
 from verification.rubric import (
     Criterion,
@@ -18,12 +19,12 @@ from verification.rubric import (
     RunFacts,
     score,
 )
-from verification.rubric_cards import CARDS, SUPPORT_REVIEW_PACKET, card_for
+from verification.rubric_cards import card_for
 
 ANCHORS = {"yes": "a", "maybe": "b", "no": "c"}
 
-# Every scenario that carries a card. A scenario is added by writing one card and
-# one branch in rubric_facts; this list is the roster that change has to pass.
+# Every scenario that carries a card. A scenario is added by writing its evaluation/rubric.json
+# and one branch in rubric_facts; this list is the roster that change has to pass.
 CARDED = {
     "support-review-packet",
     "competitor-report",
@@ -32,6 +33,12 @@ CARDED = {
     "ticket-routing",
     "invoice-total",
     "dual-ledger-closeout",
+}
+SUPPORT_REVIEW_PACKET = card_for("support-review-packet")
+# The scenarios that ship a card file today.
+CARDS = {
+    path.parent.parent.name.split("-", 1)[1]
+    for path in (workspace_root() / "benchmarks").glob("*/evaluation/rubric.json")
 }
 
 
@@ -217,7 +224,7 @@ class SurfaceTests(unittest.TestCase):
                     "typing",
                 },
             ),
-            (rubric_cards, {"__future__", "collections.abc", "types", "typing", ".rubric", "rubric"}),
+            (rubric_cards, {"__future__", "json", "typing", ".contracts", "contracts", ".rubric", "rubric"}),
         ):
             with self.subTest(module=module.__name__):
                 self.assertEqual(_imported_modules(module), allowed)
@@ -490,23 +497,16 @@ class ImmutabilityTests(unittest.TestCase):
             RunFacts(True, {}, refs={"judged": "candidate-final"})
         self.assertEqual(RunFacts(True, {}, refs={"judged": ["x"]}).refs["judged"], ("x",))
 
-    def test_the_card_registry_cannot_be_replaced_or_extended(self):
-        # A plain dict here let any in-process caller swap a scenario's card and
-        # have card_for() hand that one to every later run.
-        def replace():
-            CARDS["invoice-total"] = RubricCard.binary("evil")
-
-        def extend():
-            CARDS["new-scenario"] = RubricCard.binary("evil")
-
-        def remove():
-            del CARDS["invoice-total"]
-
-        for operation in (replace, extend, remove):
-            with self.subTest(operation=operation.__name__), self.assertRaises(TypeError):
-                operation()
-        self.assertEqual(card_for("invoice-total").id, "invoice-total")
-        self.assertEqual(set(CARDS), CARDED)
+    def test_a_card_is_read_from_scenario_data_and_cannot_be_altered_in_process(self):
+        # A card held in a mutable registry could be swapped for every later run; one read from
+        # the scenario's rubric.json into a frozen dataclass cannot.
+        card = card_for("invoice-total")
+        with self.assertRaises(AttributeError):
+            card.id = "evil"  # type: ignore[misc]
+        with self.assertRaises(TypeError):
+            card.answer_values["yes"] = 0.0  # type: ignore[index]
+        self.assertEqual(card_for("invoice-total").digest(), card.digest())
+        self.assertEqual(CARDS, CARDED)
 
 
 class CardRewriteTests(unittest.TestCase):
@@ -1019,8 +1019,10 @@ class ArithmeticTests(unittest.TestCase):
 
     def test_every_card_weighs_ten_with_a_deterministic_majority(self):
         """Ten points per card, and no card leaves the majority to a judge."""
-        for scenario, card in CARDS.items():
+        for scenario in sorted(CARDS):
+            card = card_for(scenario)
             with self.subTest(scenario=scenario):
+                self.assertEqual(card.id, scenario)
                 total = sum(criterion.weight for criterion in card.criteria)
                 determined = sum(
                     criterion.weight for criterion in card.criteria if criterion.evaluator == "deterministic"

@@ -27,16 +27,8 @@ jobs:
           node-version: "22"
       - name: Install the locked project environment
         run: uv sync --locked
-      - name: Lint and formatting
-        run: |
-          uv run --locked ruff check src tests verification infra
-          uv run --locked ruff format --check src tests verification infra
-      - name: Types
-        run: uv run --locked mypy
-      - name: Local behavioral checks
-        run: uv run --locked python -m unittest discover -s tests -v
-      - name: Distribution privacy and resources
-        run: uv run --locked python infra/check_distribution.py
+      - name: Tests, lint, formatting, types and distribution
+        run: uv run --locked sapi-lab check
 
   pinned-simulator:
     # The `local` job has neither the benchmark extra nor the pinned upstream

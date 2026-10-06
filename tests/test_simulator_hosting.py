@@ -50,6 +50,7 @@ class HostingTests(unittest.TestCase):
         FakeSimulatorHost.made = []
         self.root = Path(tempfile.mkdtemp())
         self.run = Run(self.root / "run", {}, {}, "t", staging=self.root / "staging")
+        self.run.bounds = {"checkout-recovery": 720, "invoice-total": 5160}
         tasks = self.run.tasks
         for name, hosted in (("checkout-recovery", True), ("invoice-total", False)):
             (tasks / name / "tests").mkdir(parents=True)
@@ -88,7 +89,7 @@ class HostingTests(unittest.TestCase):
             patch("sapi_config_lab.coordinate.runs.run_logged", side_effect=harbor_run),
             patch("sapi_config_lab.coordinate.runs.pinned_source", return_value=self.root),
         ):
-            return self.run.harbor("oracle", self.run.tasks, "oracle", timeout=10, hosting=hosting)
+            return self.run.harbor("oracle", self.run.tasks, "oracle", hosting=hosting)
 
     def test_hosted_trial_uses_the_host_record_and_never_changes_pinned_packages(self):
         exit_code, trials = self.harbor()
@@ -114,7 +115,7 @@ class HostingTests(unittest.TestCase):
 
     def test_simulator_tasks_cannot_run_without_a_host(self):
         with self.assertRaisesRegex(RuntimeError, "host environment"):
-            self.run.harbor("oracle", self.run.tasks, "oracle", timeout=10)
+            self.run.harbor("oracle", self.run.tasks, "oracle")
 
 
 class VerifierResultTests(unittest.TestCase):

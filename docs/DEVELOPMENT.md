@@ -14,14 +14,10 @@ Python is pinned to `3.14.8` by `.python-version`; `--locked` keeps `uv.lock` au
 ## Checks
 
 ```bash
-uv run --locked python -m unittest discover -s tests -v
-uv run --locked ruff check src tests verification infra
-uv run --locked ruff format --check src tests verification infra
-uv run --locked mypy
-uv run --locked python infra/check_distribution.py
+uv run --locked sapi-lab check
 ```
 
-They are fast and deterministic and prove nothing about real n8n. For that run the unpaid control suite:
+It runs the unit tests, `ruff check`, `ruff format --check`, `mypy` and `infra/check_distribution.py`, prints each stage to stderr and exits 1 naming every stage that failed. The checks are fast and deterministic and prove nothing about real n8n. For that run the unpaid control suite:
 
 ```bash
 ./run.sh                          # default scenarios
@@ -36,6 +32,7 @@ A control is valid only when `oracle` passes and `nop` fails. Fix the instrument
 
 | Command | Purpose | Model calls |
 | --- | --- | --- |
+| `check` | the required local checks | no |
 | `compile` / `build` | validate and compile one config / every reference config | no |
 | `harbor` | the control suite (`./run.sh`) | no |
 | `generate` | model-authored YAML after a passing control suite (`./run-generation.sh`) | yes |
@@ -74,9 +71,13 @@ Add `benchmarks/NN-<name>/` with a `scenario.json` (fields in [ARCHITECTURE.md](
 
 A **fixture** scenario adds the public `task.md` and evaluator-only `cases.json`, then extends the verifier:
 
-- role contract in `verification/scenario_contracts.py` (and `roles.py` when needed);
+- `evaluation/contract.json`: the role contract (operations, input lineage, edges, output) that `verification/roles.py` binds any unambiguous step IDs to;
 - business obligations in `verification/scenario_business.py`, recomputed from fixture inputs, never imported from the operation under test;
-- a rubric card only for a quality question binary acceptance does not answer.
+- `evaluation/rubric.json` only for a quality question binary acceptance does not answer, plus its prose branch in `verification/rubric_facts.py`.
+
+`evaluation/` is evaluator data: packaging copies it into the task's trusted `tests/` and `.dockerignore` keeps it out of the image.
+
+Optional `harbor` settings in `scenario.json` (`agent_timeout_sec`, `verifier_timeout_sec`, `build_timeout_sec`, `cpus`, `memory_mb`, `storage_mb`; bounded integers, defaults in `coordinate/scenarios.py`) are rendered into `task.toml`. Staging refuses a `verifier_timeout_sec` smaller than the verifier's worst case: every planned execution in sequence at the executor's own import and execution ceilings, plus a fixed overhead. Add cases, then raise the timeout the error names. Each `harbor run` and the whole control suite are bounded by the same estimate: every trial at its build and agent limits plus its verifier estimate. A fixture package records the deadline it was sized for in `tests/budget.json`, and the verifier refuses to plan a definition with a longer one (`deadline_exceeds_budget`); hosted admission already requires the upstream deadline.
 
 A **hosted** scenario names its pinned upstream challenge under `provenance` and adds `authoring-notes.md` and its own `bindings.yaml`; the upstream scorer is its evaluator.
 
@@ -84,7 +85,7 @@ Cover profile validity, packaging, a positive case and a plausible bad result th
 
 ## Model-authored definitions
 
-`./run-generation.sh` gives a model the task, `generation/FORMAT.md`, `generation/PROFILE.md` and the operation catalog, once per attempt, with no repair. The answer is a candidate like any other: compiled, executed and independently verified. Runtime model steps are stubs during generation. The wrapper does not disable its CLI tools: the prompt forbids them and recognized tool markers in its stderr reject the attempt, which is an audit, not a sandbox. `tests/test_packaging.py` pins every generation prompt's hash; a prompt change is an experiment change.
+`./run-generation.sh` gives a model the task, `generation/FORMAT.md`, `generation/PROFILE.md` and the operation catalog, once per attempt, with no repair. `--catalog scenario` is an experiment arm, not the default: the catalog shows only the operations the scenario's reference uses, the report records the variant, the operations shown and their hashes, and its prompts are pinned separately. `sapi-lab package-tasks --mode generation --catalog scenario` stages those prompts without a model call. The answer is a candidate like any other: compiled, executed and independently verified. Runtime model steps are stubs during generation. The wrapper does not disable its CLI tools: the prompt forbids them and recognized tool markers in its stderr reject the attempt, which is an audit, not a sandbox. `tests/test_packaging.py` pins every generation prompt's hash; a prompt change is an experiment change.
 
 For a hosted scenario the gate after authoring is admission: the YAML compiles, stays within `runtime_model_calls` and keeps the upstream deadline.
 

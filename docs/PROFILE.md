@@ -14,7 +14,7 @@ The source of truth is the validator/runtime code. This document records the dur
 | Workflow kinds | `Pipeline` and `Gantt` with the currently validated step restrictions |
 | Operations | `uses` selects an explicitly registered operation from `bindings.yaml` |
 | Inputs | fixture values are supplied through `workflow.inputs`; this is not a general input-schema language |
-| References | values may reference inputs or outputs of ancestor steps |
+| References | values may reference inputs or outputs of ancestor steps; a step result has exactly its declared output fields, so an object copying all of them with `ref` is that whole result (`{ref: steps.ID}`); with `optional_ref` it is not, since a skipped producer gives null |
 | Dependencies | explicit edges define order; YAML file order does not |
 | Conditions | `when` uses exact equality over supported scalar references |
 | Skip | false condition marks a step skipped and does not call its operation |

@@ -38,6 +38,9 @@ class RunTests(unittest.TestCase):
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
         self.output = self.root / "run"
+        quiet = patch("sapi_config_lab.coordinate.runs.progress")
+        quiet.start()
+        self.addCleanup(quiet.stop)
 
     def saved(self):
         return json.loads((self.output / "report.json").read_text())
@@ -83,7 +86,7 @@ class RunTests(unittest.TestCase):
         def body(run):
             run.use_image("lab")
             run.stage("oracle", ("invoice-total",))
-            run.harbor("oracle", run.tasks, "oracle", timeout=60)
+            run.harbor("oracle", run.tasks, "oracle")
             run.report["status"] = "passed"
             body.staging = run.staging
 
@@ -190,8 +193,9 @@ class LiveCeilingTests(unittest.TestCase):
         stub = root / "control.json"
         stub.write_text("{}")
         gate = {"oracle": {"trials": [{"task_name": "ticket-routing"}]}}
+        stdout, stderr = io.StringIO(), io.StringIO()
         with patch("sapi_config_lab.coordinate.live.validate_control", return_value=gate):
-            with contextlib.redirect_stdout(io.StringIO()):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 code = live(
                     [
                         "--stub-report",
@@ -210,3 +214,9 @@ class LiveCeilingTests(unittest.TestCase):
         self.assertIn("needs up to 2 model calls; --max-calls allows 1", report["error"])
         self.assertEqual(host.ran, [])
         self.assertFalse((root / "run/ledger.json").exists())
+        # Progress is for people and goes to stderr; stdout stays exactly one JSON document.
+        self.assertEqual(json.loads(stdout.getvalue())["status"], "failed")
+        self.assertEqual(len(stdout.getvalue().splitlines()), 1)
+        self.assertIn("controls: checking", stderr.getvalue())
+        self.assertIn("failed: ValueError", stderr.getvalue())
+        self.assertIn("finalizing", stderr.getvalue())

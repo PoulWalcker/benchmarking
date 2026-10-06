@@ -19,7 +19,7 @@ import yaml
 
 if TYPE_CHECKING or __package__:
     from .business import check_business_result, expected_classification
-    from .contracts import Recorded, Rejected, require
+    from .contracts import Recorded, Rejected, require, scenario_file
     from .extensions import refinement_corruptions, reply_roles, verify_refinement
     from .n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
     from .roles import bind_roles, contract_for
@@ -31,7 +31,7 @@ else:  # Harbor executes its copied verifier directly.
 
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from business import check_business_result, expected_classification
-    from contracts import Recorded, Rejected, require
+    from contracts import Recorded, Rejected, require, scenario_file
     from extensions import refinement_corruptions, reply_roles, verify_refinement
     from n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
     from roles import bind_roles, contract_for
@@ -40,6 +40,8 @@ else:  # Harbor executes its copied verifier directly.
     from rubric_facts import evaluate as score_rubric
 
 PLAN_SCHEMA = "sapi-lab-observation-plan/v1"
+# Scenario-owned evaluation data under benchmarks/NN-name/evaluation/, packaged beside this verifier.
+EVALUATION_FILES = ("contract.json", "rubric.json")
 OBSERVATION_SCHEMA = "sapi-lab-observation/v1"
 # Corrupted-artifact probe: n8n succeeds and only independent acceptance can notice the wrong result.
 WRONG_RESULT = "wrong-result"
@@ -222,10 +224,14 @@ def digest(value: Any) -> str:
     return sha256_bytes(canonical(value).encode())
 
 
-def evaluator_identity() -> dict:
-    """Which verifier judged: the hash of every module it was built from."""
+def evaluator_identity(scenario: str) -> dict:
+    """Which verifier judged: the hash of every module and of the scenario's own evaluation files."""
     here = Path(__file__).resolve().parent
     sources = {path.name: sha256_bytes(path.read_bytes()) for path in sorted(here.glob("*.py"))}
+    for name in EVALUATION_FILES:
+        path = scenario_file(scenario, name)
+        if path is not None:
+            sources["evaluation/" + name] = sha256_bytes(path.read_bytes())
     return {"name": "sapi-lab-independent-verifier", "sources_sha256": sha256_bytes(canonical(sources).encode())}
 
 
@@ -244,11 +250,21 @@ def plan(
     cases: dict | None,
     mode: str = "stub",
     selected_case: str | None = None,
+    deadline_budget: int | None = None,
 ) -> dict:
     """Every definition the trusted step must run: fixture-applied submissions, corruptions and invalid definitions."""
     require(isinstance(cases, dict), "Unknown acceptance scenario")
     assert cases is not None
     raw, config = read_submission(config_path)
+    if deadline_budget is not None:
+        # The package's verifier timeout was sized for this deadline; a longer one could outlive it.
+        execution = config.get("execution")
+        deadline = execution.get("deadline_seconds") if isinstance(execution, dict) else None
+        require(
+            type(deadline) is int and 0 < deadline <= deadline_budget,
+            f"Workflow deadline {deadline!r} exceeds the {deadline_budget}s this task was sized for",
+            "deadline_exceeds_budget",
+        )
     if scenario == "daily-digest":
         if TYPE_CHECKING or __package__:
             from .lifecycle_submission import plan_lifecycle
@@ -509,7 +525,7 @@ def judge_entries(
                 )
         except Rejected as error:
             if entry["kind"] in ("positive", "negative"):
-                row["acceptance"] = recorded.accept(entry["name"], False, str(error))
+                row["acceptance"] = recorded.accept(entry["name"], False, str(error), error.code)
             raise
         row["passed"] = True
 
@@ -526,11 +542,12 @@ def evaluate(
     runtime_manifest: Path | None = None,
     judge: Judge | None = None,
     evaluation: Path | None = None,
+    deadline_budget: int | None = None,
 ) -> dict:
     """Judge the recorded observation of one submission; decisions go beside it unless `evaluation` is given."""
     evaluation = evaluation or evidence.parent / "evaluation"
     evaluation.mkdir(parents=True, exist_ok=True)
-    identity = evaluator_identity()
+    identity = evaluator_identity(scenario)
     rubric_runs: list[dict] = []
     report: dict[str, Any] = {
         "scenario": scenario,
@@ -550,7 +567,7 @@ def evaluate(
             require(runtime_manifest is not None and runtime_manifest.is_file(), "Missing packaged runtime manifest")
             assert runtime_manifest is not None
             check_runtime_sources(runtime_src, runtime_manifest)
-        expected = plan(scenario, config_path, cases, mode, selected_case)
+        expected = plan(scenario, config_path, cases, mode, selected_case, deadline_budget)
         assert cases is not None
         report["submission_sha256"] = expected["submission_sha256"]
         report["fixture_sha256"] = expected["fixture_sha256"]
@@ -571,6 +588,8 @@ def evaluate(
     except Exception as error:  # Candidate evidence can fail any way; each way is a rejection
         report["error"] = str(error)
         report["error_type"] = type(error).__name__
+        if isinstance(error, Rejected) and error.code:
+            report["error_code"] = error.code
         report["passed"] = False
     if scenario != "daily-digest":
         # Outside the acceptance try: the rubric reads the verdict and never sets it.
@@ -611,11 +630,13 @@ def main() -> int:
     parser.add_argument("--case", default=os.environ.get("SAPI_CASE_NAME"))
     args = parser.parse_args()
     cases = load_cases(args.cases, args.scenario)
+    budget = args.cases.with_name("budget.json")
+    deadline_budget = json.loads(budget.read_text())["deadline_seconds"] if budget.is_file() else None
     if args.action == "plan":
         if args.output is None:
             parser.error("plan requires --output")
         try:
-            issued = plan(args.scenario, args.config, cases, args.mode, args.case)
+            issued = plan(args.scenario, args.config, cases, args.mode, args.case, deadline_budget)
         except Exception as error:  # An unplannable submission runs nothing and fails
             print(json.dumps({"planned": False, "error": f"{type(error).__name__}: {error}"}))
             return 1
@@ -633,6 +654,7 @@ def main() -> int:
         args.case,
         runtime_src=args.runtime_src,
         runtime_manifest=args.cases.with_name("runtime-sources.json") if args.runtime_src else None,
+        deadline_budget=deadline_budget,
     )
     print(
         json.dumps(

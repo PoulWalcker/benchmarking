@@ -1,0 +1,71 @@
+{
+  "id": "competitor-report",
+  "version": "1.0.0",
+  "origin": "local",
+  "criteria": [
+    {
+      "id": "independence",
+      "question": "Did both analyses run under their own actor, neither reading the other?",
+      "weight": 1,
+      "evaluator": "deterministic",
+      "check_id": "analyses_independent"
+    },
+    {
+      "id": "quotation",
+      "question": "Does each analysis quote an excerpt that is literally present in its own source?",
+      "weight": 2,
+      "evaluator": "deterministic",
+      "check_id": "analyses_quote_their_source"
+    },
+    {
+      "id": "join",
+      "question": "Did the join wait for both analyses and carry each through unchanged?",
+      "weight": 1,
+      "evaluator": "deterministic",
+      "check_id": "join_preserves_both_analyses"
+    },
+    {
+      "id": "citations",
+      "question": "Does the report still carry both source excerpts, in order?",
+      "weight": 1,
+      "evaluator": "deterministic",
+      "check_id": "report_carries_both_excerpts"
+    },
+    {
+      "id": "coverage",
+      "question": "Does the report state the facts these two source materials require of it?",
+      "weight": 1,
+      "evaluator": "deterministic",
+      "check_id": "report_covers_both_sources"
+    },
+    {
+      "id": "synthesis",
+      "question": "Does the report read as one account of both sources rather than two summaries side by side?",
+      "weight": 2,
+      "evaluator": "llm",
+      "anchors": {
+        "yes": "At least one sentence relates a product fact to a market fact and needs both to make sense.",
+        "maybe": "Both sources are present but each paragraph stands alone; nothing connects them.",
+        "no": "The two summaries are pasted together, or one source never reaches the prose."
+      },
+      "required_evidence": [
+        "candidate"
+      ]
+    },
+    {
+      "id": "invention",
+      "question": "Does the report assert only what the two supplied materials support?",
+      "weight": 2,
+      "evaluator": "llm",
+      "anchors": {
+        "yes": "Every claim traces to a phrase in one of the two supplied materials.",
+        "maybe": "A claim generalises past the materials but stays compatible with them.",
+        "no": "It states a capability, customer, price or number that appears in neither material."
+      },
+      "required_evidence": [
+        "candidate",
+        "environment"
+      ]
+    }
+  ]
+}

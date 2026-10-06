@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 from pathlib import Path
+import re
 from typing import Any
 
 from sapi_config_lab.contracts import OutputArtifact
@@ -26,7 +27,18 @@ FIELDS = {
     "prompt_extension",
     "fresh_fixtures",
     "human_review",
+    "harbor",
 }
+# Harbor trial resources as (default, minimum, maximum); a scenario's `harbor` section overrides any of them.
+HARBOR_LIMITS = {
+    "agent_timeout_sec": (600, 60, 7200),
+    "verifier_timeout_sec": (1800, 60, 21600),
+    "build_timeout_sec": (600, 60, 3600),
+    "cpus": (1, 1, 8),
+    "memory_mb": (2048, 512, 32768),
+    "storage_mb": (4096, 1024, 65536),
+}
+HARBOR_DEFAULTS = {key: default for key, (default, _, _) in HARBOR_LIMITS.items()}
 
 
 @dataclass(frozen=True)
@@ -54,6 +66,7 @@ class Scenario:
     prompt_extension: str | None = None
     fresh_fixtures: bool = False
     human_review: bool = False
+    harbor: dict[str, int] = field(default_factory=lambda: dict(HARBOR_DEFAULTS))
 
     @property
     def config(self) -> Path:
@@ -78,13 +91,25 @@ class Scenario:
         return json.loads((self.directory / "cases.json").read_text())
 
 
+def harbor_resources(section: Any, name: str) -> dict[str, int]:
+    """Defaults overridden by a scenario's section; every value is a known, bounded integer."""
+    if not isinstance(section, dict) or set(section) - set(HARBOR_LIMITS):
+        raise ValueError(f"Invalid benchmark definition: {name}: unknown harbor settings")
+    for key, value in section.items():
+        _, low, high = HARBOR_LIMITS[key]
+        if type(value) is not int or not low <= value <= high:
+            raise ValueError(f"Invalid benchmark definition: {name}: harbor.{key} must be an integer in {low}..{high}")
+    return HARBOR_DEFAULTS | section
+
+
 def load_scenario(directory: Path) -> Scenario:
     meta: dict[str, Any] = json.loads((directory / "scenario.json").read_text())
     environment = str(meta.get("environment"))
     budgets, output, controls = meta.get("budgets", {}), meta.get("output"), meta.get("controls", {})
     provenance = meta.get("provenance")
     if (
-        set(meta) - FIELDS
+        not re.fullmatch(r"[0-9]{2}-[a-z][a-z0-9-]*", directory.name)
+        or set(meta) - FIELDS
         or EVALUATORS.get(environment) != meta.get("evaluator")
         or set(budgets) - {"authoring_attempts", "runtime_model_calls"}
         or set(controls) - {"reference_reward"}
@@ -108,6 +133,7 @@ def load_scenario(directory: Path) -> Scenario:
         prompt_extension=meta.get("prompt_extension"),
         fresh_fixtures=meta.get("fresh_fixtures", False),
         human_review=meta.get("human_review", False),
+        harbor=harbor_resources(meta.get("harbor", {}), directory.name),
     )
 
 
