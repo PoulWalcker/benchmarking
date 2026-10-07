@@ -161,8 +161,18 @@ class HostedEvaluationTests(unittest.TestCase):
                 "submission_sha256": "abc",
                 "passed": False,
                 "result": self.result,
+                "native_execution": None,
+                "terminal_completion": None,
             },
         )
+
+    def test_deterministic_evaluator_rejects_irrelevant_judge_options(self):
+        output = self.record.parent / (self.record.name + "-unsupported")
+        with self.assertRaisesRegex(ValueError, "does not support judge"):
+            evaluation_main(
+                ["--record", str(self.record), "--output", str(output), "--judgement", str(self.record / "unused.json")]
+            )
+        self.assertEqual(self.calls, [])
 
     def test_reevaluation_uses_the_scenario_the_trial_names(self):
         output = self.record.parent / (self.record.name + "-again")

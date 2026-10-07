@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 from collections.abc import Callable
 from dataclasses import dataclass
 import json
@@ -13,7 +12,7 @@ from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.evaluate.autowfbench import FrozenTaskContract, evaluate_once, freeze_contract, recorded_run_log
 from sapi_config_lab.evaluate.judge_calibration import calibration_fixture, compare_calibration
 from sapi_config_lab.evidence import write_json
-from sapi_config_lab.execute.autowfbench import start_environment
+from sapi_config_lab.execute.autowfbench import start_environment, task_definition
 from sapi_config_lab.execute.host import HostConfig
 from sapi_config_lab.execute.hosting import EnvironmentSession
 from sapi_config_lab.pinned_source import pinned_source
@@ -44,12 +43,24 @@ class HostedEnvironment:
 
 
 @dataclass(frozen=True)
+class ReevaluationOptions:
+    """Explicit judge/re-scoring inputs; CLI paths and fixture arguments stay with the CLI."""
+
+    judgement: Path | None = None
+    dispatch_judge: bool = False
+    calibration: str | None = None
+    judge_model: str | None = None
+    series_dir: Path | None = None
+    series_ceiling: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class HostedEvaluator:
     """What the core needs from an evaluator that reads a hosted trial's recorded evidence."""
 
     judge_calls: int  # paid model calls one evaluation makes when a judge model is named
     prepare: Callable[[Scenario, str | None], Callable[[Path], dict]]  # freeze before solving; then record -> result
-    reevaluate: Callable[[Scenario, Path, Path, argparse.Namespace], dict]  # one recorded trial into a new directory
+    reevaluate: Callable[[Scenario, Path, Path, ReevaluationOptions], dict]
     modules: tuple[str, ...]  # host-only sources scrubbed from hosted containers
 
 
@@ -67,11 +78,17 @@ def contract_for(scenario: Scenario, judge_model: str | None = None) -> FrozenTa
 
 
 def _autowfbench_limit(scenario: Scenario) -> int:
-    return contract_for(scenario).package["definition"]["limits"]["wall_clock_seconds"]
+    if scenario.provenance is None:
+        raise ValueError(f"{scenario.name} has no pinned upstream task")
+    return task_definition(pinned_source(scenario.provenance.source), scenario.provenance.challenge)["limits"][
+        "wall_clock_seconds"
+    ]
 
 
 def _autowfbench_task(scenario: Scenario) -> str:
-    definition = contract_for(scenario).package["definition"]
+    if scenario.provenance is None:
+        raise ValueError(f"{scenario.name} has no pinned upstream task")
+    definition = task_definition(pinned_source(scenario.provenance.source), scenario.provenance.challenge)
     return definition["task"] + "\n" + definition["completion"]
 
 
@@ -107,7 +124,7 @@ def _autowfbench_prepare(scenario: Scenario, judge_model: str | None) -> Callabl
     return evaluate
 
 
-def _autowfbench_reevaluate(scenario: Scenario, record: Path, output: Path, args: argparse.Namespace) -> dict:
+def _autowfbench_reevaluate(scenario: Scenario, record: Path, output: Path, args: ReevaluationOptions) -> dict:
     recorded = json.loads((record / "evaluation/task-contract.json").read_text())
     if args.calibration:
         contract = contract_for(scenario, args.judge_model)
@@ -123,7 +140,7 @@ def _autowfbench_reevaluate(scenario: Scenario, record: Path, output: Path, args
         run_log = fixture["run_log"]
     judgement = json.loads(args.judgement.read_text()) if args.judgement else None
     if args.dispatch_judge and contract.judge_mode == "codex":
-        ledger = open_ledger(output, args.series_dir, {"judge": 1}, False, parse_ceilings(args.series_ceiling))
+        ledger = open_ledger(output, args.series_dir, {"judge": 1}, False, parse_ceilings(list(args.series_ceiling)))
         with ledger.reserved("judge", f"{output.name}/judge", 1, output / "result.json", 1) as outcome:
             evaluation = evaluate_once(contract, run_log, output / "evaluation", dispatch=True)
             outcome.passed = evaluation["status"] == "complete"

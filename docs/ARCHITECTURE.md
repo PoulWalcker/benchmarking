@@ -72,7 +72,7 @@ A scenario has one of two placements (`scenario.hosted`): in the container (fixt
 
 ## Evaluation
 
-`coordinate/evaluation.py` gives every evaluator one result shape: execution, acceptance and optional quality (`null` is not zero). Control rules branch only on hosted versus verifier.
+`coordinate/evaluation.py` gives every evaluator one result shape: execution, acceptance and optional quality (`null` is not zero). Control rules branch only on hosted versus verifier. Hosted results are shape-checked immediately after evaluator dispatch; re-evaluation receives explicit judge options rather than an argparse namespace. Hosted trial/report fields `native_execution` and `terminal_completion` distinguish engine success from valid timely submission. The legacy AutoWFBench `result.execution` still means terminal completion; acceptance remains the evaluator's independent decision, and other evaluators need not require narrative output. Older records lacking the added fields remain readable with those observations null.
 
 - **Verifier** (`verification/`, plus the scenario's `evaluation/` data packaged beside it): `plan` states which definitions must run, `coordinate/observe.py` runs them and records evidence, `evaluate` checks the record is exactly that plan and judges it. It is packaged into each task, and deliberately duplicates business rules instead of importing the implementation under test.
 - **Hosted evaluators** (`EVALUATORS`): run on the host against a trial's recorded evidence; `hosted_evaluation` dispatches to the scenario's evaluator and writes `evaluation/report.json`, and `sapi-lab evaluate` re-evaluates a recorded trial through the same entry. AutoWFBench's pinned upstream scorer and judge are one hosted evaluator.

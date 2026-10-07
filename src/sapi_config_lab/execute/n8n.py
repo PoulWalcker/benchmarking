@@ -1,4 +1,4 @@
-"""Compile and execute a case in real, isolated n8n; no expected answers here."""
+"""Execute a compiled case in real, isolated n8n; no expected answers here."""
 
 from __future__ import annotations
 

@@ -179,7 +179,7 @@ def generation_prompt(root: Path, scenario: Scenario, catalog: str = "full") -> 
         f"{scenario.runtime_model_calls} LLM operations. "
         "Tool results are JSON strings. "
         + output
-        + " This is a synthetic simulator. "
+        + " "
         + scenario.authoring_notes()
         + "\n\n"
         + (root / "generation/FORMAT.md").read_text()

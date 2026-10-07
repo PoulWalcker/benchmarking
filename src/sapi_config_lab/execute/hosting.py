@@ -171,6 +171,8 @@ class TrialHost(ThreadingHTTPServer):
             "finished_at": _now(),
             "duration_seconds": elapsed,
             "termination_reason": reason,
+            "native_execution": record.get("status") == "success",
+            "terminal_completion": reason == "completed",
             "submission": submission,
             "submission_sha256": submission_sha256,
             "solution": {

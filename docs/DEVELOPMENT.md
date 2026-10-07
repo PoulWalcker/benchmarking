@@ -81,6 +81,8 @@ A scenario-specific `bindings` catalog is used by the author prompt, staged as `
 
 Optional `harbor` settings in `scenario.json` (`agent_timeout_sec`, `verifier_timeout_sec`, `build_timeout_sec`, `cpus`, `memory_mb`, `storage_mb`; bounded integers, defaults in `coordinate/scenarios.py`) are rendered into `task.toml`. Staging refuses a `verifier_timeout_sec` smaller than the verifier's worst case: every planned execution in sequence at the executor's own import and execution ceilings, plus a fixed overhead. Add cases, then raise the timeout the error names. Each `harbor run` and the whole control suite are bounded by the same estimate: every trial at its build and agent limits plus its verifier estimate. A fixture package records the deadline it was sized for in `tests/budget.json`, and the verifier refuses to plan a definition with a longer one (`deadline_exceeds_budget`); hosted admission already requires the provider's trial limit.
 
+The hosted completion envelope requires a string `final_answer` and any declared string artifact, copied verbatim as Markdown. Native success, valid timely terminal completion, and evaluator acceptance are separate recorded facts.
+
 A **hosted** scenario names an existing provider in `environment` and `evaluator`, plus that provider's own config (AutoWFBench: `provenance`), and adds `authoring-notes.md` and its own `bindings.yaml`.
 
 Cover profile validity, packaging, a positive case and a plausible bad result the verifier rejects, then run `./run.sh --scenario <name>`. Do not add a docs file per scenario.
