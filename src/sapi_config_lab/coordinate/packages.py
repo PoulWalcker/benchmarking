@@ -28,7 +28,8 @@ EVALUATOR_MODULES = (
     "sapi_config_lab/evaluate/autowfbench.py",
     "sapi_config_lab/evaluate/judge_calibration.py",
     "sapi_config_lab/evaluate/judge-calibration.json",
-    "sapi_config_lab/execute/simulator.py",
+    "sapi_config_lab/execute/hosting.py",
+    "sapi_config_lab/execute/autowfbench.py",
     "sapi_config_lab/pinned_source.py",
 )
 HOSTED_TEST = "#!/bin/bash\nset -euo pipefail\npython3 -m sapi_config_lab.coordinate.simulator_worker {action}\n"

@@ -11,16 +11,16 @@ from sapi_config_lab.coordinate.evaluation import UPSTREAM_REPORT, control_passe
 from sapi_config_lab.coordinate.runs import Hosting, Run, fingerprint
 
 
-class FakeSimulatorHost:
-    """Stands in for execute.simulator.SimulatorHost; records how it was configured."""
+class FakeTrialHost:
+    """Stands in for execute.hosting.TrialHost; records how it was configured."""
 
     made: ClassVar[list] = []
 
-    def __init__(self, source, challenge, record, *, seed, artifact, llm_mode, bridge_url, evaluate, host):
+    def __init__(self, start, record, *, scenario, seed, artifact, llm_mode, bridge_url, evaluate, host):
         self.record, self.llm_mode, self.evaluate = record, llm_mode, evaluate
         self.token = "secret-" + record.name
         self.closed = False
-        FakeSimulatorHost.made.append(self)
+        FakeTrialHost.made.append(self)
 
     @property
     def connection(self):
@@ -47,7 +47,7 @@ def upstream_report(scenario, passed, reward):
 
 class HostingTests(unittest.TestCase):
     def setUp(self):
-        FakeSimulatorHost.made = []
+        FakeTrialHost.made = []
         self.root = Path(tempfile.mkdtemp())
         self.run = Run(self.root / "run", {}, {}, "t", staging=self.root / "staging")
         self.run.bounds = {"checkout-recovery": 720, "invoice-total": 5160}
@@ -60,7 +60,7 @@ class HostingTests(unittest.TestCase):
                 (tasks / name / "tests/environment.json").write_text(json.dumps(environment))
         self.run.output.mkdir()
         self.pinned = fingerprint(tasks)
-        patcher = patch("sapi_config_lab.coordinate.runs.SimulatorHost", FakeSimulatorHost)
+        patcher = patch("sapi_config_lab.coordinate.runs.TrialHost", FakeTrialHost)
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -98,7 +98,7 @@ class HostingTests(unittest.TestCase):
         self.assertFalse(
             (self.root / "staging/hosted/oracle").exists() and any((self.root / "staging/hosted/oracle").iterdir())
         )
-        (host,) = FakeSimulatorHost.made
+        (host,) = FakeTrialHost.made
         self.assertTrue(host.closed)
         self.assertEqual(host.llm_mode, "stub")
         (trial,) = trials
@@ -111,7 +111,7 @@ class HostingTests(unittest.TestCase):
     def test_a_leaked_credential_fails_the_job(self):
         with self.assertRaisesRegex(RuntimeError, "Ephemeral credentials"):
             self.harbor(persisted=" secret-checkout-recovery")
-        self.assertTrue(FakeSimulatorHost.made[0].closed)
+        self.assertTrue(FakeTrialHost.made[0].closed)
 
     def test_simulator_tasks_cannot_run_without_a_host(self):
         with self.assertRaisesRegex(RuntimeError, "host environment"):
