@@ -24,7 +24,7 @@ It runs the unit tests, `ruff check`, `ruff format --check`, `mypy` and `infra/c
 ./run.sh --scenario <name> ...    # any scenarios, hosted ones included
 ```
 
-A control is valid only when `oracle` passes and `nop` fails. Fix the instrument before spending model calls.
+A control is valid only when `oracle` passes and `nop` fails. Fix the instrument before spending model calls. Hosted nop permits only Harbor’s expected `RewardFileNotFoundError` when quality is unscored and no reward exists; a deterministic evaluator with null quality must record reward zero without an exception. Every control job must exit successfully.
 
 ## CLI
 

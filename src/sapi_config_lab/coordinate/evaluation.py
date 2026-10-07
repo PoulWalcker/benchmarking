@@ -92,7 +92,20 @@ def control_passed(agent: str, trial: dict) -> bool:
     if scenario.hosted:
         result = trial["result"]
         if agent == "nop":
-            return result["acceptance"] is False and (result["quality"] or {}).get("normalized_reward") is None
+            if result["acceptance"] is not False:
+                return False
+            quality = result["quality"]
+            if quality is None:
+                return not trial["exception"] and trial["rewards"] == {"reward": 0.0}
+            # Pinned Harbor reports this exact exception when an unscored nop writes no reward.
+            exception = trial["exception"] or {}
+            return (
+                quality.get("status") != "complete"
+                and quality.get("score_0_10") is None
+                and quality.get("normalized_reward") is None
+                and trial["rewards"] is None
+                and (not exception or exception.get("exception_type") == "RewardFileNotFoundError")
+            )
         expected = scenario.reference_reward
         # Only a declared reference reward makes the benchmark scored; otherwise acceptance alone gates the oracle.
         return trial_accepted(trial) and (

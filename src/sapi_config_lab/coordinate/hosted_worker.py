@@ -5,12 +5,13 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 from sapi_config_lab.contracts import CompileOptions
 from sapi_config_lab.coordinate.backend import default_backend
 from sapi_config_lab.coordinate.cases import run_case
 from sapi_config_lab.evidence import write_json, write_record_json
+from sapi_config_lab.net import urlopen
 from sapi_config_lab.profile import Invalid, Unsupported, check, read, read_bindings
 
 SUBMISSION = Path("/app/submission/config.yaml")
