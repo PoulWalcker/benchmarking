@@ -44,7 +44,7 @@ A control is valid only when `oracle` passes and `nop` fails. Fix the instrument
 | `review-export` | write derived `analysis.md` beside recorded evaluations | no |
 | `fetch-source` | fetch and verify a pinned upstream source | no |
 
-Internal commands (`execute`, `package-tasks`, `transport`, `bridge`, `simulator-worker`) run inside containers or under another command.
+Internal commands (`execute`, `package-tasks`, `transport`, `bridge`, `hosted-worker`) run inside containers or under another command.
 
 ## Machine configuration
 
@@ -56,7 +56,7 @@ Defaults describe one Docker Desktop host. Override them through the environment
 | `SAPI_WRAPPER_URL` | `http://127.0.0.1:8765/run` | local model wrapper (`--upstream`) |
 | `SAPI_WRAPPER_MODEL` | `gpt-6-astra` | model the wrapper must report; a mismatch fails closed |
 | `SAPI_CONTAINER_HOST` | `host.docker.internal` | how a task container reaches those services (e.g. `172.17.0.1` on Linux) |
-| `SAPI_LISTEN_HOST` | `127.0.0.1` | bind address of host services containers reach: Agency bridges and hosted simulators (`ui --host`); e.g. `0.0.0.0` on Linux |
+| `SAPI_LISTEN_HOST` | `127.0.0.1` | bind address of host services containers reach: Agency bridges and hosted trial hosts (`ui --host`); e.g. `0.0.0.0` on Linux |
 | `SAPI_BRIDGE_PORT` | `18765` | live Agency bridge (`live --bridge-port`) |
 | `SAPI_UI_BRIDGE_PORT` | `18766` | UI Agency bridge (`ui --port`) |
 | `SAPI_N8N_URL` | `http://localhost:5678` | local n8n editor |
@@ -77,17 +77,25 @@ A **fixture** scenario adds the public `task.md` and evaluator-only `cases.json`
 
 `evaluation/` is evaluator data: packaging copies it into the task's trusted `tests/` and `.dockerignore` keeps it out of the image.
 
-Optional `harbor` settings in `scenario.json` (`agent_timeout_sec`, `verifier_timeout_sec`, `build_timeout_sec`, `cpus`, `memory_mb`, `storage_mb`; bounded integers, defaults in `coordinate/scenarios.py`) are rendered into `task.toml`. Staging refuses a `verifier_timeout_sec` smaller than the verifier's worst case: every planned execution in sequence at the executor's own import and execution ceilings, plus a fixed overhead. Add cases, then raise the timeout the error names. Each `harbor run` and the whole control suite are bounded by the same estimate: every trial at its build and agent limits plus its verifier estimate. A fixture package records the deadline it was sized for in `tests/budget.json`, and the verifier refuses to plan a definition with a longer one (`deadline_exceeds_budget`); hosted admission already requires the upstream deadline.
+Optional `harbor` settings in `scenario.json` (`agent_timeout_sec`, `verifier_timeout_sec`, `build_timeout_sec`, `cpus`, `memory_mb`, `storage_mb`; bounded integers, defaults in `coordinate/scenarios.py`) are rendered into `task.toml`. Staging refuses a `verifier_timeout_sec` smaller than the verifier's worst case: every planned execution in sequence at the executor's own import and execution ceilings, plus a fixed overhead. Add cases, then raise the timeout the error names. Each `harbor run` and the whole control suite are bounded by the same estimate: every trial at its build and agent limits plus its verifier estimate. A fixture package records the deadline it was sized for in `tests/budget.json`, and the verifier refuses to plan a definition with a longer one (`deadline_exceeds_budget`); hosted admission already requires the provider's trial limit.
 
-A **hosted** scenario names its pinned upstream challenge under `provenance` and adds `authoring-notes.md` and its own `bindings.yaml`; the upstream scorer is its evaluator.
+A **hosted** scenario names an existing provider in `environment` and `evaluator`, plus that provider's own config (AutoWFBench: `provenance`), and adds `authoring-notes.md` and its own `bindings.yaml`.
 
 Cover profile validity, packaging, a positive case and a plausible bad result the verifier rejects, then run `./run.sh --scenario <name>`. Do not add a docs file per scenario.
+
+### Adding a hosted provider
+
+1. `execute/<name>.py`: a `start` that returns an `EnvironmentSession` serving `POST /tools` receipts and `finalize()` evidence. When this second real provider needs the candidate listener, lift it from `execute/autowfbench.py` into `execute/hosting.py`.
+2. `evaluate/<name>.py`: turns a recorded trial directory into `{execution, acceptance, quality}`.
+3. One entry each in `ENVIRONMENTS` and `EVALUATORS` (`coordinate/providers.py`), listing their host-only `modules`.
+4. A `benchmarks/NN-<name>/` hosted scenario that names them.
+5. Tests (prior art: `tests/test_hosted_provider.py`), then `sapi-lab check` and `./run.sh --scenario <name>`.
 
 ## Model-authored definitions
 
 `./run-generation.sh` gives a model the task, `generation/FORMAT.md`, `generation/PROFILE.md` and the operation catalog, once per attempt, with no repair. `--catalog scenario` is an experiment arm, not the default: the catalog shows only the operations the scenario's reference uses, the report records the variant, the operations shown and their hashes, and its prompts are pinned separately. `sapi-lab package-tasks --mode generation --catalog scenario` stages those prompts without a model call. The answer is a candidate like any other: compiled, executed and independently verified. Runtime model steps are stubs during generation. The wrapper does not disable its CLI tools: the prompt forbids them and recognized tool markers in its stderr reject the attempt, which is an audit, not a sandbox. `tests/test_packaging.py` pins every generation prompt's hash; a prompt change is an experiment change.
 
-For a hosted scenario the gate after authoring is admission: the YAML compiles, stays within `runtime_model_calls` and keeps the upstream deadline.
+For a hosted scenario the gate after authoring is admission: the YAML compiles, stays within `runtime_model_calls` and keeps the provider's trial limit.
 
 ## Live model execution
 
@@ -96,9 +104,9 @@ uv run --locked --extra harbor --extra benchmark sapi-lab live --stub-report <co
   --max-calls N --wrapper-evidence <identity.json> [--submissions-manifest <selection.json>]
 ```
 
-Before any dispatch, `live` requires a passing control report for the same sources and image, an unpaid stub replay, a ledger reservation per case and an inspected wrapper identity. The identity records each wrapper file's hash; files are read at their recorded path unless `--wrapper-file NAME=PATH` names the local copy (NAME is the file's basename). Hashes are always checked. Hosted scenarios also need `--judge-model`; each judge call is reserved.
+Before any dispatch, `live` requires a passing control report for the same sources and image, an unpaid stub replay, a ledger reservation per case and an inspected wrapper identity. The identity records each wrapper file's hash; files are read at their recorded path unless `--wrapper-file NAME=PATH` names the local copy (NAME is the file's basename). Hashes are always checked. A hosted evaluator that calls a judge also needs `--judge-model`; its `judge_calls` are reserved per trial.
 
-`sapi-lab evaluate --record reports/<run>/environments/<job>/<scenario> --judgement <reply.json>` re-scores a hosted trial from a saved judgement without a model call.
+`sapi-lab evaluate --record reports/<run>/environments/<job>/<scenario>` re-evaluates a hosted trial through its scenario's evaluator; for AutoWFBench, `--judgement <reply.json>` re-scores from a saved judgement without a model call.
 
 ## Local n8n UI
 
@@ -114,7 +122,7 @@ Imports are inactive copies and never execute. A `--live` session arms one fresh
 | Question | Evidence |
 | --- | --- |
 | Did the engine run? | `case.json` and the native n8n records beside it |
-| Did the required behavior hold? | the verifier's `report.json` and each case's `acceptance.json`, or the upstream `report.json` |
+| Did the required behavior hold? | the verifier's `report.json` and each case's `acceptance.json`, or the hosted evaluator's `evaluation/report.json` |
 | How good was the output? | `evaluation.json`; `not_evaluated` is missing, not zero |
 
 New runs go to `reports/` (ignored). Commit to `evidence/` only what a durable claim cites, and never edit it afterwards.
