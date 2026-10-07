@@ -39,7 +39,7 @@ _DETERMINED = "Protected environment verification"
 
 
 def digest(value: Any) -> str:
-    """Canonical ASCII-escaped JSON digest, copied from evaluate.task_evaluation so verification/ imports nothing.
+    """Canonical ASCII-escaped JSON digest, copied from evaluate.autowfbench so verification/ imports nothing.
 
     A test pins the two together. lifecycle.py's `ensure_ascii=False` digest is deliberately different.
     """

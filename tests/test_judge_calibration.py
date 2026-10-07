@@ -3,8 +3,8 @@
 import copy
 import unittest
 
+from sapi_config_lab.evaluate.autowfbench import evaluate
 from sapi_config_lab.evaluate.judge_calibration import calibration_fixture, compare_calibration
-from sapi_config_lab.evaluate.task_evaluation import evaluate
 from tests import test_task_evaluation as fixtures
 
 

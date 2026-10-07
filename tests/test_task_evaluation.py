@@ -13,7 +13,7 @@ import unittest
 import unittest.mock
 
 from sapi_config_lab.coordinate.scenarios import SCENARIOS
-from sapi_config_lab.evaluate.task_evaluation import (
+from sapi_config_lab.evaluate.autowfbench import (
     build_run_log,
     digest,
     evaluate,
@@ -250,9 +250,7 @@ json.dump(env.finalize(), sys.stdout)
         saved = self.reply(run)
         with (
             tempfile.TemporaryDirectory() as directory,
-            unittest.mock.patch(
-                "sapi_config_lab.evaluate.task_evaluation.judge", side_effect=AssertionError("dispatched")
-            ),
+            unittest.mock.patch("sapi_config_lab.evaluate.autowfbench.judge", side_effect=AssertionError("dispatched")),
         ):
             report = evaluate_once(self.contract, run, Path(directory) / "first", judgement=saved)
             self.assertEqual(report["status"], "complete")

@@ -7,7 +7,7 @@ import inspect
 import math
 import unittest
 
-from sapi_config_lab.evaluate import task_evaluation
+from sapi_config_lab.evaluate import autowfbench
 from sapi_config_lab.paths import workspace_root
 from verification import rubric, rubric_cards
 from verification.rubric import (
@@ -235,15 +235,15 @@ class SurfaceTests(unittest.TestCase):
             with self.subTest(sample=sample), self.assertRaises(ValueError):
                 rubric.digest(sample)
 
-    def test_the_document_claims_its_own_schema_not_the_task_evaluation_one(self):
+    def test_the_document_claims_its_own_schema_not_the_autowfbench_one(self):
         document = score(SUPPORT_REVIEW_PACKET, support_facts(), support_judge())
         self.assertEqual(document["schema"], "sapi-lab-rubric-evaluation/v1")
-        self.assertNotEqual(document["schema"], task_evaluation.SCHEMA)
+        self.assertNotEqual(document["schema"], autowfbench.SCHEMA)
 
     def test_the_canonical_digest_agrees_with_the_upstream_adapter(self):
         for sample in ({"b": 1, "a": [2, None, True]}, {"text": "café — résumé"}, [], 0.33):
             with self.subTest(sample=sample):
-                self.assertEqual(rubric.digest(sample), task_evaluation.digest(sample))
+                self.assertEqual(rubric.digest(sample), autowfbench.digest(sample))
 
 
 def _imported_modules(module):

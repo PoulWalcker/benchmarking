@@ -25,7 +25,7 @@ RUNTIME_SUFFIXES = (".py", ".js", ".yaml", ".json", ".md")
 # `rm -rf` exits 0 on a missing path, so tests/test_packaging.py checks each still exists.
 EVALUATOR_MODULES = (
     "sapi_config_lab/coordinate/evaluation.py",
-    "sapi_config_lab/evaluate/task_evaluation.py",
+    "sapi_config_lab/evaluate/autowfbench.py",
     "sapi_config_lab/evaluate/judge_calibration.py",
     "sapi_config_lab/evaluate/judge-calibration.json",
     "sapi_config_lab/execute/simulator.py",
