@@ -46,6 +46,9 @@ STAGES = {
 
 KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
 
+# Modules named after a benchmark provider; stage and shared code reaches them only through coordination.
+PROVIDER_MODULES = {"execute.autowfbench", "evaluate.autowfbench", "evaluate.judge_calibration"}
+
 
 def stage_of(module: str) -> str:
     if module.startswith("verification"):
@@ -147,10 +150,12 @@ class StageBoundaryTests(unittest.TestCase):
                 if isinstance(node, ast.Import):
                     self.assertFalse(any(a.name.split(".")[0] == "harbor" for a in node.names), module)
 
-    def test_benchmark_origin_names_no_module(self):
-        # Where a benchmark came from is scenario provenance, not architecture.
-        for module, path, _ in modules():
-            self.assertNotIn("autowfbench", module, path)
+    def test_only_coordination_and_providers_import_provider_modules(self):
+        # A provider is named where its code lives; everything else stays provider-neutral.
+        for module, path, verifier in modules():
+            if module in PROVIDER_MODULES or stage_of(module) == "coordinate":
+                continue
+            self.assertFalse(imported(path, module, verifier) & PROVIDER_MODULES, module)
 
     def test_experiments_reach_harbor_bridges_and_staging_only_through_a_run(self):
         owned = {"harbor_run_args", "collect_jobs", "staging_dir", "pin_base_image", "start_bridge", "stop_bridge"}
