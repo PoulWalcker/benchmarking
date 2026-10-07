@@ -70,6 +70,7 @@ def load_trials(job: Path, hosted: dict[str, Path] | None = None) -> list[dict]:
             "rewards": (trial.get("verifier_result") or {}).get("rewards"),
             "exception": trial.get("exception_info"),
             "result_path": str(path),
+            "evaluation_path": str(report_path),
             "acceptance": json.loads(report_path.read_text()) if report_path.exists() else None,
         }
         trials.append({**row, "result": trial_result(row)})
