@@ -49,6 +49,12 @@ KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
 # Modules named after a benchmark provider; stage and shared code reaches them only through coordination.
 PROVIDER_MODULES = {"execute.autowfbench", "evaluate.autowfbench", "evaluate.judge_calibration"}
 
+# Core modules that name a provider only as data, never as code; this may only shrink.
+PROVIDER_NAMED_AS_DATA = {
+    "coordinate.cli": "help text gives a provenance source name as an example",
+    "coordinate.provenance": "the source manifest pins provenance/autowfbench-source.json",
+}
+
 
 def stage_of(module: str) -> str:
     if module.startswith("verification"):
@@ -156,6 +162,15 @@ class StageBoundaryTests(unittest.TestCase):
             if module in PROVIDER_MODULES or stage_of(module) == "coordinate":
                 continue
             self.assertFalse(imported(path, module, verifier) & PROVIDER_MODULES, module)
+
+    def test_core_modules_reach_providers_only_through_the_provider_table(self):
+        # A new provider is a table entry in coordinate.providers; the rest of coordination stays unaware of it.
+        for module, path, verifier in modules():
+            if verifier or module == "coordinate.providers" or stage_of(module) not in {"coordinate", SHARED}:
+                continue
+            self.assertFalse(imported(path, module, verifier) & PROVIDER_MODULES, module)
+            named = "autowfbench" in path.read_text().lower()
+            self.assertEqual(named, module in PROVIDER_NAMED_AS_DATA, module)
 
     def test_experiments_reach_harbor_bridges_and_staging_only_through_a_run(self):
         owned = {"harbor_run_args", "collect_jobs", "staging_dir", "pin_base_image", "start_bridge", "stop_bridge"}
