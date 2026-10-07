@@ -4,7 +4,7 @@
     "challenge": "crm-lead-qualification"
   },
   "environment": "autowfbench",
-  "evaluator": "upstream",
+  "evaluator": "autowfbench",
   "workflow_id": "crm-workflow",
   "bindings": "bindings.yaml",
   "budgets": {

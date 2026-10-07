@@ -161,9 +161,5 @@ def select_scenarios(names: Iterable[str] | None = None) -> dict[str, Scenario]:
     return {name: SCENARIOS[name] for name in selected}
 
 
-def scenario_for_challenge(challenge: str) -> Scenario:
-    return next(s for s in SCENARIOS.values() if s.provenance and s.provenance.challenge == challenge)
-
-
 def all_cases() -> dict[str, dict]:
     return {name: scenario.cases() for name, scenario in SCENARIOS.items() if scenario.environment == "fixtures"}

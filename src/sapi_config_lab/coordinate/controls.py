@@ -12,10 +12,9 @@ import sys
 from typing import Any
 import uuid
 
-from sapi_config_lab.coordinate.evaluation import control_passed, upstream_evaluate
+from sapi_config_lab.coordinate.evaluation import control_passed, hosted_evaluation
 from sapi_config_lab.coordinate.packages import job_seconds, verifier_bounds
 from sapi_config_lab.coordinate.provenance import host_environment
-from sapi_config_lab.coordinate.providers import contract_for
 from sapi_config_lab.coordinate.runs import Hosting, Run, progress, run_experiment
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
 from sapi_config_lab.execute.host import BUILD_TIMEOUT_SECONDS, LAB_IMAGE, build_image, run_logged
@@ -35,8 +34,7 @@ def suite_seconds(scenarios: tuple[str, ...]) -> int:
 
 def simulated_hosting(scenarios: tuple[str, ...]) -> Hosting:
     """Stub runtime calls and the simulated judge: a hosted control costs nothing."""
-    contracts = {name: contract_for(SCENARIOS[name]) for name in scenarios if SCENARIOS[name].evaluator == "upstream"}
-    return Hosting("stub", upstream_evaluate(contracts))
+    return Hosting("stub", hosted_evaluation(scenarios))
 
 
 def transport_probe(run: Run) -> dict:
@@ -123,8 +121,8 @@ def main(argv: list[str] | None = None) -> int:
         for agent in ("oracle", "nop"):
             progress(f"{agent}: {len(selected)} Harbor tasks through real n8n")
             exit_code, trials = run.harbor(agent, run.tasks, agent, hosting=hosting)
-            # An unscored upstream nop writes no reward, so Harbor reports a missing reward file.
-            simulated_nop = agent == "nop" and any(SCENARIOS[t["task_name"]].evaluator == "upstream" for t in trials)
+            # An unscored hosted nop writes no reward, so Harbor reports a missing reward file.
+            simulated_nop = agent == "nop" and any(SCENARIOS[t["task_name"]].hosted for t in trials)
             passed = (
                 (exit_code == 0 or simulated_nop)
                 and sorted(t["task_name"] for t in trials) == sorted(selected)

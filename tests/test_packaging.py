@@ -15,7 +15,7 @@ import yaml
 from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.provenance import source_manifest as inventory
-from sapi_config_lab.coordinate.providers import ENVIRONMENTS, host_only_modules
+from sapi_config_lab.coordinate.providers import ENVIRONMENTS, EVALUATORS, host_only_modules
 from sapi_config_lab.coordinate.scenarios import DEFAULT_SCENARIOS as SCENARIOS
 from sapi_config_lab.coordinate.scenarios import SCENARIOS as SCENARIOS_ALL
 from sapi_config_lab.coordinate.scenarios import all_cases
@@ -228,9 +228,11 @@ class PackagingTests(unittest.TestCase):
             self.assertTrue((ROOT / "src" / relative).exists(), relative)
 
     def test_every_provider_scrubs_its_own_modules(self):
-        provider = replace(ENVIRONMENTS["autowfbench"], modules=("sapi_config_lab/execute/other.py",))
-        with patch.dict(ENVIRONMENTS, {"other": provider}):
+        environment = replace(ENVIRONMENTS["autowfbench"], modules=("sapi_config_lab/execute/other.py",))
+        evaluator = replace(EVALUATORS["autowfbench"], modules=("sapi_config_lab/evaluate/other.py",))
+        with patch.dict(ENVIRONMENTS, {"other": environment}), patch.dict(EVALUATORS, {"other": evaluator}):
             self.assertIn("sapi_config_lab/execute/other.py", host_only_modules())
+            self.assertIn("sapi_config_lab/evaluate/other.py", host_only_modules())
 
     def test_the_hosted_worker_imports_nothing_scrubbed_from_its_container(self):
         scrubbed = [
