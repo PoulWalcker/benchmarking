@@ -64,7 +64,6 @@ def main() -> int:
             "provenance/autowfbench-source.json",
             ".python-version",
             ".dockerignore",
-            ".github/workflows/checks.yml",
             "uv.lock",
         ):
             if required not in source_members:
