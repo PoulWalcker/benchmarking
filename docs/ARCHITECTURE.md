@@ -43,7 +43,7 @@ Every benchmark is `benchmarks/NN-<name>/`. Its `scenario.json` states what the 
 | `prompt_extension`, `fresh_fixtures`, `human_review` | authoring prompt section, per-run fixture overlay, live report flag |
 | `harbor` | trial resources rendered into `task.toml`; a verifier timeout must contain the verifier's plan |
 
-Files beside it: the reference `config.yaml`, the container `instruction.md`, and either `task.md` + evaluator-only `cases.json` and `evaluation/` (`contract.json`, optional `rubric.json`) (fixtures) or `authoring-notes.md` + `bindings.yaml` (hosted). Scenario-owned evaluation facts live in `evaluation/` as data; the mechanisms that read them stay in `verification/`.
+Files beside it: the reference `config.yaml`, the container `instruction.md`, and either `task.md` + evaluator-only `cases.json` and `evaluation/` (`contract.json`, optional `rubric.json`) (fixtures) or `authoring-notes.md` + `bindings.yaml` (hosted). Scenario-owned evaluation facts live in `evaluation/` as data; the mechanisms that read them stay in `verification/`. Its `fixture_evaluators.py` composes independent business checks, procedure selection, guarded-call expectations, rubric views, corruption probes and optional freshness. It is an evaluator implementation table, not scenario discovery. Generic planning/scoring/generation has no benchmark-name dispatch; a new fixture adds benchmark data, independent evaluator code and one entry, plus tests.
 
 Where a benchmark came from is provenance data. It selects which pinned bytes are trusted, never which code path runs; the code path follows `environment` and `evaluator`.
 

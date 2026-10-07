@@ -119,6 +119,20 @@ class StageBoundaryTests(unittest.TestCase):
                     found.add((module, name))
         return found
 
+    def test_fixture_machinery_does_not_select_business_rules_by_benchmark_name(self):
+        names = {path.parent.name[3:] for path in (ROOT / "benchmarks").glob("*/scenario.json")}
+        for relative in (
+            "verification/verify.py",
+            "verification/rubric_facts.py",
+            "src/sapi_config_lab/coordinate/generate.py",
+        ):
+            constants = {
+                node.value
+                for node in ast.walk(ast.parse((ROOT / relative).read_text()))
+                if isinstance(node, ast.Constant) and isinstance(node.value, str)
+            }
+            self.assertFalse(constants & names, relative)
+
     def test_imports_follow_stage_rules(self):
         found = self.violations()
         self.assertEqual(found - KNOWN_VIOLATIONS, set(), "New cross-stage import; see AGENTS.md")

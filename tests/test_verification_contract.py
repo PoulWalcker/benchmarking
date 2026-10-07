@@ -7,8 +7,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from verification.business import check_business_result
 from verification.contracts import Recorded, Rejected
+from verification.fixture_evaluators import check_business_result
 from verification.n8n_provenance import check_rejection, observe_execution
 from verification.verify import check_execution, corruption_checks, evaluator_identity
 

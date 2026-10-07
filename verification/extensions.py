@@ -315,3 +315,24 @@ def refinement_corruptions(config: dict, run: dict, *, mode: str) -> list[str]:
         else:
             raise Rejected("Accepted refinement evidence corruption: " + name)
     return rejected
+
+
+def verify_refinement_task(config: dict | None, run: dict, *, mode: str, case: dict | None) -> dict:
+    """The reply benchmark's identity and exhaustion contract, beyond generic refinement evidence."""
+    require(config is not None and case is not None, "Refinement requires submitted config and frozen case")
+    assert config is not None and case is not None
+    require(
+        config["workflow"]["id"] == "revise-answer" and config["workflow"]["revision"] == 1, "Wrong reply task identity"
+    )
+    require(config["execution"]["refinement"]["max_attempts"] == 3, "Reply task requires three maximum attempts")
+    result = verify_refinement(config, run, mode=mode)
+    require(result["exhausted"] == (case.get("expected") == "exhausted"), "Wrong refinement business outcome")
+    return {key: value for key, value in result.items() if key != "calls"}
+
+
+def refinement_model_calls(config: dict) -> dict[str, str]:
+    """The reply benchmark reserves every possible draft attempt independently of the runtime."""
+    draft, _ = reply_roles(config)
+    require(config["execution"]["refinement"]["max_attempts"] == 3, "Reply task requires three maximum attempts")
+    revision = config["workflow"]["revision"]
+    return {f"revise-answer/r{revision}/{draft}/attempt{number}": "reply.generate" for number in range(1, 4)}
