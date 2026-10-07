@@ -41,7 +41,7 @@ A control is valid only when `oracle` passes and `nop` fails. Fix the instrument
 | `evaluate` | re-evaluate one recorded trial; a judge only with `--dispatch-judge` | only if dispatched |
 | `ui` | import graphs into local n8n; a `--live` session may call models | sometimes |
 | `lifecycle` | the durable candidate lifecycle controller | with `--rebuilder-url` or live mode |
-| `review-export` | write derived `analysis.md` beside recorded evaluations | no |
+| `review-export` | write derived `analysis.md` in Harbor trials, discovering authoritative hosted reports from the run report; hosted rewards remain recorded facts | no |
 | `fetch-source` | fetch and verify a pinned upstream source | no |
 
 Internal commands (`execute`, `package-tasks`, `transport`, `bridge`, `hosted-worker`) run inside containers or under another command.

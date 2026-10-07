@@ -1,6 +1,6 @@
 # 06-hosted-review
 
-Findings: F11. Dependencies: 04, 05. Status: pending.
+Findings: F11. Dependencies: 04, 05. Status: complete.
 
 ## Why
 
@@ -25,3 +25,9 @@ Review-export and run association tests.
 ## Non-goals
 
 No provider-specific universal renderer or relocation framework.
+
+## Outcome
+
+Run trial rows record the authoritative evaluation path. Review discovery prefers that association, supports the historical host layout, and renders common hosted facts plus evaluator-detail links. Null quality stays absent; hosted rewards and evidence are never rewritten. Existing fixture rubric behavior is retained.
+
+Validation: 64 targeted tests passed (`reports/cleanup-06-tests.log`), including authoritative association, historical discovery, scored/null-quality exports, immutability and boundary checks. Ruff, formatting and mypy passed. Diff inspected: no provider-specific rendering or evaluation-stage import of coordination.
