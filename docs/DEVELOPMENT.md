@@ -77,6 +77,8 @@ A **fixture** scenario adds the public `task.md` and evaluator-only `cases.json`
 
 `evaluation/` is evaluator data: packaging copies it into the task's trusted `tests/` and `.dockerignore` keeps it out of the image.
 
+A scenario-specific `bindings` catalog is used by the author prompt, staged as `tests/bindings.yaml`, passed through fixture execution (including lifecycle), and used for live graph and prompt-hash reconciliation. The default catalog is unchanged.
+
 Optional `harbor` settings in `scenario.json` (`agent_timeout_sec`, `verifier_timeout_sec`, `build_timeout_sec`, `cpus`, `memory_mb`, `storage_mb`; bounded integers, defaults in `coordinate/scenarios.py`) are rendered into `task.toml`. Staging refuses a `verifier_timeout_sec` smaller than the verifier's worst case: every planned execution in sequence at the executor's own import and execution ceilings, plus a fixed overhead. Add cases, then raise the timeout the error names. Each `harbor run` and the whole control suite are bounded by the same estimate: every trial at its build and agent limits plus its verifier estimate. A fixture package records the deadline it was sized for in `tests/budget.json`, and the verifier refuses to plan a definition with a longer one (`deadline_exceeds_budget`); hosted admission already requires the provider's trial limit.
 
 A **hosted** scenario names an existing provider in `environment` and `evaluator`, plus that provider's own config (AutoWFBench: `provenance`), and adds `authoring-notes.md` and its own `bindings.yaml`.

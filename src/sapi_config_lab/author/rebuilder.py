@@ -25,7 +25,7 @@ class WrapperRebuilder:
     The lifecycle controller reserves its rebuild limit before calling this.
     """
 
-    def __init__(self, url: str, *, timeout_seconds: int, expected_model: str):
+    def __init__(self, url: str, *, timeout_seconds: int, expected_model: str, bindings: Document | None = None):
         parsed = urlparse(url)
         profile.check(
             parsed.scheme in ("http", "https")
@@ -40,6 +40,7 @@ class WrapperRebuilder:
         profile.check(re.fullmatch(r"[A-Za-z0-9_.-]+", expected_model) is not None, "Invalid expected model")
         self.url, self.timeout = url, timeout_seconds
         self.expected_model = expected_model
+        self.bindings = profile.read_bindings(CATALOG) if bindings is None else bindings
 
     def __call__(self, source: Document, findings: Document, target: Document, artifacts: Path) -> Document:
         artifacts.mkdir(parents=True, exist_ok=True)
@@ -59,7 +60,7 @@ class WrapperRebuilder:
             + "\nTEST_FINDINGS_JSON:\n"
             + json.dumps(findings, ensure_ascii=False)
             + "\nOPERATION_CATALOG_JSON:\n"
-            + json.dumps(profile.read_bindings(CATALOG), ensure_ascii=False)
+            + json.dumps(self.bindings, ensure_ascii=False)
         )
         prompt_path = artifacts / "prompt.txt"
         with prompt_path.open("x") as handle:
@@ -128,7 +129,7 @@ class WrapperRebuilder:
                 os.fsync(handle.fileno())
             audit["candidate_yaml_sha256"] = hashlib.sha256(candidate_path.read_bytes()).hexdigest()
             candidate = profile.read(candidate_path)
-            profile.validate(candidate, profile.read_bindings(CATALOG))
+            profile.validate(candidate, self.bindings)
             audit["status"] = "returned"
             return candidate
         except Exception as error:
