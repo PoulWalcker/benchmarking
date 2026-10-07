@@ -24,6 +24,7 @@ from sapi_config_lab.coordinate.packages import (
     verifier_bounds,
     verifier_seconds,
 )
+from sapi_config_lab.coordinate.providers import ENVIRONMENTS, EVALUATORS
 from sapi_config_lab.coordinate.runs import Run
 from sapi_config_lab.coordinate.scenarios import HARBOR_DEFAULTS, SCENARIOS, load_scenario
 from sapi_config_lab.execute.host import BUILD_TIMEOUT_SECONDS
@@ -247,14 +248,18 @@ class ScenarioSettingsTests(unittest.TestCase):
 
     def test_an_environment_must_be_known_and_judged_by_one_of_its_evaluators(self):
         hosted = {"workflow_id": "example", "budgets": {"runtime_model_calls": 1}}
-        self.assertTrue(self.scenario({**hosted, "environment": "autowfbench", "evaluator": "upstream"}).hosted)
+        self.assertTrue(self.scenario({**hosted, "environment": "autowfbench", "evaluator": "autowfbench"}).hosted)
         for meta in (
             {"environment": "autowfbench", "evaluator": "verifier"},
-            {"environment": "unknown", "evaluator": "upstream"},
-            {"environment": "fixtures", "evaluator": "upstream"},
+            {"environment": "unknown", "evaluator": "autowfbench"},
+            {"environment": "fixtures", "evaluator": "autowfbench"},
         ):
             with self.assertRaises(ValueError, msg=meta):
                 self.scenario({**hosted, **meta})
+
+    def test_every_environment_names_only_registered_evaluators(self):
+        for name, environment in ENVIRONMENTS.items():
+            self.assertLessEqual(environment.evaluators, set(EVALUATORS), name)
 
 
 class AgentTests(unittest.TestCase):

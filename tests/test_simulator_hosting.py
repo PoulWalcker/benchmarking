@@ -1,5 +1,7 @@
 """Simulator tasks run through the one Run: hosted per job, credentials never persisted."""
 
+import contextlib
+import io
 import json
 from pathlib import Path
 import tempfile
@@ -7,8 +9,9 @@ from typing import ClassVar
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.coordinate.evaluation import UPSTREAM_REPORT, control_passed, trial_accepted
-from sapi_config_lab.coordinate.providers import ENVIRONMENTS
+from sapi_config_lab.coordinate.evaluation import HOSTED_REPORT, control_passed, hosted_evaluation, trial_accepted
+from sapi_config_lab.coordinate.evaluation import main as evaluation_main
+from sapi_config_lab.coordinate.providers import ENVIRONMENTS, EVALUATORS, HostedEvaluator
 from sapi_config_lab.coordinate.runs import Hosting, Run, fingerprint
 from sapi_config_lab.coordinate.scenarios import SCENARIOS
 
@@ -35,10 +38,10 @@ class FakeTrialHost:
         self.closed = True
 
 
-def upstream_report(scenario, passed, reward):
+def hosted_report(scenario, passed, reward):
     quality = {"status": "complete", "score_0_10": reward * 10, "normalized_reward": reward}
     return {
-        "schema": UPSTREAM_REPORT,
+        "schema": HOSTED_REPORT,
         "scenario": scenario,
         "mode": "stub",
         "submission_sha256": "abc",
@@ -79,11 +82,11 @@ class HostingTests(unittest.TestCase):
             )
             # The container's copy is ignored for a hosted trial; only the host's record counts.
             (trial / "verifier/evaluation").mkdir(parents=True)
-            report = upstream_report("checkout-recovery", True, 1.0)
+            report = hosted_report("checkout-recovery", True, 1.0)
             (trial / "verifier/evaluation/report.json").write_text(json.dumps(report) + persisted)
             record = self.run.output / "environments/oracle/checkout-recovery/evaluation"
             record.mkdir(parents=True)
-            (record / "report.json").write_text(json.dumps(upstream_report("checkout-recovery", True, 0.732)))
+            (record / "report.json").write_text(json.dumps(hosted_report("checkout-recovery", True, 0.732)))
             return 0
 
         hosting = Hosting("stub", lambda scenario, record: {})
@@ -117,6 +120,56 @@ class HostingTests(unittest.TestCase):
     def test_simulator_tasks_cannot_run_without_a_host(self):
         with self.assertRaisesRegex(RuntimeError, "host environment"):
             self.run.harbor("oracle", self.run.tasks, "oracle")
+
+
+class HostedEvaluationTests(unittest.TestCase):
+    """The core writes the report and dispatches reevaluation by the scenario's evaluator name."""
+
+    def setUp(self):
+        self.result = {"execution": True, "acceptance": False, "quality": None}
+        self.calls = []
+        evaluator = HostedEvaluator(
+            judge_calls=0,
+            prepare=lambda scenario, judge: self.calls.append(("prepare", scenario.name, judge)) or self.evaluate,
+            reevaluate=lambda scenario, record, output, args: (
+                self.calls.append(("again", scenario.name)) or self.result
+            ),
+            modules=(),
+        )
+        patcher = patch.dict(EVALUATORS, {"autowfbench": evaluator})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.record = Path(tempfile.mkdtemp())
+        (self.record / "evidence").mkdir()
+        trial = {"scenario": "checkout-recovery", "llm_mode": "stub", "submission_sha256": "abc"}
+        (self.record / "evidence/trial.json").write_text(json.dumps(trial))
+
+    def evaluate(self, record):
+        return self.result
+
+    def test_each_hosted_scenario_is_frozen_up_front_and_reported_once(self):
+        evaluate = hosted_evaluation(("checkout-recovery", "invoice-total"), "judge-x")
+        self.assertEqual(self.calls, [("prepare", "checkout-recovery", "judge-x")])
+        report = evaluate("checkout-recovery", self.record)
+        self.assertEqual(json.loads((self.record / "evaluation/report.json").read_text()), report)
+        self.assertEqual(
+            report,
+            {
+                "schema": "sapi-lab-upstream-acceptance/v1",
+                "scenario": "checkout-recovery",
+                "mode": "stub",
+                "submission_sha256": "abc",
+                "passed": False,
+                "result": self.result,
+            },
+        )
+
+    def test_reevaluation_uses_the_scenario_the_trial_names(self):
+        output = self.record.parent / (self.record.name + "-again")
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(evaluation_main(["--record", str(self.record), "--output", str(output)]), 1)
+        self.assertEqual(self.calls, [("again", "checkout-recovery")])
+        self.assertEqual(json.loads((output / "result.json").read_text()), self.result)
 
 
 class VerifierResultTests(unittest.TestCase):

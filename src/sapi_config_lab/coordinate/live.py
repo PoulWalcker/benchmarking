@@ -14,11 +14,11 @@ import shutil
 import time
 from typing import Any
 
-from sapi_config_lab.coordinate.evaluation import trial_accepted, upstream_evaluate
+from sapi_config_lab.coordinate.evaluation import hosted_evaluation, trial_accepted
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.live_evidence import case_budget, collect_native, live_cohort, reconcile_dispatches
 from sapi_config_lab.coordinate.packages import task_toml
-from sapi_config_lab.coordinate.providers import contract_for
+from sapi_config_lab.coordinate.providers import EVALUATORS
 from sapi_config_lab.coordinate.replay import load_selection, read_json, require
 from sapi_config_lab.coordinate.runs import Hosting, Run, progress, run_experiment
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
@@ -99,13 +99,13 @@ def check_trials(trials: list[dict], submissions: dict, *, mode: str, expected_c
         require(
             acceptance.get("mode") == mode and acceptance.get("scenario") == scenario, "Verifier scenario/mode mismatch"
         )
-        if SCENARIOS[scenario].evaluator == "upstream":
-            # Upstream quality is measured, not gated: a scored trial is a completed measurement.
+        if SCENARIOS[scenario].hosted:
+            # Hosted quality is measured, not gated: a scored trial is a completed measurement.
             require(
                 not trial["exception"] and acceptance.get("submission_sha256") == submissions[scenario]["sha256"],
                 "Harbor failed or the host saw another submission",
             )
-            require((trial["result"]["quality"] or {}).get("status") == "complete", "Upstream evaluation is unscored")
+            require((trial["result"]["quality"] or {}).get("status") == "complete", "Hosted evaluation is unscored")
             continue
         require(trial_accepted(trial), "Harbor or independent acceptance failed")
         verifier = Path(trial["result_path"]).parent / "verifier"
@@ -152,11 +152,11 @@ def failure_category(trials: list[dict], audit: list[dict], default: str) -> str
     return default
 
 
-def cohort_grants(submissions: dict, judged: tuple[str, ...]) -> dict[tuple[str, str], tuple[dict, dict]]:
+def cohort_grants(submissions: dict, hosted: tuple[str, ...]) -> dict[tuple[str, str], tuple[dict, dict]]:
     """(scenario, case) -> (grant, config): one grant per verifier live case, one per hosted run."""
     grants = {}
     for scenario, submission in submissions.items():
-        if scenario in judged:
+        if scenario in hosted:
             config = read(Path(submission["path"]))
             grants[scenario, "run"] = (hosted_grant(scenario, config), config)
             continue
@@ -187,7 +187,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--series-dir", type=Path, help="Reserve in a ledger shared with other runs")
     parser.add_argument("--series-ceiling", action="append", help="PHASE=N, fixed when a series ledger is created")
     parser.add_argument("--stop-after-failure", action="store_true", help="A failed case blocks later reservations")
-    parser.add_argument("--judge-model", help="Semantic judge for upstream-evaluated scenarios; one call each")
+    parser.add_argument("--judge-model", help="Judge model for hosted evaluators that call one")
     args = parser.parse_args(argv)
     if args.submissions_manifest and args.scenario:
         parser.error("A manifest selects its own scenarios")
@@ -238,18 +238,20 @@ def main(argv: list[str] | None = None) -> int:
         scenarios = tuple(submissions)
         controlled = {trial["task_name"] for trial in gate["oracle"]["trials"]}
         require(set(scenarios) <= controlled, "The control report does not cover every scenario")
-        judged = tuple(s for s in scenarios if SCENARIOS[s].evaluator == "upstream")
-        require(not judged or args.preflight_only or args.judge_model, "Upstream evaluation needs --judge-model")
-        grants = cohort_grants(submissions, judged)
+        hosted = tuple(s for s in scenarios if SCENARIOS[s].hosted)
+        judge_calls = {s: EVALUATORS[SCENARIOS[s].evaluator].judge_calls for s in hosted}
+        judge_total = sum(judge_calls.values())
+        require(not judge_total or args.preflight_only or args.judge_model, "Hosted evaluation needs --judge-model")
+        grants = cohort_grants(submissions, hosted)
         report["budget"]["cases"] = {f"{s}/{c}": grant["max_attempts"] for (s, c), (grant, _) in grants.items()}
-        report["budget"]["judge"] = dict.fromkeys(judged, 1)
-        needed = sum(report["budget"]["cases"].values()) + len(judged)
+        report["budget"]["judge"] = judge_calls
+        needed = sum(report["budget"]["cases"].values()) + judge_total
         require(
             needed <= args.max_calls,
             f"The cohort needs up to {needed} model calls; --max-calls allows {args.max_calls}",
         )
         report["human_review"] = {s: SCENARIOS[s].human_review for s in scenarios}
-        ceilings = {"runtime": args.max_calls} | ({"judge": args.max_calls} if judged else {})
+        ceilings = {"runtime": args.max_calls} | ({"judge": args.max_calls} if judge_total else {})
         ledger = open_ledger(run.output, args.series_dir, ceilings, args.stop_after_failure, series_ceilings)
         report["ledger"] = str(ledger.path)
         if args.wrapper_evidence:
@@ -272,7 +274,7 @@ def main(argv: list[str] | None = None) -> int:
         run.check("before-stub")
         progress(f"preflight: unpaid stub replay of {', '.join(scenarios)}")
         started = time.monotonic()
-        simulated = Hosting("stub", upstream_evaluate({s: contract_for(SCENARIOS[s]) for s in judged}))
+        simulated = Hosting("stub", hosted_evaluation(hosted))
         exit_code, stub_trials = run.harbor(
             "stub-replay", run.tasks, "oracle", verifier_env=["SAPI_LLM_MODE=stub"], hosting=simulated
         )
@@ -311,18 +313,22 @@ def main(argv: list[str] | None = None) -> int:
                         )
                     )
                 ]
-                if scenario in judged:
+                if judge_calls.get(scenario):
                     outcomes.append(
                         reserved.enter_context(
                             ledger.reserved(
-                                "judge", f"{run.output.name}/{scenario}/judge", 1, report_path, args.max_calls
+                                "judge",
+                                f"{run.output.name}/{scenario}/judge",
+                                judge_calls[scenario],
+                                report_path,
+                                args.max_calls,
                             )
                         )
                     )
-                    contract = contract_for(SCENARIOS[scenario], args.judge_model)
-                    hosting = Hosting("live", upstream_evaluate({scenario: contract}), bridge_url)
+                if scenario in hosted:
+                    hosting = Hosting("live", hosted_evaluation((scenario,), args.judge_model), bridge_url)
                 with run.bridge(
-                    budget, label, bindings=SCENARIOS[scenario].bindings, reject_tool_use=scenario in judged
+                    budget, label, bindings=SCENARIOS[scenario].bindings, reject_tool_use=scenario in hosted
                 ) as audit:
                     exit_code, trials = run.harbor(
                         "live-" + label,
@@ -335,7 +341,7 @@ def main(argv: list[str] | None = None) -> int:
                 records = audit_records(audit)
                 report["audit"].extend(records)
                 require(exit_code == 0 and len(trials) == 1, "Live Harbor case failed")
-                if scenario in judged:
+                if scenario in hosted:
                     check_trials(trials, submissions, mode="live")
                     calls = sum(row.get("event") == "dispatch_attempt" for row in records)
                     require(calls <= grant["max_attempts"], "Unexpected call count")

@@ -1,29 +1,23 @@
-"""One result shape over two evaluators, the independent verifier and the pinned upstream scorer.
+"""One result shape over the independent verifier and each hosted evaluator.
 
-Both read recorded evidence and report execution, acceptance and an optional
+All read recorded evidence and report execution, acceptance and an optional
 quality score (null is never zero); they share no scoring semantics.
 """
 
 from __future__ import annotations
 
 import argparse
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 import json
 from pathlib import Path
 from typing import Any
 
-from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
-from sapi_config_lab.coordinate.providers import contract_for
-from sapi_config_lab.coordinate.scenarios import SCENARIOS, scenario_for_challenge
-from sapi_config_lab.evaluate.autowfbench import (
-    FrozenTaskContract,
-    evaluate_once,
-    recorded_run_log,
-)
-from sapi_config_lab.evaluate.judge_calibration import calibration_fixture, compare_calibration
+from sapi_config_lab.coordinate.providers import EVALUATORS
+from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.evidence import write_json
 
-UPSTREAM_REPORT = "sapi-lab-upstream-acceptance/v1"
+# Recorded trials carry this schema, so its pre-provider name stays.
+HOSTED_REPORT = "sapi-lab-upstream-acceptance/v1"
 ADMISSION_REPORT = "sapi-lab-admission/v1"
 NOT_EVALUATED: dict[str, Any] = {"execution": None, "acceptance": None, "quality": None}
 
@@ -47,17 +41,9 @@ def verifier_result(report: dict | None, rubric: dict | None) -> dict:
     }
 
 
-def upstream_result(evaluation: dict, termination_reason: str) -> dict:
-    return {
-        "execution": termination_reason == "completed",
-        "acceptance": evaluation.get("execution_pass") is True,
-        "quality": quality(evaluation),
-    }
-
-
 def trial_result(trial: dict) -> dict:
     acceptance = trial["acceptance"] or {}
-    if acceptance.get("schema") == UPSTREAM_REPORT:
+    if acceptance.get("schema") == HOSTED_REPORT:
         return acceptance["result"]
     if acceptance.get("schema") == ADMISSION_REPORT:
         return {**NOT_EVALUATED, "acceptance": acceptance.get("passed") is True}
@@ -70,7 +56,7 @@ def trial_accepted(trial: dict) -> bool:
     acceptance = trial["acceptance"] or {}
     if trial["exception"]:
         return False
-    if acceptance.get("schema") == UPSTREAM_REPORT:
+    if acceptance.get("schema") == HOSTED_REPORT:
         return acceptance["result"]["acceptance"] is True
     return trial["rewards"] == {"reward": 1.0} and acceptance.get("passed") is True
 
@@ -78,7 +64,7 @@ def trial_accepted(trial: dict) -> bool:
 def control_passed(agent: str, trial: dict) -> bool:
     """oracle: the reference is accepted; nop: an absent submission is not, and earns nothing."""
     scenario = SCENARIOS[trial["task_name"]]
-    if scenario.evaluator == "upstream":
+    if scenario.hosted:
         result = trial["result"]
         if agent == "nop":
             return result["acceptance"] is False and (result["quality"] or {}).get("normalized_reward") is None
@@ -96,59 +82,31 @@ def control_passed(agent: str, trial: dict) -> bool:
     )
 
 
-def upstream_evaluate(contracts: dict[str, FrozenTaskContract]) -> Callable[[str, Path], dict]:
-    """Evaluate a recorded simulator trial once; a codex judge here is a paid call the caller reserved."""
+def hosted_evaluation(scenarios: Iterable[str], judge_model: str | None = None) -> Callable[[str, Path], dict]:
+    """Freeze each hosted scenario's evaluator now; a named judge is a paid call the caller reserved."""
+    prepared = {
+        name: EVALUATORS[SCENARIOS[name].evaluator].prepare(SCENARIOS[name], judge_model)
+        for name in scenarios
+        if SCENARIOS[name].hosted
+    }
 
     def evaluate(scenario: str, record: Path) -> dict:
-        contract = contracts[scenario]
         trial = json.loads((record / "evidence/trial.json").read_text())
-        evaluation = evaluate_once(
-            contract, recorded_run_log(contract, record / "evidence"), record / "evaluation", dispatch=True
-        )
-        result = upstream_result(evaluation, trial["termination_reason"])
+        result = prepared[scenario](record)
         report = {
-            "schema": UPSTREAM_REPORT,
+            "schema": HOSTED_REPORT,
             "scenario": scenario,
             "mode": trial["llm_mode"],
             "submission_sha256": trial["submission_sha256"],
             "passed": result["acceptance"],
             "result": result,
         }
+        # The report's place is the core's; an evaluator need not have written beside it.
+        (record / "evaluation").mkdir(exist_ok=True)
         write_json(record / "evaluation/report.json", report)
         return report
 
     return evaluate
-
-
-def reevaluate_upstream(record: Path, output: Path, args: argparse.Namespace) -> dict:
-    trial = json.loads((record / "evidence/trial.json").read_text())
-    scenario = scenario_for_challenge(trial["challenge"])
-    recorded = json.loads((record / "evaluation/task-contract.json").read_text())
-    if args.calibration:
-        contract = contract_for(scenario, args.judge_model)
-    else:
-        contract = contract_for(scenario, recorded["judge"]["model"] if recorded["judge"]["mode"] == "codex" else None)
-        if contract.as_dict()["contract_digest"] != recorded["contract_digest"]:
-            raise ValueError("The pinned evaluator or judge identity differs from the one this trial was recorded with")
-    run_log = recorded_run_log(contract, record / "evidence")
-    fixture = None
-    if args.calibration:
-        fixture = calibration_fixture(contract, run_log, args.calibration)
-        write_json(output / "fixture.json", fixture, ensure_ascii=True)
-        run_log = fixture["run_log"]
-    judgement = json.loads(args.judgement.read_text()) if args.judgement else None
-    if args.dispatch_judge and contract.judge_mode == "codex":
-        ledger = open_ledger(output, args.series_dir, {"judge": 1}, False, parse_ceilings(args.series_ceiling))
-        with ledger.reserved("judge", f"{output.name}/judge", 1, output / "result.json", 1) as outcome:
-            evaluation = evaluate_once(contract, run_log, output / "evaluation", dispatch=True)
-            outcome.passed = evaluation["status"] == "complete"
-    else:
-        evaluation = evaluate_once(
-            contract, run_log, output / "evaluation", judgement=judgement, dispatch=args.dispatch_judge
-        )
-    if fixture is not None:
-        write_json(output / "comparison.json", compare_calibration(fixture, evaluation), ensure_ascii=True)
-    return upstream_result(evaluation, run_log["termination_reason"])
 
 
 def reevaluate_verifier(record: Path, output: Path, args: argparse.Namespace) -> dict:
@@ -189,12 +147,17 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--calibration needs --judge-model")
     if args.judgement and args.dispatch_judge:
         parser.error("Supply a saved judgement or dispatch the judge, not both")
-    upstream = (args.record / "evidence/trial.json").is_file()
-    if not upstream and (args.judgement or args.dispatch_judge or args.calibration):
+    record = args.record.resolve()
+    hosted = (record / "evidence/trial.json").is_file()
+    if not hosted and (args.judgement or args.dispatch_judge or args.calibration):
         parser.error("The independent verifier has no semantic judge")
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
-    result = (reevaluate_upstream if upstream else reevaluate_verifier)(args.record.resolve(), output, args)
+    if hosted:
+        scenario = SCENARIOS[json.loads((record / "evidence/trial.json").read_text())["scenario"]]
+        result = EVALUATORS[scenario.evaluator].reevaluate(scenario, record, output, args)
+    else:
+        result = reevaluate_verifier(record, output, args)
     write_json(output / "result.json", result)
     print(json.dumps(result))
     return 0 if result["acceptance"] else 1

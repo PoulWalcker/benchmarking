@@ -4,7 +4,7 @@
     "challenge": "production-checkout-recovery"
   },
   "environment": "autowfbench",
-  "evaluator": "upstream",
+  "evaluator": "autowfbench",
   "workflow_id": "checkout-workflow",
   "bindings": "bindings.yaml",
   "budgets": {
