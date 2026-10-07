@@ -86,7 +86,7 @@ Important properties:
 
 ## HTTP tool operations
 
-A catalog binding with `transport: http` calls a tool of the run's environment, which a hosted scenario serves through a run-scoped, authenticated tool listener in front of its pinned simulator. Workflow semantics do not change: the definition still compiles to the same DAG, the operation URL and token are bound at run time, and environment administration, finalization and scoring stay on the trusted host. HTTP tool operations are not supported inside refinement.
+A catalog binding with `transport: http` calls a tool of the run's environment, which a hosted scenario serves through a run-scoped, authenticated tool listener in front of its environment provider's world. Workflow semantics do not change: the definition still compiles to the same DAG, the operation URL and token are bound at run time, and environment administration, finalization and scoring stay on the trusted host. HTTP tool operations are not supported inside refinement.
 
 ## Validation boundaries
 

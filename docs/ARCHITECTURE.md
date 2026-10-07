@@ -68,7 +68,7 @@ A scenario has one of two placements (`scenario.hosted`): in the container (fixt
 - A provider owns its world (starting and seeding it, its tool listener, `finalize()` evidence, limits, identity) or the scoring of its recorded evidence, and reads its own scenario config. The core (`runs.py`, `packages.py`, `evaluation.py`, `controls.py`, `live.py`, `scenarios.py`) owns the run lifecycle, staging, budgets, ledger, leak scan, result shape and control rules.
 - AutoWFBench is one provider: `execute/autowfbench.py` (the pinned upstream world behind a candidate tool listener with receipts and an ambiguity policy) and `evaluate/autowfbench.py` with `judge_calibration.py` (its pinned upstream scorer and judge). It reads `provenance`.
 
-`tests/test_boundaries.py` keeps the seam: provider modules are imported only by coordination and by each other; core coordination modules other than `providers.py`, and the shared modules, never import or name a provider; a test-only fake provider stages a package and runs a real `TrialHost` trial without editing `src/`.
+`tests/test_boundaries.py` keeps the seam: only `coordinate/providers.py` and the provider modules themselves import provider modules; other coordination and shared modules never name a provider, except `coordinate/cli.py` (help text) and `coordinate/provenance.py` (the source-manifest path), which name it as data only, an allowlist that may only shrink. `tests/test_hosted_provider.py` adds a fake provider through table entries alone, then stages its package and runs a real `TrialHost` trial through `Run.harbor`.
 
 ## Evaluation
 
