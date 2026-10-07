@@ -15,7 +15,7 @@ from sapi_config_lab.coordinate.scenarios import SCENARIOS, Scenario, select_sce
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.host import LAB_IMAGE
 from sapi_config_lab.execute.n8n import execution_ceiling
-from sapi_config_lab.paths import CATALOG, workspace_root
+from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import Invalid, read
 
 # What the lab image copies from src/ and the verifier re-hashes in the container.
@@ -135,7 +135,7 @@ def scenario_catalog(scenario: Scenario) -> str:
     """Experiment variant: the catalog's bytes without operations the scenario's reference never uses."""
     used = {step["uses"] for step in read(scenario.config)["workflow"]["steps"]}
     kept, section, keep = [], "", True
-    for line in CATALOG.read_text().splitlines(keepends=True):
+    for line in scenario.bindings.read_text().splitlines(keepends=True):
         if line[:1].isalpha():
             section, keep = line.split(":", 1)[0], True
         elif section == "operations" and line.startswith("  ") and line[2:3].isalpha():
@@ -143,7 +143,7 @@ def scenario_catalog(scenario: Scenario) -> str:
         if keep:
             kept.append(line)
     text = "".join(kept)
-    full = yaml.safe_load(CATALOG.read_text())
+    full = yaml.safe_load(scenario.bindings.read_text())
     if yaml.safe_load(text) != {**full, "operations": {k: v for k, v in full["operations"].items() if k in used}}:
         raise ValueError(f"{scenario.name}: the catalog cannot be cut to its operations without changing them")
     return text
@@ -164,7 +164,7 @@ def generation_prompt(root: Path, scenario: Scenario, catalog: str = "full") -> 
             + "\n\nPROFILE\n"
             + (root / "generation/PROFILE.md").read_text()
             + "\n\nOPERATION CATALOG\n"
-            + (CATALOG.read_text() if catalog == "full" else scenario_catalog(scenario))
+            + (scenario.bindings.read_text() if catalog == "full" else scenario_catalog(scenario))
         )
     provider = ENVIRONMENTS[scenario.environment]
     output = "Your workflow output must contain a final_answer string."
@@ -259,8 +259,8 @@ def stage_tasks(
         hashes[scenario] = hashlib.sha256(instruction.encode()).hexdigest()
         (task / "environment/Dockerfile").write_text(dockerfile)
         (task / "task.toml").write_text(task_toml(root, definition))
+        shutil.copyfile(definition.bindings, task / "tests/bindings.yaml")
         if hosted:
-            shutil.copyfile(definition.bindings, task / "tests/bindings.yaml")
             limits = {
                 "scenario": scenario,
                 "runtime_model_calls": definition.runtime_model_calls,

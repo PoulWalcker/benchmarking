@@ -43,7 +43,7 @@ class GenerationTests(unittest.TestCase):
             self.assertEqual(len(hashes), 3)
             for task in tasks.iterdir():
                 self.assertFalse((task / "solution").exists())
-                self.assertEqual(list(task.rglob("*.yaml")), [])
+                self.assertEqual(list(task.rglob("*.yaml")), [task / "tests/bindings.yaml"])
                 prompt = (task / "instruction.md").read_text()
                 for config in (workspace_root() / "benchmarks").glob("*/config.yaml"):
                     self.assertNotIn(config.read_text().strip(), prompt)

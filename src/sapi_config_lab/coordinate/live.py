@@ -368,7 +368,9 @@ def main(argv: list[str] | None = None) -> int:
                 else:
                     check_trials(trials, submissions, mode="live", expected_cases={scenario: {name}})
                     native = collect_native(trials, submissions, {scenario: {name}}, bridge_url)
-                    correlation = reconcile_dispatches(native, records, budget["model"])
+                    correlation = reconcile_dispatches(
+                        native, records, budget["model"], bindings=SCENARIOS[scenario].bindings
+                    )
                     calls, cap = len(correlation), grant["max_attempts"]
                     require(
                         calls <= cap and (calls >= min(1, cap) if upper_bound else calls == cap),

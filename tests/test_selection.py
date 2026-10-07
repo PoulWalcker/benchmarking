@@ -139,7 +139,7 @@ class PackageTests(unittest.TestCase):
             path = Path(directory) / "tasks"
             stage_tasks(path, mode="generation", scenarios=(scenario,), cases={scenario: fresh})
             self.assertEqual([p.name for p in path.iterdir()], [scenario])
-            self.assertFalse(list(path.rglob("*.yaml")))
+            self.assertEqual(list(path.rglob("*.yaml")), [path / "dual-ledger-closeout/tests/bindings.yaml"])
             self.assertEqual(json.loads((path / scenario / "tests/cases.json").read_text()), {scenario: fresh})
             for invalid in ((), ("unknown",), (scenario, scenario)):
                 with self.subTest(invalid=invalid), self.assertRaises(ValueError):

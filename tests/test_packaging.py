@@ -150,7 +150,7 @@ class PackagingTests(unittest.TestCase):
                 self.assertIn("rm -rf /app/lab/benchmarks /app/scenario /app/submission", dockerfile)
                 self.assertEqual(set(json.loads((task / "tests/cases.json").read_text())), {task.name})
                 self.assertFalse((task / "solution").exists())
-                self.assertEqual(list(task.rglob("*.yaml")), [])
+                self.assertEqual(list(task.rglob("*.yaml")), [task / "tests/bindings.yaml"])
 
     @unittest.skipUnless(AVAILABLE, "Requires the pinned upstream source and benchmark extra")
     def test_hosted_packages_scrub_the_evaluator_and_carry_no_hidden_data(self):
