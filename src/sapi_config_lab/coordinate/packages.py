@@ -9,9 +9,9 @@ from typing import Any
 
 import yaml
 
-from sapi_config_lab.coordinate.evaluation import contract_for
+from sapi_config_lab.coordinate.hosted_worker import HTTP_TIMEOUT_SECONDS
+from sapi_config_lab.coordinate.providers import ENVIRONMENTS, host_only_modules
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, Scenario, select_scenarios
-from sapi_config_lab.coordinate.simulator_worker import HTTP_TIMEOUT_SECONDS
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.host import LAB_IMAGE
 from sapi_config_lab.execute.n8n import execution_ceiling
@@ -21,18 +21,7 @@ from sapi_config_lab.profile import Invalid, read
 # What the lab image copies from src/ and the verifier re-hashes in the container.
 RUNTIME_SUFFIXES = (".py", ".js", ".yaml", ".json", ".md")
 
-# A hosted task's evaluator runs on the host; its container must not be able to read it.
-# `rm -rf` exits 0 on a missing path, so tests/test_packaging.py checks each still exists.
-EVALUATOR_MODULES = (
-    "sapi_config_lab/coordinate/evaluation.py",
-    "sapi_config_lab/evaluate/autowfbench.py",
-    "sapi_config_lab/evaluate/judge_calibration.py",
-    "sapi_config_lab/evaluate/judge-calibration.json",
-    "sapi_config_lab/execute/hosting.py",
-    "sapi_config_lab/execute/autowfbench.py",
-    "sapi_config_lab/pinned_source.py",
-)
-HOSTED_TEST = "#!/bin/bash\nset -euo pipefail\npython3 -m sapi_config_lab.coordinate.simulator_worker {action}\n"
+HOSTED_TEST = "#!/bin/bash\nset -euo pipefail\npython3 -m sapi_config_lab.coordinate.hosted_worker {action}\n"
 
 # task.toml keeps Harbor's shared verifier environment; that is safe only for agents that place
 # the submission file and run no command in the task container.
@@ -121,7 +110,7 @@ def verifier_bounds(
     bounds = {}
     for name, scenario in select_scenarios(scenarios).items():
         if scenario.hosted:
-            limit = contract_for(scenario).package["definition"]["limits"]["wall_clock_seconds"]
+            limit = ENVIRONMENTS[scenario.environment].limit_seconds(scenario)
             bounds[name] = hosted_verifier_seconds(limit, admit=mode == "generation")
         else:
             chosen = (cases or {}).get(name)
@@ -160,11 +149,11 @@ def scenario_catalog(scenario: Scenario) -> str:
     return text
 
 
-def generation_prompt(root: Path, scenario: Scenario, definition: dict | None = None, catalog: str = "full") -> str:
+def generation_prompt(root: Path, scenario: Scenario, catalog: str = "full") -> str:
     """The exact text a model is asked to answer with YAML; `catalog` selects the operation-catalog experiment arm."""
-    if catalog not in CATALOG_VARIANTS or (catalog != "full" and definition is not None):
+    if catalog not in CATALOG_VARIANTS or (catalog != "full" and scenario.hosted):
         raise ValueError("A reduced catalog applies to fixture scenarios only: " + scenario.name)
-    if definition is None:
+    if not scenario.hosted:
         extension = scenario.prompt_extension
         return (
             "TASK\n"
@@ -177,17 +166,16 @@ def generation_prompt(root: Path, scenario: Scenario, definition: dict | None = 
             + "\n\nOPERATION CATALOG\n"
             + (CATALOG.read_text() if catalog == "full" else scenario_catalog(scenario))
         )
+    provider = ENVIRONMENTS[scenario.environment]
     output = "Your workflow output must contain a final_answer string."
     if artifact := scenario.artifact:
         output += f" Also output {artifact.field} as a string; it is submitted verbatim as {artifact.name}."
     return (
         "TASK\n"
-        + definition["task"]
-        + "\n"
-        + definition["completion"]
+        + provider.task(scenario)
         + f"\nBuild a workflow with id {scenario.workflow_id}. Use only the catalog below. "
         "Choose your own graph. "
-        f"Runtime is {definition['limits']['wall_clock_seconds']} seconds with at most "
+        f"Runtime is {provider.limit_seconds(scenario)} seconds with at most "
         f"{scenario.runtime_model_calls} LLM operations. "
         "Tool results are JSON strings. "
         + output
@@ -231,7 +219,6 @@ def stage_tasks(
                 f"{name}: its verifier may run {required}s, more than harbor.verifier_timeout_sec "
                 f"{selected[name].harbor['verifier_timeout_sec']}s"
             )
-    upstreams = {name: contract_for(s).package["definition"] for name, s in selected.items() if s.hosted}
     root = workspace_root()
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=False)
@@ -243,12 +230,11 @@ def stage_tasks(
         (task / "environment").mkdir(parents=True)
         (task / "tests").mkdir()
         hosted = definition.hosted
-        upstream = upstreams.get(scenario)
         scrub = ""
         if hosted:
-            scrub = " " + " ".join(f"/app/lab/src/{relative}" for relative in EVALUATOR_MODULES)
+            scrub = " " + " ".join(f"/app/lab/src/{relative}" for relative in host_only_modules())
         if mode == "generation":
-            instruction = generation_prompt(root, definition, upstream, catalog)
+            instruction = generation_prompt(root, definition, catalog)
             dockerfile = (
                 f"FROM {image}\nUSER root\nWORKDIR /app\n"
                 f"RUN rm -rf /app/lab/benchmarks /app/scenario /app/submission{scrub} "
@@ -274,20 +260,16 @@ def stage_tasks(
         (task / "environment/Dockerfile").write_text(dockerfile)
         (task / "task.toml").write_text(task_toml(root, definition))
         if hosted:
-            assert upstream is not None and definition.provenance is not None
             shutil.copyfile(definition.bindings, task / "tests/bindings.yaml")
             if mode == "generation":
                 limits = {
                     "scenario": scenario,
                     "runtime_model_calls": definition.runtime_model_calls,
-                    "deadline_seconds": upstream["limits"]["wall_clock_seconds"],
+                    "deadline_seconds": ENVIRONMENTS[definition.environment].limit_seconds(definition),
                 }
                 write_json(task / "tests/admission.json", limits)
             else:
-                write_json(
-                    task / "tests/environment.json",
-                    {"scenario": scenario, "challenge": definition.provenance.challenge, "seed": 0},
-                )
+                write_json(task / "tests/environment.json", {"scenario": scenario, "seed": 0})
             (task / "tests/test.sh").write_text(HOSTED_TEST.format(action="admit" if mode == "generation" else "run"))
             continue
         test_script = (templates / "test.sh").read_text().replace("@SCENARIO@", scenario)

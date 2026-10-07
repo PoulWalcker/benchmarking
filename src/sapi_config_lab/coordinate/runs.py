@@ -17,10 +17,10 @@ from typing import Any
 from sapi_config_lab.coordinate.evaluation import trial_result
 from sapi_config_lab.coordinate.packages import UPLOAD_ONLY_AGENTS, job_seconds, stage_tasks, verifier_bounds
 from sapi_config_lab.coordinate.provenance import source_manifest
+from sapi_config_lab.coordinate.providers import ENVIRONMENTS
 from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.agency import start_bridge, stop_bridge
-from sapi_config_lab.execute.autowfbench import start_environment
 from sapi_config_lab.execute.host import (
     HostConfig,
     checked_harbor,
@@ -34,7 +34,6 @@ from sapi_config_lab.execute.host import (
 )
 from sapi_config_lab.execute.hosting import TrialHost
 from sapi_config_lab.paths import CATALOG
-from sapi_config_lab.pinned_source import pinned_source
 
 
 def fingerprint(path: Path) -> dict[str, str]:
@@ -195,16 +194,9 @@ class Run:
                 for task in hosted:
                     environment = json.loads((task / "tests/environment.json").read_text())
                     scenario = SCENARIOS[environment["scenario"]]
-                    assert scenario.provenance is not None
+                    provider = ENVIRONMENTS[scenario.environment]
                     host = TrialHost(
-                        partial(
-                            start_environment,
-                            pinned_source(scenario.provenance.source),
-                            environment["challenge"],
-                            environment["seed"],
-                            bind_host=self.host.listen_host,
-                            public_host=self.host.container_host,
-                        ),
+                        partial(provider.start, scenario, environment["seed"], self.host),
                         records / scenario.name,
                         scenario=scenario.name,
                         seed=environment["seed"],

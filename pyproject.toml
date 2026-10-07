@@ -70,7 +70,7 @@ force-sort-within-sections = true
 "src/sapi_config_lab/author/agent.py" = ["BLE001"]
 "src/sapi_config_lab/coordinate/observe.py" = ["BLE001"]
 "src/sapi_config_lab/coordinate/runs.py" = ["BLE001"]
-"src/sapi_config_lab/coordinate/simulator_worker.py" = ["BLE001"]
+"src/sapi_config_lab/coordinate/hosted_worker.py" = ["BLE001"]
 # An unknown model-rebuild outcome must suspend the lifecycle family: fail closed.
 "src/sapi_config_lab/coordinate/lifecycle.py" = ["BLE001"]
 # Candidate evidence can fail any way; each way is a rejection or a stated non-score, never a crash.

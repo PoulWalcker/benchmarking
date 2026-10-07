@@ -25,7 +25,7 @@ MODULES = {
     "ui": "coordinate.ui",
     "review-export": "evaluate.review_export",
     "lifecycle": "coordinate.lifecycle",
-    "simulator-worker": "coordinate.simulator_worker",
+    "hosted-worker": "coordinate.hosted_worker",
 }
 
 PUBLIC = {
@@ -49,7 +49,7 @@ INTERNAL = {
     "package-tasks": "Assemble Harbor task packages into a new directory; runs nothing.",
     "transport": "HTTP transport probes. Runs inside the lab image; run.sh invokes it there.",
     "bridge": "Foreground Agency HTTP adapter. live and ui start it themselves.",
-    "simulator-worker": "Trusted verifier step inside a simulator task container; needs /tests and /logs.",
+    "hosted-worker": "Trusted verifier step inside a hosted task container; needs /tests and /logs.",
 }
 
 

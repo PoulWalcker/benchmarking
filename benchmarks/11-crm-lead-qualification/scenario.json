@@ -3,7 +3,7 @@
     "source": "autowfbench",
     "challenge": "crm-lead-qualification"
   },
-  "environment": "simulator",
+  "environment": "autowfbench",
   "evaluator": "upstream",
   "workflow_id": "crm-workflow",
   "bindings": "bindings.yaml",

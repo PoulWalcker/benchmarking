@@ -133,9 +133,7 @@ class BackendContractTests(unittest.TestCase):
             path, bindings = scenario.config, profile.read_bindings(scenario.bindings)
             config = profile.read(path)
             # Both environments compile through the same backend; a simulator's tools are bound at run time.
-            options = CompileOptions(
-                operation_url="http://tools/tools" if scenario.environment == "simulator" else None
-            )
+            options = CompileOptions(operation_url="http://tools/tools" if scenario.hosted else None)
             with self.subTest(config=path.parent.name):
                 if path.parent.name != "05-daily-digest":
                     compiled = backend.compile(config, bindings, options)
