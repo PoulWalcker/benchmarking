@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+import re
 from urllib.parse import urlparse
 import uuid
 
@@ -86,6 +87,14 @@ def compile_n8n(
         if not parsed.path.rstrip("/"):
             endpoint += "/v1/agency/execute"
     order, deps = validate(cfg, bindings)
+    ops = (RESOURCES / "operations.js").read_text()
+    # This bundled table is the local capability set; a catalog declaration supplies no executable code.
+    local_operations = set(re.findall(r"^  '([^']+)':", ops, re.MULTILINE))
+    for step in cfg["workflow"]["steps"]:
+        if bindings[step["uses"]].get("transport") == "http" or (step["kind"] == "LLM" and llm_mode == "live"):
+            continue
+        if step["uses"] not in local_operations:
+            raise Unsupported(f"No local implementation for {step['uses']} in {llm_mode} mode")
     check(activation in ("fixture", "event"), "activation must be fixture or event")
     if activation == "event":
         check("lifecycle" in cfg, "Event admission requires a lifecycle definition")
@@ -118,7 +127,6 @@ def compile_n8n(
     nodes: list[Document] = []
     connections: Document = {}
     mapping: dict[str, str] = {}
-    ops = (RESOURCES / "operations.js").read_text()
     helpers = (RESOURCES / "runtime-fragment.js").read_text()
     stepmap = {s["id"]: s for s in w["steps"]}
 

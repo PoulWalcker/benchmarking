@@ -95,7 +95,7 @@ Cover profile validity, packaging, a positive case and a plausible bad result th
 
 `./run-generation.sh` gives a model the task, `generation/FORMAT.md`, `generation/PROFILE.md` and the operation catalog, once per attempt, with no repair. `--catalog scenario` is an experiment arm, not the default: the catalog shows only the operations the scenario's reference uses, the report records the variant, the operations shown and their hashes, and its prompts are pinned separately. `sapi-lab package-tasks --mode generation --catalog scenario` stages those prompts without a model call. The answer is a candidate like any other: compiled, executed and independently verified. Runtime model steps are stubs during generation. The wrapper does not disable its CLI tools: the prompt forbids them and recognized tool markers in its stderr reject the attempt, which is an audit, not a sandbox. `tests/test_packaging.py` pins every generation prompt's hash; a prompt change is an experiment change.
 
-For a hosted scenario the gate after authoring is admission: the YAML compiles, stays within `runtime_model_calls` and keeps the provider's trial limit.
+For a hosted scenario the gate after authoring and before live dispatch is admission: the YAML compiles in live mode, stays within `runtime_model_calls` and keeps the provider's trial limit. It proves materialization capability and declared limits, not candidate execution or acceptance. Hosted model operations need no fabricated stub answer. Fresh oracle/nop reference executions still gate the instrument before paid dispatch.
 
 ## Live model execution
 
@@ -104,7 +104,7 @@ uv run --locked --extra harbor --extra benchmark sapi-lab live --stub-report <co
   --max-calls N --wrapper-evidence <identity.json> [--submissions-manifest <selection.json>]
 ```
 
-Before any dispatch, `live` requires a passing control report for the same sources and image, an unpaid stub replay, a ledger reservation per case and an inspected wrapper identity. The identity records each wrapper file's hash; files are read at their recorded path unless `--wrapper-file NAME=PATH` names the local copy (NAME is the file's basename). Hashes are always checked. A hosted evaluator that calls a judge also needs `--judge-model`; its `judge_calls` are reserved per trial.
+Before any dispatch, `live` requires a passing control report for the same sources and image, unpaid fixture stub replay or hosted compilation/admission, a ledger reservation per case and an inspected wrapper identity. The identity records each wrapper file's hash; files are read at their recorded path unless `--wrapper-file NAME=PATH` names the local copy (NAME is the file's basename). Hashes are always checked. A hosted evaluator that calls a judge also needs `--judge-model`; its `judge_calls` are reserved per trial.
 
 `sapi-lab evaluate --record reports/<run>/environments/<job>/<scenario>` re-evaluates a hosted trial through its scenario's evaluator; for AutoWFBench, `--judgement <reply.json>` re-scores from a saved judgement without a model call.
 

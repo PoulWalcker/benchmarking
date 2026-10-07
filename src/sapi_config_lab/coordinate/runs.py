@@ -147,7 +147,14 @@ class Run:
         self.report.setdefault("phases", []).append({"phase": phase, "unchanged": True})
 
     def harbor(
-        self, job: str, tasks: Path, agent: str, *, hosting: Hosting | None = None, **arguments: Any
+        self,
+        job: str,
+        tasks: Path,
+        agent: str,
+        *,
+        hosting: Hosting | None = None,
+        admission: bool = False,
+        **arguments: Any,
     ) -> tuple[int, list[dict]]:
         """One `harbor run`, bounded by its trials' own limits; its jobs are copied out even when it fails."""
         if self.staging is None:
@@ -162,7 +169,9 @@ class Run:
         timeout = job_seconds({name: self.bounds[name] for name in names}, int(arguments.get("attempts") or 1))
         self.report.setdefault("harbor_timeouts", {})[job] = timeout
         records = self.output / "environments" / job
-        with self.hosted(job, tasks, records, hosting) as (job_tasks, hosted):
+        if admission:
+            arguments["verifier_env"] = [*arguments.get("verifier_env", []), "SAPI_HOSTED_ADMISSION=1"]
+        with self.hosted(job, tasks, records, hosting, admission=admission) as (job_tasks, hosted):
             argv = harbor_run_args(self.harbor_argv, job_tasks, self.staging / "jobs", job, agent, **arguments)
             self.report.setdefault("commands", []).append(argv)
             try:
@@ -173,14 +182,14 @@ class Run:
 
     @contextmanager
     def hosted(
-        self, job: str, tasks: Path, records: Path, hosting: Hosting | None
+        self, job: str, tasks: Path, records: Path, hosting: Hosting | None, *, admission: bool = False
     ) -> Iterator[tuple[Path, dict[str, Path]]]:
         """Serve each hosted task for one job; yields the task path Harbor runs and each host's record.
 
         Credentials go into a per-job copy so pinned packages never change, and must not leak into anything persisted.
         """
         hosted = [task for task in task_dirs(tasks) if (task / "tests/environment.json").is_file()]
-        if not hosted:
+        if not hosted or admission:
             yield tasks, {}
             return
         if hosting is None:

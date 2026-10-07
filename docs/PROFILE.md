@@ -41,7 +41,7 @@ A new operation requires:
 3. a catalog binding;
 4. tests and verifier coverage where the operation changes observable behavior.
 
-The workflow profile does not infer hidden capabilities from arbitrary code.
+The workflow profile does not infer hidden capabilities from arbitrary code. The n8n compiler rejects a local Script or stub LLM operation unless its bundled operation table implements it. HTTP tools use the hosted transport; live LLM operations use Agency and need no deterministic stub. A binding describes a contract, not an implementation.
 
 ## Refinement
 

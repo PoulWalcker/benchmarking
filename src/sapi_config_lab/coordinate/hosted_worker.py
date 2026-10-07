@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 from urllib.request import Request, urlopen
 
@@ -96,6 +97,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=["admit", "run"])
     action = parser.parse_args(argv).action
+    if os.environ.get("SAPI_HOSTED_ADMISSION") == "1":
+        action = "admit"
     LOGS.mkdir(parents=True, exist_ok=True)
     report = admit(json.loads((TESTS / "admission.json").read_text())) if action == "admit" else run()
     (LOGS / "evaluation").mkdir(exist_ok=True)
