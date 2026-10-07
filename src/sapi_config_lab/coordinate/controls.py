@@ -121,10 +121,8 @@ def main(argv: list[str] | None = None) -> int:
         for agent in ("oracle", "nop"):
             progress(f"{agent}: {len(selected)} Harbor tasks through real n8n")
             exit_code, trials = run.harbor(agent, run.tasks, agent, hosting=hosting)
-            # An unscored hosted nop writes no reward, so Harbor reports a missing reward file.
-            simulated_nop = agent == "nop" and any(SCENARIOS[t["task_name"]].hosted for t in trials)
             passed = (
-                (exit_code == 0 or simulated_nop)
+                exit_code == 0
                 and sorted(t["task_name"] for t in trials) == sorted(selected)
                 and all(control_passed(agent, trial) for trial in trials)
             )

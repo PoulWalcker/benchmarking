@@ -6,11 +6,12 @@ import asyncio
 import hashlib
 import json
 import time
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 from harbor.agents.base import BaseAgent
 
 from sapi_config_lab.evidence import write_json
+from sapi_config_lab.net import urlopen
 from sapi_config_lab.wrapper_audit import reported_model, reported_tokens, stderr_sha256, tool_markers
 
 MAX_ANSWER_CHARACTERS = 100_000
