@@ -83,6 +83,15 @@ def run() -> dict:
     return post("/finish", {"record": record, "submission_sha256": submission_sha256()})
 
 
+def harbor_reward(result: dict) -> str | None:
+    """The reward Harbor reads for a hosted run; None writes no file, since not evaluated is not zero."""
+    quality = result["quality"]
+    if quality is None:
+        # Without a quality the acceptance is the trial's only verdict, as in the fixture verifier.
+        return None if result["acceptance"] is None else ("1" if result["acceptance"] else "0")
+    return None if quality.get("normalized_reward") is None else str(quality["normalized_reward"])
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=["admit", "run"])
@@ -93,9 +102,8 @@ def main(argv: list[str] | None = None) -> int:
     write_json(LOGS / "evaluation/report.json", report)
     if action == "admit":
         (LOGS / "reward.txt").write_text(("1" if report["passed"] else "0") + "\n")
-    elif (report["result"]["quality"] or {}).get("normalized_reward") is not None:
-        # Not evaluated is not zero: an unscored trial writes no reward file.
-        (LOGS / "reward.txt").write_text(str(report["result"]["quality"]["normalized_reward"]) + "\n")
+    elif (reward := harbor_reward(report["result"])) is not None:
+        (LOGS / "reward.txt").write_text(reward + "\n")
     return 0
 
 

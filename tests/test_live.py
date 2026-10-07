@@ -2,6 +2,7 @@
 
 import contextlib
 import copy
+from dataclasses import replace
 import io
 from io import BytesIO
 import json
@@ -10,10 +11,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.coordinate.live import audit_records, main, validate_control
+from sapi_config_lab.coordinate.live import audit_records, check_trials, main, validate_control
 from sapi_config_lab.coordinate.live_evidence import reconcile_dispatches
 from sapi_config_lab.coordinate.replay import load_selection
 from sapi_config_lab.coordinate.runs import Run
+from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
 from sapi_config_lab.evidence import digest, sha256
 from sapi_config_lab.execute.agency import DispatchAudit, execute, start_bridge
@@ -154,6 +156,26 @@ class LiveEvidenceTests(unittest.TestCase):
         self.assertEqual(digest({"b": [2], "a": "é"}), digest({"a": "é", "b": [2]}))
         with self.assertRaises(ValueError):
             digest({"x": float("nan")})
+
+
+class HostedTrialCheckTests(unittest.TestCase):
+    """A hosted live trial must be evaluated; it must be scored only where a reference reward is declared."""
+
+    def check(self, result: dict, reference_reward: float | None) -> None:
+        scenario = replace(SCENARIOS["checkout-recovery"], reference_reward=reference_reward)
+        acceptance = {"mode": "live", "scenario": "checkout-recovery", "submission_sha256": "abc", "result": result}
+        trial = {"task_name": "checkout-recovery", "exception": None, "acceptance": acceptance, "result": result}
+        with patch.dict(SCENARIOS, {"checkout-recovery": scenario}):
+            check_trials([trial], {"checkout-recovery": {"sha256": "abc"}}, mode="live")
+
+    def test_an_unscored_trial_is_complete_only_without_a_reference_reward(self):
+        scored = {"status": "complete", "score_0_10": 0.0, "normalized_reward": 0.0}
+        self.check({"execution": True, "acceptance": False, "quality": scored}, 0.732)
+        self.check({"execution": True, "acceptance": False, "quality": None}, None)
+        with self.assertRaisesRegex(ValueError, "unscored"):
+            self.check({"execution": True, "acceptance": True, "quality": None}, 0.732)
+        with self.assertRaisesRegex(ValueError, "missing"):
+            self.check({"execution": None, "acceptance": None, "quality": None}, None)
 
 
 class WrapperIdentityTests(unittest.TestCase):

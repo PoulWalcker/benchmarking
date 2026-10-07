@@ -17,7 +17,7 @@ from urllib.request import Request, urlopen
 
 from sapi_config_lab.coordinate import evaluation
 from sapi_config_lab.coordinate.evaluation import HOSTED_REPORT, control_passed, hosted_evaluation, trial_accepted
-from sapi_config_lab.coordinate.hosted_worker import HTTP_TIMEOUT_SECONDS
+from sapi_config_lab.coordinate.hosted_worker import HTTP_TIMEOUT_SECONDS, harbor_reward
 from sapi_config_lab.coordinate.packages import HOSTED_TEST, stage_tasks, verifier_bounds
 from sapi_config_lab.coordinate.providers import ENVIRONMENTS, EVALUATORS, HostedEnvironment, HostedEvaluator
 from sapi_config_lab.coordinate.runs import Hosting, Run
@@ -107,14 +107,13 @@ def _world_handler(world: FakeWorld) -> type[BaseHTTPRequestHandler]:
 
 
 def fake_result(record: Path) -> dict:
-    """Deterministic acceptance: the trial completed and the world holds exactly one lead."""
+    """Deterministic acceptance, and no score: the trial completed and the world holds exactly one lead."""
     world = json.loads((record / "evidence/environment-evidence.json").read_text())
     trial = json.loads((record / "evidence/trial.json").read_text())
-    accepted = len(world["state"]["leads"]) == 1
     return {
         "execution": trial["termination_reason"] == "completed",
-        "acceptance": accepted,
-        "quality": {"status": "complete", "score_0_10": 10.0 * accepted, "normalized_reward": 1.0 * accepted},
+        "acceptance": len(world["state"]["leads"]) == 1,
+        "quality": None,
     }
 
 
@@ -205,8 +204,8 @@ class FakeProviderTests(unittest.TestCase):
         self.assertEqual((task / "tests/test.sh").read_text(), HOSTED_TEST.format(action="admit"))
         self.assertIn("Create one lead in the CRM.", (task / "instruction.md").read_text())
 
-    def run_trial(self) -> tuple[Run, int, list[dict], dict]:
-        """One oracle job through Run.harbor and a real TrialHost; a stand-in plays Harbor's container."""
+    def run_trial(self, agent: str = "oracle") -> tuple[Run, int, list[dict], dict]:
+        """One control job through Run.harbor and a real TrialHost; a stand-in plays Harbor's container."""
         host = HostConfig(container_host="127.0.0.1", listen_host="127.0.0.1")
         run = Run(self.root / "run", {}, {}, "t", host=host, staging=self.root / "staging")
         run.output.mkdir()
@@ -218,13 +217,18 @@ class FakeProviderTests(unittest.TestCase):
             tasks = Path(argv[argv.index("--path") + 1])
             connection = json.loads((tasks / "fake-crm/tests/connection.json").read_text())
             begun = post(connection["url"] + "/begin", connection["token"], {})
-            call = {"operation": "create_lead", "arguments": {"name": "Ada"}}
-            seen["receipt"] = post(begun["operation_url"], begun["operation_token"], call)
-            record = {"status": "success", "output": {"final_answer": "done"}}
+            if agent == "nop":
+                record = {"status": "missing_submission", "output": None}
+            else:
+                call = {"operation": "create_lead", "arguments": {"name": "Ada"}}
+                seen["receipt"] = post(begun["operation_url"], begun["operation_token"], call)
+                record = {"status": "success", "output": {"final_answer": "done"}}
             report = post(connection["url"] + "/finish", connection["token"], {"record": record})
             trial = Path(argv[argv.index("--jobs-dir") + 1]) / argv[argv.index("--job-name") + 1] / "fake-crm__1"
             trial.mkdir(parents=True)
-            rewards = {"reward": report["result"]["quality"]["normalized_reward"]}
+            # The real container's reward rule, so Harbor's reward here is the one it would record.
+            seen["reward"] = reward = harbor_reward(report["result"])
+            rewards = None if reward is None else {"reward": float(reward)}
             (trial / "result.json").write_text(
                 json.dumps({"task_name": "fake-crm", "verifier_result": {"rewards": rewards}})
             )
@@ -232,7 +236,7 @@ class FakeProviderTests(unittest.TestCase):
 
         hosting = Hosting("stub", hosted_evaluation(("fake-crm",)))
         with patch("sapi_config_lab.coordinate.runs.run_logged", side_effect=container):
-            exit_code, trials = run.harbor("oracle", run.tasks, "oracle", hosting=hosting)
+            exit_code, trials = run.harbor(agent, run.tasks, agent, hosting=hosting)
         return run, exit_code, trials, seen
 
     def test_a_trial_runs_end_to_end_through_the_real_host_and_evaluator_seam(self):
@@ -270,10 +274,28 @@ class FakeProviderTests(unittest.TestCase):
                 "result": expected,
             },
         )
+        self.assertEqual(expected, {"execution": True, "acceptance": True, "quality": None})
         (trial,) = trials
+        self.assertEqual(seen["reward"], "1")
+        self.assertEqual(trial["rewards"], {"reward": 1.0})
         self.assertEqual(trial["result"], expected)
         self.assertTrue(trial_accepted(trial))
+        self.assertIsNone(self.scenario.reference_reward)
         self.assertTrue(control_passed("oracle", trial))
+
+    def test_a_nop_trial_is_rejected_unscored_and_passes_its_control(self):
+        run, exit_code, trials, seen = self.run_trial("nop")
+        self.assertEqual(exit_code, 0)
+        self.assertNotIn("receipt", seen)
+        record = run.output / "environments/nop/fake-crm"
+        trial_record = json.loads((record / "evidence/trial.json").read_text())
+        self.assertEqual(trial_record["termination_reason"], "solution_failed")
+        (trial,) = trials
+        self.assertEqual(trial["result"], {"execution": False, "acceptance": False, "quality": None})
+        self.assertEqual((seen["reward"], trial["rewards"]), ("0", {"reward": 0.0}))
+        self.assertFalse(trial_accepted(trial))
+        self.assertTrue(control_passed("nop", trial))
+        self.assertFalse(control_passed("oracle", trial))
 
     def test_a_recorded_trial_is_reevaluated_by_its_provider(self):
         run, *_ = self.run_trial()
@@ -282,7 +304,9 @@ class FakeProviderTests(unittest.TestCase):
         with patch("sys.stdout"):
             self.assertEqual(evaluation.main(["--record", str(record), "--output", str(output)]), 0)
         self.assertEqual(self.reevaluated, [("fake-crm", record, output)])
-        self.assertEqual(json.loads((output / "result.json").read_text()), fake_result(record))
+        self.assertEqual(
+            json.loads((output / "result.json").read_text()), {"execution": True, "acceptance": True, "quality": None}
+        )
 
 
 if __name__ == "__main__":

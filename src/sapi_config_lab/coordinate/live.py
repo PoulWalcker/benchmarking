@@ -100,12 +100,15 @@ def check_trials(trials: list[dict], submissions: dict, *, mode: str, expected_c
             acceptance.get("mode") == mode and acceptance.get("scenario") == scenario, "Verifier scenario/mode mismatch"
         )
         if SCENARIOS[scenario].hosted:
-            # Hosted quality is measured, not gated: a scored trial is a completed measurement.
+            # Hosted verdicts are measured, not gated: an evaluated trial, scored when a reference reward is declared.
             require(
                 not trial["exception"] and acceptance.get("submission_sha256") == submissions[scenario]["sha256"],
                 "Harbor failed or the host saw another submission",
             )
-            require((trial["result"]["quality"] or {}).get("status") == "complete", "Hosted evaluation is unscored")
+            if SCENARIOS[scenario].reference_reward is None:
+                require(trial["result"]["acceptance"] is not None, "Hosted evaluation is missing")
+            else:
+                require((trial["result"]["quality"] or {}).get("status") == "complete", "Hosted evaluation is unscored")
             continue
         require(trial_accepted(trial), "Harbor or independent acceptance failed")
         verifier = Path(trial["result_path"]).parent / "verifier"
