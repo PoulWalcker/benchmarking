@@ -14,7 +14,7 @@ import shutil
 import time
 from typing import Any
 
-from sapi_config_lab.coordinate.evaluation import hosted_evaluation, trial_accepted
+from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, hosted_evaluation, trial_accepted
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.live_evidence import case_budget, collect_native, live_cohort, reconcile_dispatches
 from sapi_config_lab.coordinate.packages import task_toml
@@ -90,7 +90,9 @@ def hosted_grant(scenario: str, config: dict) -> dict:
     return {"max_attempts": len(calls), "operations": dict(Counter(calls.values())), "occurrences": calls}
 
 
-def check_trials(trials: list[dict], submissions: dict, *, mode: str, expected_cases: dict | None = None) -> None:
+def check_trials(
+    trials: list[dict], submissions: dict, *, mode: str, expected_cases: dict | None = None, admission: bool = False
+) -> None:
     names = [trial["task_name"] for trial in trials]
     require(len(names) == len(set(names)) and set(names) <= set(submissions), "Unexpected or duplicate Harbor trial")
     for trial in trials:
@@ -100,6 +102,18 @@ def check_trials(trials: list[dict], submissions: dict, *, mode: str, expected_c
             acceptance.get("mode") == mode and acceptance.get("scenario") == scenario, "Verifier scenario/mode mismatch"
         )
         if SCENARIOS[scenario].hosted:
+            if admission:
+                require(
+                    mode == "stub"
+                    and acceptance.get("schema") == ADMISSION_REPORT
+                    and acceptance.get("passed") is True
+                    and not trial["exception"]
+                    and trial["rewards"] == {"reward": 1.0}
+                    and acceptance.get("submission_sha256") == submissions[scenario]["sha256"],
+                    "Hosted admission failed or the worker saw another submission",
+                )
+                continue
+            require(acceptance.get("schema") != ADMISSION_REPORT, "Admission is not a live evaluation")
             # Hosted verdicts are measured, not gated: an evaluated trial, scored when a reference reward is declared.
             require(
                 not trial["exception"] and acceptance.get("submission_sha256") == submissions[scenario]["sha256"],
@@ -275,18 +289,21 @@ def main(argv: list[str] | None = None) -> int:
         )
         validate_packages(run.tasks, submissions, run.image or "")
         run.check("before-stub")
-        progress(f"preflight: unpaid stub replay of {', '.join(scenarios)}")
+        progress(f"preflight: fixture stub replay and hosted compilation/admission of {', '.join(scenarios)}")
         started = time.monotonic()
-        simulated = Hosting("stub", hosted_evaluation(hosted))
         exit_code, stub_trials = run.harbor(
-            "stub-replay", run.tasks, "oracle", verifier_env=["SAPI_LLM_MODE=stub"], hosting=simulated
+            "stub-replay", run.tasks, "oracle", verifier_env=["SAPI_LLM_MODE=stub"], admission=True
         )
-        report["preflight"] = {"harbor_exit_code": exit_code, "trials": stub_trials}
+        report["preflight"] = {
+            "harbor_exit_code": exit_code,
+            "trials": stub_trials,
+            "hosted_scope": "Live-mode compilation and limits only; no candidate execution or acceptance",
+        }
         require(
             exit_code == 0 and sorted(t["task_name"] for t in stub_trials) == sorted(scenarios),
             "Unpaid stub replay failed",
         )
-        check_trials(stub_trials, submissions, mode="stub")
+        check_trials(stub_trials, submissions, mode="stub", admission=True)
         progress(f"preflight: passed ({round(time.monotonic() - started)}s)")
         if args.preflight_only:
             report["status"] = "passed"

@@ -261,14 +261,13 @@ def stage_tasks(
         (task / "task.toml").write_text(task_toml(root, definition))
         if hosted:
             shutil.copyfile(definition.bindings, task / "tests/bindings.yaml")
-            if mode == "generation":
-                limits = {
-                    "scenario": scenario,
-                    "runtime_model_calls": definition.runtime_model_calls,
-                    "deadline_seconds": ENVIRONMENTS[definition.environment].limit_seconds(definition),
-                }
-                write_json(task / "tests/admission.json", limits)
-            else:
+            limits = {
+                "scenario": scenario,
+                "runtime_model_calls": definition.runtime_model_calls,
+                "deadline_seconds": ENVIRONMENTS[definition.environment].limit_seconds(definition),
+            }
+            write_json(task / "tests/admission.json", limits)
+            if mode != "generation":
                 write_json(task / "tests/environment.json", {"scenario": scenario, "seed": 0})
             (task / "tests/test.sh").write_text(HOSTED_TEST.format(action="admit" if mode == "generation" else "run"))
             continue
