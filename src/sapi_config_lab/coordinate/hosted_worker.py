@@ -3,19 +3,21 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 from sapi_config_lab.contracts import CompileOptions
 from sapi_config_lab.coordinate.backend import default_backend
 from sapi_config_lab.coordinate.cases import run_case
 from sapi_config_lab.evidence import write_json, write_record_json
+from sapi_config_lab.net import urlopen
 from sapi_config_lab.profile import Invalid, Unsupported, check, read, read_bindings
 
 SUBMISSION = Path("/app/submission/config.yaml")
 TESTS = Path("/tests")
 LOGS = Path("/logs/verifier")
-# Each of /begin and /finish; /finish includes the host's evaluation.
+# Environment startup/finalization and RPC overhead; /finish also includes the declared evaluator duration.
 HTTP_TIMEOUT_SECONDS = 240
 
 
@@ -59,7 +61,8 @@ def run() -> dict:
             json.dumps(body).encode(),
             {"Content-Type": "application/json", "Authorization": "Bearer " + settings["token"]},
         )
-        with urlopen(request, timeout=HTTP_TIMEOUT_SECONDS) as response:
+        timeout = HTTP_TIMEOUT_SECONDS + (settings["evaluation_seconds"] if action == "/finish" else 0)
+        with urlopen(request, timeout=timeout) as response:
             return json.load(response)
 
     admitted = post("/begin", {})
@@ -96,6 +99,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=["admit", "run"])
     action = parser.parse_args(argv).action
+    if os.environ.get("SAPI_HOSTED_ADMISSION") == "1":
+        action = "admit"
     LOGS.mkdir(parents=True, exist_ok=True)
     report = admit(json.loads((TESTS / "admission.json").read_text())) if action == "admit" else run()
     (LOGS / "evaluation").mkdir(exist_ok=True)

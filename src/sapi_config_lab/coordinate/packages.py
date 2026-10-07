@@ -10,12 +10,12 @@ from typing import Any
 import yaml
 
 from sapi_config_lab.coordinate.hosted_worker import HTTP_TIMEOUT_SECONDS
-from sapi_config_lab.coordinate.providers import ENVIRONMENTS, host_only_modules
+from sapi_config_lab.coordinate.providers import ENVIRONMENTS, EVALUATORS, host_only_modules
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, Scenario, select_scenarios
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.host import LAB_IMAGE
 from sapi_config_lab.execute.n8n import execution_ceiling
-from sapi_config_lab.paths import CATALOG, workspace_root
+from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import Invalid, read
 
 # What the lab image copies from src/ and the verifier re-hashes in the container.
@@ -82,9 +82,24 @@ def verifier_seconds(config: Any, cases: dict) -> int:
     return max(planned * execution_ceiling(deadline, bound=False), live) + VERIFIER_OVERHEAD_SECONDS
 
 
-def hosted_verifier_seconds(wall_clock_seconds: int, *, admit: bool) -> int:
+def hosted_verifier_seconds(wall_clock_seconds: int, evaluation_seconds: int, *, admit: bool) -> int:
     """Admission only compiles; a run waits on /begin, the deadline-bound workflow and /finish."""
-    return (0 if admit else 2 * HTTP_TIMEOUT_SECONDS + wall_clock_seconds) + VERIFIER_OVERHEAD_SECONDS
+    return (
+        0 if admit else 2 * HTTP_TIMEOUT_SECONDS + wall_clock_seconds + evaluation_seconds
+    ) + VERIFIER_OVERHEAD_SECONDS
+
+
+def runtime_grant_seconds(scenario: Scenario) -> int:
+    """Allow Harbor setup and environment startup before the actual bounded model-execution window."""
+    execution = ENVIRONMENTS[scenario.environment].limit_seconds(scenario) if scenario.hosted else LIVE_DEADLINE_SECONDS
+    setup = scenario.harbor["build_timeout_sec"] + scenario.harbor["agent_timeout_sec"]
+    return (
+        setup
+        + TRIAL_OVERHEAD_SECONDS
+        + JOB_OVERHEAD_SECONDS
+        + execution
+        + (HTTP_TIMEOUT_SECONDS if scenario.hosted else 0)
+    )
 
 
 def planned_config(scenario: Scenario, mode: str, submissions: dict | None) -> Any:
@@ -111,7 +126,9 @@ def verifier_bounds(
     for name, scenario in select_scenarios(scenarios).items():
         if scenario.hosted:
             limit = ENVIRONMENTS[scenario.environment].limit_seconds(scenario)
-            bounds[name] = hosted_verifier_seconds(limit, admit=mode == "generation")
+            bounds[name] = hosted_verifier_seconds(
+                limit, EVALUATORS[scenario.evaluator].timeout_seconds, admit=mode == "generation"
+            )
         else:
             chosen = (cases or {}).get(name)
             config = planned_config(scenario, mode, submissions)
@@ -135,7 +152,7 @@ def scenario_catalog(scenario: Scenario) -> str:
     """Experiment variant: the catalog's bytes without operations the scenario's reference never uses."""
     used = {step["uses"] for step in read(scenario.config)["workflow"]["steps"]}
     kept, section, keep = [], "", True
-    for line in CATALOG.read_text().splitlines(keepends=True):
+    for line in scenario.bindings.read_text().splitlines(keepends=True):
         if line[:1].isalpha():
             section, keep = line.split(":", 1)[0], True
         elif section == "operations" and line.startswith("  ") and line[2:3].isalpha():
@@ -143,7 +160,7 @@ def scenario_catalog(scenario: Scenario) -> str:
         if keep:
             kept.append(line)
     text = "".join(kept)
-    full = yaml.safe_load(CATALOG.read_text())
+    full = yaml.safe_load(scenario.bindings.read_text())
     if yaml.safe_load(text) != {**full, "operations": {k: v for k, v in full["operations"].items() if k in used}}:
         raise ValueError(f"{scenario.name}: the catalog cannot be cut to its operations without changing them")
     return text
@@ -164,7 +181,7 @@ def generation_prompt(root: Path, scenario: Scenario, catalog: str = "full") -> 
             + "\n\nPROFILE\n"
             + (root / "generation/PROFILE.md").read_text()
             + "\n\nOPERATION CATALOG\n"
-            + (CATALOG.read_text() if catalog == "full" else scenario_catalog(scenario))
+            + (scenario.bindings.read_text() if catalog == "full" else scenario_catalog(scenario))
         )
     provider = ENVIRONMENTS[scenario.environment]
     output = "Your workflow output must contain a final_answer string."
@@ -179,7 +196,7 @@ def generation_prompt(root: Path, scenario: Scenario, catalog: str = "full") -> 
         f"{scenario.runtime_model_calls} LLM operations. "
         "Tool results are JSON strings. "
         + output
-        + " This is a synthetic simulator. "
+        + " "
         + scenario.authoring_notes()
         + "\n\n"
         + (root / "generation/FORMAT.md").read_text()
@@ -259,16 +276,15 @@ def stage_tasks(
         hashes[scenario] = hashlib.sha256(instruction.encode()).hexdigest()
         (task / "environment/Dockerfile").write_text(dockerfile)
         (task / "task.toml").write_text(task_toml(root, definition))
+        shutil.copyfile(definition.bindings, task / "tests/bindings.yaml")
         if hosted:
-            shutil.copyfile(definition.bindings, task / "tests/bindings.yaml")
-            if mode == "generation":
-                limits = {
-                    "scenario": scenario,
-                    "runtime_model_calls": definition.runtime_model_calls,
-                    "deadline_seconds": ENVIRONMENTS[definition.environment].limit_seconds(definition),
-                }
-                write_json(task / "tests/admission.json", limits)
-            else:
+            limits = {
+                "scenario": scenario,
+                "runtime_model_calls": definition.runtime_model_calls,
+                "deadline_seconds": ENVIRONMENTS[definition.environment].limit_seconds(definition),
+            }
+            write_json(task / "tests/admission.json", limits)
+            if mode != "generation":
                 write_json(task / "tests/environment.json", {"scenario": scenario, "seed": 0})
             (task / "tests/test.sh").write_text(HOSTED_TEST.format(action="admit" if mode == "generation" else "run"))
             continue

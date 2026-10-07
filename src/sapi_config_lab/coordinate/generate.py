@@ -5,12 +5,10 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
-import copy
 from datetime import UTC, datetime
 import hashlib
 import json
 from pathlib import Path
-import secrets
 import sys
 import time
 from typing import Any
@@ -20,6 +18,7 @@ import yaml
 from sapi_config_lab.coordinate.controls import suite_seconds
 from sapi_config_lab.coordinate.evaluation import trial_accepted
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
+from sapi_config_lab.coordinate.live_evidence import load_verifier
 from sapi_config_lab.coordinate.packages import AUTHOR_AGENT, CATALOG_VARIANTS, scenario_catalog
 from sapi_config_lab.coordinate.runs import Run, load_trials, progress, run_experiment, trial_seconds
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
@@ -78,38 +77,9 @@ def summarize_trials(*jobs: Path) -> list[dict]:
 
 
 def fresh_case_overlay(scenario: str) -> dict:
-    """Fresh values for the evaluator-only fixtures, staged after the prompt is frozen.
-
-    Replacements are stable, so duplicate-ID controls and sibling metamorphisms survive.
-    """
-    cases = copy.deepcopy(SCENARIOS[scenario].cases())
-    token = secrets.token_hex(6).upper()
-    increment = secrets.randbelow(400) + 31
-
-    def transform(value, *, field="", positive=False):
-        if isinstance(value, list):
-            return [transform(item, field=field, positive=positive) for item in value]
-        if isinstance(value, dict):
-            return {key: transform(item, field=key, positive=positive) for key, item in value.items()}
-        if isinstance(value, str):
-            if field in {"id", "required_order_id"}:
-                return token + "-" + value
-            if field in {"text", "product_material", "marketing_material"} and value:
-                return "Fixture " + token + ": " + value
-        if field == "amount_minor" and positive and isinstance(value, int) and 0 < value < 1_000_000:
-            return value + increment
-        return value
-
-    for kind in ("positive", "negative"):
-        for case in cases[kind]:
-            original = case["inputs"]
-            case["inputs"] = transform(original, positive=kind == "positive")
-            if "required_order_id" in original:
-                # Keep the order named in the ticket aligned with the projected request.
-                case["inputs"]["ticket"]["text"] = case["inputs"]["ticket"]["text"].replace(
-                    original["required_order_id"], case["inputs"]["required_order_id"]
-                )
-    return cases
+    """Ask the independent fixture owner for a fresh overlay; staging records the exact returned bytes."""
+    verification, _ = load_verifier()
+    return verification.fresh_cases(scenario, SCENARIOS[scenario].cases())
 
 
 def write_summary(report: dict, output: Path) -> None:

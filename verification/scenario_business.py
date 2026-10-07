@@ -251,7 +251,7 @@ def priority_support_obligations(
 
 
 def support_review_obligations(
-    inputs: dict[str, Any], observation: WorkflowObservation
+    inputs: dict[str, Any], observation: WorkflowObservation, *, case: dict | None = None
 ) -> dict[str, Callable[[], dict]]:
     """The three named obligations of support-review-packet, in acceptance order."""
     return {
@@ -261,61 +261,61 @@ def support_review_obligations(
     }
 
 
-def check_scenario_business_result(
-    scenario: str,
-    inputs: dict[str, Any],
-    observation: WorkflowObservation,
-    mode: str = "stub",
-    *,
-    case: dict | None = None,
-) -> dict[str, Any]:
-    roles, events, states = observation.roles, observation.events, observation.states
-
-    def ledger(field: str, validate: str, total: str, report: str) -> dict:
-        return _ledger(inputs, observation, field, validate, total, report)
-
+def dual_ledger_closeout(
+    inputs: dict, observation: WorkflowObservation, mode: str = "stub", *, case: dict | None = None
+) -> None:
+    roles, states = observation.roles, observation.states
     output = observation.final["output"]
-    if scenario == "dual-ledger-closeout":
-        expected = {
-            name: ledger(name + "_invoices", name + "_validate", name + "_sum", name + "_report")
-            for name in ("domestic", "export")
-        }
-        equal(output, expected, "Wrong ledger packet")
-        for name, other in (("domestic", "export"), ("export", "domestic")):
-            other_ids = {sid for role, sid in roles.items() if role.startswith(other + "_")}
-            for suffix in ("validate", "sum", "report"):
-                state = states[roles[name + "_" + suffix]]
-                require(not other_ids.intersection(state["statuses"]), "Cross-ledger dependency data")
-    elif scenario == "support-review-packet":
-        # The three named obligations, run in order; the first failure still raises.
-        obligations = support_review_obligations(inputs, observation)
-        action = obligations["routing_single_action"]()
-        report = obligations["ledger_report"]()
-        draft = obligations["review_matches"]()
-        equal(
-            output,
-            {"action": action, "invoice_report": report, **draft},
-            "Wrong support review packet",
-        )
-        if mode == "stub":
-            equal(draft["reply"], {"text": "We are checking your order."}, "Wrong one-shot deterministic draft")
-        for role in ("select", "report"):
-            require(states[roles["draft"]]["statuses"].get(roles[role]) == "completed", "Draft ran before packet join")
-    elif scenario == "bulletin-market-brief":
-        # The five named obligations, run in order; the first failure still raises.
-        obligations = bulletin_brief_obligations(inputs, observation, case=case, mode=mode)
-        obligations["digest_covers_every_article"]()
-        obligations["digest_grounded_in_articles"]()
-        preview = obligations["preview_repeats_the_digest"]()
-        obligations["four_distinct_actors"]()
-        brief = obligations["brief_merges_both_sources"]()
-        equal(output, {"digest": preview, "brief": brief}, "Wrong bulletin packet")
-    elif scenario == "priority-support-brief":
-        # The two named obligations, run in order; the first failure still raises.
-        obligations = priority_support_obligations(inputs, observation, case=case, mode=mode)
-        action = obligations["routing_single_action"]()
-        brief = obligations["research_matches_priority"]()
-        equal(output, {"action": action, "brief": brief}, "Wrong priority support packet")
-    else:
-        require(False, "Unknown scenario for composed acceptance")
-    return {"output_verified": True, "operation_count": len(events), "llm_mode": mode}
+    expected = {
+        name: _ledger(inputs, observation, name + "_invoices", name + "_validate", name + "_sum", name + "_report")
+        for name in ("domestic", "export")
+    }
+    equal(output, expected, "Wrong ledger packet")
+    for name, other in (("domestic", "export"), ("export", "domestic")):
+        other_ids = {sid for role, sid in roles.items() if role.startswith(other + "_")}
+        for suffix in ("validate", "sum", "report"):
+            state = states[roles[name + "_" + suffix]]
+            require(not other_ids.intersection(state["statuses"]), "Cross-ledger dependency data")
+
+
+def support_review_packet(
+    inputs: dict, observation: WorkflowObservation, mode: str = "stub", *, case: dict | None = None
+) -> None:
+    roles, states = observation.roles, observation.states
+    output = observation.final["output"]
+    obligations = support_review_obligations(inputs, observation)
+    action = obligations["routing_single_action"]()
+    report = obligations["ledger_report"]()
+    draft = obligations["review_matches"]()
+    equal(
+        output,
+        {"action": action, "invoice_report": report, **draft},
+        "Wrong support review packet",
+    )
+    if mode == "stub":
+        equal(draft["reply"], {"text": "We are checking your order."}, "Wrong one-shot deterministic draft")
+    for role in ("select", "report"):
+        require(states[roles["draft"]]["statuses"].get(roles[role]) == "completed", "Draft ran before packet join")
+
+
+def bulletin_market_brief(
+    inputs: dict, observation: WorkflowObservation, mode: str = "stub", *, case: dict | None = None
+) -> None:
+    output = observation.final["output"]
+    obligations = bulletin_brief_obligations(inputs, observation, case=case, mode=mode)
+    obligations["digest_covers_every_article"]()
+    obligations["digest_grounded_in_articles"]()
+    preview = obligations["preview_repeats_the_digest"]()
+    obligations["four_distinct_actors"]()
+    brief = obligations["brief_merges_both_sources"]()
+    equal(output, {"digest": preview, "brief": brief}, "Wrong bulletin packet")
+
+
+def priority_support_brief(
+    inputs: dict, observation: WorkflowObservation, mode: str = "stub", *, case: dict | None = None
+) -> None:
+    output = observation.final["output"]
+    obligations = priority_support_obligations(inputs, observation, case=case, mode=mode)
+    action = obligations["routing_single_action"]()
+    brief = obligations["research_matches_priority"]()
+    equal(output, {"action": action, "brief": brief}, "Wrong priority support packet")

@@ -12,13 +12,14 @@ import sys
 from sapi_config_lab.contracts import CompileOptions
 from sapi_config_lab.coordinate.backend import default_backend
 from sapi_config_lab.coordinate.replay import read_json, require
+from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.evidence import digest, sha256
 from sapi_config_lab.execute.agency import MAX_BODY, build_prompt
 from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.profile import read_bindings
 
 
-def reconcile_dispatches(native: list[dict], audit: list[dict], model: str) -> list[dict]:
+def reconcile_dispatches(native: list[dict], audit: list[dict], model: str, *, bindings: Path = CATALOG) -> list[dict]:
     """Require ordered, one-to-one native request/dispatch/completion/response proof."""
     attempts = [row for row in audit if row.get("event") == "dispatch_attempt"]
     completions = [row for row in audit if row.get("event") == "completion"]
@@ -35,7 +36,7 @@ def reconcile_dispatches(native: list[dict], audit: list[dict], model: str) -> l
             sorted(row.get("invocation_id", "") for row in records) == sorted(ids),
             "Unmatched or duplicate audit invocation",
         )
-    catalog = read_bindings(CATALOG)
+    catalog = read_bindings(bindings)
     table = []
     for index, attempt in enumerate(attempts):
         invocation = attempt["invocation_id"]
@@ -180,7 +181,9 @@ def collect_native(trials: list[dict], submissions: dict, cohorts: dict[str, set
             }
             require(len(endpoints) <= 1, "Multiple Agency endpoints")
             bridge = next(iter(endpoints), bridge_url)
-            compiled = default_backend().compile(config, read_bindings(CATALOG), CompileOptions("live", bridge))
+            compiled = default_backend().compile(
+                config, read_bindings(SCENARIOS[scenario].bindings), CompileOptions("live", bridge)
+            )
             require(
                 {**compiled.document, "id": run["workflow_id"], "active": False} == graph
                 and compiled.mapping == run["mapping"],

@@ -58,10 +58,10 @@ SCENARIO_CATALOG_PROMPTS = {
 }
 
 
-# The checkout and CRM prompts are the bytes recorded authoring runs sent.
+# Hosted prompt revision: environment-neutral wording; historical authoring records retain their original hashes.
 HOSTED_PROMPTS = {
-    "checkout-recovery": "232d941d78f8c733b6f58aa6bc708a2577aad7e9c1eb5186df2a0497677a0892",
-    "crm-lead-qualification": "ebc122008c4cac5c89464182a1d2b3b39d4f566e6a7e90622e0f37a638880493",
+    "checkout-recovery": "920472a634ec32c6d55d66aceec6c4a66035d6cd69b5bc3ad36f3b3c315fae17",
+    "crm-lead-qualification": "79b6ae1e1a2afb19f7257cf6a608f1ec958564ca07f2293ca6909a7811dcb658",
 }
 
 
@@ -150,7 +150,7 @@ class PackagingTests(unittest.TestCase):
                 self.assertIn("rm -rf /app/lab/benchmarks /app/scenario /app/submission", dockerfile)
                 self.assertEqual(set(json.loads((task / "tests/cases.json").read_text())), {task.name})
                 self.assertFalse((task / "solution").exists())
-                self.assertEqual(list(task.rglob("*.yaml")), [])
+                self.assertEqual(list(task.rglob("*.yaml")), [task / "tests/bindings.yaml"])
 
     @unittest.skipUnless(AVAILABLE, "Requires the pinned upstream source and benchmark extra")
     def test_hosted_packages_scrub_the_evaluator_and_carry_no_hidden_data(self):

@@ -1,0 +1,193 @@
+{
+  "jobs_dir": "/Users/pashvel/Desktop/sapi-config-lab/reports/cleanup-final-all-11/jobs",
+  "evaluations_found": 18,
+  "dry_run": true,
+  "trials": [
+    {
+      "trial": "bulletin-market-brief__mNckW5M",
+      "job": "nop",
+      "written": [],
+      "skipped": [
+        {
+          "path": "analysis.md",
+          "reason": "Unexpected schema 'sapi-lab-rubric-evaluation/v1'"
+        }
+      ]
+    },
+    {
+      "trial": "checkout-recovery__4uTWnJt",
+      "job": "nop",
+      "written": [
+        "analysis.md"
+      ],
+      "skipped": []
+    },
+    {
+      "trial": "competitor-report__tF6S9AF",
+      "job": "nop",
+      "written": [],
+      "skipped": [
+        {
+          "path": "analysis.md",
+          "reason": "Unexpected schema 'sapi-lab-rubric-evaluation/v1'"
+        }
+      ]
+    },
+    {
+      "trial": "crm-lead-qualification__XcoWMxJ",
+      "job": "nop",
+      "written": [
+        "analysis.md"
+      ],
+      "skipped": []
+    },
+    {
+      "trial": "dual-ledger-closeout__WYPnmfn",
+      "job": "nop",
+      "written": [],
+      "skipped": [
+        {
+          "path": "analysis.md",
+          "reason": "Unexpected schema 'sapi-lab-rubric-evaluation/v1'"
+        }
+      ]
+    },
+    {
+      "trial": "invoice-total__8z7C8nG",
+      "job": "nop",
+      "written": [],
+      "skipped": [
+        {
+          "path": "analysis.md",
+          "reason": "Unexpected schema 'sapi-lab-rubric-evaluation/v1'"
+        }
+      ]
+    },
+    {
+      "trial": "priority-support-brief__GZu564c",
+      "job": "nop",
+      "written": [],
+      "skipped": [
+        {
+          "path": "analysis.md",
+          "reason": "Unexpected schema 'sapi-lab-rubric-evaluation/v1'"
+        }
+      ]
+    },
+    {
+      "trial": "support-review-packet__izabUhc",
+      "job": "nop",
+      "written": [],
+      "skipped": [
+        {
+          "path": "analysis.md",
+          "reason": "Unexpected schema 'sapi-lab-rubric-evaluation/v1'"
+        }
+      ]
+    },
+    {
+      "trial": "ticket-routing__sBibUGx",
+      "job": "nop",
+      "written": [],
+      "skipped": [
+        {
+          "path": "analysis.md",
+          "reason": "Unexpected schema 'sapi-lab-rubric-evaluation/v1'"
+        }
+      ]
+    },
+    {
+      "trial": "bulletin-market-brief__bXb68xn",
+      "job": "oracle",
+      "written": [],
+      "skipped": [
+        {
+          "path": "analysis.md",
+          "reason": "Unexpected schema 'sapi-lab-rubric-evaluation/v1'"
+        }
+      ]
+    },
+    {
+      "trial": "checkout-recovery__z8TKiSh",
+      "job": "oracle",
+      "written": [
+        "analysis.md"
+      ],
+      "skipped": []
+    },
+    {
+      "trial": "competitor-report__45wSBMa",
+      "job": "oracle",
+      "written": [],
+      "skipped": [
+        {
+          "path": "analysis.md",
+          "reason": "Unexpected schema 'sapi-lab-rubric-evaluation/v1'"
+        }
+      ]
+    },
+    {
+      "trial": "crm-lead-qualification__wc5woyK",
+      "job": "oracle",
+      "written": [
+        "analysis.md"
+      ],
+      "skipped": []
+    },
+    {
+      "trial": "dual-ledger-closeout__SZUdNXd",
+      "job": "oracle",
+      "written": [],
+      "skipped": [
+        {
+          "path": "analysis.md",
+          "reason": "Unexpected schema 'sapi-lab-rubric-evaluation/v1'"
+        }
+      ]
+    },
+    {
+      "trial": "invoice-total__NPAUNxH",
+      "job": "oracle",
+      "written": [],
+      "skipped": [
+        {
+          "path": "analysis.md",
+          "reason": "Unexpected schema 'sapi-lab-rubric-evaluation/v1'"
+        }
+      ]
+    },
+    {
+      "trial": "priority-support-brief__tPSZiLY",
+      "job": "oracle",
+      "written": [],
+      "skipped": [
+        {
+          "path": "analysis.md",
+          "reason": "Unexpected schema 'sapi-lab-rubric-evaluation/v1'"
+        }
+      ]
+    },
+    {
+      "trial": "support-review-packet__9dRm55g",
+      "job": "oracle",
+      "written": [],
+      "skipped": [
+        {
+          "path": "analysis.md",
+          "reason": "Unexpected schema 'sapi-lab-rubric-evaluation/v1'"
+        }
+      ]
+    },
+    {
+      "trial": "ticket-routing__2c89744",
+      "job": "oracle",
+      "written": [],
+      "skipped": [
+        {
+          "path": "analysis.md",
+          "reason": "Unexpected schema 'sapi-lab-rubric-evaluation/v1'"
+        }
+      ]
+    }
+  ]
+}

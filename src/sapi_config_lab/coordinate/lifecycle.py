@@ -54,8 +54,8 @@ def daily_schedule(schedule: str, zone: str) -> tuple[int, int, ZoneInfo]:
     return minute, hour, timezone_value
 
 
-def validate_lifecycle(config: Document) -> None:
-    profile.validate(config, profile.read_bindings(CATALOG))
+def validate_lifecycle(config: Document, bindings: Document | None = None) -> None:
+    profile.validate(config, profile.read_bindings(CATALOG) if bindings is None else bindings)
     policy = config.get("lifecycle")
     profile.check(isinstance(policy, dict), "Lifecycle policy is required")
     assert isinstance(policy, dict)
@@ -120,12 +120,14 @@ class LifecycleController:
         rebuilder: Rebuilder | None = None,
         llm_mode: LlmMode = "stub",
         bridge_url: str | None = None,
+        bindings: Document | None = None,
     ):
         self.directory = Path(registry_dir).resolve()
         self.directory.mkdir(parents=True, exist_ok=True)
         self.database = self.directory / "registry.sqlite3"
         self.backend, self.verifier, self.rebuilder = backend, verifier, rebuilder
         self.llm_mode, self.bridge_url = llm_mode, bridge_url
+        self.bindings = profile.read_bindings(CATALOG) if bindings is None else bindings
         initial = {
             "schema": "sapi-lab-lifecycle/v1",
             "definitions": {},
@@ -204,7 +206,7 @@ class LifecycleController:
         self, config: Document, *, schedule_overlay: Document | None = None, forked_from: Document | None = None
     ) -> Document:
         config = copy.deepcopy(config)
-        validate_lifecycle(config)
+        validate_lifecycle(config, self.bindings)
         if self.verifier is None:
             profile.check(
                 config["lifecycle"]["test"]["verifier"] == "digest.acceptance_v1", "Unregistered operational verifier"
@@ -370,6 +372,7 @@ class LifecycleController:
             config,
             Path(admitted["artifact_dir"]),
             backend=self.backend,
+            bindings=self.bindings,
             llm_mode=self.llm_mode,
             bridge_url=self.bridge_url,
             admission=admitted["admission"],
@@ -471,7 +474,7 @@ class LifecycleController:
         self._transition(state, "suspended", {"family": family_id, "reason": reason, "cause": cause})
 
     def _install_fork(self, rebuild_key, candidate):
-        validate_lifecycle(candidate)
+        validate_lifecycle(candidate, self.bindings)
         with self._transaction() as state:
             rebuild = state["rebuilds"][rebuild_key]
             profile.check(rebuild["state"] == "running", "Rebuild already resolved")
@@ -669,6 +672,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--llm-mode", choices=("stub", "live"), default="stub")
     parser.add_argument("--bridge-url")
+    parser.add_argument("--bindings", type=Path, default=CATALOG)
     parser.add_argument("--rebuilder-url", help="Explicit real wrapper URL for bounded candidate repair")
     parser.add_argument(
         "--rebuild-model",
@@ -695,12 +699,17 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     from sapi_config_lab.author.rebuilder import WrapperRebuilder
 
+    bindings = profile.read_bindings(args.bindings)
     controller = LifecycleController(
         args.registry,
+        bindings=bindings,
         llm_mode=args.llm_mode,
         bridge_url=args.bridge_url,
         rebuilder=WrapperRebuilder(
-            args.rebuilder_url, timeout_seconds=WRAPPER_TIMEOUT_SECONDS, expected_model=args.rebuild_model
+            args.rebuilder_url,
+            timeout_seconds=WRAPPER_TIMEOUT_SECONDS,
+            expected_model=args.rebuild_model,
+            bindings=bindings,
         )
         if args.rebuilder_url
         else None,

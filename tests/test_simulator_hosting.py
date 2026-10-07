@@ -130,6 +130,7 @@ class HostedEvaluationTests(unittest.TestCase):
         self.calls = []
         evaluator = HostedEvaluator(
             judge_calls=0,
+            timeout_seconds=30,
             prepare=lambda scenario, judge: self.calls.append(("prepare", scenario.name, judge)) or self.evaluate,
             reevaluate=lambda scenario, record, output, args: (
                 self.calls.append(("again", scenario.name)) or self.result
@@ -161,8 +162,18 @@ class HostedEvaluationTests(unittest.TestCase):
                 "submission_sha256": "abc",
                 "passed": False,
                 "result": self.result,
+                "native_execution": None,
+                "terminal_completion": None,
             },
         )
+
+    def test_deterministic_evaluator_rejects_irrelevant_judge_options(self):
+        output = self.record.parent / (self.record.name + "-unsupported")
+        with self.assertRaisesRegex(ValueError, "does not support judge"):
+            evaluation_main(
+                ["--record", str(self.record), "--output", str(output), "--judgement", str(self.record / "unused.json")]
+            )
+        self.assertEqual(self.calls, [])
 
     def test_reevaluation_uses_the_scenario_the_trial_names(self):
         output = self.record.parent / (self.record.name + "-again")

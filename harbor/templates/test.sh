@@ -9,7 +9,7 @@ printf '0\n' > /logs/verifier/reward.txt
 export PYTHONPYCACHEPREFIX="$(mktemp -d)"
 if python3 /tests/verify.py plan --scenario @SCENARIO@ --config /app/submission/config.yaml --output /logs/verifier/plan.json; then
   python3 -m sapi_config_lab.coordinate.observe --plan /logs/verifier/plan.json \
-    --submission /app/submission/config.yaml --evidence /logs/verifier/evidence
+    --submission /app/submission/config.yaml --evidence /logs/verifier/evidence --bindings /tests/bindings.yaml
 fi
 if python3 /tests/verify.py evaluate --scenario @SCENARIO@ --config /app/submission/config.yaml \
   --evidence /logs/verifier/evidence --runtime-src /app/lab/src; then

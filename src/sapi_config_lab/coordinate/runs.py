@@ -17,7 +17,7 @@ from typing import Any
 from sapi_config_lab.coordinate.evaluation import trial_result
 from sapi_config_lab.coordinate.packages import UPLOAD_ONLY_AGENTS, job_seconds, stage_tasks, verifier_bounds
 from sapi_config_lab.coordinate.provenance import source_manifest
-from sapi_config_lab.coordinate.providers import ENVIRONMENTS
+from sapi_config_lab.coordinate.providers import ENVIRONMENTS, EVALUATORS
 from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.agency import start_bridge, stop_bridge
@@ -70,6 +70,7 @@ def load_trials(job: Path, hosted: dict[str, Path] | None = None) -> list[dict]:
             "rewards": (trial.get("verifier_result") or {}).get("rewards"),
             "exception": trial.get("exception_info"),
             "result_path": str(path),
+            "evaluation_path": str(report_path),
             "acceptance": json.loads(report_path.read_text()) if report_path.exists() else None,
         }
         trials.append({**row, "result": trial_result(row)})
@@ -147,7 +148,14 @@ class Run:
         self.report.setdefault("phases", []).append({"phase": phase, "unchanged": True})
 
     def harbor(
-        self, job: str, tasks: Path, agent: str, *, hosting: Hosting | None = None, **arguments: Any
+        self,
+        job: str,
+        tasks: Path,
+        agent: str,
+        *,
+        hosting: Hosting | None = None,
+        admission: bool = False,
+        **arguments: Any,
     ) -> tuple[int, list[dict]]:
         """One `harbor run`, bounded by its trials' own limits; its jobs are copied out even when it fails."""
         if self.staging is None:
@@ -155,6 +163,8 @@ class Run:
         if agent not in UPLOAD_ONLY_AGENTS:
             raise RuntimeError(f"Agent {agent} may run commands beside the shared verifier environment")
         names = [task.name for task in task_dirs(tasks)]
+        if not admission and any(SCENARIOS[name].hosted for name in names) and int(arguments.get("attempts") or 1) != 1:
+            raise ValueError("Hosted execution requires exactly one attempt per fresh environment")
         if not set(names) <= set(self.bounds):
             raise RuntimeError(
                 "Tasks this run did not stage have no time bound: " + ", ".join(sorted(set(names) - set(self.bounds)))
@@ -162,7 +172,9 @@ class Run:
         timeout = job_seconds({name: self.bounds[name] for name in names}, int(arguments.get("attempts") or 1))
         self.report.setdefault("harbor_timeouts", {})[job] = timeout
         records = self.output / "environments" / job
-        with self.hosted(job, tasks, records, hosting) as (job_tasks, hosted):
+        if admission:
+            arguments["verifier_env"] = [*arguments.get("verifier_env", []), "SAPI_HOSTED_ADMISSION=1"]
+        with self.hosted(job, tasks, records, hosting, admission=admission) as (job_tasks, hosted):
             argv = harbor_run_args(self.harbor_argv, job_tasks, self.staging / "jobs", job, agent, **arguments)
             self.report.setdefault("commands", []).append(argv)
             try:
@@ -173,14 +185,14 @@ class Run:
 
     @contextmanager
     def hosted(
-        self, job: str, tasks: Path, records: Path, hosting: Hosting | None
+        self, job: str, tasks: Path, records: Path, hosting: Hosting | None, *, admission: bool = False
     ) -> Iterator[tuple[Path, dict[str, Path]]]:
         """Serve each hosted task for one job; yields the task path Harbor runs and each host's record.
 
         Credentials go into a per-job copy so pinned packages never change, and must not leak into anything persisted.
         """
         hosted = [task for task in task_dirs(tasks) if (task / "tests/environment.json").is_file()]
-        if not hosted:
+        if not hosted or admission:
             yield tasks, {}
             return
         if hosting is None:
@@ -209,7 +221,13 @@ class Run:
                     stack.callback(host.close)
                     hosts.append(host)
                     target = copy if tasks in hosted else copy / task.name
-                    write_json(target / "tests/connection.json", host.connection)
+                    write_json(
+                        target / "tests/connection.json",
+                        {
+                            **host.connection,
+                            "evaluation_seconds": EVALUATORS[scenario.evaluator].timeout_seconds,
+                        },
+                    )
                 yield copy, {host.record.name: host.record for host in hosts}
         finally:
             shutil.rmtree(copy)

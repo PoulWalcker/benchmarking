@@ -3,6 +3,7 @@
 import contextlib
 import copy
 from dataclasses import replace
+import hashlib
 import io
 from io import BytesIO
 import json
@@ -10,6 +11,8 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+
+import yaml
 
 from sapi_config_lab.coordinate.live import audit_records, check_trials, main, validate_control
 from sapi_config_lab.coordinate.live_evidence import reconcile_dispatches
@@ -59,6 +62,21 @@ class LiveEvidenceTests(unittest.TestCase):
             )
             records = audit.records()
             self.assertEqual(len(reconcile_dispatches(native, records, "gpt-6-astra")), 1)
+            catalog = read_bindings(CATALOG)
+            catalog["ticket.classify"]["prompt"] += "\nScenario-specific instruction."
+            selected = Path(directory) / "bindings.yaml"
+            selected.write_text(yaml.safe_dump({"operations": catalog}, sort_keys=False))
+            from sapi_config_lab.execute.agency import build_prompt
+
+            changed = copy.deepcopy(records)
+            for row in changed[:2]:
+                row["prompt_sha256"] = hashlib.sha256(
+                    build_prompt(request, catalog["ticket.classify"]).encode()
+                ).hexdigest()
+            self.assertEqual(len(reconcile_dispatches(native, changed, "gpt-6-astra", bindings=selected)), 1)
+            with self.assertRaisesRegex(ValueError, "prompt identity"):
+                reconcile_dispatches(native, changed, "gpt-6-astra")
+
             for corrupt in (
                 "orphan_completion",
                 "duplicate",

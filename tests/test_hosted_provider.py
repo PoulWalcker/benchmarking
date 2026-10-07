@@ -19,7 +19,13 @@ from sapi_config_lab.coordinate import evaluation
 from sapi_config_lab.coordinate.evaluation import HOSTED_REPORT, control_passed, hosted_evaluation, trial_accepted
 from sapi_config_lab.coordinate.hosted_worker import HTTP_TIMEOUT_SECONDS, harbor_reward
 from sapi_config_lab.coordinate.packages import HOSTED_TEST, stage_tasks, verifier_bounds
-from sapi_config_lab.coordinate.providers import ENVIRONMENTS, EVALUATORS, HostedEnvironment, HostedEvaluator
+from sapi_config_lab.coordinate.providers import (
+    ENVIRONMENTS,
+    EVALUATORS,
+    HostedEnvironment,
+    HostedEvaluator,
+    ReevaluationOptions,
+)
 from sapi_config_lab.coordinate.runs import Hosting, Run
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, load_scenario
 from sapi_config_lab.execute.host import HostConfig
@@ -155,6 +161,7 @@ class FakeProviderTests(unittest.TestCase):
             return world
 
         def reevaluate(scenario, record, output, args):
+            self.assertIsInstance(args, ReevaluationOptions)
             self.reevaluated.append((scenario.name, record, output))
             return fake_result(record)
 
@@ -166,7 +173,11 @@ class FakeProviderTests(unittest.TestCase):
             modules=(),
         )
         evaluator = HostedEvaluator(
-            judge_calls=0, prepare=lambda scenario, judge_model: fake_result, reevaluate=reevaluate, modules=()
+            judge_calls=0,
+            timeout_seconds=30,
+            prepare=lambda scenario, judge_model: fake_result,
+            reevaluate=reevaluate,
+            modules=(),
         )
         for table, entry in ((ENVIRONMENTS, {"fake": environment}), (EVALUATORS, {"fake-state": evaluator})):
             patcher = patch.dict(table, entry)
@@ -204,7 +215,19 @@ class FakeProviderTests(unittest.TestCase):
         self.assertEqual((task / "tests/test.sh").read_text(), HOSTED_TEST.format(action="admit"))
         self.assertIn("Create one lead in the CRM.", (task / "instruction.md").read_text())
 
-    def run_trial(self, agent: str = "oracle") -> tuple[Run, int, list[dict], dict]:
+    def test_state_acceptance_is_independent_of_native_success_and_terminal_completion(self):
+        _, code, trials, _ = self.run_trial(native_output={})
+        self.assertEqual(code, 0)
+        report = trials[0]["acceptance"]
+        self.assertTrue(report["native_execution"])
+        self.assertFalse(report["terminal_completion"])
+        self.assertFalse(report["result"]["execution"])
+        self.assertTrue(report["result"]["acceptance"])
+        self.assertIsNone(report["result"]["quality"])
+
+    def run_trial(
+        self, agent: str = "oracle", *, native_output: dict | None = None
+    ) -> tuple[Run, int, list[dict], dict]:
         """One control job through Run.harbor and a real TrialHost; a stand-in plays Harbor's container."""
         host = HostConfig(container_host="127.0.0.1", listen_host="127.0.0.1")
         run = Run(self.root / "run", {}, {}, "t", host=host, staging=self.root / "staging")
@@ -222,7 +245,10 @@ class FakeProviderTests(unittest.TestCase):
             else:
                 call = {"operation": "create_lead", "arguments": {"name": "Ada"}}
                 seen["receipt"] = post(begun["operation_url"], begun["operation_token"], call)
-                record = {"status": "success", "output": {"final_answer": "done"}}
+                record = {
+                    "status": "success",
+                    "output": {"final_answer": "done"} if native_output is None else native_output,
+                }
             report = post(connection["url"] + "/finish", connection["token"], {"record": record})
             trial = Path(argv[argv.index("--jobs-dir") + 1]) / argv[argv.index("--job-name") + 1] / "fake-crm__1"
             trial.mkdir(parents=True)
@@ -272,6 +298,8 @@ class FakeProviderTests(unittest.TestCase):
                 "submission_sha256": None,
                 "passed": True,
                 "result": expected,
+                "native_execution": True,
+                "terminal_completion": True,
             },
         )
         self.assertEqual(expected, {"execution": True, "acceptance": True, "quality": None})
