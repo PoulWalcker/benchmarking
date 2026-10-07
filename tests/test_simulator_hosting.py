@@ -8,7 +8,9 @@ import unittest
 from unittest.mock import patch
 
 from sapi_config_lab.coordinate.evaluation import UPSTREAM_REPORT, control_passed, trial_accepted
+from sapi_config_lab.coordinate.providers import ENVIRONMENTS
 from sapi_config_lab.coordinate.runs import Hosting, Run, fingerprint
+from sapi_config_lab.coordinate.scenarios import SCENARIOS
 
 
 class FakeTrialHost:
@@ -17,7 +19,7 @@ class FakeTrialHost:
     made: ClassVar[list] = []
 
     def __init__(self, start, record, *, scenario, seed, artifact, llm_mode, bridge_url, evaluate, host):
-        self.record, self.llm_mode, self.evaluate = record, llm_mode, evaluate
+        self.start, self.record, self.llm_mode, self.evaluate = start, record, llm_mode, evaluate
         self.token = "secret-" + record.name
         self.closed = False
         FakeTrialHost.made.append(self)
@@ -56,7 +58,7 @@ class HostingTests(unittest.TestCase):
             (tasks / name / "tests").mkdir(parents=True)
             (tasks / name / "task.toml").write_text("")
             if hosted:
-                environment = {"scenario": name, "challenge": "production-checkout-recovery", "seed": 0}
+                environment = {"scenario": name, "seed": 0}
                 (tasks / name / "tests/environment.json").write_text(json.dumps(environment))
         self.run.output.mkdir()
         self.pinned = fingerprint(tasks)
@@ -85,10 +87,7 @@ class HostingTests(unittest.TestCase):
             return 0
 
         hosting = Hosting("stub", lambda scenario, record: {})
-        with (
-            patch("sapi_config_lab.coordinate.runs.run_logged", side_effect=harbor_run),
-            patch("sapi_config_lab.coordinate.runs.pinned_source", return_value=self.root),
-        ):
+        with patch("sapi_config_lab.coordinate.runs.run_logged", side_effect=harbor_run):
             return self.run.harbor("oracle", self.run.tasks, "oracle", hosting=hosting)
 
     def test_hosted_trial_uses_the_host_record_and_never_changes_pinned_packages(self):
@@ -101,6 +100,8 @@ class HostingTests(unittest.TestCase):
         (host,) = FakeTrialHost.made
         self.assertTrue(host.closed)
         self.assertEqual(host.llm_mode, "stub")
+        self.assertIs(host.start.func, ENVIRONMENTS["autowfbench"].start)
+        self.assertEqual(host.start.args, (SCENARIOS["checkout-recovery"], 0, self.run.host))
         (trial,) = trials
         self.assertEqual(trial["result"]["quality"]["normalized_reward"], 0.732)
         self.assertTrue(trial_accepted(trial))
@@ -130,7 +131,7 @@ class AdmissionTests(unittest.TestCase):
     def test_admission_enforces_the_runtime_cap_and_original_deadline(self):
         import yaml
 
-        from sapi_config_lab.coordinate import simulator_worker
+        from sapi_config_lab.coordinate import hosted_worker
         from sapi_config_lab.paths import workspace_root
         from sapi_config_lab.profile import read
 
@@ -141,24 +142,24 @@ class AdmissionTests(unittest.TestCase):
             tests.mkdir()
             (tests / "bindings.yaml").write_bytes((root / "bindings.yaml").read_bytes())
             with (
-                patch.object(simulator_worker, "SUBMISSION", submission),
-                patch.object(simulator_worker, "TESTS", tests),
+                patch.object(hosted_worker, "SUBMISSION", submission),
+                patch.object(hosted_worker, "TESTS", tests),
             ):
                 config = read(root / "config.yaml")
                 submission.write_text(yaml.safe_dump(config))
-                self.assertTrue(simulator_worker.admit(limits)["passed"])
+                self.assertTrue(hosted_worker.admit(limits)["passed"])
                 config["execution"]["deadline_seconds"] = 600
                 submission.write_text(yaml.safe_dump(config))
-                self.assertEqual(simulator_worker.admit(limits)["error"], "Original deadline required")
+                self.assertEqual(hosted_worker.admit(limits)["error"], "Original deadline required")
                 submission.write_text("workflow: [\n")
-                self.assertEqual(simulator_worker.admit(limits)["error_type"], "Invalid")
+                self.assertEqual(hosted_worker.admit(limits)["error_type"], "Invalid")
                 config["execution"]["deadline_seconds"] = 120
                 config["workflow"]["steps"][0]["kind"] = "LLM"
                 submission.write_text(yaml.safe_dump(config))
-                self.assertEqual(simulator_worker.admit(limits)["error_type"], "Invalid")
+                self.assertEqual(hosted_worker.admit(limits)["error_type"], "Invalid")
                 # The cap is checked once a definition compiles.
-                with patch.object(simulator_worker, "default_backend"):
-                    self.assertEqual(simulator_worker.admit(limits)["error"], "Runtime cap exceeded")
+                with patch.object(hosted_worker, "default_backend"):
+                    self.assertEqual(hosted_worker.admit(limits)["error"], "Runtime cap exceeded")
 
 
 if __name__ == "__main__":

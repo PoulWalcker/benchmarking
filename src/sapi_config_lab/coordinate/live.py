@@ -14,10 +14,11 @@ import shutil
 import time
 from typing import Any
 
-from sapi_config_lab.coordinate.evaluation import contract_for, trial_accepted, upstream_evaluate
+from sapi_config_lab.coordinate.evaluation import trial_accepted, upstream_evaluate
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.live_evidence import case_budget, collect_native, live_cohort, reconcile_dispatches
 from sapi_config_lab.coordinate.packages import task_toml
+from sapi_config_lab.coordinate.providers import contract_for
 from sapi_config_lab.coordinate.replay import load_selection, read_json, require
 from sapi_config_lab.coordinate.runs import Hosting, Run, progress, run_experiment
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios

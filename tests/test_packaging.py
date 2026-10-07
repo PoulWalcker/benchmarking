@@ -1,17 +1,21 @@
 """Regression checks for task distribution and separation of responsibilities."""
 
+from dataclasses import replace
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
 import yaml
 
-from sapi_config_lab.coordinate.packages import EVALUATOR_MODULES, stage_tasks
+from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.provenance import source_manifest as inventory
+from sapi_config_lab.coordinate.providers import ENVIRONMENTS, host_only_modules
 from sapi_config_lab.coordinate.scenarios import DEFAULT_SCENARIOS as SCENARIOS
 from sapi_config_lab.coordinate.scenarios import SCENARIOS as SCENARIOS_ALL
 from sapi_config_lab.coordinate.scenarios import all_cases
@@ -159,7 +163,7 @@ class PackagingTests(unittest.TestCase):
                     task = Path(directory) / "tasks" / name
                     files = {str(path.relative_to(task)) for path in task.rglob("*") if path.is_file()}
                     dockerfile = (task / "environment/Dockerfile").read_text()
-                    for relative in EVALUATOR_MODULES:
+                    for relative in host_only_modules():
                         self.assertIn(f"/app/lab/src/{relative}", dockerfile)
                     self.assertIn("/app/lab/benchmarks", dockerfile)
                     self.assertFalse(any("cases" in f or f.endswith(".py") for f in files), files)
@@ -220,8 +224,26 @@ class PackagingTests(unittest.TestCase):
     def test_every_scrubbed_evaluator_module_still_exists(self):
         # rm -rf exits 0 on a missing path, so a stale entry would leave the evaluator
         # readable inside the candidate's container and nothing at run time would say so.
-        for relative in EVALUATOR_MODULES:
+        for relative in host_only_modules():
             self.assertTrue((ROOT / "src" / relative).exists(), relative)
+
+    def test_every_provider_scrubs_its_own_modules(self):
+        provider = replace(ENVIRONMENTS["autowfbench"], modules=("sapi_config_lab/execute/other.py",))
+        with patch.dict(ENVIRONMENTS, {"other": provider}):
+            self.assertIn("sapi_config_lab/execute/other.py", host_only_modules())
+
+    def test_the_hosted_worker_imports_nothing_scrubbed_from_its_container(self):
+        scrubbed = [
+            relative.removesuffix(".py").replace("/", ".")
+            for relative in host_only_modules()
+            if relative.endswith(".py")
+        ]
+        script = (
+            "import sys, sapi_config_lab.coordinate.hosted_worker\n"
+            f"print([name for name in {scrubbed!r} if name in sys.modules])"
+        )
+        loaded = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, check=True).stdout
+        self.assertEqual(loaded.strip(), "[]")
 
     def test_evaluation_does_not_trust_a_recorded_engine_success(self):
         spec = importlib.util.spec_from_file_location("independent_verifier", ROOT / "verification/verify.py")

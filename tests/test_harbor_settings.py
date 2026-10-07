@@ -245,6 +245,17 @@ class ScenarioSettingsTests(unittest.TestCase):
             with self.assertRaises(ValueError, msg=name):
                 self.scenario({}, name)
 
+    def test_an_environment_must_be_known_and_judged_by_one_of_its_evaluators(self):
+        hosted = {"workflow_id": "example", "budgets": {"runtime_model_calls": 1}}
+        self.assertTrue(self.scenario({**hosted, "environment": "autowfbench", "evaluator": "upstream"}).hosted)
+        for meta in (
+            {"environment": "autowfbench", "evaluator": "verifier"},
+            {"environment": "unknown", "evaluator": "upstream"},
+            {"environment": "fixtures", "evaluator": "upstream"},
+        ):
+            with self.assertRaises(ValueError, msg=meta):
+                self.scenario({**hosted, **meta})
+
 
 class AgentTests(unittest.TestCase):
     def test_an_agent_that_runs_commands_needs_a_separate_environment(self):

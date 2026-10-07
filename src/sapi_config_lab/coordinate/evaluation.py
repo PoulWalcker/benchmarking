@@ -13,33 +13,19 @@ from pathlib import Path
 from typing import Any
 
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
-from sapi_config_lab.coordinate.scenarios import SCENARIOS, Scenario, scenario_for_challenge
+from sapi_config_lab.coordinate.providers import contract_for
+from sapi_config_lab.coordinate.scenarios import SCENARIOS, scenario_for_challenge
 from sapi_config_lab.evaluate.autowfbench import (
     FrozenTaskContract,
     evaluate_once,
-    freeze_contract,
     recorded_run_log,
 )
 from sapi_config_lab.evaluate.judge_calibration import calibration_fixture, compare_calibration
 from sapi_config_lab.evidence import write_json
-from sapi_config_lab.pinned_source import pinned_source
 
 UPSTREAM_REPORT = "sapi-lab-upstream-acceptance/v1"
 ADMISSION_REPORT = "sapi-lab-admission/v1"
 NOT_EVALUATED: dict[str, Any] = {"execution": None, "acceptance": None, "quality": None}
-
-
-def contract_for(scenario: Scenario, judge_model: str | None = None) -> FrozenTaskContract:
-    """The frozen upstream task, rubric and judge identity; the simulated judge unless a model is named."""
-    if scenario.provenance is None:
-        raise ValueError(f"{scenario.name} has no pinned upstream task")
-    return freeze_contract(
-        pinned_source(scenario.provenance.source),
-        scenario.provenance.challenge,
-        judge_model=judge_model,
-        judge_mode="codex" if judge_model else "demo",
-        artifact=scenario.artifact,
-    )
 
 
 def quality(evaluation: dict | None) -> dict | None:

@@ -10,10 +10,9 @@ import re
 from typing import Any
 
 from sapi_config_lab.contracts import OutputArtifact
+from sapi_config_lab.coordinate.providers import ENVIRONMENTS
 from sapi_config_lab.paths import CATALOG, workspace_root
 
-# environment -> the evaluator that judges it
-EVALUATORS = {"fixtures": "verifier", "simulator": "upstream"}
 FIELDS = {
     "environment",
     "evaluator",
@@ -75,7 +74,7 @@ class Scenario:
     @property
     def hosted(self) -> bool:
         """The host serves this scenario's environment and evaluator for each trial."""
-        return self.environment == "simulator"
+        return self.environment != "fixtures"
 
     def task(self) -> str:
         """The public task text exactly as models receive it (no trailing newline)."""
@@ -107,14 +106,17 @@ def load_scenario(directory: Path) -> Scenario:
     environment = str(meta.get("environment"))
     budgets, output, controls = meta.get("budgets", {}), meta.get("output"), meta.get("controls", {})
     provenance = meta.get("provenance")
+    if environment == "fixtures":
+        evaluators = frozenset({"verifier"})
+    else:
+        evaluators = ENVIRONMENTS[environment].evaluators if environment in ENVIRONMENTS else frozenset()
     if (
         not re.fullmatch(r"[0-9]{2}-[a-z][a-z0-9-]*", directory.name)
         or set(meta) - FIELDS
-        or EVALUATORS.get(environment) != meta.get("evaluator")
+        or meta.get("evaluator") not in evaluators
         or set(budgets) - {"authoring_attempts", "runtime_model_calls"}
         or set(controls) - {"reference_reward"}
-        or (environment == "simulator")
-        != bool(provenance and "workflow_id" in meta and "runtime_model_calls" in budgets)
+        or (environment != "fixtures") != ("workflow_id" in meta and "runtime_model_calls" in budgets)
     ):
         raise ValueError(f"Invalid benchmark definition: {directory.name}")
     return Scenario(

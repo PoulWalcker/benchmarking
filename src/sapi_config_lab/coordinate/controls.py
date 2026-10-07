@@ -12,9 +12,10 @@ import sys
 from typing import Any
 import uuid
 
-from sapi_config_lab.coordinate.evaluation import contract_for, control_passed, upstream_evaluate
+from sapi_config_lab.coordinate.evaluation import control_passed, upstream_evaluate
 from sapi_config_lab.coordinate.packages import job_seconds, verifier_bounds
 from sapi_config_lab.coordinate.provenance import host_environment
+from sapi_config_lab.coordinate.providers import contract_for
 from sapi_config_lab.coordinate.runs import Hosting, Run, progress, run_experiment
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
 from sapi_config_lab.execute.host import BUILD_TIMEOUT_SECONDS, LAB_IMAGE, build_image, run_logged
