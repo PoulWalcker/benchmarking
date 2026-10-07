@@ -17,7 +17,7 @@ from typing import Any
 from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, hosted_evaluation, trial_accepted
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.live_evidence import case_budget, collect_native, live_cohort, reconcile_dispatches
-from sapi_config_lab.coordinate.packages import task_toml
+from sapi_config_lab.coordinate.packages import runtime_grant_seconds, task_toml
 from sapi_config_lab.coordinate.providers import EVALUATORS
 from sapi_config_lab.coordinate.replay import load_selection, read_json, require
 from sapi_config_lab.coordinate.runs import Hosting, Run, progress, run_experiment
@@ -30,7 +30,6 @@ from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import read
 
 ROOT = workspace_root()
-LIVE_CASE_TIMEOUT_SECONDS = 600
 
 
 def validate_control(path: Path, current: dict[str, str], identity: str) -> dict:
@@ -317,7 +316,6 @@ def main(argv: list[str] | None = None) -> int:
             progress(f"{step}: live, up to {grant['max_attempts']} model calls reserved")
             started = time.monotonic()
             run.check(f"before-{scenario}-{name}")
-            budget = {**grant, "model": host.wrapper_model, "expires_at": time.time() + LIVE_CASE_TIMEOUT_SECONDS}
             upper_bound = "refinement" in config["execution"]
             label = f"{scenario}-{name}"
             hosting = None
@@ -347,6 +345,11 @@ def main(argv: list[str] | None = None) -> int:
                     )
                 if scenario in hosted:
                     hosting = Hosting("live", hosted_evaluation((scenario,), args.judge_model), bridge_url)
+                budget = {
+                    **grant,
+                    "model": host.wrapper_model,
+                    "expires_at": time.time() + runtime_grant_seconds(SCENARIOS[scenario]),
+                }
                 with run.bridge(
                     budget, label, bindings=SCENARIOS[scenario].bindings, reject_tool_use=scenario in hosted
                 ) as audit:

@@ -130,6 +130,7 @@ class HostedEvaluationTests(unittest.TestCase):
         self.calls = []
         evaluator = HostedEvaluator(
             judge_calls=0,
+            timeout_seconds=30,
             prepare=lambda scenario, judge: self.calls.append(("prepare", scenario.name, judge)) or self.evaluate,
             reevaluate=lambda scenario, record, output, args: (
                 self.calls.append(("again", scenario.name)) or self.result

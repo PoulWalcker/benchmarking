@@ -79,7 +79,9 @@ A **fixture** scenario adds the public `task.md` and evaluator-only `cases.json`
 
 A scenario-specific `bindings` catalog is used by the author prompt, staged as `tests/bindings.yaml`, passed through fixture execution (including lifecycle), and used for live graph and prompt-hash reconciliation. The default catalog is unchanged.
 
-Optional `harbor` settings in `scenario.json` (`agent_timeout_sec`, `verifier_timeout_sec`, `build_timeout_sec`, `cpus`, `memory_mb`, `storage_mb`; bounded integers, defaults in `coordinate/scenarios.py`) are rendered into `task.toml`. Staging refuses a `verifier_timeout_sec` smaller than the verifier's worst case: every planned execution in sequence at the executor's own import and execution ceilings, plus a fixed overhead. Add cases, then raise the timeout the error names. Each `harbor run` and the whole control suite are bounded by the same estimate: every trial at its build and agent limits plus its verifier estimate. A fixture package records the deadline it was sized for in `tests/budget.json`, and the verifier refuses to plan a definition with a longer one (`deadline_exceeds_budget`); hosted admission already requires the provider's trial limit.
+Optional `harbor` settings in `scenario.json` (`agent_timeout_sec`, `verifier_timeout_sec`, `build_timeout_sec`, `cpus`, `memory_mb`, `storage_mb`; bounded integers, defaults in `coordinate/scenarios.py`) are rendered into `task.toml`. Staging refuses a `verifier_timeout_sec` smaller than the verifier's worst case: every planned execution in sequence at the executor's own import and execution ceilings, plus a fixed overhead. Add cases, then raise the timeout the error names. Each `harbor run` and the whole control suite are bounded by the same estimate: every trial at its build and agent limits plus its verifier estimate. For hosted execution, the worker allows the environment RPC budget plus the evaluator's aggregate duration for `/finish`; Harbor includes both RPCs and the environment window. Live grants allow Harbor setup before the fixture/environment execution window. Model-call and backend subprocess ceilings remain with their stage owners.
+
+A fixture package records the deadline it was sized for in `tests/budget.json`, and the verifier refuses to plan a definition with a longer one (`deadline_exceeds_budget`); hosted admission already requires the provider's trial limit.
 
 The hosted completion envelope requires a string `final_answer` and any declared string artifact, copied verbatim as Markdown. Native success, valid timely terminal completion, and evaluator acceptance are separate recorded facts.
 
@@ -90,7 +92,7 @@ Cover profile validity, packaging, a positive case and a plausible bad result th
 ### Adding a hosted provider
 
 1. `execute/<name>.py`: a `start` that returns an `EnvironmentSession` serving `POST /tools` receipts and `finalize()` evidence. When this second real provider needs the candidate listener, lift it from `execute/autowfbench.py` into `execute/hosting.py`.
-2. `evaluate/<name>.py`: turns a recorded trial directory into `{execution, acceptance, quality}`.
+2. `evaluate/<name>.py`: turns a recorded trial directory into `{execution, acceptance, quality}` and declares its aggregate `timeout_seconds`.
 3. One entry each in `ENVIRONMENTS` and `EVALUATORS` (`coordinate/providers.py`), listing their host-only `modules`.
 4. A `benchmarks/NN-<name>/` hosted scenario that names them.
 5. Tests (prior art: `tests/test_hosted_provider.py`), then `sapi-lab check` and `./run.sh --scenario <name>`.

@@ -23,6 +23,10 @@ from sapi_config_lab.pinned_source import PinnedSource
 Document = dict[str, Any]
 SCHEMA = "sapi-lab-task-evaluation/v1"
 PROMPT_VERSION = "1.0.1"
+WORKER_TIMEOUT_SECONDS = 30
+JUDGE_TIMEOUT_SECONDS = 180
+# Run validation, judge validation, result validation, scoring and one rejected-judgement fallback.
+EVALUATION_TIMEOUT_SECONDS = 5 * WORKER_TIMEOUT_SECONDS + JUDGE_TIMEOUT_SECONDS + 15 + 30
 
 
 def digest(value: Any) -> str:
@@ -76,7 +80,7 @@ def _environment(source: PinnedSource, request: Document) -> dict[str, str]:
     return {"PATH": os.defpath, **pinned}
 
 
-def _upstream(source: PinnedSource, request: Document, timeout: float = 30) -> Document:
+def _upstream(source: PinnedSource, request: Document, timeout: float = WORKER_TIMEOUT_SECONDS) -> Document:
     before = source.verify()
     completed = subprocess.run(
         [sys.executable, "-c", _WORKER],
@@ -301,7 +305,9 @@ def _validate_run(contract: FrozenTaskContract, run: Document) -> None:
     _upstream(contract.source, {"operation": "validate", "run_log": run})
 
 
-def judge(contract: FrozenTaskContract, run_log: Document, artifact_dir: Path, *, timeout: int = 180) -> Document:
+def judge(
+    contract: FrozenTaskContract, run_log: Document, artifact_dir: Path, *, timeout: int = JUDGE_TIMEOUT_SECONDS
+) -> Document:
     """Invoke the upstream judge; a codex judge is a model call the caller has reserved."""
     _validate_run(contract, run_log)
     package = contract.package
@@ -430,7 +436,7 @@ def evaluate_once(
         dispatched = {"attempts": 1, "mode": contract.judge_mode, "model": contract.judge_model}
         _write(output / "judge-dispatch.json", {**dispatched, "started_at": datetime.now(UTC).isoformat()})
         try:
-            reply = judge(contract, run_log, output / "judge", timeout=180)
+            reply = judge(contract, run_log, output / "judge")
             _write(output / "judge-reply.json", reply)
         except (ValueError, OSError, subprocess.SubprocessError) as exc:
             error = type(exc).__name__
