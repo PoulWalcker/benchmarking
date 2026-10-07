@@ -9,7 +9,7 @@ import copy
 import json
 from pathlib import Path
 
-from sapi_config_lab.evaluate.task_evaluation import Document, FrozenTaskContract, digest
+from sapi_config_lab.evaluate.autowfbench import Document, FrozenTaskContract, digest
 
 DEFINITIONS = Path(__file__).with_name("judge-calibration.json")
 

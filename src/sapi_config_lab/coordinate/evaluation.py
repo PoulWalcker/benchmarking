@@ -14,13 +14,13 @@ from typing import Any
 
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, Scenario, scenario_for_challenge
-from sapi_config_lab.evaluate.judge_calibration import calibration_fixture, compare_calibration
-from sapi_config_lab.evaluate.task_evaluation import (
+from sapi_config_lab.evaluate.autowfbench import (
     FrozenTaskContract,
     evaluate_once,
     freeze_contract,
     recorded_run_log,
 )
+from sapi_config_lab.evaluate.judge_calibration import calibration_fixture, compare_calibration
 from sapi_config_lab.evidence import write_json
 from sapi_config_lab.pinned_source import pinned_source
 
