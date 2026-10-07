@@ -10,8 +10,8 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from sapi_config_lab.execute import simulator
-from sapi_config_lab.execute.simulator import start_environment
+from sapi_config_lab.execute import autowfbench
+from sapi_config_lab.execute.autowfbench import start_environment
 from sapi_config_lab.pinned_source import PinnedSource, fetch_source
 from tests.support.checkout_controls import CHECKOUT_INCOMPLETE_ACTIONS, CHECKOUT_ORACLE_ACTIONS
 from tests.support.pinned import AVAILABLE, SOURCE
@@ -158,11 +158,11 @@ class OriginalEnvironmentTests(unittest.TestCase):
         ):
             with self.subTest(operation=operation), start_environment(SOURCE, "crm-lead-qualification") as session:
 
-                def lost_response(*args, original=simulator._post, **kwargs):
+                def lost_response(*args, original=autowfbench._post, **kwargs):
                     original(*args, **kwargs)
                     raise TimeoutError("Injected response loss after upstream commit")
 
-                with patch("sapi_config_lab.execute.simulator._post", side_effect=lost_response) as dispatch:
+                with patch("sapi_config_lab.execute.autowfbench._post", side_effect=lost_response) as dispatch:
                     first = session.call(operation, arguments, operation_id="effect", max_attempts=3)
                     same = session.call(operation, arguments, operation_id="effect", max_attempts=3)
                     different = session.call(operation, arguments, operation_id="different")

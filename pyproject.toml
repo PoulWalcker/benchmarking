@@ -65,7 +65,7 @@ force-sort-within-sections = true
 [tool.ruff.lint.per-file-ignores]
 # Server boundaries: any failure becomes an HTTP error or a recorded host error, never a hung trial.
 "src/sapi_config_lab/execute/agency.py" = ["BLE001"]
-"src/sapi_config_lab/execute/simulator.py" = ["BLE001"]
+"src/sapi_config_lab/execute/hosting.py" = ["BLE001"]
 # Process and cleanup boundaries: a run, entry or trial always ends with a written record.
 "src/sapi_config_lab/author/agent.py" = ["BLE001"]
 "src/sapi_config_lab/coordinate/observe.py" = ["BLE001"]
