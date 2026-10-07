@@ -28,6 +28,26 @@ MAX_TOOL_ATTEMPTS = 3
 STARTUP_SECONDS = 15
 
 
+def task_definition(source: PinnedSource, challenge: str) -> Document:
+    """Read verified environment instructions and limits without loading a scorer or judge."""
+    identity = source.verify()
+    name = f"benchmark/challenges/{challenge}/definition.json"
+    if name not in identity["files"]:
+        raise ValueError("Unknown pinned challenge")
+    raw = (source.root / name).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != identity["files"][name]:
+        raise ValueError("Pinned task definition changed while reading")
+    definition = json.loads(raw)
+    if not isinstance(definition, dict) or definition.get("id") != challenge:
+        raise ValueError("Invalid task identity")
+    if any(not isinstance(definition.get(key), str) or not definition[key] for key in ("task", "completion")):
+        raise ValueError("Task instructions are incomplete")
+    limit = definition.get("limits", {}).get("wall_clock_seconds")
+    if type(limit) is not int or limit <= 0:
+        raise ValueError("Invalid environment duration")
+    return definition
+
+
 def _post(url: str, body: Document, token: str, timeout: float = 15) -> Document:
     request = Request(
         url,
@@ -65,12 +85,10 @@ class AutoWFBenchSession:
         self, source: PinnedSource, challenge_id: str, seed: int, *, python: str, bind_host: str, public_host: str
     ):
         self.source = source.verify()
-        if f"benchmark/challenges/{challenge_id}/definition.json" not in self.source["files"]:
-            raise ValueError("Unknown pinned challenge")
         if type(seed) is not int or seed < 0:
             raise ValueError("Seed must be a nonnegative integer")
         root = source.root.resolve()
-        self.definition = json.loads((root / "benchmark/challenges" / challenge_id / "definition.json").read_text())
+        self.definition = task_definition(source, challenge_id)
         self.challenge_id, self.seed = challenge_id, seed
         self._run_token, self._admin_token, self._candidate_token = (secrets.token_urlsafe(32) for _ in range(3))
         self._lock = threading.RLock()

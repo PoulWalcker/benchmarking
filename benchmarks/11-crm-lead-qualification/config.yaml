@@ -132,8 +132,8 @@ workflow:
       ref: steps.report.final_answer
 activation:
   kind: Callback
-  rule_id: invoices-requested
-  hook: benchmark.invoice_batch_requested
+  rule_id: crm-qualification-requested
+  hook: benchmark.crm_qualification_requested
   condition: valid_input
   reaction: Trigger
   workflow_ref:

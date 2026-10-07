@@ -9,10 +9,11 @@ from __future__ import annotations
 import argparse
 from collections.abc import Callable, Iterable
 import json
+import math
 from pathlib import Path
 from typing import Any
 
-from sapi_config_lab.coordinate.providers import EVALUATORS
+from sapi_config_lab.coordinate.providers import EVALUATORS, ReevaluationOptions
 from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.evidence import write_json
 
@@ -20,6 +21,30 @@ from sapi_config_lab.evidence import write_json
 HOSTED_REPORT = "sapi-lab-upstream-acceptance/v1"
 ADMISSION_REPORT = "sapi-lab-admission/v1"
 NOT_EVALUATED: dict[str, Any] = {"execution": None, "acceptance": None, "quality": None}
+
+
+def validate_result(result: Any) -> dict:
+    """Validate the normalized boundary without imposing any benchmark's scoring semantics."""
+    if not isinstance(result, dict) or not {"execution", "acceptance", "quality"} <= result.keys():
+        raise ValueError("Evaluator result requires execution, acceptance and quality")
+    for key in ("execution", "acceptance"):
+        if result[key] is not None and type(result[key]) is not bool:
+            raise ValueError(f"Evaluator result {key} must be boolean or null")
+    value = result["quality"]
+    if value is None:
+        return result
+    if not isinstance(value, dict) or not {"status", "score_0_10", "normalized_reward"} <= value.keys():
+        raise ValueError("Evaluator quality requires status, score_0_10 and normalized_reward")
+    if not isinstance(value["status"], str) or not value["status"]:
+        raise ValueError("Evaluator quality status must be a nonempty string")
+    for key, maximum in (("score_0_10", 10), ("normalized_reward", 1)):
+        number = value[key]
+        if value["status"] == "complete":
+            if type(number) not in (int, float) or not math.isfinite(number) or not 0 <= number <= maximum:
+                raise ValueError(f"Complete evaluator quality requires a finite {key} in [0, {maximum}]")
+        elif number is not None:
+            raise ValueError("Unscored evaluator quality must retain null scores")
+    return result
 
 
 def quality(evaluation: dict | None) -> dict | None:
@@ -92,7 +117,7 @@ def hosted_evaluation(scenarios: Iterable[str], judge_model: str | None = None) 
 
     def evaluate(scenario: str, record: Path) -> dict:
         trial = json.loads((record / "evidence/trial.json").read_text())
-        result = prepared[scenario](record)
+        result = validate_result(prepared[scenario](record))
         report = {
             "schema": HOSTED_REPORT,
             "scenario": scenario,
@@ -100,6 +125,8 @@ def hosted_evaluation(scenarios: Iterable[str], judge_model: str | None = None) 
             "submission_sha256": trial["submission_sha256"],
             "passed": result["acceptance"],
             "result": result,
+            "native_execution": trial.get("native_execution"),
+            "terminal_completion": trial.get("terminal_completion"),
         }
         # The report's place is the core's; an evaluator need not have written beside it.
         (record / "evaluation").mkdir(exist_ok=True)
@@ -155,7 +182,18 @@ def main(argv: list[str] | None = None) -> int:
     output.mkdir(parents=True, exist_ok=False)
     if hosted:
         scenario = SCENARIOS[json.loads((record / "evidence/trial.json").read_text())["scenario"]]
-        result = EVALUATORS[scenario.evaluator].reevaluate(scenario, record, output, args)
+        evaluator = EVALUATORS[scenario.evaluator]
+        options = ReevaluationOptions(
+            args.judgement,
+            args.dispatch_judge,
+            args.calibration,
+            args.judge_model,
+            args.series_dir,
+            tuple(args.series_ceiling or ()),
+        )
+        if evaluator.judge_calls == 0 and options != ReevaluationOptions():
+            raise ValueError("This evaluator does not support judge or calibration options")
+        result = validate_result(evaluator.reevaluate(scenario, record, output, options))
     else:
         result = reevaluate_verifier(record, output, args)
     write_json(output / "result.json", result)
