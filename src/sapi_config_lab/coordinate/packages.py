@@ -10,7 +10,7 @@ from typing import Any
 import yaml
 
 from sapi_config_lab.coordinate.hosted_worker import HTTP_TIMEOUT_SECONDS
-from sapi_config_lab.coordinate.providers import ENVIRONMENTS, host_only_modules
+from sapi_config_lab.coordinate.providers import ENVIRONMENTS, EVALUATORS, host_only_modules
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, Scenario, select_scenarios
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.host import LAB_IMAGE
@@ -82,9 +82,24 @@ def verifier_seconds(config: Any, cases: dict) -> int:
     return max(planned * execution_ceiling(deadline, bound=False), live) + VERIFIER_OVERHEAD_SECONDS
 
 
-def hosted_verifier_seconds(wall_clock_seconds: int, *, admit: bool) -> int:
+def hosted_verifier_seconds(wall_clock_seconds: int, evaluation_seconds: int, *, admit: bool) -> int:
     """Admission only compiles; a run waits on /begin, the deadline-bound workflow and /finish."""
-    return (0 if admit else 2 * HTTP_TIMEOUT_SECONDS + wall_clock_seconds) + VERIFIER_OVERHEAD_SECONDS
+    return (
+        0 if admit else 2 * HTTP_TIMEOUT_SECONDS + wall_clock_seconds + evaluation_seconds
+    ) + VERIFIER_OVERHEAD_SECONDS
+
+
+def runtime_grant_seconds(scenario: Scenario) -> int:
+    """Allow Harbor setup and environment startup before the actual bounded model-execution window."""
+    execution = ENVIRONMENTS[scenario.environment].limit_seconds(scenario) if scenario.hosted else LIVE_DEADLINE_SECONDS
+    setup = scenario.harbor["build_timeout_sec"] + scenario.harbor["agent_timeout_sec"]
+    return (
+        setup
+        + TRIAL_OVERHEAD_SECONDS
+        + JOB_OVERHEAD_SECONDS
+        + execution
+        + (HTTP_TIMEOUT_SECONDS if scenario.hosted else 0)
+    )
 
 
 def planned_config(scenario: Scenario, mode: str, submissions: dict | None) -> Any:
@@ -111,7 +126,9 @@ def verifier_bounds(
     for name, scenario in select_scenarios(scenarios).items():
         if scenario.hosted:
             limit = ENVIRONMENTS[scenario.environment].limit_seconds(scenario)
-            bounds[name] = hosted_verifier_seconds(limit, admit=mode == "generation")
+            bounds[name] = hosted_verifier_seconds(
+                limit, EVALUATORS[scenario.evaluator].timeout_seconds, admit=mode == "generation"
+            )
         else:
             chosen = (cases or {}).get(name)
             config = planned_config(scenario, mode, submissions)

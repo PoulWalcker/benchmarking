@@ -9,7 +9,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
-from sapi_config_lab.evaluate.autowfbench import FrozenTaskContract, evaluate_once, freeze_contract, recorded_run_log
+from sapi_config_lab.evaluate.autowfbench import (
+    EVALUATION_TIMEOUT_SECONDS,
+    FrozenTaskContract,
+    evaluate_once,
+    freeze_contract,
+    recorded_run_log,
+)
 from sapi_config_lab.evaluate.judge_calibration import calibration_fixture, compare_calibration
 from sapi_config_lab.evidence import write_json
 from sapi_config_lab.execute.autowfbench import start_environment, task_definition
@@ -62,6 +68,11 @@ class HostedEvaluator:
     prepare: Callable[[Scenario, str | None], Callable[[Path], dict]]  # freeze before solving; then record -> result
     reevaluate: Callable[[Scenario, Path, Path, ReevaluationOptions], dict]
     modules: tuple[str, ...]  # host-only sources scrubbed from hosted containers
+    timeout_seconds: int  # the evaluator's aggregate bound, composed into worker RPC and Harbor limits
+
+    def __post_init__(self) -> None:
+        if type(self.timeout_seconds) is not int or self.timeout_seconds <= 0:
+            raise ValueError("Evaluator duration must be a positive integer")
 
 
 def contract_for(scenario: Scenario, judge_model: str | None = None) -> FrozenTaskContract:
@@ -166,6 +177,7 @@ ENVIRONMENTS: dict[str, HostedEnvironment] = {
 EVALUATORS: dict[str, HostedEvaluator] = {
     "autowfbench": HostedEvaluator(
         judge_calls=1,
+        timeout_seconds=EVALUATION_TIMEOUT_SECONDS,
         prepare=_autowfbench_prepare,
         reevaluate=_autowfbench_reevaluate,
         modules=(

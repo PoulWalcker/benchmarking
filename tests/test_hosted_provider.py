@@ -173,7 +173,11 @@ class FakeProviderTests(unittest.TestCase):
             modules=(),
         )
         evaluator = HostedEvaluator(
-            judge_calls=0, prepare=lambda scenario, judge_model: fake_result, reevaluate=reevaluate, modules=()
+            judge_calls=0,
+            timeout_seconds=30,
+            prepare=lambda scenario, judge_model: fake_result,
+            reevaluate=reevaluate,
+            modules=(),
         )
         for table, entry in ((ENVIRONMENTS, {"fake": environment}), (EVALUATORS, {"fake-state": evaluator})):
             patcher = patch.dict(table, entry)

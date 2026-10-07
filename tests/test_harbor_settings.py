@@ -89,8 +89,10 @@ class VerifierBoundTests(unittest.TestCase):
         self.assertEqual(verifier_seconds({"execution": {"deadline_seconds": True}}, cases), 870 + 120)
 
     def test_hosted_runs_wait_on_begin_the_workflow_and_finish(self):
-        self.assertEqual(hosted_verifier_seconds(120, admit=False), 240 + 120 + 240 + VERIFIER_OVERHEAD_SECONDS)
-        self.assertEqual(hosted_verifier_seconds(120, admit=True), VERIFIER_OVERHEAD_SECONDS)
+        self.assertEqual(
+            hosted_verifier_seconds(120, 375, admit=False), 240 + 120 + 240 + 375 + VERIFIER_OVERHEAD_SECONDS
+        )
+        self.assertEqual(hosted_verifier_seconds(120, 375, admit=True), VERIFIER_OVERHEAD_SECONDS)
 
 
 def with_timeout(name: str, seconds: int):
@@ -139,7 +141,7 @@ class StagingTests(unittest.TestCase):
     @unittest.skipUnless(AVAILABLE, "Requires the pinned upstream source and benchmark extra")
     def test_hosted_scenarios_need_room_for_a_run(self):
         with tempfile.TemporaryDirectory() as directory, with_timeout("checkout-recovery", 719):
-            with self.assertRaisesRegex(ValueError, "checkout-recovery: its verifier may run 720s"):
+            with self.assertRaisesRegex(ValueError, "checkout-recovery: its verifier may run 1095s"):
                 stage_tasks(Path(directory) / "tasks", scenarios=("checkout-recovery",))
             stage_tasks(Path(directory) / "admit", mode="generation", scenarios=("checkout-recovery",))
 

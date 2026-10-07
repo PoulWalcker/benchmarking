@@ -17,7 +17,7 @@ from typing import Any
 from sapi_config_lab.coordinate.evaluation import trial_result
 from sapi_config_lab.coordinate.packages import UPLOAD_ONLY_AGENTS, job_seconds, stage_tasks, verifier_bounds
 from sapi_config_lab.coordinate.provenance import source_manifest
-from sapi_config_lab.coordinate.providers import ENVIRONMENTS
+from sapi_config_lab.coordinate.providers import ENVIRONMENTS, EVALUATORS
 from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.agency import start_bridge, stop_bridge
@@ -162,6 +162,8 @@ class Run:
         if agent not in UPLOAD_ONLY_AGENTS:
             raise RuntimeError(f"Agent {agent} may run commands beside the shared verifier environment")
         names = [task.name for task in task_dirs(tasks)]
+        if not admission and any(SCENARIOS[name].hosted for name in names) and int(arguments.get("attempts") or 1) != 1:
+            raise ValueError("Hosted execution requires exactly one attempt per fresh environment")
         if not set(names) <= set(self.bounds):
             raise RuntimeError(
                 "Tasks this run did not stage have no time bound: " + ", ".join(sorted(set(names) - set(self.bounds)))
@@ -218,7 +220,13 @@ class Run:
                     stack.callback(host.close)
                     hosts.append(host)
                     target = copy if tasks in hosted else copy / task.name
-                    write_json(target / "tests/connection.json", host.connection)
+                    write_json(
+                        target / "tests/connection.json",
+                        {
+                            **host.connection,
+                            "evaluation_seconds": EVALUATORS[scenario.evaluator].timeout_seconds,
+                        },
+                    )
                 yield copy, {host.record.name: host.record for host in hosts}
         finally:
             shutil.rmtree(copy)

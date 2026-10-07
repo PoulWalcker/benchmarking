@@ -16,7 +16,7 @@ from sapi_config_lab.profile import Invalid, Unsupported, check, read, read_bind
 SUBMISSION = Path("/app/submission/config.yaml")
 TESTS = Path("/tests")
 LOGS = Path("/logs/verifier")
-# Each of /begin and /finish; /finish includes the host's evaluation.
+# Environment startup/finalization and RPC overhead; /finish also includes the declared evaluator duration.
 HTTP_TIMEOUT_SECONDS = 240
 
 
@@ -60,7 +60,8 @@ def run() -> dict:
             json.dumps(body).encode(),
             {"Content-Type": "application/json", "Authorization": "Bearer " + settings["token"]},
         )
-        with urlopen(request, timeout=HTTP_TIMEOUT_SECONDS) as response:
+        timeout = HTTP_TIMEOUT_SECONDS + (settings["evaluation_seconds"] if action == "/finish" else 0)
+        with urlopen(request, timeout=timeout) as response:
             return json.load(response)
 
     admitted = post("/begin", {})

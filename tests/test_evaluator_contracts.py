@@ -35,6 +35,7 @@ class EvaluatorContractTests(unittest.TestCase):
                     lambda scenario, judge, value=result: lambda path: value,
                     lambda scenario, path, output, options, value=result: value,
                     (),
+                    30,
                 )
                 with patch.dict(EVALUATORS, {"autowfbench": evaluator}):
                     with self.assertRaisesRegex(ValueError, "Evaluator|evaluator|Unscored|Complete"):
