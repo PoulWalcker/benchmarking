@@ -1,0 +1,102 @@
+{
+  "schema": "sapi-lab-live/v3",
+  "mode": "preflight",
+  "stub_report": "/Users/pashvel/Desktop/sapi-config-lab/reports/cleanup-01-crm/report.json",
+  "generation_calls": 0,
+  "budget": {
+    "max_calls": 1,
+    "cases": {
+      "crm-lead-qualification/run": 0
+    },
+    "judge": {
+      "crm-lead-qualification": 1
+    }
+  },
+  "trials": [],
+  "not_run": [],
+  "correlation": [],
+  "audit": [],
+  "limitations": [
+    "Call and time caps are enforced; currency cost and provider-internal retries remain unknown.",
+    "The wrapper is trusted; its tool restrictions are cooperative, not a sandbox.",
+    "Timeout cancellation is not propagated; an upstream model outcome can remain unknown."
+  ],
+  "status": "passed",
+  "started_at": "2026-10-07T10:35:13.517506+00:00",
+  "source_manifest": "source-manifest.json",
+  "harbor_version": "0.21.0",
+  "stub_report_sha256": "cdb8d7275c1e26f86af63d89e519703337d22b439bfa5148ea8618ee0a81b99f",
+  "image_id": "sha256:96026c9bebbf363d0e48978f358fb5d26f2b77ec3ffe28a6db1d683c17e3e946",
+  "frozen_image": "sapi-lab-live-base:96026c9bebbf363d",
+  "human_review": {
+    "crm-lead-qualification": false
+  },
+  "ledger": "/Users/pashvel/Desktop/sapi-config-lab/reports/cleanup-01-preflight-verified/ledger.json",
+  "phases": [
+    {
+      "phase": "before-stub",
+      "unchanged": true
+    },
+    {
+      "phase": "final",
+      "unchanged": true
+    }
+  ],
+  "harbor_timeouts": {
+    "stub-replay": 2340
+  },
+  "commands": [
+    [
+      "/Users/pashvel/Desktop/sapi-config-lab/.venv/bin/python3",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/var/folders/97/80rddxm51750bvdn9k9fnv2w0000gn/T/sapi-lab-live-0y93mh29/tasks",
+      "--agent",
+      "oracle",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/var/folders/97/80rddxm51750bvdn9k9fnv2w0000gn/T/sapi-lab-live-0y93mh29/jobs",
+      "--job-name",
+      "stub-replay",
+      "--verifier-env",
+      "SAPI_LLM_MODE=stub",
+      "--verifier-env",
+      "SAPI_HOSTED_ADMISSION=1",
+      "--force-build"
+    ]
+  ],
+  "preflight": {
+    "harbor_exit_code": 0,
+    "trials": [
+      {
+        "task_name": "crm-lead-qualification",
+        "rewards": {
+          "reward": 1.0
+        },
+        "exception": null,
+        "result_path": "/Users/pashvel/Desktop/sapi-config-lab/reports/cleanup-01-preflight-verified/jobs/stub-replay/crm-lead-qualification__PoEuizo/result.json",
+        "acceptance": {
+          "schema": "sapi-lab-admission/v1",
+          "scenario": "crm-lead-qualification",
+          "mode": "stub",
+          "passed": true,
+          "submission_sha256": "c6906d4108ca6d3190439d677ad85525ee367198c8b434964fe6163276f6d761"
+        },
+        "result": {
+          "execution": null,
+          "acceptance": true,
+          "quality": null
+        }
+      }
+    ],
+    "hosted_scope": "Live-mode compilation and limits only; no candidate execution or acceptance"
+  },
+  "source_unchanged": true,
+  "existing_container_identities_preserved": true,
+  "finished_at": "2026-10-07T10:35:31.095518+00:00"
+}

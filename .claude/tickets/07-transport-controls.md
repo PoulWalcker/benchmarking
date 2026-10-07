@@ -32,4 +32,4 @@ Both author and hosted worker now use the shared no-redirect HTTP client. Real H
 
 Audit refinement: observed pinned Harbor jobs exit zero even when the trial reports the expected missing reward (`reports/cleanup-01-crm/report.json`, confirmed again in ticket 05). The former blanket nonzero-job allowance was therefore removed, not replaced by another exception bypass.
 
-Validation: 32 targeted tests passed, including redirects, nop error classification, provider and boundary checks. Full check and all eleven control results are recorded in the final cleanup report. Diff inspected: one shared transport policy; no provider-name branch added.
+Validation: 32 targeted tests passed, including redirects, nop error classification, provider and boundary checks. Full check passed with 423 tests, Ruff, format, mypy and distribution checks (`reports/cleanup-07-check-final.log`). All eleven oracle/nop controls and real n8n transport probes passed (`reports/cleanup-final-all-11/report.json`); the final cleanup report cites committed extracts. Diff inspected: one shared transport policy; no provider-name branch added.

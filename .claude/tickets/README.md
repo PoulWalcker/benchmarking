@@ -1,6 +1,6 @@
 # Architecture cleanup sequence
 
-Audit read completely; current HEAD equals audited 9690ba5, with no post-audit fixes to reopen. Read implementation paths named in each ticket before choosing changes.
+Audit read completely; at verification HEAD equaled audited 9690ba5, with no post-audit fixes to reopen. Read implementation paths named in each ticket before choosing changes.
 
 | Finding | Verified evidence | Classification |
 | --- | --- | --- |
