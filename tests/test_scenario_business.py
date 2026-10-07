@@ -6,7 +6,7 @@ import unittest
 
 from sapi_config_lab.coordinate.scenarios import all_cases
 from verification.contracts import Rejected
-from verification.scenario_business import check_scenario_business_result
+from verification.fixture_evaluators import check_business_result
 
 
 def observation(values, output, *, skipped=(), actors=None, dependencies=()):
@@ -66,10 +66,10 @@ def ledger_observation():
 class ComposedBusinessTests(unittest.TestCase):
     def test_repeated_invoice_operations_keep_two_separate_ledgers(self):
         inputs, obs = ledger_observation()
-        self.assertTrue(check_scenario_business_result("dual-ledger-closeout", inputs, obs)["output_verified"])
+        self.assertTrue(check_business_result("dual-ledger-closeout", inputs, obs)["output_verified"])
         obs.final["output"] = {"domestic": obs.final["output"]["export"], "export": obs.final["output"]["domestic"]}
         with self.assertRaisesRegex(Rejected, "ledger"):
-            check_scenario_business_result("dual-ledger-closeout", inputs, obs)
+            check_business_result("dual-ledger-closeout", inputs, obs)
 
     def test_support_packet_honestly_reports_utf16_review_and_error_order(self):
         inputs = {
@@ -100,7 +100,7 @@ class ComposedBusinessTests(unittest.TestCase):
             skipped=("normal",),
             dependencies=contract_for("support-review-packet")["edges"],
         )
-        self.assertTrue(check_scenario_business_result("support-review-packet", inputs, obs, "live")["output_verified"])
+        self.assertTrue(check_business_result("support-review-packet", inputs, obs, "live")["output_verified"])
         for wrong in (
             {"pass": True, "errors": []},
             {"pass": False},
@@ -109,7 +109,7 @@ class ComposedBusinessTests(unittest.TestCase):
             broken = copy.deepcopy(obs)
             broken.final["output"]["review"] = wrong
             with self.subTest(wrong=wrong), self.assertRaises(Rejected):
-                check_scenario_business_result("support-review-packet", inputs, broken, "live")
+                check_business_result("support-review-packet", inputs, broken, "live")
 
     def test_bulletin_brief_checks_derived_quotes_and_facts_separately(self):
         from verification.roles import contract_for
@@ -142,7 +142,7 @@ class ComposedBusinessTests(unittest.TestCase):
             dependencies=contract_for("bulletin-market-brief")["edges"],
         )
         self.assertTrue(
-            check_scenario_business_result("bulletin-market-brief", inputs, obs, "live", case=case)["output_verified"]
+            check_business_result("bulletin-market-brief", inputs, obs, "live", case=case)["output_verified"]
         )
         for role, field, wrong in [
             ("summarize", "article_ids", ["BL-1", "UNKNOWN"]),
@@ -154,7 +154,7 @@ class ComposedBusinessTests(unittest.TestCase):
             broken = copy.deepcopy(obs)
             broken.states[broken.roles[role]]["steps"][broken.roles[role]][field] = wrong
             with self.subTest(role=role, field=field), self.assertRaises(Rejected):
-                check_scenario_business_result("bulletin-market-brief", inputs, broken, "live", case=case)
+                check_business_result("bulletin-market-brief", inputs, broken, "live", case=case)
 
     def test_normal_priority_propagates_all_skips_and_returns_null_brief(self):
         from verification.roles import contract_for
@@ -172,15 +172,15 @@ class ComposedBusinessTests(unittest.TestCase):
             skipped=("escalate", "product", "marketing", "combine", "write"),
             dependencies=contract_for("priority-support-brief")["edges"],
         )
-        self.assertTrue(check_scenario_business_result("priority-support-brief", inputs, obs)["output_verified"])
+        self.assertTrue(check_business_result("priority-support-brief", inputs, obs)["output_verified"])
         for role in ("product", "marketing", "combine", "write"):
             wrong = copy.deepcopy(obs)
             wrong.states[wrong.roles["write"]]["statuses"].pop(wrong.roles[role])
             with self.subTest(role=role), self.assertRaises(Rejected):
-                check_scenario_business_result("priority-support-brief", inputs, wrong)
+                check_business_result("priority-support-brief", inputs, wrong)
         obs.final["output"]["brief"] = {"report": "Invented literal", "evidence": []}
         with self.assertRaises(Rejected):
-            check_scenario_business_result("priority-support-brief", inputs, obs)
+            check_business_result("priority-support-brief", inputs, obs)
 
 
 class ComposedLocalGraphTests(unittest.TestCase):
@@ -246,9 +246,7 @@ class ComposedLocalGraphTests(unittest.TestCase):
                         actors=actors,
                         dependencies=contract_for(scenario)["edges"],
                     )
-                    self.assertTrue(
-                        check_scenario_business_result(scenario, case["inputs"], obs, case=case)["output_verified"]
-                    )
+                    self.assertTrue(check_business_result(scenario, case["inputs"], obs, case=case)["output_verified"])
 
     def test_fresh_private_overlay_keeps_all_positive_and_negative_obligations(self):
         from sapi_config_lab.coordinate.generate import fresh_case_overlay

@@ -72,8 +72,8 @@ Add `benchmarks/NN-<name>/` with a `scenario.json` (fields in [ARCHITECTURE.md](
 A **fixture** scenario adds the public `task.md` and evaluator-only `cases.json`, then extends the verifier:
 
 - `evaluation/contract.json`: the role contract (operations, input lineage, edges, output) that `verification/roles.py` binds any unambiguous step IDs to;
-- business obligations in `verification/scenario_business.py`, recomputed from fixture inputs, never imported from the operation under test;
-- `evaluation/rubric.json` only for a quality question binary acceptance does not answer, plus its prose branch in `verification/rubric_facts.py`.
+- independent business checks in `verification/`, registered in the evaluator-owned `fixture_evaluators.py` table; ordinary cases use the existing plan/evidence machinery. The entry also selects guarded-call expectations, optional rubric obligations/prose and optional freshness. Checks recompute from fixtures, never import runtime operations;
+- `evaluation/rubric.json` only for a quality question binary acceptance does not answer, plus its evaluator-owned prose function in `verification/fixture_prose.py`.
 
 `evaluation/` is evaluator data: packaging copies it into the task's trusted `tests/` and `.dockerignore` keeps it out of the image.
 

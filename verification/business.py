@@ -15,12 +15,6 @@ else:  # Harbor runs the distributed verifier as a standalone script.
     from contracts import WorkflowObservation, equal, require
     from scenario_business import fact_contract
 
-OPERATIONS = {
-    "invoice-total": ["invoices.validate", "invoices.sum", "invoices.report"],
-    "ticket-routing": ["ticket.classify", "ticket.escalation_draft", "ticket.normal_draft", "branch.select_one"],
-    "competitor-report": ["research.product", "research.marketing", "research.combine", "research.write"],
-}
-
 
 def _indexed(observation: WorkflowObservation) -> tuple[dict, dict]:
     """Index one observation by operation name, the way this file always has."""
@@ -97,7 +91,7 @@ def _skipped_branch(inputs: dict[str, Any], observation: WorkflowObservation) ->
 
 
 def ticket_routing_obligations(
-    inputs: dict[str, Any], observation: WorkflowObservation
+    inputs: dict[str, Any], observation: WorkflowObservation, *, case: dict | None = None
 ) -> dict[str, Callable[[], dict]]:
     """The four named obligations of ticket-routing, in acceptance order."""
     return {
@@ -219,62 +213,45 @@ def competitor_report_obligations(
     }
 
 
-def check_business_result(
-    scenario: str,
-    inputs: dict[str, Any],
-    observation: WorkflowObservation,
-    mode: str = "stub",
-    *,
-    case: dict | None = None,
-) -> dict[str, Any]:
-    if scenario not in OPERATIONS:
-        if TYPE_CHECKING or __package__:
-            from .scenario_business import check_scenario_business_result
-        else:
-            from scenario_business import check_scenario_business_result
-        return check_scenario_business_result(scenario, inputs, observation, mode, case=case)
-    final = observation.final
-    events = {event["operation"]: event for event in observation.events.values()}
-    states = {event["operation"]: observation.states[sid] for sid, event in observation.events.items()}
-
-    def value(operation: str) -> dict:
-        return states[operation]["steps"][events[operation]["step_id"]]
-
-    def all_completed() -> None:
-        require(all(event["status"] == "completed" for event in events.values()), "Unexpected skipped operation")
-
-    output = final["output"]
-    if scenario == "invoice-total":
-        all_completed()
-        invoices = inputs["invoices"]
-        expected = {
-            "total_minor": sum(x["amount_minor"] for x in invoices),
-            "currency": invoices[0]["currency"],
-            "invoice_count": len(invoices),
-        }
-        equal(output, expected, "Wrong invoice result")
-        equal(value("invoices.validate"), {"invoices": invoices}, "Invoice validation changed/lost invoices")
-        equal(
-            value("invoices.sum"),
-            {
-                "amount_minor": expected["total_minor"],
-                "currency": expected["currency"],
-                "count": expected["invoice_count"],
-            },
-            "Wrong intermediate sum",
-        )
-        equal(value("invoices.report"), expected, "Wrong report operation output")
-    elif scenario == "ticket-routing":
-        # The four named obligations, run in order; the first failure still raises.
-        for obligation in ticket_routing_obligations(inputs, observation).values():
-            obligation()
-    else:
-        # The five named obligations, run in order; the first failure still raises.
-        for obligation in competitor_report_obligations(inputs, observation, mode=mode, case=case).values():
-            obligation()
-        equal(value("research.write"), output, "Result differs from writer output")
-    return {
-        "output_verified": True,
-        "operation_count": len(events),
-        "llm_mode": mode,
+def invoice_total(
+    inputs: dict, observation: WorkflowObservation, mode: str = "stub", *, case: dict | None = None
+) -> None:
+    output = observation.final["output"]
+    require(
+        all(event["status"] == "completed" for event in observation.events.values()), "Unexpected skipped operation"
+    )
+    invoices = inputs["invoices"]
+    expected = {
+        "total_minor": sum(x["amount_minor"] for x in invoices),
+        "currency": invoices[0]["currency"],
+        "invoice_count": len(invoices),
     }
+    equal(output, expected, "Wrong invoice result")
+    equal(
+        _produced(observation, "invoices.validate"), {"invoices": invoices}, "Invoice validation changed/lost invoices"
+    )
+    equal(
+        _produced(observation, "invoices.sum"),
+        {
+            "amount_minor": expected["total_minor"],
+            "currency": expected["currency"],
+            "count": expected["invoice_count"],
+        },
+        "Wrong intermediate sum",
+    )
+    equal(_produced(observation, "invoices.report"), expected, "Wrong report operation output")
+
+
+def ticket_routing(
+    inputs: dict, observation: WorkflowObservation, mode: str = "stub", *, case: dict | None = None
+) -> None:
+    for obligation in ticket_routing_obligations(inputs, observation).values():
+        obligation()
+
+
+def competitor_report(
+    inputs: dict, observation: WorkflowObservation, mode: str = "stub", *, case: dict | None = None
+) -> None:
+    for obligation in competitor_report_obligations(inputs, observation, mode=mode, case=case).values():
+        obligation()
+    equal(_produced(observation, "research.write"), observation.final["output"], "Result differs from writer output")

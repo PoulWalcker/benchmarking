@@ -11,12 +11,11 @@ from tests.support.verifying import verify_with_runner
 from tests.test_scenario_business import observation
 from verification import rubric_facts
 from verification import verify as verifier
-from verification.business import check_business_result
 from verification.contracts import Rejected
+from verification.fixture_evaluators import check_business_result
 from verification.roles import contract_for
 from verification.rubric import RecordedJudge, RunFacts, _judge_view
 from verification.rubric_cards import card_for
-from verification.scenario_business import check_scenario_business_result
 
 ROOT = Path(__file__).parents[1]
 ROUTING_EDGES = contract_for("ticket-routing")["edges"]
@@ -115,7 +114,7 @@ class NamedCheckTests(unittest.TestCase):
                 )
                 # The same obligation, through the acceptance path that owns the reward.
                 with self.assertRaises(Rejected):
-                    check_scenario_business_result(SCENARIO, INPUTS, observe(values, output), "live")
+                    check_business_result(SCENARIO, INPUTS, observe(values, output), "live")
 
     def test_a_malformed_run_reports_a_failed_check_and_never_raises(self):
         values, output = packet()
@@ -682,7 +681,7 @@ class CardedScenarioTests(unittest.TestCase):
 
     def test_a_case_whose_facts_cannot_be_collected_never_raises_and_is_not_scored(self):
         """An unreadable fixture file is an environment fault, not a failed obligation."""
-        with unittest.mock.patch.object(rubric_facts, "_checks", side_effect=OSError("no fixture file")):
+        with unittest.mock.patch.object(rubric_facts, "evaluator_for", side_effect=OSError("no fixture file")):
             unmeasured = self.facts("competitor-report")
         self.assertEqual(unmeasured["checks"], {})
         self.assertEqual(unmeasured["prose"], {})

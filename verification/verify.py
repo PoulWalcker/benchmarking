@@ -18,9 +18,10 @@ from typing import TYPE_CHECKING, Any
 import yaml
 
 if TYPE_CHECKING or __package__:
-    from .business import check_business_result, expected_classification
     from .contracts import Recorded, Rejected, require, scenario_file
-    from .extensions import refinement_corruptions, reply_roles, verify_refinement
+    from .extensions import refinement_corruptions, refinement_model_calls, verify_refinement_task
+    from .fixture_evaluators import check_business_result, evaluator_for
+    from .fixture_evaluators import fresh_cases as fresh_cases
     from .n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
     from .roles import bind_roles, contract_for
     from .rubric import SCHEMA, Judge
@@ -30,9 +31,10 @@ else:  # Harbor executes its copied verifier directly.
     import sys
 
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from business import check_business_result, expected_classification
     from contracts import Recorded, Rejected, require, scenario_file
-    from extensions import refinement_corruptions, reply_roles, verify_refinement
+    from extensions import refinement_corruptions, refinement_model_calls, verify_refinement_task
+    from fixture_evaluators import check_business_result, evaluator_for
+    from fixture_evaluators import fresh_cases as fresh_cases
     from n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
     from roles import bind_roles, contract_for
     from rubric import SCHEMA, Judge
@@ -58,16 +60,8 @@ def check_execution(
     rubric_runs: list | None = None,
 ) -> dict:
     """Business acceptance and engine provenance must both pass; `rubric_runs` collects facts before acceptance."""
-    if scenario == "revise-answer":
-        if config is None or case is None:
-            raise Rejected("Refinement requires submitted config and frozen case")
-        require(
-            config["workflow"]["id"] == scenario and config["workflow"]["revision"] == 1, "Wrong reply task identity"
-        )
-        require(config["execution"]["refinement"]["max_attempts"] == 3, "Reply task requires three maximum attempts")
-        result = verify_refinement(config, run, mode=mode)
-        require(result["exhausted"] == (case.get("expected") == "exhausted"), "Wrong refinement business outcome")
-        return {key: value for key, value in result.items() if key != "calls"}
+    if evaluator_for(scenario).procedure == "refinement":
+        return verify_refinement_task(config, run, mode=mode, case=case)
     observation, records = observe_execution(scenario, inputs, run, mode, config=config)
     if rubric_runs is not None:
         rubric_runs.append(observe(scenario, inputs, observation, case=case))
@@ -79,10 +73,9 @@ def check_execution(
 def expected_model_calls(scenario: str, config: dict, inputs: dict) -> dict[str, str]:
     """Every model call this submission may make for these inputs, by occurrence."""
     revision = config["workflow"]["revision"]
-    if scenario == "revise-answer":
-        draft, _ = reply_roles(config)
-        require(config["execution"]["refinement"]["max_attempts"] == 3, "Reply task requires three maximum attempts")
-        return {f"{scenario}/r{revision}/{draft}/attempt{number}": "reply.generate" for number in range(1, 4)}
+    evaluator = evaluator_for(scenario)
+    if evaluator.procedure == "refinement":
+        return refinement_model_calls(config)
     contract, binding = contract_for(scenario), bind_roles(scenario, config)
     calls = {}
     for role, obligation in contract["roles"].items():
@@ -90,9 +83,9 @@ def expected_model_calls(scenario: str, config: dict, inputs: dict) -> dict[str,
             continue
         when = obligation.get("when")
         if when is not None:
-            field = when["ref"].removeprefix("steps.classify.")
-            require(field != when["ref"], "No stated expectation decides this model call: " + role)
-            if expected_classification(inputs)[field] != when["eq"]:
+            require(evaluator.guard is not None, "No stated expectation decides this model call: " + role)
+            assert evaluator.guard is not None
+            if not evaluator.guard(inputs, when):
                 continue
         calls[f"{scenario}/r{revision}/{binding[role]}"] = obligation["operation"]
     return calls
@@ -110,23 +103,8 @@ def corruption_checks(
     scenario: str, inputs: dict, run: dict, mode: str, *, config: dict | None = None, case: dict | None = None
 ) -> list[str]:
     """Deliberately corrupt results to test that acceptance cannot be vacuous."""
-    mutations = []
-
-    def output_broken(candidate: dict) -> None:
-        record = candidate["run_data"]["Result"][0]
-        final = rows(record)[0]
-        if scenario == "invoice-total":
-            final["output"]["total_minor"] += 1
-        elif scenario == "ticket-routing":
-            final["output"]["action"] = "normal_reply" if final["output"]["action"] == "escalate" else "escalate"
-        elif scenario == "competitor-report":
-            final["output"]["evidence"] = final["output"]["evidence"][:1]
-        else:
-            final["output"] = {"deliberately_wrong": True}
-        candidate["output"] = copy.deepcopy(final["output"])
-        candidate["result"] = copy.deepcopy(final)
-
-    mutations.append(("wrong-final-output", output_broken))
+    evaluator = evaluator_for(scenario)
+    mutations = [("wrong-final-output", evaluator.corrupt_output)]
 
     def absent_execution(candidate: dict) -> None:
         candidate["run_data"].pop("Result")
@@ -138,29 +116,7 @@ def corruption_checks(
         final["trace"][0]["status"] = "skipped"
 
     mutations.append(("falsified-step-trace", false_status))
-    if scenario == "competitor-report":
-
-        def missing_branch(candidate: dict) -> None:
-            event = next(
-                event
-                for event in rows(candidate["run_data"]["Result"][0])[0]["trace"]
-                if event["operation"] == "research.marketing"
-            )
-            candidate["run_data"].pop(candidate["mapping"][event["step_id"]])
-
-        mutations.append(("missing-analysis-execution", missing_branch))
-
-        def contentless_report(candidate: dict) -> None:
-            final = rows(candidate["run_data"]["Result"][0])[0]
-            final["output"]["report"] = "An unrelated but nonempty report."
-            writer = next(event for event in final["trace"] if event["operation"] == "research.write")
-            envelope = rows(candidate["run_data"][candidate["mapping"][writer["step_id"]]][0])[0]
-            envelope["steps"][writer["step_id"]]["report"] = final["output"]["report"]
-            final["steps"][writer["step_id"]]["report"] = final["output"]["report"]
-            candidate["output"] = copy.deepcopy(final["output"])
-            candidate["result"] = copy.deepcopy(final)
-
-        mutations.append(("contentless-report-with-preserved-evidence", contentless_report))
+    mutations.extend(evaluator.extra_corruptions)
     accepted = []
     for name, mutate in mutations:
         candidate = copy.deepcopy(run)
@@ -265,7 +221,7 @@ def plan(
             f"Workflow deadline {deadline!r} exceeds the {deadline_budget}s this task was sized for",
             "deadline_exceeds_budget",
         )
-    if scenario == "daily-digest":
+    if evaluator_for(scenario).procedure == "lifecycle":
         if TYPE_CHECKING or __package__:
             from .lifecycle_submission import plan_lifecycle
         else:
@@ -485,7 +441,7 @@ def judge_entries(
                 )
                 row["verifier_corruptions_rejected"] = (
                     refinement_corruptions(candidate, run, mode=mode)
-                    if scenario == "revise-answer"
+                    if evaluator_for(scenario).procedure == "refinement"
                     else corruption_checks(scenario, case["inputs"], run, mode, config=candidate, case=case)
                 )
                 row["output"] = run["output"]
@@ -549,6 +505,7 @@ def evaluate(
     evaluation.mkdir(parents=True, exist_ok=True)
     identity = evaluator_identity(scenario)
     rubric_runs: list[dict] = []
+    procedure = "case"
     report: dict[str, Any] = {
         "scenario": scenario,
         "mode": mode,
@@ -575,8 +532,9 @@ def evaluate(
             ["execution.deadline_seconds set to 600"] if mode == "live" else []
         )
         recorded = Recorded(evidence, evaluation, read_evidence(evidence, expected), identity)
+        procedure = evaluator_for(scenario).procedure
         report["observation"] = {"manifest": "evidence/observation.json", "plan_sha256": digest(expected)}
-        if scenario == "daily-digest":
+        if evaluator_for(scenario).procedure == "lifecycle":
             if TYPE_CHECKING or __package__:
                 from .lifecycle_submission import evaluate_lifecycle
             else:
@@ -591,7 +549,7 @@ def evaluate(
         if isinstance(error, Rejected) and error.code:
             report["error_code"] = error.code
         report["passed"] = False
-    if scenario != "daily-digest":
+    if procedure != "lifecycle":
         # Outside the acceptance try: the rubric reads the verdict and never sets it.
         executions = sum(row["kind"] == "positive" for row in report["cases"])
         executed = bool(rubric_runs) and len(rubric_runs) == executions
