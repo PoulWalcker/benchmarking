@@ -39,7 +39,7 @@ Every benchmark is `benchmarks/NN-<name>/`. Its `scenario.json` states what the 
 | `bindings` | a scenario-owned operation catalog instead of `src/sapi_config_lab/bindings.yaml` |
 | `budgets` | `authoring_attempts` (0 refuses authoring), `runtime_model_calls` |
 | `output` | `artifact_field`/`artifact_name`: an output submitted verbatim as a named file |
-| `controls` | `reference_reward` the oracle must reproduce |
+| `controls` | `reference_reward`: the reward the oracle must reproduce; declaring it requires the hosted evaluator to produce a scored quality, and without it hosted controls gate on acceptance |
 | `prompt_extension`, `fresh_fixtures`, `human_review` | authoring prompt section, per-run fixture overlay, live report flag |
 | `harbor` | trial resources rendered into `task.toml`; a verifier timeout must contain the verifier's plan |
 

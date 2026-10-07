@@ -172,6 +172,57 @@ class HostedEvaluationTests(unittest.TestCase):
         self.assertEqual(json.loads((output / "result.json").read_text()), self.result)
 
 
+class ScoredControlTests(unittest.TestCase):
+    """A declared reference reward makes the hosted oracle a scored control."""
+
+    def trial(self, quality, reward=0.732):
+        report = hosted_report("checkout-recovery", True, 0.732)
+        report["result"]["quality"] = quality
+        return {
+            "task_name": "checkout-recovery",
+            "exception": None,
+            "rewards": {"reward": reward},
+            "acceptance": report,
+            "result": report["result"],
+        }
+
+    def test_the_oracle_must_reproduce_the_reference_reward_with_a_complete_score(self):
+        self.assertEqual(SCENARIOS["checkout-recovery"].reference_reward, 0.732)
+        complete = hosted_report("checkout-recovery", True, 0.732)["result"]["quality"]
+        self.assertTrue(control_passed("oracle", self.trial(complete)))
+        self.assertFalse(control_passed("oracle", self.trial(None)))
+        self.assertFalse(control_passed("oracle", self.trial({**complete, "status": "unscored"})))
+        self.assertFalse(control_passed("oracle", self.trial(complete, reward=0.5)))
+
+
+class HarborRewardTests(unittest.TestCase):
+    def test_the_worker_rewards_a_score_else_an_unscored_acceptance_and_never_invents_zero(self):
+        from sapi_config_lab.coordinate.hosted_worker import harbor_reward
+
+        scored = {"status": "complete", "score_0_10": 7.32, "normalized_reward": 0.732}
+        self.assertEqual(harbor_reward({"acceptance": True, "quality": None}), "1")
+        self.assertEqual(harbor_reward({"acceptance": False, "quality": None}), "0")
+        self.assertIsNone(harbor_reward({"acceptance": None, "quality": None}))
+        self.assertEqual(harbor_reward({"acceptance": True, "quality": scored}), "0.732")
+        unscored = {"status": "unscored", "score_0_10": None, "normalized_reward": None}
+        self.assertIsNone(harbor_reward({"acceptance": False, "quality": unscored}))
+
+    def test_an_unscored_run_writes_no_reward_file(self):
+        from sapi_config_lab.coordinate import hosted_worker
+
+        unscored = {"status": "unscored", "score_0_10": None, "normalized_reward": None}
+        for quality, expected in ((unscored, None), (None, "0\n")):
+            report = {"result": {"execution": False, "acceptance": False, "quality": quality}}
+            with (
+                tempfile.TemporaryDirectory() as directory,
+                patch.object(hosted_worker, "LOGS", Path(directory)),
+                patch.object(hosted_worker, "run", return_value=report),
+            ):
+                self.assertEqual(hosted_worker.main(["run"]), 0)
+                reward = Path(directory) / "reward.txt"
+                self.assertEqual(reward.read_text() if reward.exists() else None, expected)
+
+
 class VerifierResultTests(unittest.TestCase):
     def test_lifecycle_rows_without_a_case_kind_still_give_a_result(self):
         from sapi_config_lab.coordinate.evaluation import verifier_result

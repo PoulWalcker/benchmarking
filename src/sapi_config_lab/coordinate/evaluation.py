@@ -69,10 +69,10 @@ def control_passed(agent: str, trial: dict) -> bool:
         if agent == "nop":
             return result["acceptance"] is False and (result["quality"] or {}).get("normalized_reward") is None
         expected = scenario.reference_reward
-        return (
-            trial_accepted(trial)
-            and result["quality"]["status"] == "complete"
-            and (expected is None or trial["rewards"] == {"reward": expected})
+        # Only a declared reference reward makes the benchmark scored; otherwise acceptance alone gates the oracle.
+        return trial_accepted(trial) and (
+            expected is None
+            or ((result["quality"] or {}).get("status") == "complete" and trial["rewards"] == {"reward": expected})
         )
     reward = {"oracle": 1.0, "nop": 0.0}[agent]
     return (
