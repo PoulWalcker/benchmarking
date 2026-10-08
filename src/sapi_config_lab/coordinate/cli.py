@@ -29,6 +29,7 @@ MODULES = {
 }
 
 PUBLIC = {
+    "benchmarks": "List benchmark metadata without loading evaluators.",
     "check": "Run every required local check (tests, lint, format, types, distribution); no Docker.",
     "compile": "Validate one YAML; write the n8n JSON and its step-to-node map.",
     "build": "Compile every benchmarks/*/config.yaml and record which were rejected.",
@@ -85,6 +86,25 @@ def check_command(argv: list[str]) -> int:
             print(f"[{index}/{len(CHECKS)}] {name}: FAILED", file=sys.stderr, flush=True)
     print("check " + ("failed: " + ", ".join(failed) if failed else "passed"), file=sys.stderr, flush=True)
     return 1 if failed else 0
+
+
+def benchmarks_command(argv: list[str]) -> int:
+    from sapi_config_lab.coordinate.benchmark_discovery import list_benchmarks
+
+    parser = argparse.ArgumentParser(description="List benchmark metadata without loading trusted code.")
+    parser.add_argument(
+        "--root", type=Path, help="explicit benchmark search root; defaults to this workspace's benchmarks"
+    )
+    parser.add_argument("--defaults", action="store_true", help="list only default-selected benchmarks")
+    args = parser.parse_args(argv)
+    root = args.root if args.root is not None else workspace_root() / "benchmarks"
+    rows = [
+        {"id": item.name, "default": item.default, "version": item.version, "directory": str(item.directory)}
+        for item in list_benchmarks(root)
+        if not args.defaults or item.default
+    ]
+    print(json.dumps(rows, indent=2))
+    return 0
 
 
 def compile_command(argv: list[str], *, backend: WorkflowBackend | None = None) -> int:
@@ -194,6 +214,8 @@ def dispatch(argv: list[str] | None = None, *, backend: WorkflowBackend | None =
     parser.add_argument("arguments", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
     command = args.command
+    if command == "benchmarks":
+        return benchmarks_command(args.arguments)
     if command == "check":
         return check_command(args.arguments)
     if command == "compile":

@@ -1,4 +1,4 @@
-"""The benchmark registry: every scenario is benchmarks/NN-<name>/scenario.json plus its files."""
+"""Legacy scenario execution bridge; versioned descriptors use benchmark.py instead."""
 
 from __future__ import annotations
 
@@ -144,6 +144,8 @@ def _discover() -> dict[str, Scenario]:
     found: dict[str, Scenario] = {}
     for directory in sorted((workspace_root() / "benchmarks").iterdir()):
         if (directory / "scenario.json").is_file():
+            if "version" in json.loads((directory / "scenario.json").read_text()):
+                continue
             scenario = load_scenario(directory)
             if scenario.name in found:
                 raise ValueError(f"Duplicate benchmark name: {scenario.name}")

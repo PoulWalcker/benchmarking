@@ -32,6 +32,8 @@ ALLOWED = {
 # longest matching prefix wins; anything unmatched in the package coordinates.
 STAGES = {
     "contracts": SHARED,
+    "benchmark": SHARED,
+    "benchmark_loading": SHARED,
     "profile": SHARED,
     "evidence": SHARED,
     "paths": SHARED,
@@ -139,10 +141,10 @@ class StageBoundaryTests(unittest.TestCase):
         self.assertEqual(found - KNOWN_VIOLATIONS, set(), "New cross-stage import; see AGENTS.md")
         self.assertEqual(KNOWN_VIOLATIONS - found, set(), "Fixed violation still listed; delete it here")
 
-    def test_nothing_outside_coordinate_reaches_for_modules_dynamically(self):
-        # importlib hides an edge from the check above, so only coordination may use it.
+    def test_dynamic_imports_have_explicit_boundaries(self):
+        # The selected benchmark loader is the only neutral dynamic-import seam.
         for module, path, _ in modules():
-            if stage_of(module) == "coordinate":
+            if stage_of(module) == "coordinate" or module == "benchmark_loading":
                 continue
             tree = ast.parse(path.read_text())
             names = {alias.name for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names}

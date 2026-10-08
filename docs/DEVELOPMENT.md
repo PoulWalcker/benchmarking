@@ -138,3 +138,41 @@ New runs go to `reports/` (ignored). Commit to `evidence/` only what a durable c
 ## Documentation
 
 One fact, one owner: boundaries in `ARCHITECTURE.md`, workflow here, YAML semantics in `PROFILE.md`, the entry path in `README.md`, coding rules in `AGENTS.md`. History lives in Git and `evidence/`, not in `docs/`.
+
+## Versioned manifest development
+
+`uv run --locked sapi-lab benchmarks [--root <benchmark-directory>] [--defaults]`
+lists metadata without importing evaluators. It reports legacy versions as `null`;
+all eleven current benchmarks remain legacy and keep their existing execution
+commands and default selection. Versioned manifests are an explicit loading seam
+for the migration, not yet accepted by legacy `harbor`/`generate`/`live` execution.
+
+The `sapi-lab-benchmark/v1` manifest has these required keys. Unknown keys fail;
+benchmark-specific declarations belong inside `config`.
+
+| Key | Representation |
+| --- | --- |
+| `version`, `id`, `default` | Literal `sapi-lab-benchmark/v1`, lowercase CLI name, explicit boolean |
+| `public`, `trusted` | Lists of existing relative file paths; no directory/glob expansion |
+| `reference` | One separate trusted oracle file, never also public/trusted |
+| `bindings`, `operations`, `harbor_task` | Destinations already declared public/trusted; `harbor_task` names a native `.toml` file |
+| `entrypoints` | Required `plan`, `evaluate`, optional `prepare`, `snapshot`; each `{ "path": "evaluation/evaluator.py", "symbol": "evaluate" }` names a declared trusted Python file and one synchronous callable |
+| `dependencies` | Object keyed by Python identifier alias; each `{ "path": "_shared/family", "public": [], "trusted": ["rules.py"] }` lists explicit files under the search root; destinations/imports use `dependencies/<alias>/...` |
+| `controls` | `{ "oracle_acceptance": true, "reference_reward": null }`; oracle acceptance must be literal `true`; reward is null or a finite number in 0..1 |
+| `budgets` | `{ "authoring_attempts": null, "runtime_model_calls": null, "judge_calls": 0 }`; nonnegative integers, null permitted only for the first two (no benchmark-specific ceiling); zero refuses that work |
+| `config` | Opaque JSON object, including benchmark-owned cases, output, completion or provenance declarations |
+
+An empty dependency object is valid. All paths reject absolute/parent traversal and
+symlinks; duplicate destinations, classifications and Python module identities fail.
+`scenario.json` and the root `dependencies/` destination are reserved. Entrypoints
+may import their declared sibling helpers relatively; shared helpers are reached
+through the package's `dependencies.<alias>` namespace. Absolute installed-library
+imports remain governed by the environment's pinned dependencies. Manifest hashes
+are computed from bytes at staging, not embedded recursively in the manifest.
+
+Use `load_benchmark(root, directory)`, then `freeze_identity(descriptor, options)`
+and `load_entrypoints(descriptor, identity)` only in a trusted context. Listing is
+separate from selection and never calls these hooks. The manifest suite models
+both invoice-style plan/evaluate and checkout-style prepare/snapshot needs without
+changing existing benchmark files. Positive container packaging and actual Harbor
+configuration validation remain the next migration step.

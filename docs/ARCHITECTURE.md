@@ -133,3 +133,44 @@ source/prompt identities, control observations, deadline and historical-format
 inventories, permitted comparison normalization and the limits of the evidence.
 Use fresh controls after changing source/package/image identity. Preserve the
 snapshot; it is not an allowlist to expand when a later ticket needs a new edge.
+
+## Versioned benchmark loading
+
+`benchmark.py` is the neutral, metadata-only descriptor boundary for
+`sapi-lab-benchmark/v1`. `discover_benchmarks(root)` validates versioned manifests
+under an explicit search root; `load_benchmark(root, directory)` selects one.
+Neither imports evaluator code or uses a provider table. Public files, trusted
+files, the reference and declared `_shared` dependencies have disjoint,
+file-by-file destinations. Paths are relative, contained and free of symlinks.
+Business `config` stays opaque and deeply immutable. Native Harbor configuration
+is a declared TOML file; validating its Harbor schema belongs to the integration,
+not this loader.
+
+`benchmark_loading.py` is the sole neutral dynamic-import exception in the stage
+checks. `freeze_identity(descriptor, options)` hashes the complete declared closure
+at staging, including the manifest and dependency files, and freezes JSON options.
+`load_entrypoints(descriptor, identity)` rechecks it before importing the selected
+trusted entrypoints. Its namespace combines source identity with checkout location,
+so identical filenames or IDs in different roots cannot reuse each other's modules.
+Relative local imports read only declared trusted Python bytes captured at loading;
+undeclared siblings cannot enter through the local import path. The loaded snapshot
+continues to use those captured bytes for delayed imports. This is trusted-code
+loading, not a sandbox for evaluator code or an identity for external installed
+Python dependencies; the environment's dependency pins remain separately owned.
+
+The concrete synchronous callable contracts are `plan(submission: Path, options:
+Mapping) -> Mapping`, `evaluate(evidence: Path, options: Mapping) -> Mapping`, optional
+`prepare(context: Mapping) -> RunBinding`, and optional `snapshot(context: Mapping)
+-> Mapping`. Plans/verdicts retain existing document schemas; the loader checks
+callable arity but does not execute or validate their business results. Callers pass
+selected descriptor/configuration and seed/mode options; no candidate-controlled
+callable paths are accepted. Recorded identities can be checked before re-evaluation;
+this ticket does not migrate existing re-evaluation consumers.
+
+`coordinate/benchmark_discovery.py` supplies metadata-only legacy headers for
+`sapi-lab benchmarks`. It neither translates a legacy header into an executable
+versioned descriptor nor imports `coordinate/scenarios.py`. The latter retains
+legacy execution globals for unmigrated commands and skips versioned manifests;
+new consumers must use the explicit descriptor boundary. All eleven existing
+benchmarks still use the legacy execution path. Verifier independence and the
+frozen migration ownership edges are unchanged.
