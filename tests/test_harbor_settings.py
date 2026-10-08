@@ -142,8 +142,22 @@ class StagingTests(unittest.TestCase):
     def test_hosted_scenarios_need_room_for_a_run(self):
         with tempfile.TemporaryDirectory() as directory, with_timeout("checkout-recovery", 719):
             with self.assertRaisesRegex(ValueError, "checkout-recovery: its verifier may run 1095s"):
-                stage_tasks(Path(directory) / "tasks", scenarios=("checkout-recovery",))
+                stage_tasks(Path(directory) / "tasks", scenarios=("checkout-recovery",), legacy_hosted=True)
             stage_tasks(Path(directory) / "admit", mode="generation", scenarios=("checkout-recovery",))
+
+    def test_native_admission_uses_the_resolved_verifier_phase(self):
+        from sapi_config_lab.harbor_integration.tasks import validate_config
+
+        scenario = SCENARIOS["invoice-total"]
+        config = validate_config((scenario.directory / scenario.benchmark.harbor_task).read_text())
+        required = verifier_bounds(("invoice-total",))["invoice-total"]
+        with tempfile.TemporaryDirectory() as directory, with_timeout("invoice-total", 1):
+            stage_tasks(Path(directory) / "valid", scenarios=("invoice-total",))
+            config.verifier.timeout_sec = required - 1
+            with patch("sapi_config_lab.harbor_integration.tasks.validate_config", return_value=config):
+                with self.assertRaisesRegex(ValueError, "invoice-total: its verifier may run"):
+                    stage_tasks(Path(directory) / "invalid", scenarios=("invoice-total",))
+            self.assertFalse((Path(directory) / "invalid").exists())
 
 
 class OuterTimeoutTests(unittest.TestCase):

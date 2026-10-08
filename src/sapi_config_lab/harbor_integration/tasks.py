@@ -33,6 +33,8 @@ def validate_config(text: str) -> TaskConfig:
     if config.verifier.environment is None or config.verifier.environment_mode == "shared":
         raise ValueError("An explicit separate verifier environment is required")
     for environment in (config.environment, config.verifier.environment):
+        if environment.storage_mb is not None or environment.gpus or environment.gpu_types or environment.tpu:
+            raise ValueError("Docker supports CPU and memory limits, not disk, GPU or TPU requirements")
         if environment.os != "linux":
             raise ValueError("Both environments must use Linux")
         if environment.docker_image or environment.env or environment.mcp_servers or environment.skills_dir:

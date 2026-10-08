@@ -232,10 +232,18 @@ def stage_tasks(
     if cases is not None and not set(cases) <= {name for name, s in selected.items() if s.environment == "fixtures"}:
         raise ValueError("Fixtures given for a scenario that is not staged on fixtures")
     for name, required in verifier_bounds(tuple(selected), mode, submissions, cases).items():
-        if required > selected[name].harbor["verifier_timeout_sec"]:
+        selected_scenario = selected[name]
+        limit = selected_scenario.harbor["verifier_timeout_sec"]
+        if selected_scenario.benchmark is not None and not (legacy_hosted and selected_scenario.hosted):
+            from sapi_config_lab.harbor_integration.tasks import validate_config
+
+            native = validate_config(
+                (selected_scenario.directory / selected_scenario.benchmark.harbor_task).read_text()
+            )
+            limit = native.verifier.timeout_sec
+        if required > limit:
             raise ValueError(
-                f"{name}: its verifier may run {required}s, more than harbor.verifier_timeout_sec "
-                f"{selected[name].harbor['verifier_timeout_sec']}s"
+                f"{name}: its verifier may run {required}s, more than harbor.verifier_timeout_sec {limit}s"
             )
     root = workspace_root()
     destination = Path(destination)

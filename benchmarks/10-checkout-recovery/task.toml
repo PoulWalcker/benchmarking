@@ -10,7 +10,6 @@ user = "1000"
 build_timeout_sec = 600
 cpus = 1
 memory_mb = 2048
-storage_mb = 4096
 [verifier]
 timeout_sec = 1800
 environment_mode = "separate"
@@ -21,7 +20,6 @@ timeout_sec = 10
 [verifier.environment]
 cpus = 1
 memory_mb = 2048
-storage_mb = 4096
 
 [metadata.sapi]
 verifier_dockerfile = "environment/verifier.Dockerfile"

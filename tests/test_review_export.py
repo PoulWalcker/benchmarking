@@ -10,6 +10,39 @@ from sapi_config_lab.evaluate.review_export import HOSTED_SCHEMA, export_trial, 
 
 
 class HostedReviewTests(unittest.TestCase):
+    def test_native_partial_output_is_discovered_after_run_relocation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            trial = root / "jobs/interrupted/native-trial"
+            source = trial / "verifier/evaluation/report.json"
+            source.parent.mkdir(parents=True)
+            source.write_text(
+                json.dumps(
+                    {"schema": HOSTED_SCHEMA, "result": {"execution": None, "acceptance": None, "quality": None}}
+                )
+            )
+            (root / "report.json").write_text(
+                json.dumps(
+                    {
+                        "harbor_jobs": {
+                            "interrupted": {
+                                "trials": [
+                                    {
+                                        "task_name": "checkout-recovery",
+                                        "trial_path": "jobs/interrupted/native-trial",
+                                        "result_path": "/old/run/jobs/interrupted/native-trial/result.json",
+                                        "evaluation_path": "/old/run/jobs/interrupted/native-trial/verifier/evaluation/report.json",
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                )
+            )
+            self.assertEqual(find_evaluations(root / "jobs"), [(trial, source)])
+            export_trial(source, trial=trial, force=False, rewards=False, dry_run=False)
+            self.assertIn("**Acceptance:** None", (trial / "analysis.md").read_text())
+
     def test_host_report_overrides_container_copy_and_never_rewrites_rewards(self):
         for quality in (None, {"status": "complete", "score_0_10": 7.32, "normalized_reward": 0.732}):
             with self.subTest(quality=quality), tempfile.TemporaryDirectory() as directory:

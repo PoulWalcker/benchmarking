@@ -81,7 +81,7 @@ A **fixture** scenario adds the public `task.md` and evaluator-only `cases.json`
 
 A scenario-specific `bindings` catalog is used by the author prompt, staged as `tests/bindings.yaml`, passed through fixture execution (including lifecycle), and used for live graph and prompt-hash reconciliation. The default catalog is unchanged.
 
-Optional `harbor` settings in `scenario.json` (`agent_timeout_sec`, `verifier_timeout_sec`, `build_timeout_sec`, `cpus`, `memory_mb`, `storage_mb`; bounded integers, defaults in `coordinate/scenarios.py`) are rendered into `task.toml`. Staging refuses a `verifier_timeout_sec` smaller than the verifier's worst case: every planned execution in sequence at the executor's own import and execution ceilings, plus a fixed overhead. Add cases, then raise the timeout the error names. Each `harbor run` and the whole control suite are bounded by the same estimate: every trial at its build and agent limits plus its verifier estimate. For hosted execution, the worker allows the environment RPC budget plus the evaluator's aggregate duration for `/finish`; Harbor includes both RPCs and the environment window. Live grants allow Harbor setup before the fixture/environment execution window. Model-call and backend subprocess ceilings remain with their stage owners.
+Legacy `harbor` settings in `scenario.json` (`agent_timeout_sec`, `verifier_timeout_sec`, `build_timeout_sec`, `cpus`, `memory_mb`, `storage_mb`; bounded integers, defaults in `coordinate/scenarios.py`) are rendered into `task.toml`. Versioned packages use their benchmark-owned native task configuration. Staging refuses a verifier phase smaller than the verifier's worst case: every planned execution in sequence at the executor's own import and execution ceilings, plus a fixed overhead. Add cases, then raise the timeout the error names. Legacy jobs retain an aggregate estimate: every trial at its build and agent limits plus its verifier estimate. For legacy hosted execution, the worker allows the environment RPC budget plus the evaluator's aggregate duration for `/finish`; Harbor includes both RPCs and the environment window. Live grants allow Harbor setup before the fixture/environment execution window. Model-call and backend subprocess ceilings remain with their stage owners.
 
 A fixture package records the deadline it was sized for in `tests/budget.json`, and the verifier refuses to plan a definition with a longer one (`deadline_exceeds_budget`); hosted admission already requires the provider's trial limit.
 
@@ -264,6 +264,15 @@ local upstream cache. A source mismatch fails before scoring. Native phase limit
 workflow deadlines, null quality and legacy historical readers retain their
 separate meanings.
 
+
+Versioned control and authoring jobs write directly into `reports/<run>/jobs/`.
+`harbor_jobs` records each job's relative path and available trial/evidence paths,
+including interrupted trials without a final native result. `review-export` can
+discover native verifier reports directly after partial failure or moving a run.
+Native task configuration sets build, author and verifier phase limits; admission
+checks the planned executions against that resolved verifier phase. There is no
+aggregate job watchdog on this path. Docker enforces CPU and memory limits; the
+integration rejects disk, GPU and TPU requirements that this profile cannot enforce.
 
 During migration, paid `live` explicitly retains the legacy hosted adapter.
 Versioned checkout generation performs compile-only admission without invoking

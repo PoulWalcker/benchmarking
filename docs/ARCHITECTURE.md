@@ -53,7 +53,7 @@ Every Harbor experiment (`harbor`, `generate`, `live`) runs through `coordinate/
 
 - a new report directory, a source manifest, a pinned base image identity and staged task packages;
 - each phase re-checks sources, image and pinned inputs;
-- `Run.harbor` serves hosted tasks: a `TrialHost` per task on the host, credentials only in a per-job copy, and a leak scan over everything persisted;
+- `Run.harbor` submits versioned packages through `harbor_integration/runner.py` directly into the report's `jobs/` tree. Harbor owns phase limits and resources; partial trial references remain in the report on failure. Legacy callers retain a `TrialHost` per hosted task, credentials only in a per-job copy, and a leak scan over everything persisted;
 - `Run.bridge` runs the budgeted Agency bridge;
 - the report is always written, cleanup errors included.
 
@@ -121,7 +121,7 @@ independent expected-value checks must not import the implementation under test.
 These are migration constraints, not a description of completed extraction. The
 stage model above remains the current implementation. In particular, the global
 catalog/operation bundle, provider and fixture-evaluator tables, digest acceptance,
-TrialHost lifecycle, image scrubbing and copied Harbor job trees still exist.
+TrialHost lifecycle, image scrubbing and copied Harbor job trees still exist for legacy callers.
 Nothing in the baseline ticket removes them or establishes separate-verifier parity.
 
 `MigrationOwnershipTests` in `tests/test_boundaries.py` rejects new imports of

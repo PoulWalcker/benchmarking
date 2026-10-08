@@ -27,6 +27,7 @@ class FakeHost:
             "image_id": lambda tag: "sha256:fixed",
             "pin_base_image": lambda identity, prefix: prefix + "-base:fixed",
             "run_logged": lambda argv, log, **kw: self.ran.append(argv) or 0,
+            "run_job": lambda harbor, tasks, jobs, job, agent, log, **kw: self.ran.append([*harbor, job]) or 0,
         }
         for name, fake in patches.items():
             patcher = patch("sapi_config_lab.coordinate.runs." + name, side_effect=fake)
@@ -113,6 +114,68 @@ class RunTests(unittest.TestCase):
         self.assertEqual(report["status"], "failed")
         self.assertEqual([e["stage"] for e in report["cleanup_errors"]], ["final_check"])
         self.assertTrue(report["source_unchanged"])
+
+    def test_native_job_writes_partial_references_without_collection_and_cannot_repeat(self):
+        FakeHost(self)
+
+        def interrupted(harbor, tasks, jobs, job, agent, log, **kw):
+            trial = jobs / job / "native-trial"
+            (trial / "verifier/world").mkdir(parents=True)
+            (trial / "config.json").write_text(json.dumps({"task": {"path": str(tasks / "invoice-total")}}))
+            (trial / "verifier/world/receipt.json").write_text('{"reserved": true}')
+            raise RuntimeError("interrupted")
+
+        def body(run):
+            run.use_image("lab")
+            run.stage("oracle", ("invoice-total",))
+            with self.assertRaisesRegex(RuntimeError, "interrupted"):
+                run.harbor("oracle", run.tasks, "oracle")
+            with self.assertRaisesRegex(ValueError, "twice"):
+                run.harbor("oracle", run.tasks, "oracle")
+            raise RuntimeError("job failed")
+
+        with patch("sapi_config_lab.coordinate.runs.run_job", side_effect=interrupted) as dispatch:
+            with patch("sapi_config_lab.coordinate.runs.collect_jobs") as collect:
+                run_experiment(self.output, {}, body, prefix="t")
+        self.assertEqual(dispatch.call_count, 1)
+        collect.assert_not_called()
+        saved = self.saved()
+        row = saved["harbor_jobs"]["oracle"]["trials"][0]
+        self.assertTrue(row["partial"])
+        self.assertEqual(row["trial_path"], "jobs/oracle/native-trial")
+        self.assertEqual(row["task_name"], "invoice-total")
+        self.assertIsNone(row["result"]["acceptance"])
+        self.assertTrue((self.output / row["evidence_path"] / "world/receipt.json").exists())
+        self.assertNotIn("harbor_timeouts", saved)
+
+    def test_native_source_mismatch_prevents_dispatch(self):
+        host = FakeHost(self)
+
+        def body(run):
+            run.use_image("lab")
+            run.stage("oracle", ("invoice-total",))
+            run.sources = {"changed": "source"}
+            run.harbor("oracle", run.tasks, "oracle")
+
+        run_experiment(self.output, {}, body, prefix="t")
+        self.assertEqual(host.ran, [])
+        self.assertIn("Sources changed (before oracle)", self.saved()["error"])
+
+    def test_native_admission_preserves_verifier_environment_arguments(self):
+        FakeHost(self)
+
+        def body(run):
+            run.use_image("lab")
+            run.stage("generation", ("checkout-recovery",))
+            run.harbor("admission", run.tasks, "oracle", admission=True, verifier_env=["SAPI_CASE_NAME=chosen"])
+            run.report["status"] = "passed"
+
+        with patch("sapi_config_lab.coordinate.runs.run_job", return_value=0) as dispatch:
+            run_experiment(self.output, {}, body, prefix="t")
+        self.assertEqual(
+            dispatch.call_args.kwargs["verifier_env"], ["SAPI_CASE_NAME=chosen", "SAPI_HOSTED_ADMISSION=1"]
+        )
+        self.assertEqual(self.saved()["status"], "passed")
 
     def test_a_timeout_is_an_unknown_outcome_and_an_existing_directory_is_refused(self):
         FakeHost(self)

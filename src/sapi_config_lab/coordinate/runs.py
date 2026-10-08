@@ -33,6 +33,7 @@ from sapi_config_lab.execute.host import (
     staging_dir,
 )
 from sapi_config_lab.execute.hosting import TrialHost
+from sapi_config_lab.harbor_integration.runner import job_args, run_job
 from sapi_config_lab.paths import CATALOG
 
 
@@ -50,7 +51,10 @@ def progress(message: str) -> None:
 
 def trial_seconds(trial: dict) -> int | None:
     """Wall-clock seconds Harbor recorded for one trial, if it recorded both ends."""
-    recorded = json.loads(Path(trial["result_path"]).read_text())
+    path = Path(trial["result_path"])
+    if not path.exists():
+        return None
+    recorded = json.loads(path.read_text())
     try:
         started, finished = (datetime.fromisoformat(recorded[key]) for key in ("started_at", "finished_at"))
     except KeyError, TypeError, ValueError:
@@ -61,12 +65,20 @@ def trial_seconds(trial: dict) -> int | None:
 def load_trials(job: Path, hosted: dict[str, Path] | None = None) -> list[dict]:
     """One row per Harbor trial; a hosted trial's report is its host's record, never the container's copy."""
     trials = []
-    for path in sorted(job.glob("*/result.json")):
-        trial = json.loads(path.read_text())
-        name = trial.get("task_name")
-        report_path = (hosted or {}).get(name, path.parent / "verifier") / "evaluation/report.json"
+    for directory in sorted(path for path in job.glob("*") if path.is_dir()):
+        path = directory / "result.json"
+        trial = json.loads(path.read_text()) if path.exists() else {}
+        config = directory / "config.json"
+        task = json.loads(config.read_text()).get("task", {}) if config.exists() else {}
+        name = trial.get("task_name") or (Path(task["path"]).name if task.get("path") else None)
+        record = (hosted or {}).get(name, path.parent / "verifier") if name else path.parent / "verifier"
+        report_path = record / "evaluation/report.json"
         row = {
             "task_name": name,
+            "trial_id": trial.get("id") or directory.name,
+            "trial_path": str(directory.relative_to(job.parent.parent)),
+            "evidence_path": str(directory.relative_to(job.parent.parent) / "verifier"),
+            "partial": not path.exists(),
             "rewards": (trial.get("verifier_result") or {}).get("rewards"),
             "exception": trial.get("exception_info"),
             "result_path": str(path),
@@ -157,7 +169,7 @@ class Run:
         admission: bool = False,
         **arguments: Any,
     ) -> tuple[int, list[dict]]:
-        """One `harbor run`, bounded by its trials' own limits; its jobs are copied out even when it fails."""
+        """Submit native packages durably; retain bounded staging for legacy callers."""
         if self.staging is None:
             raise RuntimeError("No task packages were staged")
         if agent not in UPLOAD_ONLY_AGENTS:
@@ -169,11 +181,28 @@ class Run:
             raise RuntimeError(
                 "Tasks this run did not stage have no time bound: " + ", ".join(sorted(set(names) - set(self.bounds)))
             )
+        if admission:
+            arguments["verifier_env"] = [*arguments.get("verifier_env", []), "SAPI_HOSTED_ADMISSION=1"]
+        native = all((task / "tests/benchmark.json").is_file() for task in task_dirs(tasks))
+        if native:
+            self.check("before " + job)
+            dispatched = self.report.setdefault("harbor_jobs", {})
+            if job in dispatched:
+                raise ValueError("A Harbor job cannot be dispatched twice")
+            jobs = self.output / "jobs"
+            dispatched[job] = {"path": str(Path("jobs") / job), "status": "dispatched"}
+            argv = job_args(self.harbor_argv, tasks, jobs, job, agent, **arguments)
+            self.report.setdefault("commands", []).append(argv)
+            try:
+                code = run_job(self.harbor_argv, tasks, jobs, job, agent, self.output / (job + ".log"), **arguments)
+                dispatched[job]["exit_code"] = code
+                dispatched[job]["status"] = "finished"
+                return code, load_trials(jobs / job)
+            finally:
+                dispatched[job]["trials"] = load_trials(jobs / job)
         timeout = job_seconds({name: self.bounds[name] for name in names}, int(arguments.get("attempts") or 1))
         self.report.setdefault("harbor_timeouts", {})[job] = timeout
         records = self.output / "environments" / job
-        if admission:
-            arguments["verifier_env"] = [*arguments.get("verifier_env", []), "SAPI_HOSTED_ADMISSION=1"]
         with self.hosted(job, tasks, records, hosting, admission=admission) as (job_tasks, hosted):
             argv = harbor_run_args(self.harbor_argv, job_tasks, self.staging / "jobs", job, agent, **arguments)
             self.report.setdefault("commands", []).append(argv)
@@ -280,7 +309,8 @@ class Run:
             if self.staging is None or not self.staging.exists():
                 return
             try:
-                collect_jobs(self.staging, self.output / "jobs")
+                if (self.staging / "jobs").exists():
+                    collect_jobs(self.staging, self.output / "jobs")
             except OSError:
                 self.report["retained_staging"] = str(self.staging)
                 raise
