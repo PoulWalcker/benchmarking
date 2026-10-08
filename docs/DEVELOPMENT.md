@@ -71,6 +71,8 @@ Add `benchmarks/NN-<name>/` with a `scenario.json` (fields in [ARCHITECTURE.md](
 
 A **fixture** scenario adds the public `task.md` and evaluator-only `cases.json`, then extends the verifier:
 
+`task.md` may show a public sample input. `cases.json` holds separate evaluator-only cases: `positive` means the observed outcome must match the case's expectation, even when that expectation is refinement exhaustion; `negative` means invalid input must be rejected. Case contents vary with the behavior being tested. Hosted scenarios use their provider's world instead of `cases.json`.
+
 - `evaluation/contract.json`: the role contract (operations, input lineage, edges, output) that `verification/roles.py` binds any unambiguous step IDs to;
 - independent business checks in `verification/`, registered in the evaluator-owned `fixture_evaluators.py` table; ordinary cases use the existing plan/evidence machinery. The entry also selects guarded-call expectations, optional rubric obligations/prose and optional freshness. Checks recompute from fixtures, never import runtime operations;
 - `evaluation/rubric.json` only for a quality question binary acceptance does not answer, plus its evaluator-owned prose function in `verification/fixture_prose.py`.

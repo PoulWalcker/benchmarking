@@ -136,6 +136,7 @@ def write_scenario(directory: Path, **overrides) -> Path:
     meta = {
         "environment": "fake",
         "evaluator": "fake-state",
+        "default": False,
         "workflow_id": "fake-crm-workflow",
         "bindings": "bindings.yaml",
         "budgets": {"authoring_attempts": 1, "runtime_model_calls": 0},

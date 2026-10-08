@@ -54,7 +54,7 @@ class Scenario:
     directory: Path
     environment: str
     evaluator: str
-    default: bool = False
+    default: bool
     provenance: Provenance | None = None
     workflow_id: str | None = None
     bindings: Path = CATALOG
@@ -113,6 +113,7 @@ def load_scenario(directory: Path) -> Scenario:
     if (
         not re.fullmatch(r"[0-9]{2}-[a-z][a-z0-9-]*", directory.name)
         or set(meta) - FIELDS
+        or type(meta.get("default")) is not bool
         or meta.get("evaluator") not in evaluators
         or set(budgets) - {"authoring_attempts", "runtime_model_calls"}
         or set(controls) - {"reference_reward"}
@@ -124,7 +125,7 @@ def load_scenario(directory: Path) -> Scenario:
         directory=directory,
         environment=environment,
         evaluator=meta["evaluator"],
-        default=meta.get("default", False),
+        default=meta["default"],
         provenance=Provenance(**provenance) if provenance else None,
         workflow_id=meta.get("workflow_id"),
         bindings=directory / meta["bindings"] if "bindings" in meta else CATALOG,

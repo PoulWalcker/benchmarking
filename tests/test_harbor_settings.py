@@ -221,7 +221,7 @@ class ScenarioSettingsTests(unittest.TestCase):
         directory = Path(tempfile.mkdtemp()) / name
         directory.mkdir()
         (directory / "scenario.json").write_text(
-            json.dumps({"environment": "fixtures", "evaluator": "verifier", **meta})
+            json.dumps({"environment": "fixtures", "evaluator": "verifier", "default": False, **meta})
         )
         return load_scenario(directory)
 
@@ -229,6 +229,19 @@ class ScenarioSettingsTests(unittest.TestCase):
         loaded = self.scenario({"harbor": {"cpus": 2, "verifier_timeout_sec": 4000}})
         self.assertEqual(loaded.harbor, HARBOR_DEFAULTS | {"cpus": 2, "verifier_timeout_sec": 4000})
         self.assertEqual(self.scenario({}).harbor, HARBOR_DEFAULTS)
+
+    def test_default_must_be_an_explicit_boolean(self):
+        self.assertTrue(self.scenario({"default": True}).default)
+        self.assertFalse(self.scenario({"default": False}).default)
+        for value in (None, "false", 0, 1):
+            with self.assertRaisesRegex(ValueError, "Invalid benchmark definition"):
+                self.scenario({"default": value})
+        with tempfile.TemporaryDirectory() as root:
+            directory = Path(root) / "12-no-default"
+            directory.mkdir()
+            (directory / "scenario.json").write_text(json.dumps({"environment": "fixtures", "evaluator": "verifier"}))
+            with self.assertRaisesRegex(ValueError, "Invalid benchmark definition"):
+                load_scenario(directory)
 
     def test_values_are_bounded_integers_with_known_keys(self):
         for section in (

@@ -5,6 +5,7 @@
   },
   "environment": "autowfbench",
   "evaluator": "autowfbench",
+  "default": false,
   "workflow_id": "crm-workflow",
   "bindings": "bindings.yaml",
   "budgets": {

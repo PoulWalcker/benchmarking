@@ -33,7 +33,7 @@ Every benchmark is `benchmarks/NN-<name>/`. Its `scenario.json` states what the 
 | --- | --- |
 | `environment` | `fixtures` (verifier-planned cases in the container) or a hosted provider name (`autowfbench`), served by the host per trial |
 | `evaluator` | `verifier` for fixtures, otherwise one the environment's provider entry allows (`autowfbench`); checked on load |
-| `default` | selected when a command gets no `--scenario` |
+| `default` | required boolean: selected when a command gets no `--scenario`; write `false` explicitly otherwise |
 | `provenance` | AutoWFBench config: `{source, challenge}` of a pinned upstream task; `provenance/<source>-source.json` pins its bytes |
 | `workflow_id` | the workflow id an author must use (hosted tasks) |
 | `bindings` | a scenario-owned operation catalog instead of `src/sapi_config_lab/bindings.yaml` |

@@ -1,6 +1,7 @@
 {
   "environment": "fixtures",
   "evaluator": "verifier",
+  "default": false,
   "fresh_fixtures": true,
   "human_review": true,
   "harbor": {
