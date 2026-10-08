@@ -26,8 +26,8 @@ import webbrowser
 import yaml
 
 from sapi_config_lab.contracts import CompileOptions
-from sapi_config_lab.coordinate.backend import default_backend
-from sapi_config_lab.coordinate.scenarios import SCENARIOS
+from sapi_config_lab.coordinate.benchmark_discovery import list_benchmarks
+from sapi_config_lab.coordinate.compilation import CompilationContext, compose_compilation
 from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
 from sapi_config_lab.evidence import json_text, sha256, write_json
 from sapi_config_lab.execute.agency import MAX_OUTGOING_ATTEMPTS, WRAPPER_TIMEOUT_SECONDS, make_handler
@@ -35,7 +35,7 @@ from sapi_config_lab.execute.host import HostConfig, local_address
 from sapi_config_lab.execute.ui_n8n import DockerUi, fingerprint
 from sapi_config_lab.harbor_integration.model_wrapper import request_wrapper
 from sapi_config_lab.net import urlopen
-from sapi_config_lab.paths import CATALOG, workspace_root
+from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import UniqueLoader, Unsupported, read_bindings, validate, validate_bindings
 
 MAX_GRANT_SECONDS = 3600
@@ -49,15 +49,17 @@ def _check_grant_seconds(seconds: int) -> None:
 
 
 def prepare(
-    config_path: Path, directory: Path, *, host: HostConfig | None = None, deadline_seconds: int | None = None
+    config_path: Path,
+    directory: Path,
+    *,
+    host: HostConfig | None = None,
+    deadline_seconds: int | None = None,
+    context: CompilationContext | None = None,
 ) -> dict:
-    """Compile against the shared catalog without executing; each new directory names one owned workflow."""
-    hosted = next((s for s in SCENARIOS.values() if s.hosted and s.config.resolve() == config_path.resolve()), None)
-    if hosted is not None:
-        raise ValueError(
-            f"{hosted.name} is a hosted scenario: its tools and evaluator exist only inside a Harbor trial, "
-            "so the UI imports fixture scenarios only"
-        )
+    """Compile selected trusted material without executing; one directory names one owned workflow."""
+    context = context or compose_compilation(config_path, workspace_root() / "benchmarks")
+    if context.operation_url() is not None:
+        raise ValueError("This workflow needs remote tools inside a Harbor trial; the UI cannot start its world")
     host = host or HostConfig.from_environment()
     if not 1024 <= host.ui_bridge_port <= 65535:
         raise ValueError("Use a non-privileged valid bridge port")
@@ -65,7 +67,7 @@ def prepare(
         raise FileExistsError("Choose a new UI run directory")
     raw = config_path.read_bytes()
     config = yaml.load(raw, Loader=UniqueLoader)
-    bindings_raw = CATALOG.read_bytes()
+    bindings_raw = context.bindings.read_bytes()
     bindings = validate_bindings(yaml.load(bindings_raw, Loader=UniqueLoader)["operations"])
     validate(config, bindings)
     original_deadline = config["execution"]["deadline_seconds"]
@@ -73,7 +75,7 @@ def prepare(
         _check_grant_seconds(deadline_seconds)
         config["execution"]["deadline_seconds"] = deadline_seconds
     bridge_url = host.container_url(host.ui_bridge_port) + "/v1/agency/execute"
-    compiled = default_backend().compile(config, bindings, CompileOptions("live", bridge_url))
+    compiled = context.backend().compile(config, bindings, CompileOptions("live", bridge_url))
     workflow = config["workflow"]
     refinement = config["execution"].get("refinement")
     repeats = refinement["max_attempts"] if refinement else 1
@@ -293,15 +295,18 @@ def open_workflow(
     host: HostConfig | None = None,
     new_copy: bool = False,
     deadline_seconds: int | None = None,
+    context: CompilationContext | None = None,
 ) -> dict:
     """Compile, register once and return a link; never execute anything."""
     host = host or HostConfig.from_environment()
     with local_state(state), tempfile.TemporaryDirectory(dir=state) as temporary:
         staging = Path(temporary) / "prepared"
-        prepared = prepare(config, staging, host=host, deadline_seconds=deadline_seconds)
+        prepared = prepare(config, staging, host=host, deadline_seconds=deadline_seconds, context=context)
         document = json.loads((staging / "workflow.json").read_text())
         definition = {key: value for key, value in document.items() if key not in {"id", "name"}}
-        key = fingerprint({"source": sha256(config), "bindings": sha256(CATALOG), "graph": definition})
+        key = fingerprint(
+            {"source": sha256(config), "bindings": prepared["hashes"]["bindings.yaml"], "graph": definition}
+        )
         index_path = state / "index.json"
         index = json.loads(index_path.read_text()) if index_path.exists() else {}
         selected = adapter if adapter is not None else DockerUi(host.n8n_container)
@@ -371,18 +376,31 @@ def wrapper_preference(
 
 
 def open_command(parser: argparse.ArgumentParser, args: argparse.Namespace, host: HostConfig) -> None:
+    if args.all and args.scenario:
+        parser.error("--scenario requires one config")
     if args.all and args.live:
         parser.error("--all is view-only; select one config for --live")
     if not 1 <= args.seconds <= MAX_GRANT_SECONDS:
         parser.error("--seconds must be between one second and one hour")
     state = args.state_dir or workspace_root() / "var/ui"
-    # Hosted scenarios need their host environment; the UI imports fixture workflows only.
-    configs = [s.config for s in SCENARIOS.values() if not s.hosted] if args.all else [args.config]
+    root = workspace_root() / "benchmarks"
+    configs = [s.directory / "config.yaml" for s in list_benchmarks(root)] if args.all else [args.config]
+    contexts = {
+        config: compose_compilation(config, root, scenario=args.scenario, bindings=args.bindings) for config in configs
+    }
+    if args.all:
+        configs = [config for config in configs if contexts[config].operation_url() is None]
     wrapper = None
     if args.live:
         # Validate and compile before contacting Docker or the wrapper; script-only graphs need no bridge.
         with tempfile.TemporaryDirectory() as temporary:
-            preview = prepare(args.config, Path(temporary) / "prepared", host=host, deadline_seconds=args.seconds)
+            preview = prepare(
+                args.config,
+                Path(temporary) / "prepared",
+                host=host,
+                deadline_seconds=args.seconds,
+                context=contexts[args.config],
+            )
         if preview["max_attempts"]:
             wrapper = wrapper_preference(state, args.wrapper_evidence, parse_wrapper_files(args.wrapper_file), host)
     rows = []
@@ -394,6 +412,7 @@ def open_command(parser: argparse.ArgumentParser, args: argparse.Namespace, host
                 host=host,
                 new_copy=args.new_copy or args.live,
                 deadline_seconds=args.seconds if args.live else None,
+                context=contexts[config],
             )
         except Unsupported as error:
             if not args.all:
@@ -437,6 +456,8 @@ def main(argv=None) -> int:
     selection = view.add_mutually_exclusive_group(required=True)
     selection.add_argument("config", nargs="?", type=Path)
     selection.add_argument("--all", action="store_true")
+    view.add_argument("--scenario", help="Trusted benchmark context for detached YAML")
+    view.add_argument("--bindings", type=Path)
     view.add_argument("--live", action="store_true", help="Arm one fresh copy for manual execution; never auto-run")
     view.add_argument("--new-copy", action="store_true", help="Preserve a changed owned graph and import a new copy")
     view.add_argument("--no-browser", action="store_true")
@@ -449,6 +470,8 @@ def main(argv=None) -> int:
     view.add_argument("--host", default=host.listen_host, help="UI bridge bind address (SAPI_LISTEN_HOST)")
     prep = commands.add_parser("prepare", help="Compile an inactive UI graph; never call a model")
     prep.add_argument("config", type=Path)
+    prep.add_argument("--scenario", help="Trusted benchmark context for detached YAML")
+    prep.add_argument("--bindings", type=Path)
     prep.add_argument("--output-dir", type=Path, required=True)
     prep.add_argument("--port", type=int, default=host.ui_bridge_port)
     run = commands.add_parser(
@@ -467,7 +490,10 @@ def main(argv=None) -> int:
     )
     try:
         if args.command == "prepare":
-            print(json.dumps(prepare(args.config, args.output_dir, host=host)))
+            context = compose_compilation(
+                args.config, workspace_root() / "benchmarks", scenario=args.scenario, bindings=args.bindings
+            )
+            print(json.dumps(prepare(args.config, args.output_dir, host=host, context=context)))
         elif args.command == "serve":
             serve(
                 args.directory,

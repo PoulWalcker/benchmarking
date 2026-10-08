@@ -194,18 +194,10 @@ def scenario_catalog(scenario: Scenario) -> str:
 
 def generation_prompt(root: Path, scenario: Scenario, catalog: str = "full") -> str:
     """The exact text a model is asked to answer with YAML; `catalog` selects the operation-catalog experiment arm."""
-    if (
-        scenario.benchmark is not None
-        and (authoring := scenario.benchmark.config.get("authoring"))
-        and "prompt" in authoring
-    ):
-        if catalog not in authoring["catalogs"]:
-            raise ValueError("A reduced catalog applies to fixture scenarios only: " + scenario.name)
-        path = authoring["prompt"]
-        files = {item.destination: item for item in scenario.benchmark.public}
-        if path not in files:
-            raise ValueError("Authoring prompt must be declared public material")
-        return files[path].source.read_text()
+    if scenario.benchmark is not None:
+        from sapi_config_lab.coordinate.benchmark_authoring import generation_prompt as selected_prompt
+
+        return selected_prompt(root, scenario.benchmark, catalog)
     if catalog not in CATALOG_VARIANTS or (catalog != "full" and scenario.hosted):
         raise ValueError("A reduced catalog applies to fixture scenarios only: " + scenario.name)
     if not scenario.hosted:

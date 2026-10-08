@@ -14,9 +14,9 @@ import math
 from pathlib import Path
 from typing import Any
 
+from sapi_config_lab.benchmark import Benchmark, discover_benchmarks
 from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
 from sapi_config_lab.coordinate.providers import EVALUATORS, ReevaluationOptions
-from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.paths import workspace_root
 
@@ -24,6 +24,21 @@ from sapi_config_lab.paths import workspace_root
 HOSTED_REPORT = "sapi-lab-upstream-acceptance/v1"
 ADMISSION_REPORT = "sapi-lab-admission/v1"
 NOT_EVALUATED: dict[str, Any] = {"execution": None, "acceptance": None, "quality": None}
+
+
+def legacy_scenarios():
+    """Historical execution/evaluation compatibility only; native records select descriptors directly."""
+    from sapi_config_lab.coordinate.scenarios import SCENARIOS
+
+    return SCENARIOS
+
+
+def recorded_benchmark(name: str) -> Benchmark:
+    """Select trusted local metadata; recorded names never nominate executable paths."""
+    matches = [item for item in discover_benchmarks(workspace_root() / "benchmarks") if item.name == name]
+    if len(matches) != 1:
+        raise ValueError("Recorded versioned benchmark is unavailable")
+    return matches[0]
 
 
 def validate_result(result: Any) -> dict:
@@ -91,7 +106,7 @@ def trial_accepted(trial: dict) -> bool:
 
 def control_passed(agent: str, trial: dict) -> bool:
     """oracle: the reference is accepted; nop: an absent submission is not, and earns nothing."""
-    scenario = SCENARIOS[trial["task_name"]]
+    scenario = legacy_scenarios()[trial["task_name"]]
     if scenario.hosted:
         result = trial["result"]
         if agent == "nop":
@@ -126,9 +141,9 @@ def control_passed(agent: str, trial: dict) -> bool:
 def hosted_evaluation(scenarios: Iterable[str], judge_model: str | None = None) -> Callable[[str, Path], dict]:
     """Freeze each hosted scenario's evaluator now; a named judge is a paid call the caller reserved."""
     prepared = {
-        name: EVALUATORS[SCENARIOS[name].evaluator].prepare(SCENARIOS[name], judge_model)
+        name: EVALUATORS[legacy_scenarios()[name].evaluator].prepare(legacy_scenarios()[name], judge_model)
         for name in scenarios
-        if SCENARIOS[name].hosted and SCENARIOS[name].benchmark is None
+        if legacy_scenarios()[name].hosted and legacy_scenarios()[name].benchmark is None
     }
 
     def evaluate(scenario: str, record: Path) -> dict:
@@ -157,7 +172,7 @@ def reevaluate_verifier(record: Path, output: Path, args: argparse.Namespace) ->
 
     verification, _ = load_verifier()
     plan = json.loads((record / "plan.json").read_text())
-    scenario = SCENARIOS[plan["scenario"]]
+    scenario = legacy_scenarios()[plan["scenario"]]
     cases = json.loads((args.cases or scenario.directory / "cases.json").read_text())
     cases = cases.get(scenario.name, cases)
     selected = plan["entries"][0]["name"] if plan["mode"] == "live" and len(plan["entries"]) == 1 else None
@@ -186,9 +201,7 @@ def reevaluate_benchmark(
 ) -> dict:
     """Replay the selected recorded evaluator only after its complete source identity matches."""
     metadata = json.loads((record / "benchmark.json").read_text())
-    benchmark = SCENARIOS[metadata["name"]].benchmark
-    if benchmark is None:
-        raise ValueError("Recorded versioned benchmark is unavailable")
+    benchmark = recorded_benchmark(metadata["name"])
     identity = freeze_identity(benchmark, metadata["options"])
     if json.loads(json.dumps(asdict(identity))) != metadata["identity"]:
         raise ValueError("Recorded benchmark source or options identity differs")
@@ -246,8 +259,8 @@ def main(argv: list[str] | None = None) -> int:
 
         def reserved(call: Callable) -> dict:
             metadata = json.loads((record / "benchmark.json").read_text())
-            benchmark = SCENARIOS[metadata["name"]].benchmark
-            if benchmark is None or benchmark.budgets.judge_calls <= 0:
+            benchmark = recorded_benchmark(metadata["name"])
+            if benchmark.budgets.judge_calls <= 0:
                 raise ValueError("Recorded benchmark has no declared judge cost")
             cost = benchmark.budgets.judge_calls
             ledger = open_ledger(output, args.series_dir, {"judge": cost}, False, parse_ceilings(args.series_ceiling))
@@ -266,7 +279,7 @@ def main(argv: list[str] | None = None) -> int:
             reserved=reserved,
         )
     elif hosted:
-        scenario = SCENARIOS[json.loads((record / "evidence/trial.json").read_text())["scenario"]]
+        scenario = legacy_scenarios()[json.loads((record / "evidence/trial.json").read_text())["scenario"]]
         evaluator = EVALUATORS[scenario.evaluator]
         options = ReevaluationOptions(
             args.judgement,

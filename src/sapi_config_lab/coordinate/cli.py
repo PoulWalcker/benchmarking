@@ -8,10 +8,11 @@ import subprocess
 import sys
 
 from sapi_config_lab.contracts import CompileOptions, WorkflowBackend
-from sapi_config_lab.coordinate.backend import default_backend
+from sapi_config_lab.coordinate.benchmark_discovery import list_benchmarks
+from sapi_config_lab.coordinate.compilation import compose_compilation
 from sapi_config_lab.evidence import write_json
 from sapi_config_lab.execute.host import LAB_IMAGE
-from sapi_config_lab.paths import CATALOG, workspace_root
+from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import Invalid, Unsupported, read, read_bindings, validate
 
 MODULES = {
@@ -111,16 +112,20 @@ def compile_command(argv: list[str], *, backend: WorkflowBackend | None = None) 
     parser = argparse.ArgumentParser(description="Validate YAML and produce n8n JSON; does not execute it.")
     parser.add_argument("config", type=Path)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--bindings", type=Path, default=CATALOG)
+    parser.add_argument("--bindings", type=Path)
+    parser.add_argument("--scenario", help="Trusted benchmark context for detached YAML")
     parser.add_argument("--llm-mode", choices=["stub", "live"], default="stub")
     parser.add_argument("--bridge-url")
     parser.add_argument("--request-timeout-seconds", type=int, default=190)
     args = parser.parse_args(argv)
-    selected = backend if backend is not None else default_backend()
+    context = compose_compilation(args.config, scenario=args.scenario, bindings=args.bindings)
+    selected = backend if backend is not None else context.backend()
     compiled = selected.compile(
         read(args.config),
-        read_bindings(args.bindings),
-        CompileOptions(args.llm_mode, args.bridge_url, args.request_timeout_seconds),
+        read_bindings(context.bindings),
+        CompileOptions(
+            args.llm_mode, args.bridge_url, args.request_timeout_seconds, operation_url=context.operation_url()
+        ),
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     write_json(args.output, compiled.document)
@@ -133,15 +138,16 @@ def build_command(argv: list[str], *, backend: WorkflowBackend | None = None) ->
     parser = argparse.ArgumentParser(description="Compile supported examples; reject unsupported extensions.")
     parser.add_argument("--output-dir", type=Path, default=Path("generated"))
     args = parser.parse_args(argv)
-    from sapi_config_lab.coordinate.scenarios import SCENARIOS
 
     rows = []
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    selected = backend if backend is not None else default_backend()
-    for scenario in SCENARIOS.values():
-        path, bindings = scenario.config, read_bindings(scenario.bindings)
-        # A hosted scenario's tools are served at run time; any URL compiles.
-        options = CompileOptions(operation_url="http://tools/tools" if scenario.hosted else None)
+    root = workspace_root() / "benchmarks"
+    for scenario in list_benchmarks(root):
+        path = scenario.directory / "config.yaml"
+        context = compose_compilation(path, root, scenario=scenario.name)
+        bindings = read_bindings(context.bindings)
+        selected = backend if backend is not None else context.backend()
+        options = CompileOptions(operation_url=context.operation_url())
         cfg = read(path)
         order, _ = validate(cfg, bindings)
         row = {
@@ -166,8 +172,6 @@ def build_command(argv: list[str], *, backend: WorkflowBackend | None = None) ->
 
 
 def package_tasks_command(argv: list[str]) -> int:
-    from sapi_config_lab.coordinate.packages import stage_tasks
-
     options = argparse.ArgumentParser(description="Assemble disposable Harbor task packages.")
     options.add_argument("destination", type=Path)
     options.add_argument(
@@ -184,13 +188,40 @@ def package_tasks_command(argv: list[str]) -> int:
     options.add_argument("--scenario", action="append", dest="scenarios")
     options.add_argument("--catalog", choices=["full", "scenario"], default="full", help="generation catalog arm")
     selected = options.parse_args(argv)
-    stage_tasks(
-        selected.destination,
-        mode=selected.mode,
-        image=selected.image,
-        scenarios=tuple(selected.scenarios) if selected.scenarios else None,
-        catalog=selected.catalog,
+    if selected.catalog != "full" and selected.mode != "generation":
+        raise ValueError("A catalog variant changes generation prompts only")
+    from sapi_config_lab.benchmark import Benchmark
+
+    root = workspace_root()
+    available = list_benchmarks(root / "benchmarks")
+    names = selected.scenarios
+    items = (
+        [item for item in available if item.name in names]
+        if names is not None
+        else [item for item in available if item.default]
     )
+    if not items or (names is not None and (len(set(names)) != len(names) or len(items) != len(names))):
+        options.error("Unknown, duplicate, or empty scenario selection")
+    if all(isinstance(item, Benchmark) for item in items):
+        from sapi_config_lab.coordinate.benchmark_packages import stage_cli
+
+        stage_cli(
+            tuple(item for item in items if isinstance(item, Benchmark)),
+            selected.destination,
+            root,
+            selected.mode,
+            selected.catalog,
+        )
+    else:
+        from sapi_config_lab.coordinate.packages import stage_tasks
+
+        stage_tasks(
+            selected.destination,
+            mode=selected.mode,
+            image=selected.image,
+            scenarios=tuple(item.name for item in items),
+            catalog=selected.catalog,
+        )
     print(selected.destination)
     return 0
 
@@ -242,6 +273,6 @@ def dispatch(argv: list[str] | None = None, *, backend: WorkflowBackend | None =
 def main(argv: list[str] | None = None, *, backend: WorkflowBackend | None = None) -> int:
     try:
         return dispatch(argv, backend=backend)
-    except (Invalid, Unsupported) as error:
+    except (Invalid, Unsupported, ValueError) as error:
         print(json.dumps({"error": {"type": type(error).__name__, "message": str(error)}}), file=sys.stderr)
         return 2

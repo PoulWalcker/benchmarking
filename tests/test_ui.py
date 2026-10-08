@@ -230,8 +230,8 @@ class UiTests(unittest.TestCase):
     def test_hosted_scenarios_are_refused_before_compilation(self):
         source = workspace_root() / "benchmarks/10-checkout-recovery/config.yaml"
         with tempfile.TemporaryDirectory() as directory:
-            with patch("sapi_config_lab.coordinate.ui.default_backend") as backend:
-                with self.assertRaisesRegex(ValueError, "checkout-recovery is a hosted scenario"):
+            with patch("sapi_config_lab.coordinate.ui.CompilationContext.backend") as backend:
+                with self.assertRaisesRegex(ValueError, "needs remote tools inside a Harbor trial"):
                     prepare(source, Path(directory) / "run", host=HostConfig())
                 backend.assert_not_called()
             self.assertFalse((Path(directory) / "run").exists())

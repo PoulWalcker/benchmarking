@@ -125,6 +125,19 @@ uv run --locked sapi-lab ui open benchmarks/09-priority-support-brief/config.yam
 
 Imports are inactive copies and never execute. A `--live` session arms one fresh copy with a budgeted bridge; execution stays a manual click. UI runs are for inspection, not benchmark evidence.
 
+Compile and UI commands resolve a versioned benchmark's declared bindings and trusted
+operation bundle when given its reference path. For a detached candidate, pass
+`--scenario invoice-total` (or another selected benchmark); `--bindings PATH` still
+provides an explicit catalog override. Historical detached forms without a selection
+use the isolated `coordinate/legacy_compilation.py` compatibility facade: its fixed
+installed catalog and operation bundle, never executable paths from candidate YAML.
+That historical detached compile form remains usable without an experiment checkout;
+explicit benchmark selection requires the editable workspace.
+UI imports require local operations; workflows with remote tools need a Harbor trial.
+Native `package-tasks --scenario ...` and versioned re-evaluation select descriptors
+without loading the legacy execution registry. Legacy package and lifecycle forms
+remain explicit compatibility entrypoints until retirement.
+
 ## Reading a run
 
 | Question | Evidence |

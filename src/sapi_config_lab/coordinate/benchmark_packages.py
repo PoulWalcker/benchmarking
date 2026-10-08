@@ -110,3 +110,54 @@ def validate_selected(benchmark: Benchmark, task: Path, root: Path, selected: di
 
         if any(path.is_symlink() for path in task.rglob("*")) or inventory(task) != inventory(expected):
             raise ValueError("Staged versioned package differs from current sources and selection")
+
+
+def stage_cli(benchmarks: tuple[Benchmark, ...], destination: Path, root: Path, mode: str, catalog: str) -> None:
+    """Stage selected descriptors without importing legacy scenario/provider selection."""
+    from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
+    from sapi_config_lab.coordinate.benchmark_authoring import generation_prompt
+    from sapi_config_lab.execute.n8n import execution_ceiling
+    from sapi_config_lab.harbor_integration.tasks import validate_config
+    from sapi_config_lab.profile import read
+
+    prepared = []
+    for benchmark in benchmarks:
+        config = read(benchmark.reference.source)
+        deadline = 120 if mode == "generation" else config["execution"]["deadline_seconds"]
+        options = {"mode": "stub", "deadline_seconds": deadline}
+        if mode == "generation" and "prepare" in benchmark.entrypoints:
+            options["admission"] = True
+        files = {item.destination: item.source for item in benchmark.files}
+        cases = json.loads(files[benchmark.config["cases"]].read_text()) if "cases" in benchmark.config else None
+        if "prepare" in benchmark.entrypoints:
+            required = execution_ceiling(benchmark.config["deadline_seconds"], bound=False) + 120
+        else:
+            plan = load_entrypoints(benchmark, freeze_identity(benchmark, options)).plan(
+                benchmark.reference.source, options
+            )
+            required = (
+                max(
+                    len(plan["entries"]) * execution_ceiling(deadline, bound=False), execution_ceiling(600, bound=False)
+                )
+                + 120
+            )
+        native = validate_config(files[benchmark.harbor_task].read_text())
+        if required > native.verifier.timeout_sec:
+            raise ValueError(f"{benchmark.name}: its observation plan exceeds the native verifier phase")
+        instruction = (
+            generation_prompt(root, benchmark, catalog).encode()
+            if mode == "generation"
+            else files["instruction.md"].read_bytes()
+        )
+        prepared.append((benchmark, options, instruction, cases))
+    destination.mkdir(parents=True, exist_ok=False)
+    for benchmark, options, instruction, cases in prepared:
+        stage_selected(
+            benchmark,
+            destination / benchmark.name,
+            root,
+            options,
+            instruction=instruction,
+            oracle=mode != "generation",
+            cases=cases,
+        )
