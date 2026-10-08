@@ -1,0 +1,2318 @@
+{
+  "schema": "sapi-lab-harbor/v1",
+  "mode": "stub",
+  "n8n_version": "2.41.5",
+  "host_environment": {
+    "python": "3.14.8",
+    "python_implementation": "cpython",
+    "platform": "darwin",
+    "machine": "arm64",
+    "harbor": "0.21.0",
+    "pyyaml": "6.0.3"
+  },
+  "image": "sapi-config-lab-n8n:2.41.5",
+  "checks": [
+    {
+      "name": "local_tests",
+      "passed": true,
+      "exit_code": 0
+    },
+    {
+      "name": "real_n8n_transport",
+      "passed": true
+    },
+    {
+      "name": "harbor_oracle",
+      "passed": true
+    },
+    {
+      "name": "harbor_nop",
+      "passed": true
+    }
+  ],
+  "scenarios": [
+    "invoice-total",
+    "checkout-recovery"
+  ],
+  "oracle": {
+    "passed": true,
+    "harbor_exit_code": 0,
+    "trials": [
+      {
+        "task_name": "checkout-recovery",
+        "trial_id": "00210a9e-e5e0-4c23-b2fc-3f0e0f3ac50c",
+        "trial_path": "jobs/oracle/checkout-recovery__LBZvXBo",
+        "evidence_path": "jobs/oracle/checkout-recovery__LBZvXBo/verifier",
+        "partial": false,
+        "rewards": {
+          "reward": 0.732
+        },
+        "exception": null,
+        "result_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/oracle/checkout-recovery__LBZvXBo/result.json",
+        "evaluation_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/oracle/checkout-recovery__LBZvXBo/verifier/evaluation/report.json",
+        "acceptance": {
+          "schema": "sapi-lab-upstream-acceptance/v1",
+          "scenario": "checkout-recovery",
+          "mode": "stub",
+          "submission_sha256": "c9176e088aa14e7afcde3cfb8a461841061a25cc9d8abb8b70acb8154150b1a9",
+          "passed": true,
+          "result": {
+            "execution": true,
+            "acceptance": true,
+            "quality": {
+              "status": "complete",
+              "score_0_10": 7.32,
+              "normalized_reward": 0.732
+            }
+          },
+          "native_execution": true,
+          "terminal_completion": true
+        },
+        "result": {
+          "execution": true,
+          "acceptance": true,
+          "quality": {
+            "status": "complete",
+            "score_0_10": 7.32,
+            "normalized_reward": 0.732
+          }
+        },
+        "native_execution": true,
+        "terminal_completion": true
+      },
+      {
+        "task_name": "invoice-total",
+        "trial_id": "b584fb3c-3af6-4377-b10a-c7642a6e4003",
+        "trial_path": "jobs/oracle/invoice-total__spQyXja",
+        "evidence_path": "jobs/oracle/invoice-total__spQyXja/verifier",
+        "partial": false,
+        "rewards": {
+          "reward": 1.0
+        },
+        "exception": null,
+        "result_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/oracle/invoice-total__spQyXja/result.json",
+        "evaluation_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/oracle/invoice-total__spQyXja/verifier/evaluation/report.json",
+        "acceptance": {
+          "scenario": "invoice-total",
+          "mode": "stub",
+          "passed": true,
+          "report_schema": "sapi-lab-verification/v1",
+          "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+          "evaluator": {
+            "name": "sapi-lab-independent-verifier",
+            "sources_sha256": "a68111f74cb3d18a003283fa6c5a97ac1ed603d4b6839d4857126ef0ff39aca6"
+          },
+          "cases": [
+            {
+              "name": "original-38000",
+              "kind": "positive",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "8d597c372a5b45e8",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/evidence/cases/original-38000",
+              "deadline_seconds": 30,
+              "config_sha256": "00d490fe6a717b4c1befbb9eb8f7689011af13171d40ece2b7454210830e6d8d",
+              "execution": {
+                "status": "success",
+                "succeeded": true,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "output_verified": true,
+              "operation_count": 3,
+              "llm_mode": "stub",
+              "n8n_node_count": 6,
+              "engine_provenance_verified": true,
+              "acceptance": {
+                "status": "accepted",
+                "passed": true
+              },
+              "verifier_corruptions_rejected": [
+                "wrong-final-output",
+                "output-without-real-result-node",
+                "falsified-step-trace"
+              ],
+              "output": {
+                "total_minor": 38000,
+                "currency": "AED",
+                "invoice_count": 3
+              }
+            },
+            {
+              "name": "alternate-values-zero",
+              "kind": "positive",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "48a39554074b456c",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/evidence/cases/alternate-values-zero",
+              "deadline_seconds": 30,
+              "config_sha256": "c85a09820ab3ebf11d61e4578b79df25ca217f47db3d8683b7e3cbddf3fdc38a",
+              "execution": {
+                "status": "success",
+                "succeeded": true,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "output_verified": true,
+              "operation_count": 3,
+              "llm_mode": "stub",
+              "n8n_node_count": 6,
+              "engine_provenance_verified": true,
+              "acceptance": {
+                "status": "accepted",
+                "passed": true
+              },
+              "verifier_corruptions_rejected": [
+                "wrong-final-output",
+                "output-without-real-result-node",
+                "falsified-step-trace"
+              ],
+              "output": {
+                "total_minor": 770,
+                "currency": "EUR",
+                "invoice_count": 4
+              }
+            },
+            {
+              "name": "maximum-safe-total",
+              "kind": "positive",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "7e694f1e6e824110",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/evidence/cases/maximum-safe-total",
+              "deadline_seconds": 30,
+              "config_sha256": "87bcd57a2508dfce8f50bb470e97c806fff4b98b25fd03be320a3ef4039d69d6",
+              "execution": {
+                "status": "success",
+                "succeeded": true,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "output_verified": true,
+              "operation_count": 3,
+              "llm_mode": "stub",
+              "n8n_node_count": 6,
+              "engine_provenance_verified": true,
+              "acceptance": {
+                "status": "accepted",
+                "passed": true
+              },
+              "verifier_corruptions_rejected": [
+                "wrong-final-output",
+                "output-without-real-result-node",
+                "falsified-step-trace"
+              ],
+              "output": {
+                "total_minor": 9007199254740991,
+                "currency": "USD",
+                "invoice_count": 2
+              }
+            },
+            {
+              "name": "empty",
+              "kind": "negative",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "a7d55780f00944ed",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/evidence/cases/empty",
+              "deadline_seconds": 30,
+              "config_sha256": "dd670188086965351805d8b11f60066f75c29f34091aee1b59846e2ab62f1738",
+              "execution": {
+                "status": "error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Expected invalid input rejection"
+              },
+              "expected_error": "Invoices must be nonempty"
+            },
+            {
+              "name": "duplicate-id",
+              "kind": "negative",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "0f01bc51f1564fad",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/evidence/cases/duplicate-id",
+              "deadline_seconds": 30,
+              "config_sha256": "a051e5aac8171e4b6caf94c353ed06d266796a825e2a175d31d8fda687f2a6d3",
+              "execution": {
+                "status": "error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Expected invalid input rejection"
+              },
+              "expected_error": "Duplicate invoice ID"
+            },
+            {
+              "name": "mixed-currencies",
+              "kind": "negative",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "8a29fde9a4d843a4",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/evidence/cases/mixed-currencies",
+              "deadline_seconds": 30,
+              "config_sha256": "142c69d8569e802ceb489ab2dcef97b735162567474c9eeeee546ae4daaceb88",
+              "execution": {
+                "status": "error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Expected invalid input rejection"
+              },
+              "expected_error": "Mixed/invalid currency"
+            },
+            {
+              "name": "negative-amount",
+              "kind": "negative",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "e36ba7f019234fac",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/evidence/cases/negative-amount",
+              "deadline_seconds": 30,
+              "config_sha256": "ee7e1d9f89a91153ffd7729b21c774e70dcfab5c2c109a6242a9ca905f7f6c64",
+              "execution": {
+                "status": "error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Expected invalid input rejection"
+              },
+              "expected_error": "Invalid amount"
+            },
+            {
+              "name": "fractional-amount",
+              "kind": "negative",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "1c0c3ccf5c254ad5",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/evidence/cases/fractional-amount",
+              "deadline_seconds": 30,
+              "config_sha256": "89f7a49b26071bc21aecbd3ace6a8606720ef47192fc6f7da6116b40e3ccbd34",
+              "execution": {
+                "status": "error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Expected invalid input rejection"
+              },
+              "expected_error": "Invalid amount"
+            },
+            {
+              "name": "unsafe-amount",
+              "kind": "negative",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "082f09baa2954584",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/evidence/cases/unsafe-amount",
+              "deadline_seconds": 30,
+              "config_sha256": "fa0e825d54bd153a83018c63dd49293ec8f754e2e08483275fccb99f62f5aa8d",
+              "execution": {
+                "status": "error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Expected invalid input rejection"
+              },
+              "expected_error": "Invalid amount"
+            },
+            {
+              "name": "total-overflow",
+              "kind": "negative",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "560fc18ee13b42c4",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/evidence/cases/total-overflow",
+              "deadline_seconds": 30,
+              "config_sha256": "109aa2c605b47ed2e2a8b4471c935b48b939135055e846919ed64f32c60f5d06",
+              "execution": {
+                "status": "error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Expected invalid input rejection"
+              },
+              "expected_error": "Total exceeds safe integer range"
+            },
+            {
+              "name": "wrong-result-in-generated-json",
+              "kind": "mutated-generated-workflow",
+              "passed": true,
+              "execution_id": "1",
+              "workflow_id": "678267bc82804fd1",
+              "n8n_version": "2.41.5",
+              "artifacts": "/logs/verifier/evidence/cases/mutated-generated-result",
+              "execution": {
+                "status": "success",
+                "succeeded": true,
+                "engine": {
+                  "name": "n8n",
+                  "version": "2.41.5"
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "n8n_agency_http_node_executions",
+                "provider_call_count": null
+              },
+              "rejection": "Result differs from submitted output lineage (keys)",
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Result differs from submitted output lineage (keys)"
+              }
+            },
+            {
+              "name": "unknown-operation",
+              "kind": "invalid-definition",
+              "passed": true,
+              "execution_id": null,
+              "workflow_id": null,
+              "n8n_version": null,
+              "artifacts": "/logs/verifier/evidence/cases/invalid-yaml-unknown-operation",
+              "execution": {
+                "status": "compile_error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": null
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "not_executed",
+                "provider_call_count": 0
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Definition rejected before execution"
+              }
+            },
+            {
+              "name": "cycle",
+              "kind": "invalid-definition",
+              "passed": true,
+              "execution_id": null,
+              "workflow_id": null,
+              "n8n_version": null,
+              "artifacts": "/logs/verifier/evidence/cases/invalid-yaml-cycle",
+              "execution": {
+                "status": "compile_error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": null
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "not_executed",
+                "provider_call_count": 0
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Definition rejected before execution"
+              }
+            },
+            {
+              "name": "unsupported-required-parallel",
+              "kind": "invalid-definition",
+              "passed": true,
+              "execution_id": null,
+              "workflow_id": null,
+              "n8n_version": null,
+              "artifacts": "/logs/verifier/evidence/cases/invalid-yaml-unsupported-required-parallel",
+              "execution": {
+                "status": "compile_error",
+                "succeeded": false,
+                "engine": {
+                  "name": "n8n",
+                  "version": null
+                }
+              },
+              "input": {
+                "source": "fixture",
+                "activation": "injected",
+                "config_artifact": "config.json"
+              },
+              "llm": {
+                "selected_mode": "stub",
+                "agency_http_call_count": 0,
+                "count_source": "not_executed",
+                "provider_call_count": 0
+              },
+              "acceptance": {
+                "status": "rejected",
+                "passed": false,
+                "reason": "Definition rejected before execution"
+              }
+            }
+          ],
+          "limits": [
+            "Checks the supported static sapi-lab/v0 profile only.",
+            "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+          ],
+          "submission_sha256": "2b4d9b5569cd811053bb2e504de4111b171be188b2deff88b4ca63f187406e99",
+          "fixture_sha256": "3f7e36ac546ded4fa5199d38c735638a82a1445ee57f9806d77f4ae1f7276b5e",
+          "config_transformations": [
+            "workflow.inputs replaced by case fixture"
+          ],
+          "observation": {
+            "manifest": "evidence/observation.json",
+            "plan_sha256": "c91bf58f2a13449b6148494f5e0f0f653e0c3a9b50f24d791348fab010329105"
+          }
+        },
+        "result": {
+          "execution": true,
+          "acceptance": true,
+          "quality": {
+            "status": "complete",
+            "score_0_10": 10.0,
+            "normalized_reward": 1.0
+          }
+        },
+        "native_execution": null,
+        "terminal_completion": null
+      }
+    ]
+  },
+  "nop": {
+    "passed": true,
+    "harbor_exit_code": 0,
+    "trials": [
+      {
+        "task_name": "checkout-recovery",
+        "trial_id": "e83c2533-b70a-4e89-a192-b760eaab584e",
+        "trial_path": "jobs/nop/checkout-recovery__ezTvC6F",
+        "evidence_path": "jobs/nop/checkout-recovery__ezTvC6F/verifier",
+        "partial": false,
+        "rewards": null,
+        "exception": {
+          "exception_type": "RewardFileNotFoundError",
+          "exception_message": "No reward file found at /private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/checkout-recovery__ezTvC6F/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/checkout-recovery__ezTvC6F/verifier/reward.json",
+          "exception_traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 378, in run\n    await self._run()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 99, in _run_verifier\n    self.result.verifier_result = await self._run_separate_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 635, in _run_separate_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n        verifier.verify(), timeout=timeout_sec\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/tasks.py\", line 486, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\n    ...<3 lines>...\n    )\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/checkout-recovery__ezTvC6F/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/checkout-recovery__ezTvC6F/verifier/reward.json\n",
+          "occurred_at": "2026-10-08T21:28:20.703981Z"
+        },
+        "result_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/checkout-recovery__ezTvC6F/result.json",
+        "evaluation_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/checkout-recovery__ezTvC6F/verifier/evaluation/report.json",
+        "acceptance": {
+          "schema": "sapi-lab-upstream-acceptance/v1",
+          "scenario": "checkout-recovery",
+          "mode": "stub",
+          "submission_sha256": null,
+          "passed": false,
+          "result": {
+            "execution": false,
+            "acceptance": false,
+            "quality": {
+              "status": "judge_failed",
+              "score_0_10": null,
+              "normalized_reward": null
+            }
+          },
+          "native_execution": false,
+          "terminal_completion": false
+        },
+        "result": {
+          "execution": false,
+          "acceptance": false,
+          "quality": {
+            "status": "judge_failed",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "native_execution": false,
+        "terminal_completion": false
+      },
+      {
+        "task_name": "invoice-total",
+        "trial_id": "a63c78e0-2164-4c6e-8253-326fbd626743",
+        "trial_path": "jobs/nop/invoice-total__VURGE8n",
+        "evidence_path": "jobs/nop/invoice-total__VURGE8n/verifier",
+        "partial": false,
+        "rewards": {
+          "reward": 0.0
+        },
+        "exception": null,
+        "result_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/invoice-total__VURGE8n/result.json",
+        "evaluation_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/invoice-total__VURGE8n/verifier/evaluation/report.json",
+        "acceptance": {
+          "scenario": "invoice-total",
+          "mode": "stub",
+          "passed": false,
+          "report_schema": "sapi-lab-verification/v1",
+          "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+          "evaluator": {
+            "name": "sapi-lab-independent-verifier",
+            "sources_sha256": "a68111f74cb3d18a003283fa6c5a97ac1ed603d4b6839d4857126ef0ff39aca6"
+          },
+          "cases": [],
+          "limits": [
+            "Checks the supported static sapi-lab/v0 profile only.",
+            "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+          ],
+          "error": "[Errno 2] No such file or directory: '/submission/config.yaml'",
+          "error_type": "FileNotFoundError"
+        },
+        "result": {
+          "execution": null,
+          "acceptance": false,
+          "quality": {
+            "status": "unscored",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "native_execution": null,
+        "terminal_completion": null
+      }
+    ]
+  },
+  "status": "passed",
+  "started_at": "2026-10-08T21:22:29.500431+00:00",
+  "source_manifest": "source-manifest.json",
+  "harbor_version": "0.21.0",
+  "docker_version": "29.4.0",
+  "phases": [
+    {
+      "phase": "before transport",
+      "unchanged": true
+    },
+    {
+      "phase": "after transport",
+      "unchanged": true
+    },
+    {
+      "phase": "before oracle",
+      "unchanged": true
+    },
+    {
+      "phase": "before nop",
+      "unchanged": true
+    },
+    {
+      "phase": "final",
+      "unchanged": true
+    }
+  ],
+  "commands": [
+    [
+      "/private/tmp/sapi-migration-26/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/transport-task",
+      "--agent",
+      "nop",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs",
+      "--job-name",
+      "transport",
+      "--force-build",
+      "--no-delete"
+    ],
+    [
+      "/private/tmp/sapi-migration-26/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/var/folders/97/80rddxm51750bvdn9k9fnv2w0000gn/T/sapi-lab-harbor-m937bcck/tasks",
+      "--agent",
+      "oracle",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs",
+      "--job-name",
+      "oracle",
+      "--force-build"
+    ],
+    [
+      "/private/tmp/sapi-migration-26/.venv/bin/python",
+      "-c",
+      "from harbor.cli.main import app; app()",
+      "run",
+      "--path",
+      "/var/folders/97/80rddxm51750bvdn9k9fnv2w0000gn/T/sapi-lab-harbor-m937bcck/tasks",
+      "--agent",
+      "nop",
+      "--n-concurrent",
+      "1",
+      "--max-retries",
+      "0",
+      "--jobs-dir",
+      "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs",
+      "--job-name",
+      "nop",
+      "--force-build"
+    ]
+  ],
+  "harbor_jobs": {
+    "transport": {
+      "path": "jobs/transport",
+      "status": "finished",
+      "exit_code": 0
+    },
+    "oracle": {
+      "path": "jobs/oracle",
+      "status": "finished",
+      "exit_code": 0,
+      "trials": [
+        {
+          "task_name": "checkout-recovery",
+          "trial_id": "00210a9e-e5e0-4c23-b2fc-3f0e0f3ac50c",
+          "trial_path": "jobs/oracle/checkout-recovery__LBZvXBo",
+          "evidence_path": "jobs/oracle/checkout-recovery__LBZvXBo/verifier",
+          "partial": false,
+          "rewards": {
+            "reward": 0.732
+          },
+          "exception": null,
+          "result_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/oracle/checkout-recovery__LBZvXBo/result.json",
+          "evaluation_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/oracle/checkout-recovery__LBZvXBo/verifier/evaluation/report.json",
+          "acceptance": {
+            "schema": "sapi-lab-upstream-acceptance/v1",
+            "scenario": "checkout-recovery",
+            "mode": "stub",
+            "submission_sha256": "c9176e088aa14e7afcde3cfb8a461841061a25cc9d8abb8b70acb8154150b1a9",
+            "passed": true,
+            "result": {
+              "execution": true,
+              "acceptance": true,
+              "quality": {
+                "status": "complete",
+                "score_0_10": 7.32,
+                "normalized_reward": 0.732
+              }
+            },
+            "native_execution": true,
+            "terminal_completion": true
+          },
+          "result": {
+            "execution": true,
+            "acceptance": true,
+            "quality": {
+              "status": "complete",
+              "score_0_10": 7.32,
+              "normalized_reward": 0.732
+            }
+          },
+          "native_execution": true,
+          "terminal_completion": true
+        },
+        {
+          "task_name": "invoice-total",
+          "trial_id": "b584fb3c-3af6-4377-b10a-c7642a6e4003",
+          "trial_path": "jobs/oracle/invoice-total__spQyXja",
+          "evidence_path": "jobs/oracle/invoice-total__spQyXja/verifier",
+          "partial": false,
+          "rewards": {
+            "reward": 1.0
+          },
+          "exception": null,
+          "result_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/oracle/invoice-total__spQyXja/result.json",
+          "evaluation_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/oracle/invoice-total__spQyXja/verifier/evaluation/report.json",
+          "acceptance": {
+            "scenario": "invoice-total",
+            "mode": "stub",
+            "passed": true,
+            "report_schema": "sapi-lab-verification/v1",
+            "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+            "evaluator": {
+              "name": "sapi-lab-independent-verifier",
+              "sources_sha256": "a68111f74cb3d18a003283fa6c5a97ac1ed603d4b6839d4857126ef0ff39aca6"
+            },
+            "cases": [
+              {
+                "name": "original-38000",
+                "kind": "positive",
+                "passed": true,
+                "execution_id": "1",
+                "workflow_id": "8d597c372a5b45e8",
+                "n8n_version": "2.41.5",
+                "artifacts": "/logs/verifier/evidence/cases/original-38000",
+                "deadline_seconds": 30,
+                "config_sha256": "00d490fe6a717b4c1befbb9eb8f7689011af13171d40ece2b7454210830e6d8d",
+                "execution": {
+                  "status": "success",
+                  "succeeded": true,
+                  "engine": {
+                    "name": "n8n",
+                    "version": "2.41.5"
+                  }
+                },
+                "input": {
+                  "source": "fixture",
+                  "activation": "injected",
+                  "config_artifact": "config.json"
+                },
+                "llm": {
+                  "selected_mode": "stub",
+                  "agency_http_call_count": 0,
+                  "count_source": "n8n_agency_http_node_executions",
+                  "provider_call_count": null
+                },
+                "output_verified": true,
+                "operation_count": 3,
+                "llm_mode": "stub",
+                "n8n_node_count": 6,
+                "engine_provenance_verified": true,
+                "acceptance": {
+                  "status": "accepted",
+                  "passed": true
+                },
+                "verifier_corruptions_rejected": [
+                  "wrong-final-output",
+                  "output-without-real-result-node",
+                  "falsified-step-trace"
+                ],
+                "output": {
+                  "total_minor": 38000,
+                  "currency": "AED",
+                  "invoice_count": 3
+                }
+              },
+              {
+                "name": "alternate-values-zero",
+                "kind": "positive",
+                "passed": true,
+                "execution_id": "1",
+                "workflow_id": "48a39554074b456c",
+                "n8n_version": "2.41.5",
+                "artifacts": "/logs/verifier/evidence/cases/alternate-values-zero",
+                "deadline_seconds": 30,
+                "config_sha256": "c85a09820ab3ebf11d61e4578b79df25ca217f47db3d8683b7e3cbddf3fdc38a",
+                "execution": {
+                  "status": "success",
+                  "succeeded": true,
+                  "engine": {
+                    "name": "n8n",
+                    "version": "2.41.5"
+                  }
+                },
+                "input": {
+                  "source": "fixture",
+                  "activation": "injected",
+                  "config_artifact": "config.json"
+                },
+                "llm": {
+                  "selected_mode": "stub",
+                  "agency_http_call_count": 0,
+                  "count_source": "n8n_agency_http_node_executions",
+                  "provider_call_count": null
+                },
+                "output_verified": true,
+                "operation_count": 3,
+                "llm_mode": "stub",
+                "n8n_node_count": 6,
+                "engine_provenance_verified": true,
+                "acceptance": {
+                  "status": "accepted",
+                  "passed": true
+                },
+                "verifier_corruptions_rejected": [
+                  "wrong-final-output",
+                  "output-without-real-result-node",
+                  "falsified-step-trace"
+                ],
+                "output": {
+                  "total_minor": 770,
+                  "currency": "EUR",
+                  "invoice_count": 4
+                }
+              },
+              {
+                "name": "maximum-safe-total",
+                "kind": "positive",
+                "passed": true,
+                "execution_id": "1",
+                "workflow_id": "7e694f1e6e824110",
+                "n8n_version": "2.41.5",
+                "artifacts": "/logs/verifier/evidence/cases/maximum-safe-total",
+                "deadline_seconds": 30,
+                "config_sha256": "87bcd57a2508dfce8f50bb470e97c806fff4b98b25fd03be320a3ef4039d69d6",
+                "execution": {
+                  "status": "success",
+                  "succeeded": true,
+                  "engine": {
+                    "name": "n8n",
+                    "version": "2.41.5"
+                  }
+                },
+                "input": {
+                  "source": "fixture",
+                  "activation": "injected",
+                  "config_artifact": "config.json"
+                },
+                "llm": {
+                  "selected_mode": "stub",
+                  "agency_http_call_count": 0,
+                  "count_source": "n8n_agency_http_node_executions",
+                  "provider_call_count": null
+                },
+                "output_verified": true,
+                "operation_count": 3,
+                "llm_mode": "stub",
+                "n8n_node_count": 6,
+                "engine_provenance_verified": true,
+                "acceptance": {
+                  "status": "accepted",
+                  "passed": true
+                },
+                "verifier_corruptions_rejected": [
+                  "wrong-final-output",
+                  "output-without-real-result-node",
+                  "falsified-step-trace"
+                ],
+                "output": {
+                  "total_minor": 9007199254740991,
+                  "currency": "USD",
+                  "invoice_count": 2
+                }
+              },
+              {
+                "name": "empty",
+                "kind": "negative",
+                "passed": true,
+                "execution_id": "1",
+                "workflow_id": "a7d55780f00944ed",
+                "n8n_version": "2.41.5",
+                "artifacts": "/logs/verifier/evidence/cases/empty",
+                "deadline_seconds": 30,
+                "config_sha256": "dd670188086965351805d8b11f60066f75c29f34091aee1b59846e2ab62f1738",
+                "execution": {
+                  "status": "error",
+                  "succeeded": false,
+                  "engine": {
+                    "name": "n8n",
+                    "version": "2.41.5"
+                  }
+                },
+                "input": {
+                  "source": "fixture",
+                  "activation": "injected",
+                  "config_artifact": "config.json"
+                },
+                "llm": {
+                  "selected_mode": "stub",
+                  "agency_http_call_count": 0,
+                  "count_source": "n8n_agency_http_node_executions",
+                  "provider_call_count": null
+                },
+                "acceptance": {
+                  "status": "rejected",
+                  "passed": false,
+                  "reason": "Expected invalid input rejection"
+                },
+                "expected_error": "Invoices must be nonempty"
+              },
+              {
+                "name": "duplicate-id",
+                "kind": "negative",
+                "passed": true,
+                "execution_id": "1",
+                "workflow_id": "0f01bc51f1564fad",
+                "n8n_version": "2.41.5",
+                "artifacts": "/logs/verifier/evidence/cases/duplicate-id",
+                "deadline_seconds": 30,
+                "config_sha256": "a051e5aac8171e4b6caf94c353ed06d266796a825e2a175d31d8fda687f2a6d3",
+                "execution": {
+                  "status": "error",
+                  "succeeded": false,
+                  "engine": {
+                    "name": "n8n",
+                    "version": "2.41.5"
+                  }
+                },
+                "input": {
+                  "source": "fixture",
+                  "activation": "injected",
+                  "config_artifact": "config.json"
+                },
+                "llm": {
+                  "selected_mode": "stub",
+                  "agency_http_call_count": 0,
+                  "count_source": "n8n_agency_http_node_executions",
+                  "provider_call_count": null
+                },
+                "acceptance": {
+                  "status": "rejected",
+                  "passed": false,
+                  "reason": "Expected invalid input rejection"
+                },
+                "expected_error": "Duplicate invoice ID"
+              },
+              {
+                "name": "mixed-currencies",
+                "kind": "negative",
+                "passed": true,
+                "execution_id": "1",
+                "workflow_id": "8a29fde9a4d843a4",
+                "n8n_version": "2.41.5",
+                "artifacts": "/logs/verifier/evidence/cases/mixed-currencies",
+                "deadline_seconds": 30,
+                "config_sha256": "142c69d8569e802ceb489ab2dcef97b735162567474c9eeeee546ae4daaceb88",
+                "execution": {
+                  "status": "error",
+                  "succeeded": false,
+                  "engine": {
+                    "name": "n8n",
+                    "version": "2.41.5"
+                  }
+                },
+                "input": {
+                  "source": "fixture",
+                  "activation": "injected",
+                  "config_artifact": "config.json"
+                },
+                "llm": {
+                  "selected_mode": "stub",
+                  "agency_http_call_count": 0,
+                  "count_source": "n8n_agency_http_node_executions",
+                  "provider_call_count": null
+                },
+                "acceptance": {
+                  "status": "rejected",
+                  "passed": false,
+                  "reason": "Expected invalid input rejection"
+                },
+                "expected_error": "Mixed/invalid currency"
+              },
+              {
+                "name": "negative-amount",
+                "kind": "negative",
+                "passed": true,
+                "execution_id": "1",
+                "workflow_id": "e36ba7f019234fac",
+                "n8n_version": "2.41.5",
+                "artifacts": "/logs/verifier/evidence/cases/negative-amount",
+                "deadline_seconds": 30,
+                "config_sha256": "ee7e1d9f89a91153ffd7729b21c774e70dcfab5c2c109a6242a9ca905f7f6c64",
+                "execution": {
+                  "status": "error",
+                  "succeeded": false,
+                  "engine": {
+                    "name": "n8n",
+                    "version": "2.41.5"
+                  }
+                },
+                "input": {
+                  "source": "fixture",
+                  "activation": "injected",
+                  "config_artifact": "config.json"
+                },
+                "llm": {
+                  "selected_mode": "stub",
+                  "agency_http_call_count": 0,
+                  "count_source": "n8n_agency_http_node_executions",
+                  "provider_call_count": null
+                },
+                "acceptance": {
+                  "status": "rejected",
+                  "passed": false,
+                  "reason": "Expected invalid input rejection"
+                },
+                "expected_error": "Invalid amount"
+              },
+              {
+                "name": "fractional-amount",
+                "kind": "negative",
+                "passed": true,
+                "execution_id": "1",
+                "workflow_id": "1c0c3ccf5c254ad5",
+                "n8n_version": "2.41.5",
+                "artifacts": "/logs/verifier/evidence/cases/fractional-amount",
+                "deadline_seconds": 30,
+                "config_sha256": "89f7a49b26071bc21aecbd3ace6a8606720ef47192fc6f7da6116b40e3ccbd34",
+                "execution": {
+                  "status": "error",
+                  "succeeded": false,
+                  "engine": {
+                    "name": "n8n",
+                    "version": "2.41.5"
+                  }
+                },
+                "input": {
+                  "source": "fixture",
+                  "activation": "injected",
+                  "config_artifact": "config.json"
+                },
+                "llm": {
+                  "selected_mode": "stub",
+                  "agency_http_call_count": 0,
+                  "count_source": "n8n_agency_http_node_executions",
+                  "provider_call_count": null
+                },
+                "acceptance": {
+                  "status": "rejected",
+                  "passed": false,
+                  "reason": "Expected invalid input rejection"
+                },
+                "expected_error": "Invalid amount"
+              },
+              {
+                "name": "unsafe-amount",
+                "kind": "negative",
+                "passed": true,
+                "execution_id": "1",
+                "workflow_id": "082f09baa2954584",
+                "n8n_version": "2.41.5",
+                "artifacts": "/logs/verifier/evidence/cases/unsafe-amount",
+                "deadline_seconds": 30,
+                "config_sha256": "fa0e825d54bd153a83018c63dd49293ec8f754e2e08483275fccb99f62f5aa8d",
+                "execution": {
+                  "status": "error",
+                  "succeeded": false,
+                  "engine": {
+                    "name": "n8n",
+                    "version": "2.41.5"
+                  }
+                },
+                "input": {
+                  "source": "fixture",
+                  "activation": "injected",
+                  "config_artifact": "config.json"
+                },
+                "llm": {
+                  "selected_mode": "stub",
+                  "agency_http_call_count": 0,
+                  "count_source": "n8n_agency_http_node_executions",
+                  "provider_call_count": null
+                },
+                "acceptance": {
+                  "status": "rejected",
+                  "passed": false,
+                  "reason": "Expected invalid input rejection"
+                },
+                "expected_error": "Invalid amount"
+              },
+              {
+                "name": "total-overflow",
+                "kind": "negative",
+                "passed": true,
+                "execution_id": "1",
+                "workflow_id": "560fc18ee13b42c4",
+                "n8n_version": "2.41.5",
+                "artifacts": "/logs/verifier/evidence/cases/total-overflow",
+                "deadline_seconds": 30,
+                "config_sha256": "109aa2c605b47ed2e2a8b4471c935b48b939135055e846919ed64f32c60f5d06",
+                "execution": {
+                  "status": "error",
+                  "succeeded": false,
+                  "engine": {
+                    "name": "n8n",
+                    "version": "2.41.5"
+                  }
+                },
+                "input": {
+                  "source": "fixture",
+                  "activation": "injected",
+                  "config_artifact": "config.json"
+                },
+                "llm": {
+                  "selected_mode": "stub",
+                  "agency_http_call_count": 0,
+                  "count_source": "n8n_agency_http_node_executions",
+                  "provider_call_count": null
+                },
+                "acceptance": {
+                  "status": "rejected",
+                  "passed": false,
+                  "reason": "Expected invalid input rejection"
+                },
+                "expected_error": "Total exceeds safe integer range"
+              },
+              {
+                "name": "wrong-result-in-generated-json",
+                "kind": "mutated-generated-workflow",
+                "passed": true,
+                "execution_id": "1",
+                "workflow_id": "678267bc82804fd1",
+                "n8n_version": "2.41.5",
+                "artifacts": "/logs/verifier/evidence/cases/mutated-generated-result",
+                "execution": {
+                  "status": "success",
+                  "succeeded": true,
+                  "engine": {
+                    "name": "n8n",
+                    "version": "2.41.5"
+                  }
+                },
+                "input": {
+                  "source": "fixture",
+                  "activation": "injected",
+                  "config_artifact": "config.json"
+                },
+                "llm": {
+                  "selected_mode": "stub",
+                  "agency_http_call_count": 0,
+                  "count_source": "n8n_agency_http_node_executions",
+                  "provider_call_count": null
+                },
+                "rejection": "Result differs from submitted output lineage (keys)",
+                "acceptance": {
+                  "status": "rejected",
+                  "passed": false,
+                  "reason": "Result differs from submitted output lineage (keys)"
+                }
+              },
+              {
+                "name": "unknown-operation",
+                "kind": "invalid-definition",
+                "passed": true,
+                "execution_id": null,
+                "workflow_id": null,
+                "n8n_version": null,
+                "artifacts": "/logs/verifier/evidence/cases/invalid-yaml-unknown-operation",
+                "execution": {
+                  "status": "compile_error",
+                  "succeeded": false,
+                  "engine": {
+                    "name": "n8n",
+                    "version": null
+                  }
+                },
+                "input": {
+                  "source": "fixture",
+                  "activation": "injected",
+                  "config_artifact": "config.json"
+                },
+                "llm": {
+                  "selected_mode": "stub",
+                  "agency_http_call_count": 0,
+                  "count_source": "not_executed",
+                  "provider_call_count": 0
+                },
+                "acceptance": {
+                  "status": "rejected",
+                  "passed": false,
+                  "reason": "Definition rejected before execution"
+                }
+              },
+              {
+                "name": "cycle",
+                "kind": "invalid-definition",
+                "passed": true,
+                "execution_id": null,
+                "workflow_id": null,
+                "n8n_version": null,
+                "artifacts": "/logs/verifier/evidence/cases/invalid-yaml-cycle",
+                "execution": {
+                  "status": "compile_error",
+                  "succeeded": false,
+                  "engine": {
+                    "name": "n8n",
+                    "version": null
+                  }
+                },
+                "input": {
+                  "source": "fixture",
+                  "activation": "injected",
+                  "config_artifact": "config.json"
+                },
+                "llm": {
+                  "selected_mode": "stub",
+                  "agency_http_call_count": 0,
+                  "count_source": "not_executed",
+                  "provider_call_count": 0
+                },
+                "acceptance": {
+                  "status": "rejected",
+                  "passed": false,
+                  "reason": "Definition rejected before execution"
+                }
+              },
+              {
+                "name": "unsupported-required-parallel",
+                "kind": "invalid-definition",
+                "passed": true,
+                "execution_id": null,
+                "workflow_id": null,
+                "n8n_version": null,
+                "artifacts": "/logs/verifier/evidence/cases/invalid-yaml-unsupported-required-parallel",
+                "execution": {
+                  "status": "compile_error",
+                  "succeeded": false,
+                  "engine": {
+                    "name": "n8n",
+                    "version": null
+                  }
+                },
+                "input": {
+                  "source": "fixture",
+                  "activation": "injected",
+                  "config_artifact": "config.json"
+                },
+                "llm": {
+                  "selected_mode": "stub",
+                  "agency_http_call_count": 0,
+                  "count_source": "not_executed",
+                  "provider_call_count": 0
+                },
+                "acceptance": {
+                  "status": "rejected",
+                  "passed": false,
+                  "reason": "Definition rejected before execution"
+                }
+              }
+            ],
+            "limits": [
+              "Checks the supported static sapi-lab/v0 profile only.",
+              "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+            ],
+            "submission_sha256": "2b4d9b5569cd811053bb2e504de4111b171be188b2deff88b4ca63f187406e99",
+            "fixture_sha256": "3f7e36ac546ded4fa5199d38c735638a82a1445ee57f9806d77f4ae1f7276b5e",
+            "config_transformations": [
+              "workflow.inputs replaced by case fixture"
+            ],
+            "observation": {
+              "manifest": "evidence/observation.json",
+              "plan_sha256": "c91bf58f2a13449b6148494f5e0f0f653e0c3a9b50f24d791348fab010329105"
+            }
+          },
+          "result": {
+            "execution": true,
+            "acceptance": true,
+            "quality": {
+              "status": "complete",
+              "score_0_10": 10.0,
+              "normalized_reward": 1.0
+            }
+          },
+          "native_execution": null,
+          "terminal_completion": null
+        }
+      ]
+    },
+    "nop": {
+      "path": "jobs/nop",
+      "status": "finished",
+      "exit_code": 0,
+      "trials": [
+        {
+          "task_name": "checkout-recovery",
+          "trial_id": "e83c2533-b70a-4e89-a192-b760eaab584e",
+          "trial_path": "jobs/nop/checkout-recovery__ezTvC6F",
+          "evidence_path": "jobs/nop/checkout-recovery__ezTvC6F/verifier",
+          "partial": false,
+          "rewards": null,
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/checkout-recovery__ezTvC6F/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/checkout-recovery__ezTvC6F/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 378, in run\n    await self._run()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 99, in _run_verifier\n    self.result.verifier_result = await self._run_separate_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 635, in _run_separate_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n        verifier.verify(), timeout=timeout_sec\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/tasks.py\", line 486, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\n    ...<3 lines>...\n    )\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/checkout-recovery__ezTvC6F/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/checkout-recovery__ezTvC6F/verifier/reward.json\n",
+            "occurred_at": "2026-10-08T21:28:20.703981Z"
+          },
+          "result_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/checkout-recovery__ezTvC6F/result.json",
+          "evaluation_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/checkout-recovery__ezTvC6F/verifier/evaluation/report.json",
+          "acceptance": {
+            "schema": "sapi-lab-upstream-acceptance/v1",
+            "scenario": "checkout-recovery",
+            "mode": "stub",
+            "submission_sha256": null,
+            "passed": false,
+            "result": {
+              "execution": false,
+              "acceptance": false,
+              "quality": {
+                "status": "judge_failed",
+                "score_0_10": null,
+                "normalized_reward": null
+              }
+            },
+            "native_execution": false,
+            "terminal_completion": false
+          },
+          "result": {
+            "execution": false,
+            "acceptance": false,
+            "quality": {
+              "status": "judge_failed",
+              "score_0_10": null,
+              "normalized_reward": null
+            }
+          },
+          "native_execution": false,
+          "terminal_completion": false
+        },
+        {
+          "task_name": "invoice-total",
+          "trial_id": "a63c78e0-2164-4c6e-8253-326fbd626743",
+          "trial_path": "jobs/nop/invoice-total__VURGE8n",
+          "evidence_path": "jobs/nop/invoice-total__VURGE8n/verifier",
+          "partial": false,
+          "rewards": {
+            "reward": 0.0
+          },
+          "exception": null,
+          "result_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/invoice-total__VURGE8n/result.json",
+          "evaluation_path": "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/nop/invoice-total__VURGE8n/verifier/evaluation/report.json",
+          "acceptance": {
+            "scenario": "invoice-total",
+            "mode": "stub",
+            "passed": false,
+            "report_schema": "sapi-lab-verification/v1",
+            "passed_means": "All expected positive acceptances and deliberate rejection probes passed",
+            "evaluator": {
+              "name": "sapi-lab-independent-verifier",
+              "sources_sha256": "a68111f74cb3d18a003283fa6c5a97ac1ed603d4b6839d4857126ef0ff39aca6"
+            },
+            "cases": [],
+            "limits": [
+              "Checks the supported static sapi-lab/v0 profile only.",
+              "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven."
+            ],
+            "error": "[Errno 2] No such file or directory: '/submission/config.yaml'",
+            "error_type": "FileNotFoundError"
+          },
+          "result": {
+            "execution": null,
+            "acceptance": false,
+            "quality": {
+              "status": "unscored",
+              "score_0_10": null,
+              "normalized_reward": null
+            }
+          },
+          "native_execution": null,
+          "terminal_completion": null
+        }
+      ]
+    }
+  },
+  "transport": {
+    "passed": true,
+    "cases": [
+      {
+        "case": "valid",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "logical_status": true,
+          "result_data": true
+        },
+        "workflow_id": "2ba11bea025848f7",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "success",
+        "error": null
+      },
+      {
+        "case": "guard_false",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "logical_status": true,
+          "result_data": true,
+          "http_node_not_executed": true
+        },
+        "workflow_id": "cc2cecb9cf1747bc",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 0,
+        "status": "success",
+        "error": null
+      },
+      {
+        "case": "guard_false_invalid_inputs",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "logical_status": true,
+          "result_data": true,
+          "http_node_not_executed": true
+        },
+        "workflow_id": "59289ecc362746db",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 0,
+        "status": "success",
+        "error": null
+      },
+      {
+        "case": "invalid_inputs",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "4744e1ec940444eb",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 0,
+        "status": "error",
+        "error": {
+          "level": "info",
+          "shouldReport": false,
+          "description": null,
+          "tags": {},
+          "name": "WrappedExecutionError",
+          "lineNumber": 5,
+          "message": "Schema violation at inputs.payload.sequence: minimum [line 5]",
+          "stack": "WrappedExecutionError: Schema violation at inputs.payload.sequence: minimum [line 5]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "wrong_invocation",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "94c6a011c3ef45f5",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "info",
+          "shouldReport": false,
+          "description": null,
+          "tags": {},
+          "name": "WrappedExecutionError",
+          "lineNumber": 5,
+          "message": "Agency invocation ID mismatch [line 5]",
+          "stack": "WrappedExecutionError: Agency invocation ID mismatch [line 5]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "wrong_schema",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "a95275ff6ae44d27",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "info",
+          "shouldReport": false,
+          "description": null,
+          "tags": {},
+          "name": "WrappedExecutionError",
+          "lineNumber": 5,
+          "message": "Schema violation at output.priority: enum [line 5]",
+          "stack": "WrappedExecutionError: Schema violation at output.priority: enum [line 5]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "failed_status",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "8c6e34fcb463428c",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "info",
+          "shouldReport": false,
+          "description": null,
+          "tags": {},
+          "name": "WrappedExecutionError",
+          "lineNumber": 5,
+          "message": "Agency did not complete [line 5]",
+          "stack": "WrappedExecutionError: Agency did not complete [line 5]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "extra_field",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "43ae2c23a4b645f3",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "info",
+          "shouldReport": false,
+          "description": null,
+          "tags": {},
+          "name": "WrappedExecutionError",
+          "lineNumber": 5,
+          "message": "Unexpected Agency response fields [line 5]",
+          "stack": "WrappedExecutionError: Unexpected Agency response fields [line 5]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "malformed_json",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "9d9edcf7e3284c31",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "warning",
+          "shouldReport": true,
+          "tags": {},
+          "timestamp": 1791494627149,
+          "context": {
+            "itemIndex": 0
+          },
+          "functionality": "regular",
+          "name": "NodeOperationError",
+          "node": {
+            "id": "6918b03a-ebcf-512e-b34a-cc61023520e6",
+            "name": "Agency classify",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "parameters": {
+              "curlImport": "",
+              "method": "POST",
+              "url": "http://127.0.0.1:41511/v1/agency/execute",
+              "authentication": "none",
+              "provideSslCertificates": false,
+              "sendQuery": false,
+              "sendHeaders": false,
+              "sendBody": true,
+              "contentType": "json",
+              "specifyBody": "json",
+              "jsonBody": "={{ JSON.stringify($json.request) }}",
+              "options": {
+                "redirect": {
+                  "redirect": {
+                    "followRedirects": false
+                  }
+                },
+                "response": {
+                  "response": {
+                    "fullResponse": false,
+                    "neverError": false,
+                    "responseFormat": "json"
+                  }
+                },
+                "timeout": 30000
+              },
+              "infoMessage": ""
+            },
+            "position": [
+              910,
+              -70
+            ],
+            "notes": "Live Agency transport. HTTP/status/schema errors fail the run; no retries."
+          },
+          "messages": [],
+          "message": "Response body is not valid JSON. Change \"Response Format\" to \"Text\"",
+          "stack": "NodeOperationError: Response body is not valid JSON. Change \"Response Format\" to \"Text\"\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/HttpRequest/V3/HttpRequestV3.node.ts:1133:17)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "http_error",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "d33724ad417c4d03",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "warning",
+          "shouldReport": true,
+          "description": "503 - {\"invocation_id\":\"agency-transport-probe/r1/classify/d33724ad417c4d03/1\",\"status\":\"completed\",\"output\":{\"category\":\"transport\",\"priority\":\"accepted\"}}",
+          "tags": {},
+          "timestamp": 1791494632225,
+          "context": {
+            "itemIndex": 0,
+            "request": {
+              "body": {
+                "invocation_id": "agency-transport-probe/r1/classify/d33724ad417c4d03/1",
+                "operation": "transport.echo",
+                "actor": null,
+                "inputs": {
+                  "payload": {
+                    "sequence": 3
+                  }
+                }
+              },
+              "headers": {
+                "accept": "application/json,text/*;q=0.99",
+                "content-type": "application/json"
+              },
+              "method": "POST",
+              "uri": "http://127.0.0.1:41511/v1/agency/execute",
+              "gzip": true,
+              "rejectUnauthorized": true,
+              "followRedirect": false,
+              "resolveWithFullResponse": true,
+              "sendCredentialsOnCrossOriginRedirect": true,
+              "followAllRedirects": false,
+              "timeout": 30000,
+              "json": true
+            }
+          },
+          "functionality": "regular",
+          "name": "NodeApiError",
+          "node": {
+            "id": "6918b03a-ebcf-512e-b34a-cc61023520e6",
+            "name": "Agency classify",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "parameters": {
+              "curlImport": "",
+              "method": "POST",
+              "url": "http://127.0.0.1:41511/v1/agency/execute",
+              "authentication": "none",
+              "provideSslCertificates": false,
+              "sendQuery": false,
+              "sendHeaders": false,
+              "sendBody": true,
+              "contentType": "json",
+              "specifyBody": "json",
+              "jsonBody": "={{ JSON.stringify($json.request) }}",
+              "options": {
+                "redirect": {
+                  "redirect": {
+                    "followRedirects": false
+                  }
+                },
+                "response": {
+                  "response": {
+                    "fullResponse": false,
+                    "neverError": false,
+                    "responseFormat": "json"
+                  }
+                },
+                "timeout": 30000
+              },
+              "infoMessage": ""
+            },
+            "position": [
+              910,
+              -70
+            ],
+            "notes": "Live Agency transport. HTTP/status/schema errors fail the run; no retries."
+          },
+          "messages": [
+            "503 - {\"invocation_id\":\"agency-transport-probe/r1/classify/d33724ad417c4d03/1\",\"status\":\"completed\",\"output\":{\"category\":\"transport\",\"priority\":\"accepted\"}}"
+          ],
+          "httpCode": "503",
+          "message": "Service unavailable - try again later or consider setting this node to retry automatically (in the node settings)",
+          "stack": "NodeApiError: Service unavailable - try again later or consider setting this node to retry automatically (in the node settings)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/HttpRequest/V3/HttpRequestV3.node.ts:892:16)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "array_response",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "e6c5f2bda63f4073",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "info",
+          "shouldReport": false,
+          "description": null,
+          "tags": {},
+          "name": "WrappedExecutionError",
+          "lineNumber": 5,
+          "message": "Agency must return exactly one response item [line 5]",
+          "stack": "WrappedExecutionError: Agency must return exactly one response item [line 5]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "timeout",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "a7087cdbbeb2479d",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "warning",
+          "shouldReport": true,
+          "tags": {},
+          "timestamp": 1791494642190,
+          "context": {
+            "itemIndex": 0,
+            "request": {
+              "body": {
+                "invocation_id": "agency-transport-probe/r1/classify/a7087cdbbeb2479d/1",
+                "operation": "transport.echo",
+                "actor": null,
+                "inputs": {
+                  "payload": {
+                    "sequence": 3
+                  }
+                }
+              },
+              "headers": {
+                "accept": "application/json,text/*;q=0.99",
+                "content-type": "application/json"
+              },
+              "method": "POST",
+              "uri": "http://127.0.0.1:41511/v1/agency/execute",
+              "gzip": true,
+              "rejectUnauthorized": true,
+              "followRedirect": false,
+              "resolveWithFullResponse": true,
+              "sendCredentialsOnCrossOriginRedirect": true,
+              "followAllRedirects": false,
+              "timeout": 200,
+              "json": true
+            }
+          },
+          "functionality": "regular",
+          "name": "NodeApiError",
+          "node": {
+            "id": "6918b03a-ebcf-512e-b34a-cc61023520e6",
+            "name": "Agency classify",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "parameters": {
+              "curlImport": "",
+              "method": "POST",
+              "url": "http://127.0.0.1:41511/v1/agency/execute",
+              "authentication": "none",
+              "provideSslCertificates": false,
+              "sendQuery": false,
+              "sendHeaders": false,
+              "sendBody": true,
+              "contentType": "json",
+              "specifyBody": "json",
+              "jsonBody": "={{ JSON.stringify($json.request) }}",
+              "options": {
+                "redirect": {
+                  "redirect": {
+                    "followRedirects": false
+                  }
+                },
+                "response": {
+                  "response": {
+                    "fullResponse": false,
+                    "neverError": false,
+                    "responseFormat": "json"
+                  }
+                },
+                "timeout": 200
+              },
+              "infoMessage": ""
+            },
+            "position": [
+              910,
+              -70
+            ],
+            "notes": "Live Agency transport. HTTP/status/schema errors fail the run; no retries."
+          },
+          "messages": [
+            "timeout of 200ms exceeded",
+            "timeout of 200ms exceeded"
+          ],
+          "httpCode": "ECONNABORTED",
+          "message": "The connection was aborted, perhaps the server is offline",
+          "stack": "NodeApiError: The connection was aborted, perhaps the server is offline\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/HttpRequest/V3/HttpRequestV3.node.ts:892:16)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "redirect",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "error_present": true,
+          "no_success_output": true,
+          "expected_error_detected": true
+        },
+        "workflow_id": "2a79658032f5434c",
+        "execution_id": "1",
+        "n8n_version": "2.41.5",
+        "request_count": 1,
+        "status": "error",
+        "error": {
+          "level": "warning",
+          "shouldReport": true,
+          "tags": {},
+          "timestamp": 1791494646989,
+          "context": {
+            "itemIndex": 0,
+            "request": {
+              "body": {
+                "invocation_id": "agency-transport-probe/r1/classify/2a79658032f5434c/1",
+                "operation": "transport.echo",
+                "actor": null,
+                "inputs": {
+                  "payload": {
+                    "sequence": 3
+                  }
+                }
+              },
+              "headers": {
+                "accept": "application/json,text/*;q=0.99",
+                "content-type": "application/json"
+              },
+              "method": "POST",
+              "uri": "http://127.0.0.1:41511/v1/agency/execute",
+              "gzip": true,
+              "rejectUnauthorized": true,
+              "followRedirect": false,
+              "resolveWithFullResponse": true,
+              "sendCredentialsOnCrossOriginRedirect": true,
+              "followAllRedirects": false,
+              "timeout": 30000,
+              "json": true
+            }
+          },
+          "functionality": "regular",
+          "name": "NodeApiError",
+          "node": {
+            "id": "6918b03a-ebcf-512e-b34a-cc61023520e6",
+            "name": "Agency classify",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "parameters": {
+              "curlImport": "",
+              "method": "POST",
+              "url": "http://127.0.0.1:41511/v1/agency/execute",
+              "authentication": "none",
+              "provideSslCertificates": false,
+              "sendQuery": false,
+              "sendHeaders": false,
+              "sendBody": true,
+              "contentType": "json",
+              "specifyBody": "json",
+              "jsonBody": "={{ JSON.stringify($json.request) }}",
+              "options": {
+                "redirect": {
+                  "redirect": {
+                    "followRedirects": false
+                  }
+                },
+                "response": {
+                  "response": {
+                    "fullResponse": false,
+                    "neverError": false,
+                    "responseFormat": "json"
+                  }
+                },
+                "timeout": 30000
+              },
+              "infoMessage": ""
+            },
+            "position": [
+              910,
+              -70
+            ],
+            "notes": "Live Agency transport. HTTP/status/schema errors fail the run; no retries."
+          },
+          "messages": [
+            "302 - {\"invocation_id\":\"agency-transport-probe/r1/classify/2a79658032f5434c/1\",\"status\":\"completed\",\"output\":{\"category\":\"transport\",\"priority\":\"accepted\"}}"
+          ],
+          "httpCode": "302",
+          "message": "302 - {\"invocation_id\":\"agency-transport-probe/r1/classify/2a79658032f5434c/1\",\"status\":\"completed\",\"output\":{\"category\":\"transport\",\"priority\":\"accepted\"}}",
+          "stack": "NodeApiError: 302 - {\"invocation_id\":\"agency-transport-probe/r1/classify/2a79658032f5434c/1\",\"status\":\"completed\",\"output\":{\"category\":\"transport\",\"priority\":\"accepted\"}}\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/HttpRequest/V3/HttpRequestV3.node.ts:892:16)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+        }
+      },
+      {
+        "case": "operation_valid",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "operation_observation": true
+        },
+        "status": "success",
+        "execution_id": "1"
+      },
+      {
+        "case": "operation_tool_failure",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "operation_observation": true
+        },
+        "status": "success",
+        "execution_id": "1"
+      },
+      {
+        "case": "operation_wrong_schema",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "no_success_output": true,
+          "error_present": true
+        },
+        "status": "error",
+        "execution_id": "1"
+      },
+      {
+        "case": "operation_http_error",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "no_success_output": true,
+          "error_present": true
+        },
+        "status": "error",
+        "execution_id": "1"
+      },
+      {
+        "case": "operation_malformed_json",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "no_success_output": true,
+          "error_present": true
+        },
+        "status": "error",
+        "execution_id": "1"
+      },
+      {
+        "case": "operation_redirect",
+        "passed": true,
+        "checks": {
+          "imported": true,
+          "persisted_execution": true,
+          "exact_request_count": true,
+          "request_contract": true,
+          "expected_runtime_status": true,
+          "result_presence": true,
+          "no_success_output": true,
+          "error_present": true,
+          "redirect_rejected": true
+        },
+        "status": "error",
+        "execution_id": "1"
+      }
+    ],
+    "engine": "real n8n",
+    "llm": "deterministic fake HTTP bridge; no model calls",
+    "native_completed": true,
+    "exit_code": 0,
+    "job_path": "jobs/transport",
+    "evidence_path": "jobs/transport/transport-task__K3qi4kU/verifier/transport",
+    "runtime_versions_path": "jobs/transport/transport-task__K3qi4kU/verifier/runtime-versions.txt"
+  },
+  "image_id": "sha256:d8d0ccde18dc5a00dc07526811c406c201f9f281c807f171d8188cf0e8177fef",
+  "frozen_image": "sapi-lab-harbor-base:d8d0ccde18dc5a00",
+  "source_unchanged": true,
+  "existing_container_identities_preserved": true,
+  "finished_at": "2026-10-08T21:28:51.346704+00:00"
+}

@@ -1,0 +1,44 @@
+{
+  "invoice-total": {
+    "full_prompt": "d1e72a8298a682f09c6198beb8e26f54beaf086f56a65a79a7cc68e0a0625f49",
+    "full_catalog": "f59ba574360ceef5e23f34a94551061350b9675384e4006ebc43a29c9269b0a2",
+    "scenario_prompt": "8c43ed0f1fd947ba5430cd95cb5555a0575b183fa0d6fbc2883ca2c98981150a",
+    "scenario_catalog": "a93b8bb0e0a00c97b90893221224a47cf621ce2b0852cdf785de79a216bd6a8a",
+    "benchmarks/01-invoice-total/config.yaml": {
+      "baseline_source": "benchmarks/01-invoice-total/config.yaml",
+      "sha256": "2b4d9b5569cd811053bb2e504de4111b171be188b2deff88b4ca63f187406e99",
+      "identical": true
+    },
+    "benchmarks/01-invoice-total/bindings.yaml": {
+      "baseline_source": "src/sapi_config_lab/bindings.yaml",
+      "sha256": "f59ba574360ceef5e23f34a94551061350b9675384e4006ebc43a29c9269b0a2",
+      "identical": true
+    },
+    "operations": {
+      "sha256": "d6d4b30d4c89185d28a75212f18e53b8ed730b1e023c82631b720f24f35dd23b",
+      "baseline_source": "src/sapi_config_lab/compile/operations.js",
+      "identical": true,
+      "reason": null
+    }
+  },
+  "checkout-recovery": {
+    "full_prompt": "920472a634ec32c6d55d66aceec6c4a66035d6cd69b5bc3ad36f3b3c315fae17",
+    "full_catalog": "946edeff0de22a757d0574601f7f119cda9adf737d8396d8bc53f3056f7f13ba",
+    "benchmarks/10-checkout-recovery/config.yaml": {
+      "baseline_source": "benchmarks/10-checkout-recovery/config.yaml",
+      "sha256": "c9176e088aa14e7afcde3cfb8a461841061a25cc9d8abb8b70acb8154150b1a9",
+      "identical": true
+    },
+    "benchmarks/10-checkout-recovery/bindings.yaml": {
+      "baseline_source": "benchmarks/10-checkout-recovery/bindings.yaml",
+      "sha256": "946edeff0de22a757d0574601f7f119cda9adf737d8396d8bc53f3056f7f13ba",
+      "identical": true
+    },
+    "operations": {
+      "sha256": "f5be1b1adc985f6b45f769a4ef764068febb06e6570bf007717a262787ff1aed",
+      "baseline_source": null,
+      "identical": null,
+      "reason": "New descriptor-owned delegate stub; baseline hosted tool implementations belong to unchanged pinned upstream world, not shared fixture operation source."
+    }
+  }
+}

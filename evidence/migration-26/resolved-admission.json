@@ -1,0 +1,26 @@
+{
+  "rows": [
+    {
+      "scenario": "invoice-total",
+      "agent_seconds": 600.0,
+      "build_seconds": 600.0,
+      "verifier_build_seconds": 600.0,
+      "verifier_seconds": 6000.0,
+      "complete_observation_bound": 5160,
+      "runtime_grant_seconds": 7200
+    },
+    {
+      "scenario": "checkout-recovery",
+      "agent_seconds": 600.0,
+      "build_seconds": 600.0,
+      "verifier_build_seconds": 600.0,
+      "verifier_seconds": 1800.0,
+      "complete_observation_bound": 510,
+      "runtime_grant_seconds": 3000
+    }
+  ],
+  "baseline_startpoints": "evidence/migration-01-baseline/INDEX.md#deadline-inventory-audited-implementation",
+  "semantic_rejections_exercised": "tests.test_harbor_settings in check-final.log",
+  "workflow_native_ceilings_and_http_grant_sources_unchanged_during_matrix": true,
+  "whole_job_suite_watchdog_applied": false
+}

@@ -1,0 +1,72 @@
+{
+  "historical_proof": "reports/migration-26/offline/historical-proof.json",
+  "historical_proof_sha256": "2eb6016d7d3e83c4fbdc0b25e7ee6f4303f7a3d9e83024e839cbee4c123c73a8",
+  "independent_original_source_files_verified": 94,
+  "original_source_root": "/private/tmp/sapi-baseline-01",
+  "source_snapshot_commit": "abd9fd461113f91426c76046c9671445be456eb9",
+  "sealed_archives_verified": {
+    "hosted-before-native-fields": {
+      "archive_sha256": "63844dc16e76898932814b2dbf89f5ba2d7130c99c7333d195763a7c68f02086",
+      "sealed_files": 15
+    },
+    "fixture-observation-v1": {
+      "archive_sha256": "af781c46358f4a8259ebdfd89fa1085eec473f28d0af355bbd5aa43ca96ce4cd",
+      "sealed_files": 137
+    }
+  },
+  "hosted_original_files_verified": 15,
+  "historical_successes": [
+    {
+      "name": "historical-fixture",
+      "exit": 0,
+      "result": {
+        "execution": true,
+        "acceptance": true,
+        "quality": {
+          "status": "complete",
+          "score_0_10": 10.0,
+          "normalized_reward": 1.0
+        }
+      },
+      "log": "reports/migration-26/offline/historical-fixture.log",
+      "dispatch_file_created": false,
+      "original_hashes_preserved": true
+    },
+    {
+      "name": "historical-hosted-saved",
+      "exit": 0,
+      "result": {
+        "execution": true,
+        "acceptance": true,
+        "quality": {
+          "status": "complete",
+          "score_0_10": 7.32,
+          "normalized_reward": 0.732
+        }
+      },
+      "log": "reports/migration-26/offline/historical-hosted-saved.log",
+      "dispatch_file_created": false,
+      "original_hashes_preserved": true
+    }
+  ],
+  "historical_refusals": [
+    {
+      "name": "historical-missing-source-refusal",
+      "exit": 2,
+      "result": null,
+      "log": "reports/migration-26/offline/historical-missing-source-refusal.log",
+      "dispatch_file_created": false,
+      "original_hashes_preserved": true
+    },
+    {
+      "name": "historical-judge-refusal",
+      "exit": 2,
+      "result": null,
+      "log": "reports/migration-26/offline/historical-judge-refusal.log",
+      "dispatch_file_created": false,
+      "original_hashes_preserved": true
+    }
+  ],
+  "status": "passed",
+  "additional_historical_cli_runs": 0
+}

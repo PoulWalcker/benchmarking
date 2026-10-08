@@ -1,0 +1,89 @@
+{
+  "matrix": "reports/migration-06/faults-e82c9aa0c3/matrix.json",
+  "matrix_sha256": "7b06c75f15bd6a727b3bbff24fa8d46b131c60c84fe7b5329262bda72d340db0",
+  "modes": [
+    {
+      "mode": "deadline",
+      "returncode": 0,
+      "exception_type": "RewardFileNotFoundError",
+      "partial_rows": 6,
+      "managed_services_remaining": 0,
+      "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/deadline/checkout-recovery__Qh9Bcb8"
+    },
+    {
+      "mode": "worker-death",
+      "returncode": 0,
+      "exception_type": "RewardFileNotFoundError",
+      "partial_rows": 4,
+      "managed_services_remaining": 0,
+      "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/worker-death/checkout-recovery__JTdoFJP"
+    },
+    {
+      "mode": "hard-timeout",
+      "returncode": 0,
+      "exception_type": "VerifierTimeoutError",
+      "partial_rows": 4,
+      "managed_services_remaining": 0,
+      "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/hard-timeout/checkout-recovery__PSxWoiD"
+    },
+    {
+      "mode": "simulator-death",
+      "returncode": 0,
+      "exception_type": "RewardFileNotFoundError",
+      "partial_rows": 4,
+      "managed_services_remaining": 0,
+      "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/simulator-death/checkout-recovery__EEGhP8x"
+    },
+    {
+      "mode": "cancellation",
+      "returncode": 130,
+      "exception_type": "CancelledError",
+      "partial_rows": 4,
+      "managed_services_remaining": 0,
+      "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/cancellation/checkout-recovery__XRW2tQn"
+    },
+    {
+      "mode": "finish-race",
+      "returncode": 0,
+      "exception_type": "RewardFileNotFoundError",
+      "partial_rows": 6,
+      "managed_services_remaining": 0,
+      "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/finish-race/checkout-recovery__aawzoBN"
+    },
+    {
+      "mode": "terminal-race",
+      "returncode": 0,
+      "exception_type": "RewardFileNotFoundError",
+      "partial_rows": 6,
+      "managed_services_remaining": 0,
+      "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/terminal-race/checkout-recovery__qdd4Erc"
+    },
+    {
+      "mode": "evaluator-failure",
+      "returncode": 0,
+      "exception_type": "RewardFileNotFoundError",
+      "partial_rows": 18,
+      "managed_services_remaining": 0,
+      "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/evaluator-failure/checkout-recovery__pEyHzCE"
+    },
+    {
+      "mode": "isolation-freshness",
+      "returncode": 0,
+      "exception_type": "RewardFileNotFoundError",
+      "partial_rows": 13,
+      "managed_services_remaining": 0,
+      "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/isolation-freshness/checkout-recovery__f2b8dsG"
+    },
+    {
+      "mode": "fresh-retry",
+      "returncode": 0,
+      "exception_type": "RewardFileNotFoundError",
+      "partial_rows": 13,
+      "managed_services_remaining": 0,
+      "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/fresh-retry/checkout-recovery__znESmQF"
+    }
+  ],
+  "evidence_files_verified": 168,
+  "all_ten_fresh": true,
+  "universal_final_snapshot_delivery_claimed": false
+}

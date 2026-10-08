@@ -1,0 +1,178 @@
+{
+  "status": "passed",
+  "scope": "Actual current CLI offline replay and refusal receipts; independent validation of already executed historical CLI proof and ordinary readers",
+  "historical_cli_reused": "reports/migration-26/offline/historical-proof.json",
+  "historical_cli_proof_sha256": "2eb6016d7d3e83c4fbdc0b25e7ee6f4303f7a3d9e83024e839cbee4c123c73a8",
+  "historical_source_files_match_sealed_manifest": 94,
+  "current_cli_rows": [
+    {
+      "name": "current-checkout-saved",
+      "command": [
+        "/private/tmp/sapi-migration-26/.venv/bin/sapi-lab",
+        "evaluate",
+        "--record",
+        "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/oracle/checkout-recovery__LBZvXBo/verifier",
+        "--output",
+        "/private/tmp/sapi-migration-26/reports/migration-26/offline-compatibility/current-checkout-saved",
+        "--judgement",
+        "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/oracle/checkout-recovery__LBZvXBo/verifier/evaluation/judge-reply.json"
+      ],
+      "exit": 0,
+      "result": {
+        "execution": true,
+        "acceptance": true,
+        "quality": {
+          "status": "complete",
+          "score_0_10": 7.32,
+          "normalized_reward": 0.732
+        },
+        "harbor_reward": 0.732
+      },
+      "log": "reports/migration-26/offline-compatibility/current-checkout-saved.log",
+      "original_files": 51,
+      "original_hashes_preserved": true,
+      "dispatch_file_created": false,
+      "hash_inventory": "reports/migration-26/offline-compatibility/current-checkout-saved-original-hashes.json"
+    },
+    {
+      "name": "current-saved-judge-refusal",
+      "command": [
+        "/private/tmp/sapi-migration-26/.venv/bin/sapi-lab",
+        "evaluate",
+        "--record",
+        "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/oracle/checkout-recovery__LBZvXBo/verifier",
+        "--output",
+        "/private/tmp/sapi-migration-26/reports/migration-26/offline-compatibility/current-saved-judge-refusal",
+        "--judgement",
+        "/private/tmp/sapi-migration-26/reports/migration-26/offline-compatibility/mismatched-saved-judge.json"
+      ],
+      "exit": 2,
+      "result": null,
+      "log": "reports/migration-26/offline-compatibility/current-saved-judge-refusal.log",
+      "original_files": 51,
+      "original_hashes_preserved": true,
+      "dispatch_file_created": false,
+      "hash_inventory": "reports/migration-26/offline-compatibility/current-saved-judge-refusal-original-hashes.json"
+    },
+    {
+      "name": "current-source-identity-refusal",
+      "command": [
+        "/private/tmp/sapi-migration-26/.venv/bin/sapi-lab",
+        "evaluate",
+        "--record",
+        "/private/tmp/sapi-migration-26/reports/migration-26/offline-compatibility/mismatched-source-record",
+        "--output",
+        "/private/tmp/sapi-migration-26/reports/migration-26/offline-compatibility/current-source-identity-refusal"
+      ],
+      "exit": 2,
+      "result": null,
+      "log": "reports/migration-26/offline-compatibility/current-source-identity-refusal.log",
+      "original_files": 51,
+      "original_hashes_preserved": true,
+      "dispatch_file_created": false,
+      "hash_inventory": "reports/migration-26/offline-compatibility/current-source-identity-refusal-original-hashes.json"
+    },
+    {
+      "name": "current-unavailable-benchmark-refusal",
+      "command": [
+        "/private/tmp/sapi-migration-26/.venv/bin/sapi-lab",
+        "evaluate",
+        "--record",
+        "/private/tmp/sapi-migration-26/reports/migration-26/offline-compatibility/unavailable-benchmark-record",
+        "--output",
+        "/private/tmp/sapi-migration-26/reports/migration-26/offline-compatibility/current-unavailable-benchmark-refusal"
+      ],
+      "exit": 2,
+      "result": null,
+      "log": "reports/migration-26/offline-compatibility/current-unavailable-benchmark-refusal.log",
+      "original_files": 51,
+      "original_hashes_preserved": true,
+      "dispatch_file_created": false,
+      "hash_inventory": "reports/migration-26/offline-compatibility/current-unavailable-benchmark-refusal-original-hashes.json"
+    },
+    {
+      "name": "current-invoice-offline",
+      "command": [
+        "/private/tmp/sapi-migration-26/.venv/bin/sapi-lab",
+        "evaluate",
+        "--record",
+        "/private/tmp/sapi-migration-26/reports/migration-26/retained-controls/jobs/oracle/invoice-total__spQyXja/verifier",
+        "--output",
+        "/private/tmp/sapi-migration-26/reports/migration-26/offline-compatibility/current-invoice-offline"
+      ],
+      "exit": 0,
+      "result": {
+        "execution": true,
+        "acceptance": true,
+        "quality": {
+          "schema": "sapi-lab-rubric-evaluation/v1",
+          "rubric": {
+            "id": "invoice-total",
+            "version": "1.0.0",
+            "origin": "local",
+            "digest": "3a7f8e5982a3fdfc8c43930158d90a2bc10f50aef4e2624847a65437d0efa12e"
+          },
+          "status": "complete",
+          "score_0_10": 10.0,
+          "deterministic_points": 10.0,
+          "execution_pass": true,
+          "criteria": [
+            {
+              "id": "acceptance",
+              "question": "Does the result satisfy the independent acceptance contract for invoice-total?",
+              "weight": 10,
+              "evaluator": "deterministic",
+              "answer": "yes",
+              "points": 10.0,
+              "reason": "Protected environment verification",
+              "refs_supplied": [
+                "check-accepted"
+              ]
+            }
+          ],
+          "answer_values": {
+            "yes": 1.0,
+            "maybe": 0.33,
+            "no": 0.0
+          },
+          "judge": null,
+          "judge_error": null,
+          "normalized_reward": 1.0
+        }
+      },
+      "log": "reports/migration-26/offline-compatibility/current-invoice-offline.log",
+      "original_files": 139,
+      "original_hashes_preserved": true,
+      "dispatch_file_created": false,
+      "hash_inventory": "reports/migration-26/offline-compatibility/current-invoice-offline-original-hashes.json"
+    }
+  ],
+  "historical_quality_preserved": {
+    "fixture": 1.0,
+    "hosted_saved_judge": 0.732
+  },
+  "current_quality_preserved": {
+    "invoice": 1.0,
+    "checkout_saved_judge": 0.732
+  },
+  "ordinary_reader_trials": 22,
+  "ordinary_reader_benchmarks": 11,
+  "retired_benchmarks": 9,
+  "sealed_historical_files_preserved": 78,
+  "all_original_records_byte_preserved": true,
+  "new_judge_dispatches": 0,
+  "derived_outputs_separate": true,
+  "unavailable_snapshot_refusal": "existing historical public CLI exit2 proof",
+  "current_refusal_exits": {
+    "current-saved-judge-refusal": 2,
+    "current-source-identity-refusal": 2,
+    "current-unavailable-benchmark-refusal": 2
+  },
+  "evidence_files": {
+    "historical-proof-validation.json": "3445db021abd0ad88ed64d30499387806f7bb120cd961ffb21f4d24c3be58410",
+    "all-eleven-reader-proof.json": "2c23c78b659d1b5f6a02187492731d09f4da3cc73efe4794e765dfb77f4c5914",
+    "current-replay-results.json": "97ae2ed11241424e043ffc0141278a7a2e60c7ab9643dbcbfca712fb56915311",
+    "sealed-historical-before-after.json": "cb533be1122289e38d20bfd4f0b546ebe97448a00f38dfc2074c1b4b1045274e",
+    "original-source-inventory.json": "1727b3ffa71e247b759281b865e8b637c0f99a3923ac2987cd68c0dece3286bb"
+  }
+}

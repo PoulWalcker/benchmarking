@@ -1,0 +1,11 @@
+{
+  "source_files": 237,
+  "source_unchanged": true,
+  "sealed_files_unchanged": 85,
+  "raw_files_unchanged": 1592,
+  "raw_archive_sha256": "0a077e416b399f960c7d6f5d567d87d98e725d6abce8304dc495b4c268434664",
+  "no_core_source_or_prompt_changes": true,
+  "harbor_version": "0.21.0",
+  "paid_calls": 0,
+  "push_performed": false
+}

@@ -1,0 +1,320 @@
+[
+  {
+    "fault": "deadline",
+    "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/deadline/checkout-recovery__Qh9Bcb8",
+    "returncode": 0,
+    "exception": {
+      "exception_type": "RewardFileNotFoundError",
+      "exception_message": "No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/deadline/checkout-recovery__Qh9Bcb8/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/deadline/checkout-recovery__Qh9Bcb8/verifier/reward.json",
+      "exception_traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 378, in run\n    await self._run()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 99, in _run_verifier\n    self.result.verifier_result = await self._run_separate_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 635, in _run_separate_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n        verifier.verify(), timeout=timeout_sec\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/tasks.py\", line 486, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\n    ...<3 lines>...\n    )\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/deadline/checkout-recovery__Qh9Bcb8/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/deadline/checkout-recovery__Qh9Bcb8/verifier/reward.json\n",
+      "occurred_at": "2026-10-08T21:33:41.022683Z"
+    },
+    "partial_rows": 6,
+    "managed_services_remaining": 0,
+    "evidence_hashes": {
+      "test-stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "probe-proof.json": "f29b067461f0cfc26be0b4464ba821912c664ab04281503e7573070ed3739beb",
+      "observed-trial.json": "bce0a60599c8eecc4b519023ef05b12e804b9fdc052e023855c49c37b97fd30b",
+      "phase.json": "927ca7ef797de369020d8399d88204bc2f93d28a6098a43574e4299f97189203",
+      "evidence/transport-evidence.json": "1656e461c2326de83d5fdc69db1914418e63e05215cd66d654e17c9fb5f28dc8",
+      "evidence/environment-evidence.json": "2e78055bd7acb700edab44c0dff9ea1b27159dd080fade442782ed98c4cadbec",
+      "evidence/native-record.json": "e7d2bc7be7c56366a401bbfbd5664b2939888d437d5e4f72d10f35243337b16a",
+      "evidence/trial.json": "3d621b602beacfc560cba201ae1332f64e043412dba312a822cf0c078973100a",
+      "evidence/window.json": "fa2642da7e64699caca2aa792d6011f4d2665b2c63adb5bbc73c6f254e596a9c",
+      "world/000001-transport.json": "cdd8990fbf0773da4acef8cc3681e8bde21891c8ff08893c4fd5c0b10f622663",
+      "world/000004-terminal-window.json": "53229ce2c020f4eee424d4d9a6c8b933ae1ec7aab9d5223d742027224d06912e",
+      "world/000002-transport.json": "627f7a94b6a14f78f521ffa2ac9ec275eedda2b24c2b3ee91c6ee19ca9a9a938",
+      "world/000003-transport.json": "3e2a33720321b1181268131b7789b253c5666550fd5c65ca38f73df88a65c4dd",
+      "world/000000-window.json": "d3c8117418f5cb74c604cf1453faf8a1362123d3d06edfeeb10774001b8f3f12",
+      "world/000005-snapshot.json": "910607f4ba7a1fcfb7a04819c3b38d741b8859dcc730ec89794bdfbb71c641f1"
+    }
+  },
+  {
+    "fault": "worker-death",
+    "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/worker-death/checkout-recovery__JTdoFJP",
+    "returncode": 0,
+    "exception": {
+      "exception_type": "RewardFileNotFoundError",
+      "exception_message": "No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/worker-death/checkout-recovery__JTdoFJP/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/worker-death/checkout-recovery__JTdoFJP/verifier/reward.json",
+      "exception_traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 378, in run\n    await self._run()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 99, in _run_verifier\n    self.result.verifier_result = await self._run_separate_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 635, in _run_separate_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n        verifier.verify(), timeout=timeout_sec\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/tasks.py\", line 486, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\n    ...<3 lines>...\n    )\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/worker-death/checkout-recovery__JTdoFJP/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/worker-death/checkout-recovery__JTdoFJP/verifier/reward.json\n",
+      "occurred_at": "2026-10-08T21:34:47.588481Z"
+    },
+    "partial_rows": 4,
+    "managed_services_remaining": 0,
+    "evidence_hashes": {
+      "test-stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "release": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "phase.json": "5437b670721eccefe6cd858d9ce2478cf8d19f5c1d4bc4c48e4d6da6e9a4f621",
+      "evidence/window.json": "7a02c10cd64423a87227c5038ad30c705a551e7065c6fc0d89992f8df64c1263",
+      "world/000001-transport.json": "cdd8990fbf0773da4acef8cc3681e8bde21891c8ff08893c4fd5c0b10f622663",
+      "world/000002-transport.json": "627f7a94b6a14f78f521ffa2ac9ec275eedda2b24c2b3ee91c6ee19ca9a9a938",
+      "world/000003-transport.json": "3e2a33720321b1181268131b7789b253c5666550fd5c65ca38f73df88a65c4dd",
+      "world/000000-window.json": "e1bd1f1dc4301a769e8058c123c39eb00a17145824ac05ec3c2ae6cffd8ca115"
+    }
+  },
+  {
+    "fault": "hard-timeout",
+    "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/hard-timeout/checkout-recovery__PSxWoiD",
+    "returncode": 0,
+    "exception": {
+      "exception_type": "VerifierTimeoutError",
+      "exception_message": "Verifier execution timed out after 8.0 seconds",
+      "exception_traceback": "Traceback (most recent call last):\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/tasks.py\", line 486, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/verifier/verifier.py\", line 199, in verify\n    await self.environment.exec(\n    ...<2 lines>...\n    )\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/environments/docker/docker.py\", line 1096, in exec\n    return await self._compose_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<6 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/environments/docker/docker.py\", line 1173, in _compose_exec\n    return await self._run_docker_compose_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/environments/docker/docker.py\", line 649, in _run_docker_compose_command\n    result = await self._collect_buffered_output(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<3 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/environments/docker/docker.py\", line 679, in _collect_buffered_output\n    stdout_bytes, stderr_bytes = await process.communicate(input=stdin_data)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/subprocess.py\", line 201, in communicate\n    stdin, stdout, stderr = await tasks.gather(stdin, stdout, stderr)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/subprocess.py\", line 181, in _read_stream\n    output = await stream.read()\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/streams.py\", line 740, in read\n    block = await self.read(self._limit)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/streams.py\", line 747, in read\n    await self._wait_for_data('read')\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/streams.py\", line 556, in _wait_for_data\n    await self._waiter\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 99, in _run_verifier\n    self.result.verifier_result = await self._run_separate_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 635, in _run_separate_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n        verifier.verify(), timeout=timeout_sec\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/tasks.py\", line 485, in wait_for\n    async with timeouts.timeout(timeout):\n               ~~~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 378, in run\n    await self._run()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 111, in _run_verifier\n    raise VerifierTimeoutError(\n        f\"Verifier execution timed out after {self._verifier_timeout_sec} seconds\"\n    ) from exc\nharbor.trial.errors.VerifierTimeoutError: Verifier execution timed out after 8.0 seconds\n",
+      "occurred_at": "2026-10-08T21:35:51.633752Z"
+    },
+    "partial_rows": 4,
+    "managed_services_remaining": 0,
+    "evidence_hashes": {
+      "test-stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "phase.json": "709de018501d6d5034349a6b0fcdfd78fed1b00f88313e2b6fff6553e0e79129",
+      "evidence/window.json": "89df31cfe0140a2458c4dc53ea3d1281843529887f01afa25d557a17e5a738b8",
+      "world/000001-transport.json": "cdd8990fbf0773da4acef8cc3681e8bde21891c8ff08893c4fd5c0b10f622663",
+      "world/000002-transport.json": "627f7a94b6a14f78f521ffa2ac9ec275eedda2b24c2b3ee91c6ee19ca9a9a938",
+      "world/000003-transport.json": "3e2a33720321b1181268131b7789b253c5666550fd5c65ca38f73df88a65c4dd",
+      "world/000000-window.json": "c6df5d315a855f540ae0ce10fdd4193d9ff65c9ab7df7ea9c2ea91c2878f287f"
+    }
+  },
+  {
+    "fault": "simulator-death",
+    "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/simulator-death/checkout-recovery__EEGhP8x",
+    "returncode": 0,
+    "exception": {
+      "exception_type": "RewardFileNotFoundError",
+      "exception_message": "No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/simulator-death/checkout-recovery__EEGhP8x/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/simulator-death/checkout-recovery__EEGhP8x/verifier/reward.json",
+      "exception_traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 378, in run\n    await self._run()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 99, in _run_verifier\n    self.result.verifier_result = await self._run_separate_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 635, in _run_separate_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n        verifier.verify(), timeout=timeout_sec\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/tasks.py\", line 486, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\n    ...<3 lines>...\n    )\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/simulator-death/checkout-recovery__EEGhP8x/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/simulator-death/checkout-recovery__EEGhP8x/verifier/reward.json\n",
+      "occurred_at": "2026-10-08T21:36:47.878065Z"
+    },
+    "partial_rows": 4,
+    "managed_services_remaining": 0,
+    "evidence_hashes": {
+      "test-stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "probe-proof.json": "f29b067461f0cfc26be0b4464ba821912c664ab04281503e7573070ed3739beb",
+      "release": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "observed-trial.json": "37e7e57cf2d9973e02a5ba843528fe6539bd73116aa976ac32608ccd43f48cb4",
+      "phase.json": "8aa24159376849d71acbc9ff9702731387fd4367fdf24051a7346c65e069772d",
+      "evidence/native-record.json": "e7d2bc7be7c56366a401bbfbd5664b2939888d437d5e4f72d10f35243337b16a",
+      "evidence/trial.json": "c641e184599f1e4b89414abbd880337f1b9043ef8467da0130cab280a8ec2a03",
+      "evidence/window.json": "b35c0921551472778246e353b9f5bd733c7491d13a88c74c8b742f4391a34b35",
+      "world/000001-transport.json": "cdd8990fbf0773da4acef8cc3681e8bde21891c8ff08893c4fd5c0b10f622663",
+      "world/000002-transport.json": "627f7a94b6a14f78f521ffa2ac9ec275eedda2b24c2b3ee91c6ee19ca9a9a938",
+      "world/000003-transport.json": "3e2a33720321b1181268131b7789b253c5666550fd5c65ca38f73df88a65c4dd",
+      "world/000000-window.json": "c5b90b6fd59bc342844c72c9a2161ff268af0d3de7bf50a5219a41497267504a"
+    }
+  },
+  {
+    "fault": "cancellation",
+    "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/cancellation/checkout-recovery__XRW2tQn",
+    "returncode": 130,
+    "exception": {
+      "exception_type": "CancelledError",
+      "exception_message": "",
+      "exception_traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 378, in run\n    await self._run()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 99, in _run_verifier\n    self.result.verifier_result = await self._run_separate_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 635, in _run_separate_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n        verifier.verify(), timeout=timeout_sec\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/tasks.py\", line 486, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/verifier/verifier.py\", line 199, in verify\n    await self.environment.exec(\n    ...<2 lines>...\n    )\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/environments/docker/docker.py\", line 1096, in exec\n    return await self._compose_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<6 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/environments/docker/docker.py\", line 1173, in _compose_exec\n    return await self._run_docker_compose_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/environments/docker/docker.py\", line 649, in _run_docker_compose_command\n    result = await self._collect_buffered_output(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<3 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/environments/docker/docker.py\", line 679, in _collect_buffered_output\n    stdout_bytes, stderr_bytes = await process.communicate(input=stdin_data)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/subprocess.py\", line 201, in communicate\n    stdin, stdout, stderr = await tasks.gather(stdin, stdout, stderr)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/subprocess.py\", line 181, in _read_stream\n    output = await stream.read()\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/streams.py\", line 740, in read\n    block = await self.read(self._limit)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/streams.py\", line 747, in read\n    await self._wait_for_data('read')\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/streams.py\", line 556, in _wait_for_data\n    await self._waiter\nasyncio.exceptions.CancelledError\n",
+      "occurred_at": "2026-10-08T21:37:41.641205Z"
+    },
+    "partial_rows": 4,
+    "managed_services_remaining": 0,
+    "evidence_hashes": {
+      "test-stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "phase.json": "b10632d833c1ade8b57f5755ce3b933e8945990560d0f15dff27e5b87e34f8c8",
+      "evidence/window.json": "bed9b51170490136d9424f355a3ad6b0599f1d2e282d29893f7791c54996067c",
+      "world/000001-transport.json": "cdd8990fbf0773da4acef8cc3681e8bde21891c8ff08893c4fd5c0b10f622663",
+      "world/000002-transport.json": "627f7a94b6a14f78f521ffa2ac9ec275eedda2b24c2b3ee91c6ee19ca9a9a938",
+      "world/000003-transport.json": "3e2a33720321b1181268131b7789b253c5666550fd5c65ca38f73df88a65c4dd",
+      "world/000000-window.json": "4d63bb73db723c8af908c6450cf345cacc5275bb108b573d86151849186dbfe7"
+    }
+  },
+  {
+    "fault": "finish-race",
+    "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/finish-race/checkout-recovery__aawzoBN",
+    "returncode": 0,
+    "exception": {
+      "exception_type": "RewardFileNotFoundError",
+      "exception_message": "No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/finish-race/checkout-recovery__aawzoBN/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/finish-race/checkout-recovery__aawzoBN/verifier/reward.json",
+      "exception_traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 378, in run\n    await self._run()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 99, in _run_verifier\n    self.result.verifier_result = await self._run_separate_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 635, in _run_separate_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n        verifier.verify(), timeout=timeout_sec\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/tasks.py\", line 486, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\n    ...<3 lines>...\n    )\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/finish-race/checkout-recovery__aawzoBN/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/finish-race/checkout-recovery__aawzoBN/verifier/reward.json\n",
+      "occurred_at": "2026-10-08T21:38:46.369983Z"
+    },
+    "partial_rows": 6,
+    "managed_services_remaining": 0,
+    "evidence_hashes": {
+      "test-stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "probe-proof.json": "f29b067461f0cfc26be0b4464ba821912c664ab04281503e7573070ed3739beb",
+      "observed-trial.json": "366ebc544c20aee2c93e926510c25f407ba5d00ad0d861050ae50650cfa2fd52",
+      "phase.json": "8a6668568a2cf880879c0e897c16c6d00ee076679fdc8148c7bfeeb07d3f7dbb",
+      "evidence/transport-evidence.json": "1656e461c2326de83d5fdc69db1914418e63e05215cd66d654e17c9fb5f28dc8",
+      "evidence/environment-evidence.json": "ac62de4db4f4a7212ca4b8d4fb26345bd2d8963a10b00086f139483842bca517",
+      "evidence/native-record.json": "e7d2bc7be7c56366a401bbfbd5664b2939888d437d5e4f72d10f35243337b16a",
+      "evidence/trial.json": "1e2e1084c3dc8446bb1501a9cc8d27084667b1bb03a8990ec22a7937c296e9ba",
+      "evidence/window.json": "924042889fb09b63cff49471b33f25040cdb37cf082dbd9f61828e5f01209e36",
+      "world/000001-transport.json": "cdd8990fbf0773da4acef8cc3681e8bde21891c8ff08893c4fd5c0b10f622663",
+      "world/000004-terminal-window.json": "5a144d00a21027d7670c602d1c4014618c8ec670fe6954b233e989f94ceffc45",
+      "world/000002-transport.json": "627f7a94b6a14f78f521ffa2ac9ec275eedda2b24c2b3ee91c6ee19ca9a9a938",
+      "world/000003-transport.json": "3e2a33720321b1181268131b7789b253c5666550fd5c65ca38f73df88a65c4dd",
+      "world/000000-window.json": "80ba671ee97eaa004ed0e6652bd39b2af19155c1b748d19f8106ad9a3382d978",
+      "world/000005-snapshot.json": "bac0c8088c16b290d9f90b073cf7e061a59ab1339a282e39cf329f3caf669528"
+    }
+  },
+  {
+    "fault": "terminal-race",
+    "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/terminal-race/checkout-recovery__qdd4Erc",
+    "returncode": 0,
+    "exception": {
+      "exception_type": "RewardFileNotFoundError",
+      "exception_message": "No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/terminal-race/checkout-recovery__qdd4Erc/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/terminal-race/checkout-recovery__qdd4Erc/verifier/reward.json",
+      "exception_traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 378, in run\n    await self._run()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 99, in _run_verifier\n    self.result.verifier_result = await self._run_separate_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 635, in _run_separate_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n        verifier.verify(), timeout=timeout_sec\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/tasks.py\", line 486, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\n    ...<3 lines>...\n    )\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/terminal-race/checkout-recovery__qdd4Erc/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/terminal-race/checkout-recovery__qdd4Erc/verifier/reward.json\n",
+      "occurred_at": "2026-10-08T21:40:15.683183Z"
+    },
+    "partial_rows": 6,
+    "managed_services_remaining": 0,
+    "evidence_hashes": {
+      "test-stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "probe-proof.json": "f29b067461f0cfc26be0b4464ba821912c664ab04281503e7573070ed3739beb",
+      "observed-trial.json": "80f2a9b3df4d36b29804f93b6cacceb48364c051d9bfe05cd11d478d89de8769",
+      "phase.json": "afac74e96e6ce554a84ab07a2a934094ae3bc0212ca3db4c5b90b7f4e35f78d0",
+      "evidence/transport-evidence.json": "1656e461c2326de83d5fdc69db1914418e63e05215cd66d654e17c9fb5f28dc8",
+      "evidence/environment-evidence.json": "69ee9351633d224525da02cf3264473b6413a7916be989997da9954e6076db24",
+      "evidence/native-record.json": "e7d2bc7be7c56366a401bbfbd5664b2939888d437d5e4f72d10f35243337b16a",
+      "evidence/trial.json": "7baefb61ec841e53dadda4525cfac56ac3eea9cdb5971cc21e017327296ed26a",
+      "evidence/window.json": "1844a4ee6d3f045ee423c601f59b7878cd20a416243c87cc3f86014f97eda5ab",
+      "world/000001-transport.json": "cdd8990fbf0773da4acef8cc3681e8bde21891c8ff08893c4fd5c0b10f622663",
+      "world/000004-terminal-window.json": "6bbceeebbe262d6541d7e2416693e7a266c3e0c791165dcdedd717e6b1e898a6",
+      "world/000002-transport.json": "627f7a94b6a14f78f521ffa2ac9ec275eedda2b24c2b3ee91c6ee19ca9a9a938",
+      "world/000003-transport.json": "3e2a33720321b1181268131b7789b253c5666550fd5c65ca38f73df88a65c4dd",
+      "world/000000-window.json": "ae36e01ef4a4fbc7a2e12d490a93190eb3e6696f60a26e091b2194289d97312d",
+      "world/000005-snapshot.json": "820e435b309d040e885a3f1f201478d5a950ebf3fdf8272d5693d067b5eaae14"
+    }
+  },
+  {
+    "fault": "evaluator-failure",
+    "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/evaluator-failure/checkout-recovery__pEyHzCE",
+    "returncode": 0,
+    "exception": {
+      "exception_type": "RewardFileNotFoundError",
+      "exception_message": "No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/evaluator-failure/checkout-recovery__pEyHzCE/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/evaluator-failure/checkout-recovery__pEyHzCE/verifier/reward.json",
+      "exception_traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 378, in run\n    await self._run()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 99, in _run_verifier\n    self.result.verifier_result = await self._run_separate_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 635, in _run_separate_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n        verifier.verify(), timeout=timeout_sec\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/tasks.py\", line 486, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\n    ...<3 lines>...\n    )\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/evaluator-failure/checkout-recovery__pEyHzCE/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/evaluator-failure/checkout-recovery__pEyHzCE/verifier/reward.json\n",
+      "occurred_at": "2026-10-08T21:41:17.211966Z"
+    },
+    "partial_rows": 18,
+    "managed_services_remaining": 0,
+    "evidence_hashes": {
+      "test-stdout.txt": "668774e8664ba6716f9fd4c2198c0ee2b2ccf7d33bece73109ed033f49db9dae",
+      "plan.json": "31c4713710a7d1329c07be67a553d7ea0d60cfc8bca656853066095384d4073f",
+      "benchmark.json": "e3e52da0b2b49af83e37ac339164074ec2e4c99546e85f41d345e54f00778f27",
+      "before-evaluator.json": "b1e923218a4c677a163b8bf844252113e4463958d79f6123bd28511f6775ab60",
+      "evidence/observation.json": "0df962d2f2766baa35ec74a9f14f4f0d5b299eefd996ce95e9092da226a6dd91",
+      "evidence/transport-evidence.json": "eb3142056bc376f372fdc395c7c60c15130da0bae2230e446aff55717f8e714b",
+      "evidence/environment-evidence.json": "4c90e21e2ae31f99035e73d156183b95d3bf44008cd26defe3a1d77779e08c55",
+      "evidence/submission.yaml": "c9176e088aa14e7afcde3cfb8a461841061a25cc9d8abb8b70acb8154150b1a9",
+      "evidence/native-record.json": "44aee9919d51086ca382d72cf139c61c79c8f37bc98a3f1851f98e72e8e2876c",
+      "evidence/trial.json": "bc9a84b313c2fccc95afa965004b43f9ed3aeace047a7286a7f6040ae0611e03",
+      "evidence/window.json": "4fa934f9208f7996973d3bdcb766aec210419fca24e1f1dbe621ec2fce863f27",
+      "world/000009-transport.json": "6fce7375f2a4c4b790c874656a26dd0bfc901f3269bcddc41565a85fbaae500d",
+      "world/000014-transport.json": "bcfedaf45b98083ea23435d8fd52fe577be45f60de1501d563053f70aa19c990",
+      "world/000001-transport.json": "b89f5af88c2ee9c35aec1b23ba0528c772ecb11344bc4ee1439b00dc7d059844",
+      "world/000017-snapshot.json": "54d3d351a8ce1c1af17c4ab56b8d53faa11f9f37e82b79c85443be11d98dbb22",
+      "world/000016-terminal-window.json": "12a2efc890320c88af634f84689d4e020e72d7c95d2db745de7c1215bcf5dea6",
+      "world/000006-transport.json": "534ee708477971bb541b870656117f8ac4f2c1e32b74614804b9da9c93b5de2d",
+      "world/000013-transport.json": "85930d9ef5c74ab8f2661668a6c04bcd75132583d6cbf93a448bd2a3f81b7c5e",
+      "world/000012-transport.json": "eef80cd46d6c31dc27179b0a78d83a8c3ca4b5ce9a5f73d0a1e0c880fb5ffb8d",
+      "world/000007-transport.json": "6b79320f5a61321dd2d639b65a4bcddc416427e847e26e5815d9d4db5767e844",
+      "world/000015-transport.json": "fddcec88229fe70b65d2d39f6d34a89917665dbda8915a1e273800c7ec59329a",
+      "world/000008-transport.json": "93f5f24f442075fa147486cb7f6b461a796e9f56320c819c1bc8ae6b343f4572",
+      "world/000002-transport.json": "a40bb9d8f2c21b1df756a09107592a2a3eed8ed6778ac584e3931b6c17b04fa0",
+      "world/000010-transport.json": "373a5fd70a0da1c946d430e7ee21d644cfa77fbfb8eb8d13eb601c14a0d93295",
+      "world/000005-transport.json": "d3ec92bc027e767ef69e36d112aade930fd618362d6b7a87091623f7f9db4509",
+      "world/000004-transport.json": "d2a4be457290b73aa7e26091dc77801295cd96db81ca01715576c08c8b81a493",
+      "world/000011-transport.json": "aa0e25af0c3ebd66808bc28a26b7cafe2dc740297944218d388ad53d3ff8f28e",
+      "world/000003-transport.json": "3ca8aca73d12c0647b44f5d70b4f7e915366470832def911e57f1a012971dd77",
+      "world/000000-window.json": "8f77ee48ca5a3ed6389da666d4467bd97519c6af4b633fca3dab7a0356230206",
+      "evidence/cases/workflow/workflow.json": "ceb54a3c70cc1c0c25d04fa6adaa342ec1f94c4011f6b5af7b5e618fb4174c30",
+      "evidence/cases/workflow/execution.persisted.json": "ad0f972941465effca9b053fed5b2d7ad299c08fbcf379ce034858370e90b587",
+      "evidence/cases/workflow/config.json": "e0c89b7679edb0b30b5aca8d0fcbda132dac16ab8f5e786dde2908c77075524d",
+      "evidence/cases/workflow/execution.stdout.log": "94b7ab3f9a278f37376f78dc3c9238562f3cd3af0b00a95bbfcdf35cbd6872a3",
+      "evidence/cases/workflow/mapping.json": "e38d8269c31411fd90b50b3988d5550a98309edd0891d072464fac680f7ebb9e",
+      "evidence/cases/workflow/execution.metadata.json": "bfb2784b74556aaf23064e2052d0ff879688b83b9047b6625aea6f5297a7be07",
+      "evidence/cases/workflow/import.log": "495bb7012d211b7b6e5398a47f7efbd7858f3d47e561f4848b2de37d4c3c0514",
+      "evidence/cases/workflow/execution.json": "04ac4fc0a514204e32a30129b271a9cb10851cbd72ec50397483b7115c40f170",
+      "evidence/cases/workflow/case.json": "06dad38715da6e6dfc858f7b9d59fbc0c67a2205069be7ccd869b8048e5b9f1c",
+      "evidence/cases/workflow/execution.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "fault": "isolation-freshness",
+    "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/isolation-freshness/checkout-recovery__f2b8dsG",
+    "returncode": 0,
+    "exception": {
+      "exception_type": "RewardFileNotFoundError",
+      "exception_message": "No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/isolation-freshness/checkout-recovery__f2b8dsG/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/isolation-freshness/checkout-recovery__f2b8dsG/verifier/reward.json",
+      "exception_traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 378, in run\n    await self._run()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 99, in _run_verifier\n    self.result.verifier_result = await self._run_separate_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 635, in _run_separate_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n        verifier.verify(), timeout=timeout_sec\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/tasks.py\", line 486, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\n    ...<3 lines>...\n    )\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/isolation-freshness/checkout-recovery__f2b8dsG/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/isolation-freshness/checkout-recovery__f2b8dsG/verifier/reward.json\n",
+      "occurred_at": "2026-10-08T21:42:18.880768Z"
+    },
+    "partial_rows": 13,
+    "managed_services_remaining": 0,
+    "evidence_hashes": {
+      "test-stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "probe-proof.json": "f29b067461f0cfc26be0b4464ba821912c664ab04281503e7573070ed3739beb",
+      "freshness.json": "5cff749d847307719bbdc7b0b05c4f92c153be35ca2fbb159b9b7e99806fc13c",
+      "observed-trial.json": "4403aac040a6abc0cecac3722c2dc3e0103c101b2e6f7f04f1a532f22b3e6ab6",
+      "isolation.json": "eab4ece5c5eb601621b504102e32148bee06fbf0712eace0bb63dcdd7b984a6f",
+      "preflight.json": "167e5c27de9f29131c6b39bb4a2de9b8fcedc33a96950ee3498a5e1ff442a90d",
+      "phase.json": "6c68253c9ac2945286f9e6bdb56f3abf1953a8844a00cfe20c83931a6f9309ef",
+      "evidence/transport-evidence.json": "a83ec3e120eb92ece804f72104f392c2ed3b91b307c0dea21e432dda03a0821d",
+      "evidence/environment-evidence.json": "d94a7e0eb3995aff0ef696274a38640d483d494412931b99deb253fd821c0d2b",
+      "evidence/native-record.json": "e7d2bc7be7c56366a401bbfbd5664b2939888d437d5e4f72d10f35243337b16a",
+      "evidence/trial.json": "8039edde3e7a11701a8e023dce816b9f450f65017304a1839a93dc5736e440c8",
+      "evidence/window.json": "92b76dfb298f77439e2ac5cb7d587cfbb68e8946b03d3887ee37f590dc793481",
+      "world/000009-transport.json": "3c767ee7707c3479ee86b5caa04c4a1f93b97f265b4a282e6ef494660c188367",
+      "world/000001-transport.json": "cdd8990fbf0773da4acef8cc3681e8bde21891c8ff08893c4fd5c0b10f622663",
+      "world/000006-transport.json": "f791813edd76a8fed4022554e57b0a5b37e1c9ca7218f951ed4bdbe1eba08f07",
+      "world/000007-transport.json": "e0a2ac051b02c20d1631b0714f6865fe3cdaa6e25a247ec1c4b5bcde7e7d09bc",
+      "world/000008-transport.json": "905cac2af6918abacd8e7214747f7a731209bb0e6a8ef8e08b57baece1f8de47",
+      "world/000002-transport.json": "627f7a94b6a14f78f521ffa2ac9ec275eedda2b24c2b3ee91c6ee19ca9a9a938",
+      "world/000010-transport.json": "0d76791988168e45957a5263896b40610637a53c514748a82683d3adbf15a8f7",
+      "world/000005-transport.json": "b68c5f245db5addca2b29d86f40cdf51eb880de3f1c124f4674cee173f6bdc38",
+      "world/000004-transport.json": "b200d6368f5870b5759a7ff4970f2097012ca181fd08a0b023bfa6ef3410cd07",
+      "world/000003-transport.json": "3e2a33720321b1181268131b7789b253c5666550fd5c65ca38f73df88a65c4dd",
+      "world/000011-terminal-window.json": "6ad3fad334c0a61b580badda61ebd4da3340c7ad585a0f40011c9d0b5b0e1172",
+      "world/000000-window.json": "ae46091cb5e7e57c5726fb16273185a0779a402ba97fb2a2f9763fb53d26594d",
+      "world/000012-snapshot.json": "0d84882774b0788fd009eb7fcac612d956e9eef010d93f816ec9b8b4a5f2f43a"
+    }
+  },
+  {
+    "fault": "fresh-retry",
+    "trial": "/private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/fresh-retry/checkout-recovery__znESmQF",
+    "returncode": 0,
+    "exception": {
+      "exception_type": "RewardFileNotFoundError",
+      "exception_message": "No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/fresh-retry/checkout-recovery__znESmQF/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/fresh-retry/checkout-recovery__znESmQF/verifier/reward.json",
+      "exception_traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 378, in run\n    await self._run()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/single_step.py\", line 99, in _run_verifier\n    self.result.verifier_result = await self._run_separate_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/trial/trial.py\", line 635, in _run_separate_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n        verifier.verify(), timeout=timeout_sec\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/pashvel/.local/share/uv/python/cpython-3.14.8-macos-aarch64-none/lib/python3.14/asyncio/tasks.py\", line 486, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/private/tmp/sapi-migration-26/.venv/lib/python3.14/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\n    ...<3 lines>...\n    )\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/fresh-retry/checkout-recovery__znESmQF/verifier/reward.txt or /private/tmp/sapi-migration-26/reports/migration-06/faults-e82c9aa0c3/jobs/fresh-retry/checkout-recovery__znESmQF/verifier/reward.json\n",
+      "occurred_at": "2026-10-08T21:43:04.052943Z"
+    },
+    "partial_rows": 13,
+    "managed_services_remaining": 0,
+    "evidence_hashes": {
+      "test-stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "probe-proof.json": "f29b067461f0cfc26be0b4464ba821912c664ab04281503e7573070ed3739beb",
+      "freshness.json": "86c92df8524b6c40bf740b87d56f3df5698691449f1d69e85c8fab85b79b4b02",
+      "observed-trial.json": "acfbe06c83ec71f52578505c36478038f9d463d36d8da553e67d9f95d2195032",
+      "isolation.json": "6d1869bb4064432697467258d293bcdc3000ac86b5f8a806c0beca17f165ce5c",
+      "preflight.json": "aa713636988ff779b8ece149ec9fffa49596e39eee9d9a99e27cdae540c4a21c",
+      "phase.json": "6c68253c9ac2945286f9e6bdb56f3abf1953a8844a00cfe20c83931a6f9309ef",
+      "evidence/transport-evidence.json": "a83ec3e120eb92ece804f72104f392c2ed3b91b307c0dea21e432dda03a0821d",
+      "evidence/environment-evidence.json": "e9c539a1486ffb4e40d632d37a70ba7f598bf0f103bc9f5e2f8bdc2a62d3b735",
+      "evidence/native-record.json": "e7d2bc7be7c56366a401bbfbd5664b2939888d437d5e4f72d10f35243337b16a",
+      "evidence/trial.json": "0c73b77108f24ff693c7a6284bdce49d89243b239ee77f62fa1ee7249dae2311",
+      "evidence/window.json": "306541e8d31626d2b12740ffac8d770ef630af3cbe18584a39d531049054cfa3",
+      "world/000009-transport.json": "3c767ee7707c3479ee86b5caa04c4a1f93b97f265b4a282e6ef494660c188367",
+      "world/000001-transport.json": "cdd8990fbf0773da4acef8cc3681e8bde21891c8ff08893c4fd5c0b10f622663",
+      "world/000006-transport.json": "f791813edd76a8fed4022554e57b0a5b37e1c9ca7218f951ed4bdbe1eba08f07",
+      "world/000007-transport.json": "e0a2ac051b02c20d1631b0714f6865fe3cdaa6e25a247ec1c4b5bcde7e7d09bc",
+      "world/000008-transport.json": "905cac2af6918abacd8e7214747f7a731209bb0e6a8ef8e08b57baece1f8de47",
+      "world/000002-transport.json": "627f7a94b6a14f78f521ffa2ac9ec275eedda2b24c2b3ee91c6ee19ca9a9a938",
+      "world/000010-transport.json": "0d76791988168e45957a5263896b40610637a53c514748a82683d3adbf15a8f7",
+      "world/000005-transport.json": "b68c5f245db5addca2b29d86f40cdf51eb880de3f1c124f4674cee173f6bdc38",
+      "world/000004-transport.json": "b200d6368f5870b5759a7ff4970f2097012ca181fd08a0b023bfa6ef3410cd07",
+      "world/000003-transport.json": "3e2a33720321b1181268131b7789b253c5666550fd5c65ca38f73df88a65c4dd",
+      "world/000011-terminal-window.json": "0be16963b9dd2feab7da08eb685a4151f969d47fb957e8d5699bf4fc24f23297",
+      "world/000000-window.json": "0632c2e002268b5a3e728b387a4f6f384daebbe26b12468a3dad17ba13a00909",
+      "world/000012-snapshot.json": "82d8b15fdfa6d0fe5d45fa07b573bfc12214ff928eb1518cfb5c3d1452607efe"
+    }
+  }
+]
