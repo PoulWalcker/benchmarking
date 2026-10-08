@@ -56,17 +56,18 @@ def validate_control(path: Path, current: dict[str, str], identity: str) -> dict
     return gate
 
 
-def validate_packages(path: Path, submissions: dict, image: str):
+def validate_packages(path: Path, submissions: dict, image: str, *, legacy_hosted: bool = False):
     templates = ROOT / "harbor/templates"
     for scenario, selected in submissions.items():
         task = path / scenario
         benchmark = SCENARIOS[scenario].benchmark
-        if benchmark is not None:
+        if benchmark is not None and not (legacy_hosted and SCENARIOS[scenario].hosted):
             from sapi_config_lab.coordinate.benchmark_packages import validate_selected
 
-            validate_selected(
-                benchmark, task, ROOT, {**selected, "cases": selected.get("cases", SCENARIOS[scenario].cases())}
-            )
+            selected_cases = selected.get("cases")
+            if selected_cases is None and SCENARIOS[scenario].environment == "fixtures":
+                selected_cases = SCENARIOS[scenario].cases()
+            validate_selected(benchmark, task, ROOT, {**selected, "cases": selected_cases})
             continue
         require(sha256(task / "environment/base.yaml") == selected["sha256"], "Staged submission hash mismatch")
         if "cases_sha256" in selected:
@@ -293,8 +294,9 @@ def main(argv: list[str] | None = None) -> int:
             if args.submissions_manifest
             else None,
             cases={s: v["cases"] for s, v in submissions.items() if "cases" in v},
+            legacy_hosted=True,
         )
-        validate_packages(run.tasks, submissions, run.image or "")
+        validate_packages(run.tasks, submissions, run.image or "", legacy_hosted=True)
         run.check("before-stub")
         progress(f"preflight: fixture stub replay and hosted compilation/admission of {', '.join(scenarios)}")
         started = time.monotonic()
@@ -352,7 +354,9 @@ def main(argv: list[str] | None = None) -> int:
                         )
                     )
                 if scenario in hosted:
-                    hosting = Hosting("live", hosted_evaluation((scenario,), args.judge_model), bridge_url)
+                    hosting = Hosting(
+                        "live", hosted_evaluation((scenario,), args.judge_model, legacy_hosted=True), bridge_url
+                    )
                 budget = {
                     **grant,
                     "model": host.wrapper_model,

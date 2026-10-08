@@ -143,10 +143,10 @@ One fact, one owner: boundaries in `ARCHITECTURE.md`, workflow here, YAML semant
 
 `uv run --locked sapi-lab benchmarks [--root <benchmark-directory>] [--defaults]`
 lists metadata without importing evaluators. It reports legacy versions as `null`;
-Invoice-total uses a versioned manifest; the other ten benchmarks remain legacy.
+Invoice-total and checkout-recovery use versioned manifests; nine other benchmarks remain legacy.
 Existing command names and default selection are preserved. `package-tasks` and
-the unpaid `harbor` controls materialize invoice through its declared entrypoints
-and separate verifier. Remaining experiment caller migration is still in progress.
+the unpaid `harbor` controls materialize both through their declared entrypoints
+and separate verifiers. Remaining experiment caller migration is still in progress.
 
 The `sapi-lab-benchmark/v1` manifest has these required keys. Unknown keys fail;
 benchmark-specific declarations belong inside `config`.
@@ -240,3 +240,33 @@ prompt, with both full and scenario catalog bytes unchanged. The verifier runs t
 same 14 observations (three positive, seven invalid-input, four corruption/schema
 probes). `tests/benchmark.json` records the deadline admission budget, source closure
 and frozen staging options; evidence and derived evaluation keep their old layout.
+
+
+Checkout's normal-flow native Compose proof is opt-in:
+
+```bash
+SAPI_RUN_DOCKER_TESTS=1 uv run --locked --extra harbor --extra benchmark \
+  python -m unittest tests.test_harbor_checkout -v
+./run.sh --scenario checkout-recovery
+```
+
+The proof retains oracle/nop results, phase placement, fresh-world observations,
+artifact bytes and public image inspection under `reports/migration-05/`. The
+trusted image build needs network access to fetch hash-pinned upstream sources and
+its pinned Python dependency. Runtime world traffic stays on the private Compose
+network. Control runs use the local demo judge and make no paid calls.
+
+For the versioned path, pass the trial's native `<trial>/verifier` directory to
+`sapi-lab evaluate --record ... --output ... --judgement ...`. It includes
+`benchmark.json`, `evidence/` and the saved `evaluation/task-contract.json`.
+Re-evaluation requires the recorded benchmark/core source identity and verified
+local upstream cache. A source mismatch fails before scoring. Native phase limits,
+workflow deadlines, null quality and legacy historical readers retain their
+separate meanings.
+
+
+During migration, paid `live` explicitly retains the legacy hosted adapter.
+Versioned checkout generation performs compile-only admission without invoking
+world hooks or scoring. New versioned records support offline saved-judgement
+re-evaluation; `--dispatch-judge`/`--calibration` for those records are refused until
+the experiment caller integration. Historical records keep their existing path.

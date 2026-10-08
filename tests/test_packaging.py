@@ -185,6 +185,19 @@ class PackagingTests(unittest.TestCase):
                     task = Path(directory) / "tasks" / name
                     files = {str(path.relative_to(task)) for path in task.rglob("*") if path.is_file()}
                     dockerfile = (task / "environment/Dockerfile").read_text()
+                    if SCENARIOS_ALL[name].benchmark is not None:
+                        self.assertNotIn("rm -rf", dockerfile)
+                        self.assertFalse((task / "tests/environment.json").exists())
+                        self.assertTrue((task / "tests/docker-compose.yaml").is_file())
+                        public = task / "environment"
+                        self.assertFalse(
+                            any(
+                                path.name in {"cases.json", "scorecard.json", "evaluator.py"}
+                                for path in public.rglob("*")
+                            )
+                        )
+                        self.assertFalse((public / "payload/config.yaml").exists())
+                        continue
                     for relative in host_only_modules():
                         self.assertIn(f"/app/lab/src/{relative}", dockerfile)
                     self.assertIn("/app/lab/benchmarks", dockerfile)

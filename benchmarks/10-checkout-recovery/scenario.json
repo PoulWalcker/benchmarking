@@ -1,22 +1,83 @@
 {
-  "provenance": {
-    "source": "autowfbench",
-    "challenge": "production-checkout-recovery"
-  },
-  "environment": "autowfbench",
-  "evaluator": "autowfbench",
+  "version": "sapi-lab-benchmark/v1",
+  "id": "checkout-recovery",
   "default": false,
-  "workflow_id": "checkout-workflow",
+  "public": [
+    "instruction.md",
+    "authoring-notes.md",
+    "bindings.yaml"
+  ],
+  "trusted": [
+    "operations.js",
+    "task.toml",
+    "verifier.sh",
+    "environment/__init__.py",
+    "environment/hooks.py",
+    "environment/server.py",
+    "environment/install.py",
+    "environment/docker-compose.yaml",
+    "environment/verifier.Dockerfile",
+    "provenance/autowfbench-source.json",
+    "evaluation/evaluator.py",
+    "evaluation/scoring.py",
+    "evaluation/calibration.py",
+    "evaluation/judge-calibration.json"
+  ],
+  "reference": "config.yaml",
   "bindings": "bindings.yaml",
+  "operations": "operations.js",
+  "harbor_task": "task.toml",
+  "entrypoints": {
+    "plan": {
+      "path": "environment/hooks.py",
+      "symbol": "plan"
+    },
+    "prepare": {
+      "path": "environment/hooks.py",
+      "symbol": "prepare"
+    },
+    "snapshot": {
+      "path": "environment/hooks.py",
+      "symbol": "snapshot"
+    },
+    "evaluate": {
+      "path": "evaluation/evaluator.py",
+      "symbol": "evaluate"
+    }
+  },
+  "dependencies": {},
+  "controls": {
+    "oracle_acceptance": true,
+    "reference_reward": 0.732
+  },
   "budgets": {
     "authoring_attempts": 2,
-    "runtime_model_calls": 4
+    "runtime_model_calls": 4,
+    "judge_calls": 1
   },
-  "output": {
-    "artifact_field": "incident_summary",
-    "artifact_name": "incident-summary.md"
-  },
-  "controls": {
-    "reference_reward": 0.732
+  "config": {
+    "legacy": {
+      "provenance": {
+        "source": "autowfbench",
+        "challenge": "production-checkout-recovery"
+      },
+      "environment": "autowfbench",
+      "evaluator": "autowfbench",
+      "default": false,
+      "workflow_id": "checkout-workflow",
+      "bindings": "bindings.yaml",
+      "budgets": {
+        "authoring_attempts": 2,
+        "runtime_model_calls": 4
+      },
+      "output": {
+        "artifact_field": "incident_summary",
+        "artifact_name": "incident-summary.md"
+      },
+      "controls": {
+        "reference_reward": 0.732
+      }
+    },
+    "deadline_seconds": 120
   }
 }

@@ -39,6 +39,7 @@ class RunBinding:
     deadline_at: float | None = None
     admission: Document | None = None
     operation_token: str | None = None
+    operation_url: str | None = None
 
     def __post_init__(self) -> None:
         if self.deadline_at is not None and not math.isfinite(self.deadline_at):

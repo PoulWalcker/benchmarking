@@ -15,6 +15,8 @@ CORE_FILES = (
     "evidence.py",
     "paths.py",
     "profile.py",
+    "pinned_source.py",
+    "net.py",
     "compile/__init__.py",
     "compile/n8n.py",
     "compile/refinement.py",

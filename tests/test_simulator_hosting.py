@@ -1,6 +1,7 @@
 """Simulator tasks run through the one Run: hosted per job, credentials never persisted."""
 
 import contextlib
+from dataclasses import replace
 import io
 import json
 from pathlib import Path
@@ -126,6 +127,10 @@ class HostedEvaluationTests(unittest.TestCase):
     """The core writes the report and dispatches reevaluation by the scenario's evaluator name."""
 
     def setUp(self):
+        scenario = replace(SCENARIOS["checkout-recovery"], benchmark=None)
+        legacy = patch.dict(SCENARIOS, {scenario.name: scenario})
+        legacy.start()
+        self.addCleanup(legacy.stop)
         self.result = {"execution": True, "acceptance": False, "quality": None}
         self.calls = []
         evaluator = HostedEvaluator(

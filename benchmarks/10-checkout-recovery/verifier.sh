@@ -1,0 +1,3 @@
+#!/bin/bash
+set -euo pipefail
+exec python3 -m sapi_config_lab.coordinate.benchmark_worker

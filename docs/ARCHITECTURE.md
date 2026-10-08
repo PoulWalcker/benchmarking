@@ -171,8 +171,8 @@ this ticket does not migrate existing re-evaluation consumers.
 `sapi-lab benchmarks`. It neither translates a legacy header into an executable
 versioned descriptor nor imports `coordinate/scenarios.py`. The latter retains
 legacy execution globals and a temporary metadata view for migrated invoice
-callers; new consumers use the explicit descriptor boundary. Invoice-total uses
-positive packaging, while ten existing benchmarks retain legacy execution.
+callers; new consumers use the explicit descriptor boundary. Invoice-total and checkout-recovery use positive packaging; the nine other
+benchmarks retain legacy execution until their planned retirement.
 Verifier independence and the frozen migration ownership edges are unchanged.
 
 ## Positive Harbor packages
@@ -180,7 +180,7 @@ Verifier independence and the frozen migration ownership edges are unchanged.
 `harbor_integration/tasks.py` adds a separate packaging path for versioned
 benchmarks. It validates native `task.toml` against pinned Harbor 0.21.0. Integration
 modules may import neutral contracts and each other; stage logic stays outside.
-Legacy task packaging remains for unmigrated benchmarks. Invoice-total uses the versioned path.
+Legacy task packaging remains for unmigrated benchmarks. Invoice-total and checkout-recovery use the versioned path.
 
 `stage_benchmark` copies declared public files into `environment/payload`, public
 and trusted files into `tests/payload`, and the reference into `solution/`. Public
@@ -253,3 +253,46 @@ closures. Before live dispatch, versioned package validation reconstructs the
 positive package from current declared sources and the selected immutable YAML/
 fixtures, then compares every staged file. It does not require the old broad image
 or put the reference back in the public environment.
+
+
+## Checkout in a Harbor-managed world
+
+Checkout declares a trusted Compose file and Dockerfile appendix through native
+`task.toml` metadata (`metadata.sapi.verifier_compose` and
+`metadata.sapi.verifier_dockerfile`). These must name explicitly trusted manifest
+files. The adapter copies Compose into Harbor's verifier build context and appends
+the trusted recipe only to the verifier Dockerfile. The public build is unchanged.
+The benchmark installer verifies every upstream file against the unchanged source
+pin and the fastjsonschema wheel against its recorded hash. Those external bytes
+enter only the trusted image; they are neither vendored nor modified.
+
+Harbor starts a fresh verifier `main` and `simulator` service after stopping the
+author. The benchmark's `prepare` hook binds the semantic workflow window and
+returns a `RunBinding` containing its tool endpoint, scoped token and absolute
+deadline. Core compiles and executes the single observation using the declared
+operation bundle. The benchmark's `snapshot` hook freezes receipts, environment
+state, native output and its final-answer/Markdown completion facts; its evaluator
+scores that recorded evidence independently. No TrialHost begin/finish RPC runs
+on this path. Harbor owns both services' startup, teardown and private volume.
+The separate network has no published ports; author containers share neither it
+nor its credentials volume.
+
+The new checkout trial retains the legacy evidence filenames and hosted acceptance
+report schema inside the native verifier output. Explicit `harbor_reward` in the
+benchmark verdict projects quality (0.732 for its reference, absent when unscored);
+other verdicts retain the acceptance projection. The generic worker knows neither
+the checkout challenge nor its completion or scoring rules. Offline re-evaluation
+checks the recorded benchmark/options/core closure before loading the selected
+evaluator and checks saved task/judge/source identities before scoring. Original
+evidence is never rewritten. Legacy hosted paths remain for historical comparison
+and unmigrated callers; hard-kill/fault parity is a separate migration gate.
+
+
+The existing paid `live` caller explicitly requests the temporary legacy hosted
+package/evaluator adapter until experiment integration (ticket 18). This is a
+caller-selected format, never an automatic fallback after a native failure or a
+missing metadata file. Package validation uses that same explicit choice; judge
+identity, ledger reservations and old host connectivity retain their established
+path. Ordinary controls and versioned re-evaluation use the native path. Explicit
+paid/calibration re-evaluation of a new versioned record is refused until that
+integration; matching saved judgement replay remains available without dispatch.

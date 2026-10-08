@@ -8,14 +8,17 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Callable, Iterable
+from dataclasses import asdict
 import json
 import math
 from pathlib import Path
 from typing import Any
 
+from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
 from sapi_config_lab.coordinate.providers import EVALUATORS, ReevaluationOptions
 from sapi_config_lab.coordinate.scenarios import SCENARIOS
-from sapi_config_lab.evidence import write_json
+from sapi_config_lab.evidence import sha256, write_json
+from sapi_config_lab.paths import workspace_root
 
 # Recorded trials carry this schema, so its pre-provider name stays.
 HOSTED_REPORT = "sapi-lab-upstream-acceptance/v1"
@@ -120,12 +123,14 @@ def control_passed(agent: str, trial: dict) -> bool:
     )
 
 
-def hosted_evaluation(scenarios: Iterable[str], judge_model: str | None = None) -> Callable[[str, Path], dict]:
+def hosted_evaluation(
+    scenarios: Iterable[str], judge_model: str | None = None, *, legacy_hosted: bool = False
+) -> Callable[[str, Path], dict]:
     """Freeze each hosted scenario's evaluator now; a named judge is a paid call the caller reserved."""
     prepared = {
         name: EVALUATORS[SCENARIOS[name].evaluator].prepare(SCENARIOS[name], judge_model)
         for name in scenarios
-        if SCENARIOS[name].hosted
+        if SCENARIOS[name].hosted and (SCENARIOS[name].benchmark is None or legacy_hosted)
     }
 
     def evaluate(scenario: str, record: Path) -> dict:
@@ -171,6 +176,35 @@ def reevaluate_verifier(record: Path, output: Path, args: argparse.Namespace) ->
     return verifier_result(report, json.loads(rubric.read_text()) if rubric.exists() else None)
 
 
+def reevaluate_benchmark(record: Path, output: Path, judgement: Path | None) -> dict:
+    """Replay the selected recorded evaluator only after its complete source identity matches."""
+    metadata = json.loads((record / "benchmark.json").read_text())
+    benchmark = SCENARIOS[metadata["name"]].benchmark
+    if benchmark is None:
+        raise ValueError("Recorded versioned benchmark is unavailable")
+    identity = freeze_identity(benchmark, metadata["options"])
+    if json.loads(json.dumps(asdict(identity))) != metadata["identity"]:
+        raise ValueError("Recorded benchmark source or options identity differs")
+    root = workspace_root()
+    for relative, expected in metadata["core_files"].items():
+        source = root / ("src" if relative.startswith("sapi_config_lab/") else "") / relative
+        if sha256(source) != expected:
+            raise ValueError("Recorded trusted core source identity differs: " + relative)
+    options = {
+        **metadata["options"],
+        "evaluation": str(output / "evaluation"),
+        "submission": str(record / "evidence/submission.yaml"),
+        "identity": {"benchmark": metadata["identity"], "core_files": metadata["core_files"]},
+        "dispatch": False,
+    }
+    contract = record / "evaluation/task-contract.json"
+    if contract.is_file():
+        options["contract"] = str(contract)
+    if judgement is not None:
+        options["judgement"] = str(judgement)
+    return validate_result(dict(load_entrypoints(benchmark, identity).evaluate(record / "evidence", options)))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Evaluate one recorded trial again into a new directory.")
     parser.add_argument("--record", type=Path, required=True, help="<trial>/verifier, or environments/<job>/<scenario>")
@@ -193,7 +227,13 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("The independent verifier has no semantic judge")
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
-    if hosted:
+    if (record / "benchmark.json").is_file():
+        if args.dispatch_judge or args.calibration:
+            raise ValueError(
+                "Versioned judge/calibration dispatch requires experiment integration; use a saved judgement"
+            )
+        result = reevaluate_benchmark(record, output, args.judgement)
+    elif hosted:
         scenario = SCENARIOS[json.loads((record / "evidence/trial.json").read_text())["scenario"]]
         evaluator = EVALUATORS[scenario.evaluator]
         options = ReevaluationOptions(

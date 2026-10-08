@@ -86,7 +86,13 @@ def stage_benchmark(
         return data
 
     config_bytes = content(benchmark.harbor_task)
-    validate_config(config_bytes.decode())
+    config = validate_config(config_bytes.decode())
+    packaging = config.metadata.get("sapi", {})
+    if not isinstance(packaging, dict) or set(packaging) - {"verifier_dockerfile", "verifier_compose"}:
+        raise ValueError("Unsupported trusted Harbor packaging metadata")
+    for path in packaging.values():
+        if not isinstance(path, str) or path not in files or files[path].visibility != "trusted":
+            raise ValueError("Verifier build inputs must be declared trusted files")
 
     with tempfile.TemporaryDirectory(prefix=".sapi-task-", dir=destination.parent) as temporary:
         task = Path(temporary) / benchmark.name
@@ -138,6 +144,8 @@ def stage_benchmark(
                     "name": benchmark.name,
                     "bindings": benchmark.bindings,
                     "operations": benchmark.operations,
+                    "config": json.loads(json.dumps(benchmark.config, default=dict)),
+                    "budgets": asdict(benchmark.budgets),
                     "entrypoints": {
                         role: {
                             **asdict(entry),
@@ -171,8 +179,12 @@ def stage_benchmark(
             runtime + b"\nCOPY payload /tests/payload/\nCOPY submission.py /opt/sapi-submission.py\n"
             b"COPY test.sh /tests/test.sh\nCOPY check_imports.py /tests/check_imports.py\n"
             b"COPY core /tests/core/\nCOPY benchmark.json /tests/benchmark.json\nENV PYTHONPATH=/tests/core:/tests\n"
-            b"RUN mkdir -p /submission /logs/artifacts && python3 /tests/check_imports.py\n",
+            b"RUN mkdir -p /submission /logs/artifacts\n"
+            + (content(packaging["verifier_dockerfile"]) if "verifier_dockerfile" in packaging else b"")
+            + b"\nRUN python3 /tests/check_imports.py\n",
         )
+        if "verifier_compose" in packaging:
+            write("tests/docker-compose.yaml", content(packaging["verifier_compose"]))
         modules = sorted(
             {
                 "payload" + ("." + relative if (relative := python_module(entry.path)) else "")

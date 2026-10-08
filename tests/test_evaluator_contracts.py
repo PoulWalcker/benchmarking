@@ -1,5 +1,6 @@
 """Hosted evaluator boundaries distinguish metadata, normalized verdicts and explicit re-scoring options."""
 
+from dataclasses import replace
 import json
 from pathlib import Path
 import tempfile
@@ -37,7 +38,12 @@ class EvaluatorContractTests(unittest.TestCase):
                     (),
                     30,
                 )
-                with patch.dict(EVALUATORS, {"autowfbench": evaluator}):
+                with (
+                    patch.dict(EVALUATORS, {"autowfbench": evaluator}),
+                    patch.dict(
+                        SCENARIOS, {"checkout-recovery": replace(SCENARIOS["checkout-recovery"], benchmark=None)}
+                    ),
+                ):
                     with self.assertRaisesRegex(ValueError, "Evaluator|evaluator|Unscored|Complete"):
                         hosted_evaluation(("checkout-recovery",))("checkout-recovery", record)
                 self.assertFalse((record / "evaluation/report.json").exists())

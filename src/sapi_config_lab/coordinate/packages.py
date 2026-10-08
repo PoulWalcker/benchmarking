@@ -214,6 +214,7 @@ def stage_tasks(
     scenarios: tuple[str, ...] | None = None,
     cases: dict[str, dict] | None = None,
     catalog: str = "full",
+    legacy_hosted: bool = False,
 ) -> dict:
     """Create immutable input packages for one run; never modify source fixtures."""
     selected = select_scenarios(scenarios)
@@ -244,7 +245,7 @@ def stage_tasks(
     runtime = runtime_sources(root)
     for scenario, definition in selected.items():
         task = destination / scenario
-        if definition.benchmark is not None:
+        if definition.benchmark is not None and not (legacy_hosted and definition.hosted):
             from sapi_config_lab.coordinate.benchmark_packages import stage_selected
 
             public_instruction = (
@@ -259,6 +260,8 @@ def stage_tasks(
             }
             if chosen_cases is not None:
                 options["cases"] = chosen_cases
+            if mode == "generation" and definition.hosted:
+                options["admission"] = True
             replayed = Path(submissions[scenario]["path"]).read_bytes() if submissions else None
             if replayed is not None:
                 options["submission_sha256"] = hashlib.sha256(replayed).hexdigest()
@@ -270,7 +273,9 @@ def stage_tasks(
                 instruction=public_instruction,
                 submission=replayed,
                 oracle=mode != "generation",
-                cases=chosen_cases if chosen_cases is not None else definition.cases(),
+                cases=(chosen_cases if chosen_cases is not None else definition.cases())
+                if definition.environment == "fixtures"
+                else None,
             )
             hashes[scenario] = hashlib.sha256(public_instruction).hexdigest()
             continue
