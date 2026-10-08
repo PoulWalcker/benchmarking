@@ -7,17 +7,17 @@ import argparse
 from datetime import UTC, datetime
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 from typing import Any
-import uuid
 
 from sapi_config_lab.coordinate.evaluation import control_passed, hosted_evaluation
 from sapi_config_lab.coordinate.packages import job_seconds, verifier_bounds
 from sapi_config_lab.coordinate.provenance import host_environment
 from sapi_config_lab.coordinate.runs import Hosting, Run, progress, run_experiment
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
-from sapi_config_lab.execute.host import BUILD_TIMEOUT_SECONDS, LAB_IMAGE, build_image, run_logged
+from sapi_config_lab.execute.host import BUILD_TIMEOUT_SECONDS, LAB_IMAGE, run_logged
 from sapi_config_lab.execute.n8n import PINNED_N8N_VERSION
 from sapi_config_lab.paths import workspace_root
 
@@ -37,24 +37,42 @@ def simulated_hosting(scenarios: tuple[str, ...]) -> Hosting:
     return Hosting("stub", hosted_evaluation(scenarios))
 
 
-def transport_probe(run: Run) -> dict:
-    """Run the HTTP transport probes inside the lab image and copy their summary out."""
-    name = "sapi-lab-transport-" + uuid.uuid4().hex[:12]
-    subprocess.check_call(
-        [
-            *("docker", "create", "--name", name, LAB_IMAGE),
-            *("python3", "-m", "sapi_config_lab.coordinate.transport", "--artifacts", "/probe"),
-        ]
-    )
-    try:
-        exit_code = run_logged(
-            ["docker", "start", "--attach", name], run.output / "transport.log", timeout=TRANSPORT_SECONDS
+def transport_probe(run: Run, *, skip_build: bool = False) -> dict:
+    """Dispatch the independent transport task; Harbor owns its image and lifecycle."""
+    if skip_build:
+        run.use_image(LAB_IMAGE)
+    task = run.output / "transport-task"
+    shutil.copytree(ROOT / "tests/support/native-transport", task)
+    environment = task / "environment"
+    shutil.copyfile(ROOT / "infra/Dockerfile", environment / "Dockerfile")
+    shutil.copyfile(ROOT / ".dockerignore", environment / ".dockerignore")
+    for name in ("src", "generation", "benchmarks"):
+        shutil.copytree(
+            ROOT / name, environment / name, ignore=shutil.ignore_patterns("__pycache__", "evaluation", "cases.json")
         )
-        subprocess.check_call(["docker", "cp", name + ":/probe", str(run.output / "transport")])
-    finally:
-        subprocess.run(["docker", "rm", "--force", name], capture_output=True, check=False)
-    probe = json.loads((run.output / "transport/summary.json").read_text())
-    probe["exit_code"] = exit_code
+    if skip_build:
+        text = (
+            (task / "task.toml")
+            .read_text()
+            .replace("[environment]\n", f'[environment]\ndocker_image = "{run.image}"\n')
+        )
+        (task / "task.toml").write_text(text)
+        (environment / "docker-compose.yaml").write_text(f"services:\n  main:\n    image: {run.image}\n")
+    exit_code = run.transport(task, skip_build=skip_build)
+    job = run.output / "jobs/transport"
+    summaries = list(job.glob("*/verifier/transport/summary.json"))
+    probe = json.loads(summaries[0].read_text()) if len(summaries) == 1 else {"passed": False}
+    results = list(job.glob("*/result.json"))
+    native = json.loads(results[0].read_text()) if len(results) == 1 else {}
+    verifier = native.get("verifier_result") or {}
+    probe["native_completed"] = native.get("exception_info") is None and verifier.get("rewards") == {"reward": 1.0}
+    probe["passed"] = probe.get("passed") is True and probe["native_completed"]
+    probe.update(exit_code=exit_code, job_path=str(job.relative_to(run.output)))
+    if summaries:
+        probe["evidence_path"] = str(summaries[0].parent.relative_to(run.output))
+        probe["runtime_versions_path"] = str(
+            (summaries[0].parent.parent / "runtime-versions.txt").relative_to(run.output)
+        )
     return probe
 
 
@@ -94,27 +112,11 @@ def main(argv: list[str] | None = None) -> int:
             timeout=LOCAL_TESTS_SECONDS,
         )
         check("local_tests", exit_code == 0, exit_code=exit_code)
-        if not args.skip_build:
-            progress("image: building the isolated pinned n8n image")
-            build_image(LAB_IMAGE, run.output / "image-build.log")
-        run.use_image(LAB_IMAGE)
-        (run.output / "runtime-versions.txt").write_text(
-            subprocess.check_output(
-                [
-                    "docker",
-                    "run",
-                    "--rm",
-                    LAB_IMAGE,
-                    "sh",
-                    "-c",
-                    "n8n --version && node --version && python3 --version && apk info -v",
-                ],
-                text=True,
-            )
-        )
-        progress("transport: real n8n HTTP transport and rejection probes")
-        report["transport"] = transport_probe(run)
+        progress("transport: Harbor builds and runs real n8n HTTP transport and rejection probes")
+        report["transport"] = transport_probe(run, skip_build=args.skip_build)
         check("real_n8n_transport", report["transport"]["exit_code"] == 0 and report["transport"].get("passed") is True)
+        if not args.skip_build:
+            run.use_image(LAB_IMAGE)
         progress(f"staging: {len(selected)} oracle task packages")
         run.stage("oracle", selected)
         hosting = simulated_hosting(selected)

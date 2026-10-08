@@ -84,11 +84,6 @@ def run_logged(command: Sequence[str], log: Path, *, timeout: float) -> int:
 BUILD_TIMEOUT_SECONDS = 1200
 
 
-def build_image(tag: str, log: Path) -> None:
-    if run_logged(["docker", "build", "-f", "infra/Dockerfile", "-t", tag, "."], log, timeout=BUILD_TIMEOUT_SECONDS):
-        raise RuntimeError(f"Image build failed; see {log.name}")
-
-
 def staging_dir(prefix: str, host: HostConfig) -> Path:
     """A fresh directory for task packages and Harbor jobs, outside the checkout."""
     return Path(tempfile.mkdtemp(prefix=prefix, dir=host.staging_dir or None))

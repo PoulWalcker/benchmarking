@@ -1,0 +1,9 @@
+schema_version = "1.4"
+[agent]
+timeout_sec = 30
+[environment]
+build_timeout_sec = 1200
+cpus = 1
+memory_mb = 2048
+[verifier]
+timeout_sec = 1800

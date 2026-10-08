@@ -1,0 +1,3 @@
+services:
+  main:
+    image: sapi-config-lab-n8n:2.41.5

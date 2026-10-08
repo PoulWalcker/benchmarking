@@ -34,7 +34,7 @@ from sapi_config_lab.execute.host import (
 )
 from sapi_config_lab.execute.hosting import TrialHost
 from sapi_config_lab.harbor_integration.runner import job_args, run_job
-from sapi_config_lab.paths import CATALOG
+from sapi_config_lab.paths import CATALOG, workspace_root
 
 
 def fingerprint(path: Path) -> dict[str, str]:
@@ -211,6 +211,27 @@ class Run:
             finally:
                 collect_jobs(self.staging, self.output / "jobs")
         return exit_code, load_trials(self.output / "jobs" / job, hosted)
+
+    def transport(self, task: Path, *, skip_build: bool = False) -> int:
+        """Run the trusted transport control with native Harbor phase limits."""
+        self.pin("transport-task", task)
+        self.check("before transport")
+        jobs = self.output / "jobs"
+        if (jobs / "transport").exists():
+            raise ValueError("A transport job cannot be dispatched twice")
+        argv = harbor_run_args(self.harbor_argv, task, jobs, "transport", "nop")
+        # Docker still removes containers/networks; retained engine bytes serve later adapters and skip-build.
+        argv.append("--no-delete")
+        if skip_build:
+            argv.remove("--force-build")
+        self.report.setdefault("commands", []).append(argv)
+        reference: dict[str, Any] = {"path": "jobs/transport", "status": "dispatched"}
+        self.report.setdefault("harbor_jobs", {})["transport"] = reference
+        with (self.output / "transport.log").open("w") as stream:
+            code = subprocess.run(argv, cwd=workspace_root(), stdout=stream, stderr=subprocess.STDOUT).returncode
+        reference.update(status="finished", exit_code=code)
+        self.check("after transport")
+        return code
 
     @contextmanager
     def hosted(

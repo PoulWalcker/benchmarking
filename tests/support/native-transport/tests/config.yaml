@@ -1,0 +1,37 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: native-transport
+  revision: 1
+  kind: Gantt
+  inputs:
+    payload:
+      sequence: 3
+    enabled: true
+  steps:
+  - id: classify
+    kind: LLM
+    uses: transport.echo
+    with:
+      payload:
+        ref: inputs.payload
+    when:
+      ref: inputs.enabled
+      eq: true
+  dependencies: []
+  acceptance: Exercise the native transport contract.
+  output:
+    optional_ref: steps.classify
+activation:
+  kind: Callback
+  rule_id: transport-request
+  hook: transport.request
+  condition: valid_input
+  reaction: Trigger
+  workflow_ref:
+    id: native-transport
+    revision: 1
+execution:
+  concurrency: independent
+  deadline_seconds: 30
+  on_step_error: fail
