@@ -171,7 +171,10 @@ def ownership_edges(module: str, source: str, *, package: bool = False) -> set[t
     """Forbidden benchmark and infrastructure imports, regardless of stage or import syntax."""
     found = set()
     for name in ownership_imports(source, module, package=package):
-        if name == "benchmarks" or name.startswith("benchmarks."):
+        if any(
+            name == prefix or name.startswith(prefix + ".")
+            for prefix in ("benchmarks", PACKAGE + ".resources.benchmarks")
+        ):
             found.add((module, "benchmarks"))
         if (
             (name == "harbor" or name.startswith("harbor."))
@@ -197,6 +200,8 @@ class OwnershipTests(unittest.TestCase):
             "from importlib import import_module as load\nload('benchmarks.new_task')",
             "import importlib as loader\nloader.import_module('benchmarks.new_task')",
             "__import__('benchmarks.new_task')",
+            "from sapi_config_lab.resources.benchmarks import new_task",
+            "__import__('sapi_config_lab.resources.benchmarks.new_task.evaluation')",
             "from harbor.models.task.config import TaskConfig",
             "from importlib import import_module as load\nload('harbor.models.task.config')",
         )

@@ -125,7 +125,7 @@ def inspect_installation(wheel: Path, work: Path, requirements: Path, expected: 
 def main() -> int:
     root = workspace_root()
     with tempfile.TemporaryDirectory(prefix="sapi-distribution-") as temporary:
-        work = Path(temporary)
+        work = Path(temporary).resolve()
         checkout = work / "checkout"
         checkout.mkdir()
         for relative in source_manifest():
@@ -149,7 +149,7 @@ def main() -> int:
             wheel_members = set(archive.namelist())
             if any(b"PRIVATE_EVIDENCE_SENTINEL" in archive.read(name) for name in wheel_members):
                 raise RuntimeError("Private sentinel leaked into wheel")
-        forbidden = set(PRIVATE_PATHS)
+        forbidden = {*PRIVATE_PATHS, "benchmarks/_shared/distribution/.env"}
         leaked = forbidden & source_members
         leaked |= {name for name in wheel_members if name.endswith(".env.private")}
         if leaked:
@@ -229,7 +229,7 @@ def main() -> int:
             json.dumps(
                 {
                     "status": "passed",
-                    "private_sentinels_excluded": len(PRIVATE_PATHS),
+                    "private_sentinels_excluded": len(forbidden),
                     "sdist_files": len(source_members),
                     "wheel_files": len(wheel_members),
                 }

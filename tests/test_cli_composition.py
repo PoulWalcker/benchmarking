@@ -105,7 +105,7 @@ assert "sapi_config_lab.coordinate.scenarios" not in sys.modules
             source = Path(temporary) / "candidate.yaml"
             source.write_bytes((workspace_root() / "benchmarks/01-invoice-total/config.yaml").read_bytes())
             with patch(
-                "sapi_config_lab.coordinate.compilation.workspace_root", side_effect=RuntimeError("no workspace")
+                "sapi_config_lab.coordinate.compilation.benchmark_root", side_effect=RuntimeError("no resources")
             ):
                 self.assertEqual(
                     cli.main(
