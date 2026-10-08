@@ -49,6 +49,13 @@
         "verifier_timeout_sec": 6000
       }
     },
-    "deadline_seconds": 30
+    "deadline_seconds": 30,
+    "cases": "cases.json",
+    "authoring": {
+      "catalogs": [
+        "full",
+        "scenario"
+      ]
+    }
   }
 }

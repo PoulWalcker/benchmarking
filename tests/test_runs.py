@@ -255,7 +255,7 @@ class LiveCeilingTests(unittest.TestCase):
         host = FakeHost(self)
         stub = root / "control.json"
         stub.write_text("{}")
-        gate = {"oracle": {"trials": [{"task_name": "ticket-routing"}]}}
+        gate = {"oracle": {"trials": [{"task_name": "checkout-recovery"}]}}
         stdout, stderr = io.StringIO(), io.StringIO()
         with patch("sapi_config_lab.coordinate.live.validate_control", return_value=gate):
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
@@ -264,9 +264,9 @@ class LiveCeilingTests(unittest.TestCase):
                         "--stub-report",
                         str(stub),
                         "--scenario",
-                        "ticket-routing",
+                        "checkout-recovery",
                         "--max-calls",
-                        "1",
+                        "0",
                         "--report-dir",
                         str(root / "run"),
                         "--preflight-only",
@@ -274,7 +274,7 @@ class LiveCeilingTests(unittest.TestCase):
                 )
         report = json.loads((root / "run/report.json").read_text())
         self.assertEqual(code, 1)
-        self.assertIn("needs up to 2 model calls; --max-calls allows 1", report["error"])
+        self.assertIn("needs up to 1 model calls; --max-calls allows 0", report["error"])
         self.assertEqual(host.ran, [])
         self.assertFalse((root / "run/ledger.json").exists())
         # Progress is for people and goes to stderr; stdout stays exactly one JSON document.

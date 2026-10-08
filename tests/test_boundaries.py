@@ -25,7 +25,7 @@ ALLOWED = {
     "evaluate": {SHARED, "evaluate"},
     "author": {SHARED, "author"},
     "verification": {"verification"},
-    "harbor_integration": {SHARED, "harbor_integration"},
+    "harbor_integration": {SHARED, "execute", "harbor_integration"},
     "coordinate": {
         SHARED,
         "compile",
@@ -54,6 +54,7 @@ STAGES = {
     "execute": "execute",
     "evaluate": "evaluate",
     "author": "author",
+    "author.agent": "harbor_integration",
     "coordinate": "coordinate",
     "harbor_integration": "harbor_integration",
 }
@@ -66,7 +67,6 @@ PROVIDER_MODULES = {"execute.autowfbench", "evaluate.autowfbench", "evaluate.jud
 # Core modules that name a provider only as data, never as code; this may only shrink.
 PROVIDER_NAMED_AS_DATA = {
     "coordinate.cli": "help text gives a provenance source name as an example",
-    "coordinate.provenance": "the source manifest pins provenance/autowfbench-source.json",
 }
 
 

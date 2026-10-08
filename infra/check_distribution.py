@@ -11,6 +11,7 @@ import tarfile
 import tempfile
 import zipfile
 
+from sapi_config_lab.benchmark import discover_benchmarks
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.paths import workspace_root
 
@@ -61,13 +62,18 @@ def main() -> int:
             "provenance/SapiensSpecNotation.hs",
             "provenance/spec-comparison.json",
             "provenance/spec-source.json",
-            "provenance/autowfbench-source.json",
             ".python-version",
             ".dockerignore",
             "uv.lock",
         ):
             if required not in source_members:
                 raise RuntimeError(f"Missing reproducibility source: {required}")
+        for benchmark in discover_benchmarks(root / "benchmarks"):
+            declared = (benchmark.directory / "scenario.json", *(item.source for item in benchmark.files))
+            for source in declared:
+                required = source.relative_to(root).as_posix()
+                if required not in source_members:
+                    raise RuntimeError(f"Missing declared benchmark dependency: {required}")
         for required in (
             "sapi_config_lab/bindings.yaml",
             "sapi_config_lab/execute/agency-prompt.md",

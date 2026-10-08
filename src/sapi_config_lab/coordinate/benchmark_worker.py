@@ -48,7 +48,6 @@ def main() -> int:
     metadata = json.loads(Path("/tests/benchmark.json").read_text())
     root, output = Path("/tests/payload"), Path("/logs/verifier")
     output.mkdir(parents=True, exist_ok=True)
-    write_json(output / "benchmark.json", metadata)
     reward = output / "reward.txt"
     identity = metadata["identity"]
     for relative, expected in metadata["core_files"].items():
@@ -72,6 +71,12 @@ def main() -> int:
     }
     options["mode"] = os.environ.get("SAPI_LLM_MODE", options.get("mode", "stub"))
     options["selected_case"] = os.environ.get("SAPI_CASE_NAME", options.get("selected_case"))
+    if options["mode"] == "live" and "prepare" not in functions:
+        options["deadline_seconds"] = 600
+    metadata["runtime_options"] = {
+        key: options[key] for key in ("mode", "selected_case", "deadline_seconds") if key in options
+    }
+    write_json(output / "benchmark.json", metadata)
     expected = options.get("submission_sha256") or os.environ.get("SAPI_EXPECTED_SUBMISSION_SHA256")
     if expected and submission.is_file() and hashlib.sha256(submission.read_bytes()).hexdigest() != expected:
         raise ValueError("Container submission hash mismatch")

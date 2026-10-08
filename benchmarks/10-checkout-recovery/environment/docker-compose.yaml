@@ -5,7 +5,9 @@ services:
         condition: service_healthy
     volumes:
       - checkout-credentials:/run/checkout:ro
-    networks: [verification]
+    networks: [verification, agency]
+    extra_hosts:
+      - host.docker.internal:host-gateway
   simulator:
     build:
       context: ${CONTEXT_DIR}
@@ -23,6 +25,7 @@ services:
       timeout: 2s
       retries: 30
 networks:
+  agency: {}
   verification:
     internal: true
 volumes:

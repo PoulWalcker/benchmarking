@@ -1,6 +1,5 @@
 """Checkout's positive Harbor package and opt-in fresh-world oracle/nop proof."""
 
-from dataclasses import replace
 from datetime import datetime
 import hashlib
 import json
@@ -11,17 +10,16 @@ import sys
 import tarfile
 import tempfile
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 import uuid
 
 import yaml
 
 from sapi_config_lab.benchmark import load_benchmark
-from sapi_config_lab.coordinate.evaluation import hosted_evaluation, reevaluate_benchmark
 from sapi_config_lab.coordinate.evaluation import main as evaluate_main
+from sapi_config_lab.coordinate.evaluation import reevaluate_benchmark
 from sapi_config_lab.coordinate.live import validate_packages
 from sapi_config_lab.coordinate.packages import stage_tasks
-from sapi_config_lab.coordinate.providers import EVALUATORS
 from sapi_config_lab.coordinate.runs import Run, load_trials
 from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.harbor_integration.tasks import validate_config
@@ -74,7 +72,7 @@ class CheckoutHarborPackageTests(unittest.TestCase):
     def test_manifest_and_native_contexts_keep_the_full_pin_private(self):
         benchmark = load_benchmark(ROOT / "benchmarks", DIRECTORY)
         public = {item.destination for item in benchmark.public}
-        self.assertEqual(public, {"instruction.md", "authoring-notes.md", "bindings.yaml"})
+        self.assertEqual(public, {"instruction.md", "authoring-notes.md", "bindings.yaml", "authoring-prompt.txt"})
         metadata = read(self.task / "tests/benchmark.json")
         expected = {item.destination for item in (*benchmark.public, *benchmark.trusted)}
         self.assertEqual(set(metadata["payload_files"]), expected)
@@ -134,28 +132,22 @@ class CheckoutHarborPackageTests(unittest.TestCase):
         self.assertFalse((self.root / "records").exists())
         self.assertFalse((self.root / "hosted").exists())
 
-    def test_live_compatibility_is_explicit_and_preserves_judge_identity_without_dispatch(self):
+    def test_native_live_staging_pins_the_judge_and_refuses_missing_metadata(self):
         scenario = SCENARIOS["checkout-recovery"]
         selection = {
             scenario.name: {"path": scenario.config, "sha256": hashlib.sha256(scenario.config.read_bytes()).hexdigest()}
         }
-        legacy = self.root / "legacy"
-        stage_tasks(legacy, scenarios=(scenario.name,), image="frozen:live", legacy_hosted=True)
-        self.assertFalse((legacy / scenario.name / "tests/benchmark.json").exists())
-        self.assertTrue((legacy / scenario.name / "tests/environment.json").exists())
-        validate_packages(legacy, selection, "frozen:live", legacy_hosted=True)
-        with self.assertRaises((OSError, ValueError)):
-            validate_packages(legacy, selection, "frozen:live")
-        (self.task / "tests/benchmark.json").unlink()
+        native = self.root / "native-live"
+        stage_tasks(native, scenarios=(scenario.name,), judge_model="judge-pinned")
+        task = native / scenario.name
+        metadata = read(task / "tests/benchmark.json")
+        self.assertEqual(metadata["options"]["judge_mode"], "codex")
+        self.assertEqual(metadata["options"]["judge_model"], "judge-pinned")
+        self.assertFalse((task / "tests/environment.json").exists())
+        validate_packages(native, selection, "frozen:live")
+        (task / "tests/benchmark.json").unlink()
         with self.assertRaises(OSError):
-            validate_packages(self.tasks, selection, "frozen:live")
-        with self.assertRaises(OSError):
-            validate_packages(self.tasks, selection, "frozen:live", legacy_hosted=True)
-        prepare = Mock(return_value=lambda path: {"execution": True, "acceptance": True, "quality": None})
-        evaluator = replace(EVALUATORS[scenario.evaluator], prepare=prepare)
-        with patch.dict(EVALUATORS, {scenario.evaluator: evaluator}):
-            hosted_evaluation((scenario.name,), "judge-pinned", legacy_hosted=True)
-        prepare.assert_called_once_with(scenario, "judge-pinned")
+            validate_packages(native, selection, "frozen:live")
 
     def test_offline_evaluation_requires_recorded_identity_and_never_dispatches_implicitly(self):
         record = self.root / "record"
@@ -185,8 +177,104 @@ class CheckoutHarborPackageTests(unittest.TestCase):
         (record / "benchmark.json").write_text(json.dumps(changed))
         with self.assertRaisesRegex(ValueError, "identity differs"):
             reevaluate_benchmark(record, self.root / "changed", None)
-        with self.assertRaisesRegex(ValueError, "experiment integration"):
+        with self.assertRaisesRegex(ValueError, "identity differs"):
             evaluate_main(["--record", str(record), "--output", str(self.root / "paid"), "--dispatch-judge"])
+
+    def test_calibration_dispatch_is_stubbed_reserved_and_preserves_original_evidence(self):
+        import copy
+        import importlib
+
+        from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
+        from sapi_config_lab.evidence import digest
+
+        record = self.root / "calibration-record"
+        archive_path = ROOT / "evidence/migration-01-baseline/historical/hosted-before-native-fields.tar.gz"
+        with tarfile.open(archive_path) as archive:
+            for entry in archive.getmembers():
+                if entry.isfile():
+                    target = record / entry.name.removeprefix("hosted-before-native-fields/")
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(archive.extractfile(entry).read())
+        metadata = read(self.task / "tests/benchmark.json")
+        (record / "benchmark.json").write_text(json.dumps(metadata))
+        benchmark = SCENARIOS["checkout-recovery"].benchmark
+        identity = freeze_identity(benchmark, metadata["options"])
+        evaluator = load_entrypoints(benchmark, identity).evaluate
+        scoring = importlib.import_module(evaluator.__module__.rsplit(".", 1)[0] + ".scoring")
+        reply = read(record / "evaluation/judge-reply.json")
+        before = {
+            path.relative_to(record).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in record.rglob("*")
+            if path.is_file()
+        }
+        output = self.root / "calibrated"
+
+        def judge(contract, run_log, artifacts):
+            ledger = read(output / "ledger.json")
+            self.assertEqual(ledger["events"][0]["status"], "unknown")
+            saved = copy.deepcopy(reply)
+            saved["judgement"]["run_id"] = run_log["run_id"]
+            for criterion in saved["judgement"]["criteria"]:
+                criterion["evidence_refs"] = [
+                    "candidate-calibration" if reference == "candidate-final" else reference
+                    for reference in criterion["evidence_refs"]
+                ]
+            saved["provenance"].update(
+                mode="codex",
+                model=contract.judge_model,
+                run_log_digest=digest(run_log),
+                response_digest=digest(saved["judgement"]),
+            )
+            return saved
+
+        with patch.object(scoring, "judge", side_effect=judge) as dispatch:
+            evaluate_main(
+                [
+                    "--record",
+                    str(record),
+                    "--output",
+                    str(output),
+                    "--calibration",
+                    "supported-good",
+                    "--judge-model",
+                    "stub-judge",
+                    "--dispatch-judge",
+                ]
+            )
+        dispatch.assert_called_once()
+        self.assertEqual(
+            read(output / "evaluation/evaluation.json")["status"],
+            "complete",
+            read(output / "evaluation/evaluation.json"),
+        )
+        self.assertTrue((output / "comparison.json").is_file())
+        self.assertTrue((output / "fixture.json").is_file())
+        self.assertEqual(read(output / "evaluation/task-contract.json")["judge"]["model"], "stub-judge")
+        after = {
+            path.relative_to(record).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in record.rglob("*")
+            if path.is_file()
+        }
+        self.assertEqual(before, after)
+        metadata["identity"]["sha256"] = "0" * 64
+        (record / "benchmark.json").write_text(json.dumps(metadata))
+        refused = self.root / "refused"
+        with patch.object(scoring, "judge") as dispatch, self.assertRaisesRegex(ValueError, "identity differs"):
+            evaluate_main(
+                [
+                    "--record",
+                    str(record),
+                    "--output",
+                    str(refused),
+                    "--calibration",
+                    "supported-good",
+                    "--judge-model",
+                    "stub-judge",
+                    "--dispatch-judge",
+                ]
+            )
+        dispatch.assert_not_called()
+        self.assertFalse((refused / "ledger.json").exists())
 
 
 @unittest.skipUnless(

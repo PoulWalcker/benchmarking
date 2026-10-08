@@ -1,5 +1,6 @@
 """Contract tests; upstream is mocked, never invokes a model."""
 
+from functools import partial
 from io import BytesIO
 import json
 from pathlib import Path
@@ -7,7 +8,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.execute.agency import ContractError, DispatchAudit, check_schema, execute, strict_json
+from sapi_config_lab.execute.agency import ContractError, DispatchAudit, check_schema, strict_json
+from sapi_config_lab.execute.agency import execute as agency_execute
+from sapi_config_lab.harbor_integration.model_wrapper import request_wrapper
+
+execute = partial(agency_execute, transport=request_wrapper)
 
 
 class BridgeContractTests(unittest.TestCase):
@@ -38,7 +43,8 @@ class BridgeContractTests(unittest.TestCase):
 
     def call(self, wrapper):
         with patch(
-            "sapi_config_lab.execute.agency.urlopen", return_value=BytesIO(json.dumps(wrapper).encode())
+            "sapi_config_lab.harbor_integration.model_wrapper.urlopen",
+            return_value=BytesIO(json.dumps(wrapper).encode()),
         ) as mocked:
             result = execute(self.request, self.catalog, "http://127.0.0.1:8765/run", 1)
         return result, mocked
@@ -76,7 +82,10 @@ class BridgeContractTests(unittest.TestCase):
 
     def test_no_upstream_for_bad_input_or_arbitrary_prompt(self):
         for change in ({"operation": "missing"}, {"inputs": {"text": 123}}, {"prompt": "arbitrary"}):
-            with self.subTest(change=change), patch("sapi_config_lab.execute.agency.urlopen") as mocked:
+            with (
+                self.subTest(change=change),
+                patch("sapi_config_lab.harbor_integration.model_wrapper.urlopen") as mocked,
+            ):
                 with self.assertRaises(ContractError):
                     execute({**self.request, **change}, self.catalog, "http://127.0.0.1:8765/run", 1)
                 mocked.assert_not_called()
@@ -108,7 +117,7 @@ class BridgeContractTests(unittest.TestCase):
                     ).encode()
                 )
 
-            with patch("sapi_config_lab.execute.agency.urlopen", side_effect=upstream) as called:
+            with patch("sapi_config_lab.harbor_integration.model_wrapper.urlopen", side_effect=upstream) as called:
                 execute(self.request, self.catalog, "http://unused", 1, audit=audit)
                 with self.assertRaises(ContractError):
                     execute({**self.request, "invocation_id": "second"}, self.catalog, "http://unused", 1, audit=audit)
@@ -132,7 +141,7 @@ class BridgeContractTests(unittest.TestCase):
                     {"max_attempts": 2, "operations": {"example.classify": 2}, "model": "configured-model"},
                 )
                 with patch(
-                    "sapi_config_lab.execute.agency.urlopen",
+                    "sapi_config_lab.harbor_integration.model_wrapper.urlopen",
                     side_effect=failure if isinstance(failure, Exception) else None,
                     return_value=failure,
                 ) as called:
@@ -155,7 +164,7 @@ class BridgeContractTests(unittest.TestCase):
                     {"max_attempts": 2, "operations": {"example.classify": 2}, "model": "configured-model"},
                 )
                 with patch(
-                    "sapi_config_lab.execute.agency.urlopen",
+                    "sapi_config_lab.harbor_integration.model_wrapper.urlopen",
                     return_value=BytesIO(
                         b'{"ok":true,"exit_code":0,"output":"{\\"priority\\":\\"high\\"}","stderr":"model: configured-model"}'
                     ),

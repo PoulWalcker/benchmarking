@@ -6,9 +6,8 @@ research adapter, not a durable Agency service: no retries, idempotency or cance
 
 from __future__ import annotations
 
-import argparse
 import hashlib
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler
 import json
 import math
 import os
@@ -18,12 +17,9 @@ import subprocess
 import sys
 import time
 from urllib.error import HTTPError, URLError
-from urllib.request import Request
-
-import yaml
 
 from sapi_config_lab.evidence import digest
-from sapi_config_lab.execute.host import HostConfig, local_address
+from sapi_config_lab.execute.host import local_address
 from sapi_config_lab.net import urlopen
 from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.wrapper_audit import reported_model, reported_tokens, stderr_sha256, tool_markers
@@ -239,7 +235,9 @@ class DispatchAudit:
         self.append({"event": "failure", **context, "category": category, "model_outcome": outcome})
 
 
-def execute(data, catalog, upstream, timeout, *, audit: DispatchAudit | None = None, reject_tool_use: bool = False):
+def execute(
+    data, catalog, upstream, timeout, *, audit: DispatchAudit | None = None, reject_tool_use: bool = False, transport
+):
     context: dict = {}
     stage = "invalid_input"
     try:
@@ -258,7 +256,6 @@ def execute(data, catalog, upstream, timeout, *, audit: DispatchAudit | None = N
             raise ContractError("operation has no live contract")
         check_schema(data["inputs"], binding["input_schema"], "inputs")
         prompt = build_prompt(data, binding)
-        request = Request(upstream, json.dumps({"prompt": prompt}).encode(), {"Content-Type": "application/json"})
         stage = "budget"
         if audit:
             context = audit.begin(data, prompt)
@@ -268,8 +265,7 @@ def execute(data, catalog, upstream, timeout, *, audit: DispatchAudit | None = N
             timeout = min(timeout, WRAPPER_TIMEOUT_SECONDS, audit.budget["expires_at"] - time.time())
             if timeout <= 0:
                 raise ContractError("case deadline expired before dispatch")
-        with urlopen(request, timeout=timeout) as response:
-            raw = response.read(MAX_BODY + 1)
+        raw = transport(upstream, prompt, timeout, MAX_BODY)
         stage = "upstream_wrapper_failure"
         if len(raw) > MAX_BODY:
             raise ContractError("wrapper response too large")
@@ -332,7 +328,7 @@ def execute(data, catalog, upstream, timeout, *, audit: DispatchAudit | None = N
         raise
 
 
-def make_handler(catalog, upstream, timeout, audit_path, budget=None, reject_tool_use=False):
+def make_handler(catalog, upstream, timeout, audit_path, budget=None, reject_tool_use=False, *, transport):
     dispatch = DispatchAudit(audit_path, budget) if budget is not None else None
 
     class Handler(BaseHTTPRequestHandler):
@@ -364,7 +360,15 @@ def make_handler(catalog, upstream, timeout, audit_path, budget=None, reject_too
                 if not 0 < size <= MAX_BODY:
                     raise ContractError("invalid request size")
                 data = strict_json(self.rfile.read(size))
-                result = execute(data, catalog, upstream, timeout, audit=dispatch, reject_tool_use=reject_tool_use)
+                result = execute(
+                    data,
+                    catalog,
+                    upstream,
+                    timeout,
+                    audit=dispatch,
+                    reject_tool_use=reject_tool_use,
+                    transport=transport,
+                )
                 status = 200
             except TimeoutError, HTTPError, URLError:
                 status, result = 502, {"status": "failed", "error": "upstream_transport"}
@@ -424,7 +428,15 @@ def start_bridge(
     """Start the bridge on `host:port` as a child process and wait for /health; fails if the port is taken."""
     with log.open("w") as stream:
         process = subprocess.Popen(
-            [sys.executable, "-m", "sapi_config_lab.execute.agency", "--host", host, "--port", str(port)]
+            [
+                sys.executable,
+                "-m",
+                "sapi_config_lab.harbor_integration.model_wrapper",
+                "--host",
+                host,
+                "--port",
+                str(port),
+            ]
             + ["--upstream", upstream]
             + ["--timeout", str(WRAPPER_TIMEOUT_SECONDS), "--audit", str(audit), "--budget", str(budget)]
             + ["--bindings", str(bindings)]
@@ -460,33 +472,3 @@ def stop_bridge(process: subprocess.Popen | None) -> None:
     except subprocess.TimeoutExpired:
         process.kill()
         process.wait(timeout=5)
-
-
-def main():
-    host = HostConfig.from_environment()
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--host", default=host.listen_host, help="Bind address (SAPI_LISTEN_HOST)")
-    parser.add_argument("--port", type=int, default=host.bridge_port)
-    parser.add_argument("--upstream", default=host.wrapper_url)
-    parser.add_argument("--timeout", type=int, default=WRAPPER_TIMEOUT_SECONDS)
-    parser.add_argument("--bindings", type=Path, default=CATALOG)
-    parser.add_argument("--audit", type=Path, required=True)
-    parser.add_argument("--budget", type=Path)
-    parser.add_argument("--reject-tool-use", action="store_true", help="Fail a call whose wrapper reports tool use")
-    args = parser.parse_args()
-    catalog = yaml.safe_load(args.bindings.read_text())["operations"]
-    args.audit.parent.mkdir(parents=True, exist_ok=True)
-    budget = strict_json(args.budget.read_bytes()) if args.budget else None
-    handler = make_handler(catalog, args.upstream, args.timeout, args.audit, budget, args.reject_tool_use)
-    server = HTTPServer((args.host, args.port), handler)
-    print(f"Catalog adapter listening on {args.host}:{args.port}", flush=True)
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        server.server_close()
-
-
-if __name__ == "__main__":
-    main()

@@ -33,6 +33,7 @@ from sapi_config_lab.evidence import json_text, sha256, write_json
 from sapi_config_lab.execute.agency import MAX_OUTGOING_ATTEMPTS, WRAPPER_TIMEOUT_SECONDS, make_handler
 from sapi_config_lab.execute.host import HostConfig, local_address
 from sapi_config_lab.execute.ui_n8n import DockerUi, fingerprint
+from sapi_config_lab.harbor_integration.model_wrapper import request_wrapper
 from sapi_config_lab.net import urlopen
 from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.profile import UniqueLoader, Unsupported, read_bindings, validate, validate_bindings
@@ -213,7 +214,12 @@ def serve(
     budget = admit(directory, max_attempts=max_attempts, seconds=seconds, model=identity["model"])
     audit = directory / "bridge-audit.jsonl"
     base = make_handler(
-        read_bindings(directory / "bindings.yaml"), host.wrapper_url, WRAPPER_TIMEOUT_SECONDS, audit, budget
+        read_bindings(directory / "bindings.yaml"),
+        host.wrapper_url,
+        WRAPPER_TIMEOUT_SECONDS,
+        audit,
+        budget,
+        transport=request_wrapper,
     )
 
     class Handler(base):  # type: ignore[valid-type,misc]

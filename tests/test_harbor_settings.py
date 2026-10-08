@@ -140,9 +140,13 @@ class StagingTests(unittest.TestCase):
 
     @unittest.skipUnless(AVAILABLE, "Requires the pinned upstream source and benchmark extra")
     def test_hosted_scenarios_need_room_for_a_run(self):
-        with tempfile.TemporaryDirectory() as directory, with_timeout("checkout-recovery", 719):
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            with_timeout("checkout-recovery", 719),
+            patch.dict(SCENARIOS, {"checkout-recovery": replace(SCENARIOS["checkout-recovery"], benchmark=None)}),
+        ):
             with self.assertRaisesRegex(ValueError, "checkout-recovery: its verifier may run 1095s"):
-                stage_tasks(Path(directory) / "tasks", scenarios=("checkout-recovery",), legacy_hosted=True)
+                stage_tasks(Path(directory) / "tasks", scenarios=("checkout-recovery",))
             stage_tasks(Path(directory) / "admit", mode="generation", scenarios=("checkout-recovery",))
 
     def test_native_admission_uses_the_resolved_verifier_phase(self):

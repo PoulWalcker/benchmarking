@@ -89,8 +89,28 @@ def hosted_verifier_seconds(wall_clock_seconds: int, evaluation_seconds: int, *,
     ) + VERIFIER_OVERHEAD_SECONDS
 
 
+def selected_cases(scenario: Scenario) -> dict | None:
+    """Read only the selected descriptor's declared fixture input, or the legacy reader."""
+    if scenario.benchmark is not None:
+        path = scenario.benchmark.config.get("cases")
+        if path is None:
+            return None
+        files = {item.destination: item.source for item in scenario.benchmark.trusted}
+        if path not in files:
+            raise ValueError("Fixture input must be declared trusted material")
+        import json
+
+        return json.loads(files[path].read_text())
+    return scenario.cases() if scenario.environment == "fixtures" else None
+
+
 def runtime_grant_seconds(scenario: Scenario) -> int:
     """Allow Harbor setup and environment startup before the actual bounded model-execution window."""
+    if scenario.benchmark is not None:
+        from sapi_config_lab.harbor_integration.tasks import validate_config
+
+        native = validate_config((scenario.directory / scenario.benchmark.harbor_task).read_text())
+        return int(native.environment.build_timeout_sec + native.agent.timeout_sec + native.verifier.timeout_sec)
     execution = ENVIRONMENTS[scenario.environment].limit_seconds(scenario) if scenario.hosted else LIVE_DEADLINE_SECONDS
     setup = scenario.harbor["build_timeout_sec"] + scenario.harbor["agent_timeout_sec"]
     return (
@@ -124,6 +144,12 @@ def verifier_bounds(
     """Seconds each staged verifier may need for the definition it will plan."""
     bounds = {}
     for name, scenario in select_scenarios(scenarios).items():
+        if scenario.benchmark is not None and "prepare" in scenario.benchmark.entrypoints:
+            bounds[name] = (
+                execution_ceiling(scenario.benchmark.config["deadline_seconds"], bound=False)
+                + VERIFIER_OVERHEAD_SECONDS
+            )
+            continue
         if scenario.hosted:
             limit = ENVIRONMENTS[scenario.environment].limit_seconds(scenario)
             bounds[name] = hosted_verifier_seconds(
@@ -168,6 +194,18 @@ def scenario_catalog(scenario: Scenario) -> str:
 
 def generation_prompt(root: Path, scenario: Scenario, catalog: str = "full") -> str:
     """The exact text a model is asked to answer with YAML; `catalog` selects the operation-catalog experiment arm."""
+    if (
+        scenario.benchmark is not None
+        and (authoring := scenario.benchmark.config.get("authoring"))
+        and "prompt" in authoring
+    ):
+        if catalog not in authoring["catalogs"]:
+            raise ValueError("A reduced catalog applies to fixture scenarios only: " + scenario.name)
+        path = authoring["prompt"]
+        files = {item.destination: item for item in scenario.benchmark.public}
+        if path not in files:
+            raise ValueError("Authoring prompt must be declared public material")
+        return files[path].source.read_text()
     if catalog not in CATALOG_VARIANTS or (catalog != "full" and scenario.hosted):
         raise ValueError("A reduced catalog applies to fixture scenarios only: " + scenario.name)
     if not scenario.hosted:
@@ -214,7 +252,7 @@ def stage_tasks(
     scenarios: tuple[str, ...] | None = None,
     cases: dict[str, dict] | None = None,
     catalog: str = "full",
-    legacy_hosted: bool = False,
+    judge_model: str | None = None,
 ) -> dict:
     """Create immutable input packages for one run; never modify source fixtures."""
     selected = select_scenarios(scenarios)
@@ -229,12 +267,12 @@ def stage_tasks(
             raise ValueError("Replay submission hash mismatch")
     elif submissions is not None:
         raise ValueError("Submissions require replay mode")
-    if cases is not None and not set(cases) <= {name for name, s in selected.items() if s.environment == "fixtures"}:
+    if cases is not None and not set(cases) <= {name for name, s in selected.items() if selected_cases(s) is not None}:
         raise ValueError("Fixtures given for a scenario that is not staged on fixtures")
     for name, required in verifier_bounds(tuple(selected), mode, submissions, cases).items():
         selected_scenario = selected[name]
         limit = selected_scenario.harbor["verifier_timeout_sec"]
-        if selected_scenario.benchmark is not None and not (legacy_hosted and selected_scenario.hosted):
+        if selected_scenario.benchmark is not None:
             from sapi_config_lab.harbor_integration.tasks import validate_config
 
             native = validate_config(
@@ -253,7 +291,7 @@ def stage_tasks(
     runtime = runtime_sources(root)
     for scenario, definition in selected.items():
         task = destination / scenario
-        if definition.benchmark is not None and not (legacy_hosted and definition.hosted):
+        if definition.benchmark is not None:
             from sapi_config_lab.coordinate.benchmark_packages import stage_selected
 
             public_instruction = (
@@ -266,9 +304,11 @@ def stage_tasks(
                 "mode": "stub",
                 "deadline_seconds": declared_deadline(planned_config(definition, mode, submissions)),
             }
+            if judge_model is not None and definition.benchmark.budgets.judge_calls:
+                options.update(judge_mode="codex", judge_model=judge_model)
             if chosen_cases is not None:
                 options["cases"] = chosen_cases
-            if mode == "generation" and definition.hosted:
+            if mode == "generation" and "prepare" in definition.benchmark.entrypoints:
                 options["admission"] = True
             replayed = Path(submissions[scenario]["path"]).read_bytes() if submissions else None
             if replayed is not None:
@@ -281,8 +321,8 @@ def stage_tasks(
                 instruction=public_instruction,
                 submission=replayed,
                 oracle=mode != "generation",
-                cases=(chosen_cases if chosen_cases is not None else definition.cases())
-                if definition.environment == "fixtures"
+                cases=(chosen_cases if chosen_cases is not None else selected_cases(definition))
+                if selected_cases(definition) is not None
                 else None,
             )
             hashes[scenario] = hashlib.sha256(public_instruction).hexdigest()

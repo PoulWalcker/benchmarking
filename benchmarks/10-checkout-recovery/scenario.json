@@ -5,7 +5,8 @@
   "public": [
     "instruction.md",
     "authoring-notes.md",
-    "bindings.yaml"
+    "bindings.yaml",
+    "authoring-prompt.txt"
   ],
   "trusted": [
     "operations.js",
@@ -78,6 +79,12 @@
         "reference_reward": 0.732
       }
     },
-    "deadline_seconds": 120
+    "deadline_seconds": 120,
+    "authoring": {
+      "prompt": "authoring-prompt.txt",
+      "catalogs": [
+        "full"
+      ]
+    }
   }
 }

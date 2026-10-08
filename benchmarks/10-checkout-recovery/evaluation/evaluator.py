@@ -8,6 +8,7 @@ from typing import Any
 from sapi_config_lab.contracts import OutputArtifact
 from sapi_config_lab.pinned_source import PinnedSource, read_manifest
 
+from .calibration import calibration_fixture, compare_calibration
 from .scoring import evaluate_once, freeze_contract, recorded_run_log
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -41,6 +42,16 @@ def evaluate(evidence: Path, options: Mapping[str, Any]) -> Mapping[str, Any]:
     source_root = Path(options.get("source_root", ROOT / "vendor/autowfbench"))
     if "source_root" not in options and not source_root.is_dir():
         source_root = ROOT.parent.parent / ".cache/autowfbench" / read_manifest(manifest)["revision"]
+    if saved is not None:
+        original = freeze_contract(
+            PinnedSource(manifest, source_root),
+            "production-checkout-recovery",
+            judge_mode=judge["mode"],
+            judge_model=judge["model"],
+            artifact=OutputArtifact("incident_summary", "incident-summary.md"),
+        )
+        if original.as_dict() != saved:
+            raise ValueError("Saved task contract differs from frozen source/package/judge")
     contract = freeze_contract(
         PinnedSource(manifest, source_root),
         "production-checkout-recovery",
@@ -48,16 +59,31 @@ def evaluate(evidence: Path, options: Mapping[str, Any]) -> Mapping[str, Any]:
         judge_model=options.get("judge_model", judge["model"]),
         artifact=OutputArtifact("incident_summary", "incident-summary.md"),
     )
-    if saved is not None and contract.as_dict() != saved:
+    if saved is not None and not options.get("calibration") and contract.as_dict() != saved:
         raise ValueError("Saved task contract differs from frozen source/package/judge")
     reply = _document(options["judgement"]) if options.get("judgement") is not None else None
     dispatch = options.get("dispatch", reply is None and contract.judge_mode == "demo")
     if type(dispatch) is not bool:
         raise ValueError("Judge dispatch must be boolean")
-    if dispatch and contract.judge_mode != "demo":
+    reserve = options.get("reserved_judge")
+    if dispatch and contract.judge_mode != "demo" and not callable(reserve):
         raise ValueError("Paid judge dispatch requires the host reservation path")
     run_log = recorded_run_log(contract, evidence)
-    report = evaluate_once(contract, run_log, output, judgement=reply, dispatch=dispatch)
+    fixture = None
+    if options.get("calibration"):
+        fixture = calibration_fixture(contract, run_log, options["calibration"])
+        output.parent.mkdir(parents=True, exist_ok=True)
+        (output.parent / "fixture.json").write_text(json.dumps(fixture, indent=2) + "\n")
+        run_log = fixture["run_log"]
+
+    def score():
+        return evaluate_once(contract, run_log, output, judgement=reply, dispatch=dispatch)
+
+    report = reserve(score) if dispatch and contract.judge_mode != "demo" else score()
+    if fixture is not None:
+        (output.parent / "comparison.json").write_text(
+            json.dumps(compare_calibration(fixture, report), indent=2) + "\n"
+        )
     result = {
         "execution": run_log["termination_reason"] == "completed",
         "acceptance": report.get("execution_pass") is True,

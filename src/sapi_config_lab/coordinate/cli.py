@@ -20,7 +20,7 @@ MODULES = {
     "live": "coordinate.live",
     "select": "coordinate.replay",
     "generate": "coordinate.generate",
-    "bridge": "execute.agency",
+    "bridge": "harbor_integration.model_wrapper",
     "transport": "coordinate.transport",
     "ui": "coordinate.ui",
     "review-export": "evaluate.review_export",

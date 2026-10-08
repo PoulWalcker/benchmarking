@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import hashlib
 from importlib.metadata import PackageNotFoundError, version
+import json
 from pathlib import Path
 import platform
 import sys
 
+from sapi_config_lab.benchmark import discover_benchmarks
 from sapi_config_lab.paths import workspace_root
 
 SOURCE_DIRECTORIES = ("src", "tests", "benchmarks", "docs", "generation", "infra", "verification", "harbor", ".github")
@@ -24,7 +26,6 @@ SOURCE_FILES = (
     "provenance/SapiensSpecNotation.hs",
     "provenance/spec-comparison.json",
     "provenance/spec-source.json",
-    "provenance/autowfbench-source.json",
 )
 SOURCE_SUFFIXES = {".py", ".js", ".mjs", ".yaml", ".yml", ".json", ".toml", ".md", ".sh", ".txt", ".hs"}
 
@@ -33,6 +34,19 @@ def source_manifest(root: Path | None = None) -> dict[str, str]:
     """Hashes of every public source file; provenance/ is an allowlist, so machine snapshots never count."""
     root = root or workspace_root()
     files = {root / name for name in SOURCE_FILES}
+    if (root / "benchmarks").is_dir():
+        for benchmark in discover_benchmarks(root / "benchmarks"):
+            files.update(item.source for item in benchmark.files)
+    # Legacy readers still use root pins; their names come only from benchmark declarations.
+    for manifest in (root / "benchmarks").glob("*/scenario.json"):
+        metadata = json.loads(manifest.read_text())
+        declaration = metadata.get("config", {}).get("legacy", metadata)
+        provenance = declaration.get("provenance")
+        if provenance:
+            source = provenance["source"]
+            if not isinstance(source, str) or not source.replace("-", "").isalnum():
+                raise ValueError("Invalid declared source identity")
+            files.add(root / "provenance" / (source + "-source.json"))
     for directory in SOURCE_DIRECTORIES:
         files.update(
             path

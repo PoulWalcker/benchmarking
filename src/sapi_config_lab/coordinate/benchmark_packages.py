@@ -73,7 +73,10 @@ def validate_selected(benchmark: Benchmark, task: Path, root: Path, selected: di
     """Rebuild the positive package from current sources and admitted selection before paid dispatch."""
     metadata = json.loads((task / "tests/benchmark.json").read_text())
     options = metadata["options"]
-    if set(options) - {"mode", "deadline_seconds", "cases", "submission_sha256"} or options.get("mode") != "stub":
+    if (
+        set(options) - {"mode", "deadline_seconds", "cases", "submission_sha256", "judge_mode", "judge_model"}
+        or options.get("mode") != "stub"
+    ):
         raise ValueError("Unexpected staged selection options")
     from sapi_config_lab.profile import read
 

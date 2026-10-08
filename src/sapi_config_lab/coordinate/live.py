@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
-from contextlib import ExitStack
 from dataclasses import replace
 from datetime import UTC, datetime
 import json
@@ -14,20 +13,19 @@ import shutil
 import time
 from typing import Any
 
-from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, hosted_evaluation, trial_accepted
+from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
+from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, trial_accepted
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
-from sapi_config_lab.coordinate.live_evidence import case_budget, collect_native, live_cohort, reconcile_dispatches
-from sapi_config_lab.coordinate.packages import runtime_grant_seconds, task_toml
-from sapi_config_lab.coordinate.providers import EVALUATORS
+from sapi_config_lab.coordinate.live_evidence import collect_native, reconcile_dispatches
+from sapi_config_lab.coordinate.packages import runtime_grant_seconds, selected_cases, task_toml
 from sapi_config_lab.coordinate.replay import load_selection, read_json, require
-from sapi_config_lab.coordinate.runs import Hosting, Run, progress, run_experiment
+from sapi_config_lab.coordinate.runs import Run, progress, run_experiment
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
 from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
 from sapi_config_lab.evidence import sha256
 from sapi_config_lab.execute.agency import strict_json
 from sapi_config_lab.execute.host import LAB_IMAGE, HostConfig
 from sapi_config_lab.paths import workspace_root
-from sapi_config_lab.profile import read
 
 ROOT = workspace_root()
 
@@ -56,18 +54,18 @@ def validate_control(path: Path, current: dict[str, str], identity: str) -> dict
     return gate
 
 
-def validate_packages(path: Path, submissions: dict, image: str, *, legacy_hosted: bool = False):
+def validate_packages(path: Path, submissions: dict, image: str):
     templates = ROOT / "harbor/templates"
     for scenario, selected in submissions.items():
         task = path / scenario
         benchmark = SCENARIOS[scenario].benchmark
-        if benchmark is not None and not (legacy_hosted and SCENARIOS[scenario].hosted):
+        if benchmark is not None:
             from sapi_config_lab.coordinate.benchmark_packages import validate_selected
 
-            selected_cases = selected.get("cases")
-            if selected_cases is None and SCENARIOS[scenario].environment == "fixtures":
-                selected_cases = SCENARIOS[scenario].cases()
-            validate_selected(benchmark, task, ROOT, {**selected, "cases": selected_cases})
+            cases = selected.get("cases")
+            if cases is None:
+                cases = selected_cases(SCENARIOS[scenario])
+            validate_selected(benchmark, task, ROOT, {**selected, "cases": cases})
             continue
         require(sha256(task / "environment/base.yaml") == selected["sha256"], "Staged submission hash mismatch")
         if "cases_sha256" in selected:
@@ -85,7 +83,7 @@ def validate_packages(path: Path, submissions: dict, image: str, *, legacy_hoste
         )
 
 
-def hosted_grant(scenario: str, config: dict) -> dict:
+def model_grant(scenario: str, config: dict) -> dict:
     """A grant for exactly the model calls a hosted submission's LLM steps may make."""
     workflow = config["workflow"]
     calls = {
@@ -93,8 +91,11 @@ def hosted_grant(scenario: str, config: dict) -> dict:
         for step in workflow["steps"]
         if step["kind"] == "LLM"
     }
-    cap = SCENARIOS[scenario].runtime_model_calls
-    require(cap is not None and len(calls) <= cap, "Runtime model cap exceeded")
+    benchmark = SCENARIOS[scenario].benchmark
+    if benchmark is None:
+        raise ValueError("Live grants require a selected versioned benchmark")
+    cap = benchmark.budgets.runtime_model_calls
+    require(cap is None or len(calls) <= cap, "Runtime model cap exceeded")
     return {"max_attempts": len(calls), "operations": dict(Counter(calls.values())), "occurrences": calls}
 
 
@@ -109,7 +110,7 @@ def check_trials(
         require(
             acceptance.get("mode") == mode and acceptance.get("scenario") == scenario, "Verifier scenario/mode mismatch"
         )
-        if SCENARIOS[scenario].hosted:
+        if acceptance.get("schema") in {ADMISSION_REPORT, "sapi-lab-upstream-acceptance/v1"}:
             if admission:
                 require(
                     mode == "stub"
@@ -177,20 +178,28 @@ def failure_category(trials: list[dict], audit: list[dict], default: str) -> str
     return default
 
 
-def cohort_grants(submissions: dict, hosted: tuple[str, ...]) -> dict[tuple[str, str], tuple[dict, dict]]:
-    """(scenario, case) -> (grant, config): one grant per verifier live case, one per hosted run."""
+def cohort_grants(submissions: dict) -> dict[tuple[str, str], tuple[dict, dict]]:
+    """Reserve the occurrences of each selected benchmark's live observation plan."""
     grants = {}
     for scenario, submission in submissions.items():
-        if scenario in hosted:
-            config = read(Path(submission["path"]))
-            grants[scenario, "run"] = (hosted_grant(scenario, config), config)
-            continue
-        for name in live_cohort(scenario, submission):
-            config = read(Path(submission["path"]))
-            config["workflow"]["inputs"] = next(
-                case["inputs"] for case in submission["cases"]["positive"] if case["name"] == name
+        benchmark = SCENARIOS[scenario].benchmark
+        if benchmark is None:
+            raise ValueError("Live experiments require a selected versioned benchmark")
+        options = {"mode": "live", "deadline_seconds": 600}
+        if "cases" in submission:
+            options["cases"] = submission["cases"]
+        identity = freeze_identity(benchmark, options)
+        plan = load_entrypoints(benchmark, identity).plan(Path(submission["path"]), options)
+        for entry in plan["entries"]:
+            config = entry["config"]
+            grant = model_grant(scenario, config)
+            minimum = entry.get(
+                "minimum_model_calls",
+                min(1, grant["max_attempts"]) if "refinement" in config["execution"] else grant["max_attempts"],
             )
-            grants[scenario, name] = (case_budget(scenario, name, config, submission["cases"]), config)
+            require(type(minimum) is int and 0 <= minimum <= grant["max_attempts"], "Invalid planned model minimum")
+            grant["minimum_attempts"] = minimum
+            grants[scenario, entry["name"]] = (grant, config)
     return grants
 
 
@@ -257,17 +266,21 @@ def main(argv: list[str] | None = None) -> int:
         else:
             submissions = {
                 name: {"path": s.config, "sha256": sha256(s.config)}
-                | ({"cases": s.cases()} if s.environment == "fixtures" else {})
+                | ({"cases": selected_cases(s)} if selected_cases(s) is not None else {})
                 for name, s in reference.items()
             }
         scenarios = tuple(submissions)
         controlled = {trial["task_name"] for trial in gate["oracle"]["trials"]}
         require(set(scenarios) <= controlled, "The control report does not cover every scenario")
-        hosted = tuple(s for s in scenarios if SCENARIOS[s].hosted)
-        judge_calls = {s: EVALUATORS[SCENARIOS[s].evaluator].judge_calls for s in hosted}
+        judge_calls = {}
+        for name in scenarios:
+            benchmark = SCENARIOS[name].benchmark
+            if benchmark is None:
+                raise ValueError("Live experiments require a selected versioned benchmark")
+            judge_calls[name] = benchmark.budgets.judge_calls
         judge_total = sum(judge_calls.values())
         require(not judge_total or args.preflight_only or args.judge_model, "Hosted evaluation needs --judge-model")
-        grants = cohort_grants(submissions, hosted)
+        grants = cohort_grants(submissions)
         report["budget"]["cases"] = {f"{s}/{c}": grant["max_attempts"] for (s, c), (grant, _) in grants.items()}
         report["budget"]["judge"] = judge_calls
         needed = sum(report["budget"]["cases"].values()) + judge_total
@@ -294,9 +307,9 @@ def main(argv: list[str] | None = None) -> int:
             if args.submissions_manifest
             else None,
             cases={s: v["cases"] for s, v in submissions.items() if "cases" in v},
-            legacy_hosted=True,
+            judge_model=args.judge_model,
         )
-        validate_packages(run.tasks, submissions, run.image or "", legacy_hosted=True)
+        validate_packages(run.tasks, submissions, run.image or "")
         run.check("before-stub")
         progress(f"preflight: fixture stub replay and hosted compilation/admission of {', '.join(scenarios)}")
         started = time.monotonic()
@@ -321,82 +334,86 @@ def main(argv: list[str] | None = None) -> int:
         report["judge_model"] = args.judge_model
         report_path = run.output / "report.json"
         bridge_url = host.container_url(host.bridge_port)
-        for number, ((scenario, name), (grant, config)) in enumerate(grants.items(), 1):
+        for number, ((scenario, name), (grant, _config)) in enumerate(grants.items(), 1):
             step = f"[{number}/{len(grants)}] {scenario}/{name}"
             progress(f"{step}: live, up to {grant['max_attempts']} model calls reserved")
             started = time.monotonic()
             run.check(f"before-{scenario}-{name}")
-            upper_bound = "refinement" in config["execution"]
+            wrapper_identity(args.wrapper_evidence, host.wrapper_url, host.wrapper_model, wrapper_files)
             label = f"{scenario}-{name}"
-            hosting = None
-            with ExitStack() as reserved:
-                outcomes = [
-                    reserved.enter_context(
-                        ledger.reserved(
-                            "runtime",
-                            f"{run.output.name}/{scenario}/{name}",
-                            grant["max_attempts"],
-                            report_path,
-                            args.max_calls,
-                        )
-                    )
-                ]
-                if judge_calls.get(scenario):
-                    outcomes.append(
-                        reserved.enter_context(
-                            ledger.reserved(
-                                "judge",
-                                f"{run.output.name}/{scenario}/judge",
-                                judge_calls[scenario],
-                                report_path,
-                                args.max_calls,
-                            )
-                        )
-                    )
-                if scenario in hosted:
-                    hosting = Hosting(
-                        "live", hosted_evaluation((scenario,), args.judge_model, legacy_hosted=True), bridge_url
-                    )
+            with ledger.reserved(
+                "runtime", f"{run.output.name}/{scenario}/{name}", grant["max_attempts"], report_path, args.max_calls
+            ) as runtime_outcome:
                 budget = {
-                    **grant,
+                    **{key: value for key, value in grant.items() if key != "minimum_attempts"},
                     "model": host.wrapper_model,
                     "expires_at": time.time() + runtime_grant_seconds(SCENARIOS[scenario]),
                 }
-                with run.bridge(
-                    budget, label, bindings=SCENARIOS[scenario].bindings, reject_tool_use=scenario in hosted
-                ) as audit:
+                with run.bridge(budget, label, bindings=SCENARIOS[scenario].bindings, reject_tool_use=True) as audit:
                     exit_code, trials = run.harbor(
                         "live-" + label,
                         run.tasks / scenario,
                         "oracle",
                         verifier_env=["SAPI_LLM_MODE=live", "SAPI_CASE_NAME=" + name, "SAPI_BRIDGE_URL=" + bridge_url],
-                        hosting=hosting,
                     )
                 report["trials"].extend(trials)
                 records = audit_records(audit)
                 report["audit"].extend(records)
                 require(exit_code == 0 and len(trials) == 1, "Live Harbor case failed")
-                if scenario in hosted:
-                    check_trials(trials, submissions, mode="live")
-                    calls = sum(row.get("event") == "dispatch_attempt" for row in records)
-                    require(calls <= grant["max_attempts"], "Unexpected call count")
-                else:
+                trial = trials[0]
+                require(trial["task_name"] == scenario, "Live Harbor selected another benchmark")
+                acceptance = trial["acceptance"] or {}
+                require(
+                    acceptance.get("mode") == "live" and acceptance.get("scenario") == scenario,
+                    "Live record identity differs",
+                )
+                require(
+                    acceptance.get("submission_sha256") == submissions[scenario]["sha256"],
+                    "Live submission identity differs",
+                )
+                exception = trial["exception"] or {}
+                require(
+                    not exception
+                    or (judge_calls.get(scenario) and exception.get("exception_type") == "RewardFileNotFoundError"),
+                    "Live Harbor case failed",
+                )
+                native = collect_native(trials, submissions, {scenario: {name}}, bridge_url)
+                correlation = reconcile_dispatches(
+                    native, records, budget["model"], bindings=SCENARIOS[scenario].bindings
+                )
+                calls, cap = len(correlation), grant["max_attempts"]
+                require(grant["minimum_attempts"] <= calls <= cap, "Unexpected call count")
+                report["correlation"].extend(correlation)
+                run.check(f"before-judge-{scenario}-{name}")
+                if not judge_calls.get(scenario):
                     check_trials(trials, submissions, mode="live", expected_cases={scenario: {name}})
-                    native = collect_native(trials, submissions, {scenario: {name}}, bridge_url)
-                    correlation = reconcile_dispatches(
-                        native, records, budget["model"], bindings=SCENARIOS[scenario].bindings
+                    run.check(f"after-{scenario}-{name}")
+                runtime_outcome.passed = True
+            if judge_calls.get(scenario):
+                from sapi_config_lab.coordinate.evaluation import reevaluate_benchmark
+
+                with ledger.reserved(
+                    "judge",
+                    f"{run.output.name}/{scenario}/{name}/judge",
+                    judge_calls[scenario],
+                    report_path,
+                    args.max_calls,
+                ) as judge_outcome:
+                    record = Path(trial["result_path"]).parent / "verifier"
+                    result = reevaluate_benchmark(
+                        record, record / "paid-evaluation", None, dispatch=True, reserved=lambda call: call()
                     )
-                    calls, cap = len(correlation), grant["max_attempts"]
-                    require(
-                        calls <= cap and (calls >= min(1, cap) if upper_bound else calls == cap),
-                        "Unexpected call count",
-                    )
-                    report["correlation"].extend(correlation)
-                run.check(f"after-{scenario}-{name}")
-                report["not_run"].remove(f"{scenario}/{name}")
-                progress(f"{step}: passed ({round(time.monotonic() - started)}s)")
-                for outcome in outcomes:
-                    outcome.passed = True
+                    trial["native_exception"] = trial["exception"]
+                    if exception.get("exception_type") == "RewardFileNotFoundError":
+                        trial["exception"] = None
+                    trial["result"] = result
+                    trial["acceptance"] = json.loads((record / "paid-evaluation/evaluation/report.json").read_text())
+                    trial["evaluation_path"] = str(record / "paid-evaluation/evaluation/report.json")
+                    check_trials(trials, submissions, mode="live", expected_cases={scenario: {name}})
+                    run.check(f"after-{scenario}-{name}")
+                    judge_outcome.passed = True
+            report["not_run"].remove(f"{scenario}/{name}")
+            progress(f"{step}: passed ({round(time.monotonic() - started)}s)")
         report["counts"] = {
             event: sum(row.get("event") == event for row in report["audit"])
             for event in ("dispatch_attempt", "completion", "failure")

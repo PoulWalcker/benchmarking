@@ -24,7 +24,8 @@ def plan(submission: Path, options: Mapping) -> dict:
         "schema": "sapi-lab-observation-plan/v1",
         "scenario": "checkout-recovery",
         "mode": options.get("mode", "stub"),
-        "entries": [{"name": "workflow", "procedure": "case", "config": config}],
+        "compile_options": {"operation_url": "http://simulator:8000/tools", "bound_deadline": True},
+        "entries": [{"name": "workflow", "procedure": "case", "config": config, "minimum_model_calls": 0}],
     }
 
 

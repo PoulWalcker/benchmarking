@@ -274,11 +274,19 @@ checks the planned executions against that resolved verifier phase. There is no
 aggregate job watchdog on this path. Docker enforces CPU and memory limits; the
 integration rejects disk, GPU and TPU requirements that this profile cannot enforce.
 
-During migration, paid `live` explicitly retains the legacy hosted adapter.
-Versioned checkout generation performs compile-only admission without invoking
-world hooks or scoring. New versioned records support offline saved-judgement
-re-evaluation; `--dispatch-judge`/`--calibration` for those records are refused until
-the experiment caller integration. Historical records keep their existing path.
+Generation, replay and live use the selected versioned package. Native live staging
+freezes `--judge-model` in its source/options identity. The verifier records evidence
+and an unscored paid-judge contract; the host evaluates it under the declared judge
+reservation into `verifier/paid-evaluation/`, preserving original evidence and native
+Harbor results. Checkout's verifier main can reach the scoped host Agency bridge;
+its simulator remains on the private verification network.
+
+Versioned `evaluate --dispatch-judge` and `--calibration CASE --judge-model MODEL`
+use the recorded evaluator after complete source and saved-contract reconciliation.
+A paid judge enters the ledger reservation only after those checks. Saved judgement
+replay remains offline. Wrapper transport and inspected local-file identity live in
+`harbor_integration/model_wrapper.py`; supported `SAPI_*` settings and CLI forms
+are unchanged.
 
 
 The generic refinement control uses test-only numeric operations and a local
@@ -307,3 +315,9 @@ The controller and observation API require an explicitly injected trusted decisi
 Existing lifecycle and legacy observation commands inject their compatibility
 decision in `coordinate/legacy_lifecycle.py` until retirement; there is no CLI or
 YAML option for selecting executable acceptance code.
+
+The source distribution verifies every selected descriptor's declared file/dependency
+closure, including its private source pins. Root pins still used by explicit legacy
+readers remain in the source manifest through those benchmark declarations. The wheel
+contains the generic runtime; experiment commands retain their existing requirement
+for an editable checkout, as enforced by `workspace_root()`.

@@ -3,6 +3,7 @@
 import contextlib
 import copy
 from dataclasses import replace
+from functools import partial
 import hashlib
 import io
 from io import BytesIO
@@ -16,15 +17,19 @@ import yaml
 
 from sapi_config_lab.coordinate.live import audit_records, check_trials, main, validate_control
 from sapi_config_lab.coordinate.live_evidence import reconcile_dispatches
-from sapi_config_lab.coordinate.replay import load_selection
+from sapi_config_lab.coordinate.replay import load_selection, read_json
 from sapi_config_lab.coordinate.runs import Run
 from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
 from sapi_config_lab.evidence import digest, sha256
-from sapi_config_lab.execute.agency import DispatchAudit, execute, start_bridge
+from sapi_config_lab.execute.agency import DispatchAudit, start_bridge
+from sapi_config_lab.execute.agency import execute as agency_execute
 from sapi_config_lab.execute.host import HostConfig
+from sapi_config_lab.harbor_integration.model_wrapper import request_wrapper
 from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.profile import read_bindings
+
+execute = partial(agency_execute, transport=request_wrapper)
 
 
 class LiveEvidenceTests(unittest.TestCase):
@@ -47,7 +52,10 @@ class LiveEvidenceTests(unittest.TestCase):
                 "output": json.dumps(output),
                 "stderr": "model: gpt-6-astra\ntokens used\n14\n",
             }
-            with patch("sapi_config_lab.execute.agency.urlopen", return_value=BytesIO(json.dumps(wrapper).encode())):
+            with patch(
+                "sapi_config_lab.harbor_integration.model_wrapper.urlopen",
+                return_value=BytesIO(json.dumps(wrapper).encode()),
+            ):
                 execute(request, read_bindings(CATALOG), "http://unused", 1, audit=audit)
             audit.append(
                 {
@@ -181,7 +189,13 @@ class HostedTrialCheckTests(unittest.TestCase):
 
     def check(self, result: dict, reference_reward: float | None) -> None:
         scenario = replace(SCENARIOS["checkout-recovery"], reference_reward=reference_reward)
-        acceptance = {"mode": "live", "scenario": "checkout-recovery", "submission_sha256": "abc", "result": result}
+        acceptance = {
+            "schema": "sapi-lab-upstream-acceptance/v1",
+            "mode": "live",
+            "scenario": "checkout-recovery",
+            "submission_sha256": "abc",
+            "result": result,
+        }
         trial = {"task_name": "checkout-recovery", "exception": None, "acceptance": acceptance, "result": result}
         with patch.dict(SCENARIOS, {"checkout-recovery": scenario}):
             check_trials([trial], {"checkout-recovery": {"sha256": "abc"}}, mode="live")
@@ -289,3 +303,108 @@ class BridgeBindingTests(unittest.TestCase):
 
     def test_loopback_stays_the_default(self):
         self.assertEqual(HostConfig().listen_host, "127.0.0.1")
+
+
+class NativeLiveReservationTests(unittest.TestCase):
+    def test_runtime_closes_before_judge_and_invalid_trials_never_dispatch_judge(self):
+        from unittest.mock import Mock
+
+        from sapi_config_lab.coordinate.packages import stage_tasks
+        from sapi_config_lab.evidence import write_json
+
+        scenario = SCENARIOS["checkout-recovery"]
+        submission_hash = sha256(scenario.config)
+        for fault in (None, "duplicate", "submission"):
+            with self.subTest(fault=fault), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                output = root / "run"
+                output.mkdir()
+                control, wrapper = root / "control.json", root / "wrapper.json"
+                control.write_text("{}")
+                wrapper.write_text("{}")
+                record = output / "jobs/live/trial/verifier"
+                record.mkdir(parents=True)
+                quality = {"status": "complete", "score_0_10": 0.0, "normalized_reward": 0.0}
+                result = {"execution": True, "acceptance": False, "quality": quality}
+
+                def trial(mode, admission=False, *, record=record, result=result):
+                    return {
+                        "task_name": scenario.name,
+                        "result_path": str(record.parent / "result.json"),
+                        "exception": None,
+                        "rewards": {"reward": 1.0},
+                        "result": result,
+                        "acceptance": {
+                            "schema": "sapi-lab-admission/v1" if admission else "sapi-lab-upstream-acceptance/v1",
+                            "mode": mode,
+                            "scenario": scenario.name,
+                            "passed": True,
+                            "submission_sha256": submission_hash,
+                        },
+                    }
+
+                run = Mock()
+                run.output, run.sources, run.tasks, run.image = output, {}, output / "tasks", "frozen:image"
+                run.use_image.return_value = "sha256:stub"
+                run.stage.side_effect = lambda mode, names, run=run, **options: stage_tasks(
+                    run.tasks, mode=mode, scenarios=names, **options
+                )
+                run.bridge.return_value = contextlib.nullcontext(output / "audit.jsonl")
+                live_trial = trial("live")
+                if fault == "submission":
+                    live_trial["acceptance"]["submission_sha256"] = "0" * 64
+                run.harbor.side_effect = [
+                    (0, [trial("stub", True)]),
+                    (0, [live_trial] * (2 if fault == "duplicate" else 1)),
+                ]
+
+                def experiment(path, report, body, run=run, **options):
+                    body(run)
+
+                def judge(recorded, derived, judgement, output=output, live_trial=live_trial, result=result, **options):
+                    events = read_json(output / "ledger.json")["events"]
+                    self.assertEqual(
+                        [(event["phase"], event["status"]) for event in events],
+                        [("runtime", "passed"), ("judge", "unknown")],
+                    )
+                    (derived / "evaluation").mkdir(parents=True)
+                    write_json(derived / "evaluation/report.json", {**live_trial["acceptance"], "result": result})
+                    return result
+
+                with (
+                    patch("sapi_config_lab.coordinate.live.run_experiment", side_effect=experiment),
+                    patch(
+                        "sapi_config_lab.coordinate.live.validate_control",
+                        return_value={"oracle": {"trials": [{"task_name": scenario.name}]}},
+                    ),
+                    patch("sapi_config_lab.coordinate.live.wrapper_identity", return_value={"model": "gpt-6-astra"}),
+                    patch("sapi_config_lab.coordinate.live.collect_native", return_value=[]),
+                    patch("sapi_config_lab.coordinate.live.reconcile_dispatches", return_value=[]),
+                    patch("sapi_config_lab.coordinate.evaluation.reevaluate_benchmark", side_effect=judge) as dispatch,
+                    contextlib.redirect_stderr(io.StringIO()),
+                    contextlib.redirect_stdout(io.StringIO()),
+                ):
+                    arguments = [
+                        "--stub-report",
+                        str(control),
+                        "--wrapper-evidence",
+                        str(wrapper),
+                        "--report-dir",
+                        str(output),
+                        "--max-calls",
+                        "5",
+                        "--scenario",
+                        scenario.name,
+                        "--judge-model",
+                        "stub-judge",
+                    ]
+                    if fault is None:
+                        self.assertEqual(main(arguments), 0)
+                        dispatch.assert_called_once()
+                        self.assertTrue(
+                            all(event["status"] == "passed" for event in read_json(output / "ledger.json")["events"])
+                        )
+                    else:
+                        with self.assertRaises(SystemExit):
+                            main(arguments)
+                        dispatch.assert_not_called()

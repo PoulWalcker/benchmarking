@@ -123,14 +123,12 @@ def control_passed(agent: str, trial: dict) -> bool:
     )
 
 
-def hosted_evaluation(
-    scenarios: Iterable[str], judge_model: str | None = None, *, legacy_hosted: bool = False
-) -> Callable[[str, Path], dict]:
+def hosted_evaluation(scenarios: Iterable[str], judge_model: str | None = None) -> Callable[[str, Path], dict]:
     """Freeze each hosted scenario's evaluator now; a named judge is a paid call the caller reserved."""
     prepared = {
         name: EVALUATORS[SCENARIOS[name].evaluator].prepare(SCENARIOS[name], judge_model)
         for name in scenarios
-        if SCENARIOS[name].hosted and (SCENARIOS[name].benchmark is None or legacy_hosted)
+        if SCENARIOS[name].hosted and SCENARIOS[name].benchmark is None
     }
 
     def evaluate(scenario: str, record: Path) -> dict:
@@ -176,7 +174,16 @@ def reevaluate_verifier(record: Path, output: Path, args: argparse.Namespace) ->
     return verifier_result(report, json.loads(rubric.read_text()) if rubric.exists() else None)
 
 
-def reevaluate_benchmark(record: Path, output: Path, judgement: Path | None) -> dict:
+def reevaluate_benchmark(
+    record: Path,
+    output: Path,
+    judgement: Path | None,
+    *,
+    dispatch: bool = False,
+    calibration: str | None = None,
+    judge_model: str | None = None,
+    reserved: Callable | None = None,
+) -> dict:
     """Replay the selected recorded evaluator only after its complete source identity matches."""
     metadata = json.loads((record / "benchmark.json").read_text())
     benchmark = SCENARIOS[metadata["name"]].benchmark
@@ -192,16 +199,23 @@ def reevaluate_benchmark(record: Path, output: Path, judgement: Path | None) -> 
             raise ValueError("Recorded trusted core source identity differs: " + relative)
     options = {
         **metadata["options"],
+        **metadata.get("runtime_options", {}),
         "evaluation": str(output / "evaluation"),
         "submission": str(record / "evidence/submission.yaml"),
         "identity": {"benchmark": metadata["identity"], "core_files": metadata["core_files"]},
-        "dispatch": False,
+        "dispatch": dispatch,
     }
     contract = record / "evaluation/task-contract.json"
     if contract.is_file():
         options["contract"] = str(contract)
     if judgement is not None:
         options["judgement"] = str(judgement)
+    if calibration is not None:
+        options.update(calibration=calibration, judge_mode="codex", judge_model=judge_model)
+    if dispatch:
+        if benchmark.budgets.judge_calls == 0 or reserved is None:
+            raise ValueError("Judge dispatch requires a declared cost and host reservation")
+        options["reserved_judge"] = reserved
     return validate_result(dict(load_entrypoints(benchmark, identity).evaluate(record / "evidence", options)))
 
 
@@ -228,11 +242,29 @@ def main(argv: list[str] | None = None) -> int:
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     if (record / "benchmark.json").is_file():
-        if args.dispatch_judge or args.calibration:
-            raise ValueError(
-                "Versioned judge/calibration dispatch requires experiment integration; use a saved judgement"
-            )
-        result = reevaluate_benchmark(record, output, args.judgement)
+        from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
+
+        def reserved(call: Callable) -> dict:
+            metadata = json.loads((record / "benchmark.json").read_text())
+            benchmark = SCENARIOS[metadata["name"]].benchmark
+            if benchmark is None or benchmark.budgets.judge_calls <= 0:
+                raise ValueError("Recorded benchmark has no declared judge cost")
+            cost = benchmark.budgets.judge_calls
+            ledger = open_ledger(output, args.series_dir, {"judge": cost}, False, parse_ceilings(args.series_ceiling))
+            with ledger.reserved("judge", f"{output.name}/judge", cost, output / "result.json", cost) as outcome:
+                value = call()
+                outcome.passed = value["status"] == "complete"
+                return value
+
+        result = reevaluate_benchmark(
+            record,
+            output,
+            args.judgement,
+            dispatch=args.dispatch_judge,
+            calibration=args.calibration,
+            judge_model=args.judge_model,
+            reserved=reserved,
+        )
     elif hosted:
         scenario = SCENARIOS[json.loads((record / "evidence/trial.json").read_text())["scenario"]]
         evaluator = EVALUATORS[scenario.evaluator]

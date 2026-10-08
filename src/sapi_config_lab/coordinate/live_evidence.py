@@ -149,6 +149,51 @@ def collect_native(trials: list[dict], submissions: dict, cohorts: dict[str, set
         directory = verifier / "evidence"
         acceptance = trial["acceptance"]
         submission = submissions[scenario]
+        benchmark = SCENARIOS[scenario].benchmark
+        if benchmark is not None:
+            from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
+            from sapi_config_lab.coordinate.backend import N8nBackend
+
+            options = {"mode": "live", "deadline_seconds": 600, "selected_case": next(iter(cohorts[scenario]))}
+            if "cases" in submission:
+                options["cases"] = submission["cases"]
+            frozen = freeze_identity(benchmark, options)
+            planned = load_entrypoints(benchmark, frozen).plan(Path(submission["path"]), options)
+            manifest = read_json(directory / "observation.json")
+            require(manifest.get("plan_sha256") == digest(planned), "Recorded observation plan differs")
+            require(sha256(directory / "submission.yaml") == submission["sha256"], "Recorded submission differs")
+            require(
+                [row["name"] for row in manifest["entries"]] == [entry["name"] for entry in planned["entries"]],
+                "Recorded observations differ",
+            )
+            for row in manifest["entries"]:
+                artifact = directory / "cases" / row["name"]
+                require(row["files"] == verification.inventory(artifact), "Recorded native files changed")
+                verification.check_case_record(directory / "cases" / row["name"], row["files"], row["name"])
+            files = {item.destination: item.source for item in benchmark.files}
+            backend = N8nBackend(operation_source=files[benchmark.operations].read_text())
+            for entry in planned["entries"]:
+                name = entry["name"]
+                require(
+                    name in cohorts[scenario] and (scenario, name) not in observed, "Unexpected or duplicate live case"
+                )
+                observed.add((scenario, name))
+                artifact = directory / "cases" / name
+                run = read_json(artifact / "case.json")
+                graph = read_json(artifact / "workflow.json")
+                compiled = backend.compile(
+                    entry["config"],
+                    read_bindings(files[benchmark.bindings]),
+                    CompileOptions("live", bridge_url, **planned.get("compile_options", {})),
+                )
+                require(
+                    {**compiled.document, "id": run["workflow_id"], "active": False} == graph
+                    and compiled.mapping == run["mapping"],
+                    "Saved graph differs from selected compiler sources",
+                )
+                calls = provenance.live_operations(run, graph)
+                native.extend({"scenario": scenario, "case": name, **call} for call in calls)
+            continue
         require(
             sha256(directory / "submission.yaml") == submission["sha256"] == acceptance.get("submission_sha256"),
             "Container/source submission mismatch",

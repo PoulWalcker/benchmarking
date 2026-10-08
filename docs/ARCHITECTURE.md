@@ -187,7 +187,8 @@ Verifier independence and the frozen migration ownership edges are unchanged.
 
 `harbor_integration/tasks.py` adds a separate packaging path for versioned
 benchmarks. It validates native `task.toml` against pinned Harbor 0.21.0. Integration
-modules may import neutral contracts and each other; stage logic stays outside.
+modules may import neutral contracts, generic execution mechanisms and each other;
+benchmark planning and scoring stay outside.
 Legacy task packaging remains for unmigrated benchmarks. Invoice-total and checkout-recovery use the versioned path.
 
 `stage_benchmark` copies declared public files into `environment/payload`, public
@@ -296,14 +297,25 @@ evidence is never rewritten. Legacy hosted paths remain for historical compariso
 and unmigrated callers; hard-kill/fault parity is a separate migration gate.
 
 
-The existing paid `live` caller explicitly requests the temporary legacy hosted
-package/evaluator adapter until experiment integration (ticket 18). This is a
-caller-selected format, never an automatic fallback after a native failure or a
-missing metadata file. Package validation uses that same explicit choice; judge
-identity, ledger reservations and old host connectivity retain their established
-path. Ordinary controls and versioned re-evaluation use the native path. Explicit
-paid/calibration re-evaluation of a new versioned record is refused until that
-integration; matching saved judgement replay remains available without dispatch.
+Selected versioned experiments stage native packages for generation, replay and
+live execution. Descriptor budgets and live plans provide judge costs and model
+occurrences. Checkout declares its unchanged full authoring prompt as public
+material; invoice retains its full/scenario catalog arms. Wrapper HTTP transport,
+host settings and inspected identity live in `harbor_integration/model_wrapper.py`;
+the recorded author-agent import path remains a compatibility facade over the
+integration agent. Agency accounting remains in core and receives its transport
+explicitly. Integration can import generic execution contracts/mechanisms; core
+execution does not import concrete wrapper transport.
+
+The verifier receives a requested judge identity without host credentials or paid
+dispatch capability. After native execution, the host evaluates recorded evidence
+into a new derived directory under the existing reservation. Checkout's verifier
+main has a separate Agency network; the simulator remains on its private internal
+network. Versioned re-evaluation checks recorded benchmark/options/core sources and
+saved contract/judge identity before the benchmark evaluator can enter the host
+reservation callback. Explicit paid/calibration dispatch uses declared judge costs;
+offline saved judgement re-evaluation never dispatches. Original evidence and native
+Harbor exceptions remain recorded alongside derived paid results.
 
 
 Generic bounded refinement is compiled with explicit trusted operation source,

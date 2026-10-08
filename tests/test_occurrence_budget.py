@@ -1,14 +1,19 @@
 """Outgoing occurrence admission is checked before any wrapper request."""
 
+from functools import partial
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.execute.agency import ContractError, DispatchAudit, execute
+from sapi_config_lab.execute.agency import ContractError, DispatchAudit
+from sapi_config_lab.execute.agency import execute as agency_execute
+from sapi_config_lab.harbor_integration.model_wrapper import request_wrapper
 from sapi_config_lab.profile import read_bindings
 from tests.support.refinement import ROOT, definition
 from verification.refinement import refinement_model_calls
+
+execute = partial(agency_execute, transport=request_wrapper)
 
 
 class OccurrenceBudgetTests(unittest.TestCase):
@@ -26,7 +31,7 @@ class OccurrenceBudgetTests(unittest.TestCase):
         }
         with tempfile.TemporaryDirectory() as directory:
             audit = DispatchAudit(Path(directory) / "audit.jsonl", budget)
-            with patch("sapi_config_lab.execute.agency.urlopen") as dispatch:
+            with patch("sapi_config_lab.harbor_integration.model_wrapper.urlopen") as dispatch:
                 with self.assertRaisesRegex(ContractError, "occurrence"):
                     execute(request, read_bindings(ROOT / "bindings.yaml"), "http://unused", 1, audit=audit)
                 dispatch.assert_not_called()
@@ -53,7 +58,7 @@ class OccurrenceBudgetTests(unittest.TestCase):
             }
             with self.subTest(budget=budget), tempfile.TemporaryDirectory() as directory:
                 audit = DispatchAudit(Path(directory) / "audit.jsonl", budget)
-                with patch("sapi_config_lab.execute.agency.urlopen") as dispatch:
+                with patch("sapi_config_lab.harbor_integration.model_wrapper.urlopen") as dispatch:
                     with self.assertRaises(ContractError):
                         execute(request, read_bindings(ROOT / "bindings.yaml"), "http://unused", 1, audit=audit)
                     dispatch.assert_not_called()

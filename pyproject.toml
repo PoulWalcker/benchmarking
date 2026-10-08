@@ -67,7 +67,7 @@ force-sort-within-sections = true
 "src/sapi_config_lab/execute/agency.py" = ["BLE001"]
 "src/sapi_config_lab/execute/hosting.py" = ["BLE001"]
 # Process and cleanup boundaries: a run, entry or trial always ends with a written record.
-"src/sapi_config_lab/author/agent.py" = ["BLE001"]
+"src/sapi_config_lab/harbor_integration/yaml_agent.py" = ["BLE001"]
 "src/sapi_config_lab/coordinate/observe.py" = ["BLE001"]
 "src/sapi_config_lab/coordinate/runs.py" = ["BLE001"]
 "src/sapi_config_lab/coordinate/hosted_worker.py" = ["BLE001"]

@@ -19,7 +19,7 @@ from sapi_config_lab.coordinate.controls import suite_seconds
 from sapi_config_lab.coordinate.evaluation import trial_accepted
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.live_evidence import load_verifier
-from sapi_config_lab.coordinate.packages import AUTHOR_AGENT, CATALOG_VARIANTS, scenario_catalog
+from sapi_config_lab.coordinate.packages import AUTHOR_AGENT, CATALOG_VARIANTS, scenario_catalog, selected_cases
 from sapi_config_lab.coordinate.runs import Run, load_trials, progress, run_experiment, trial_seconds
 from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
 from sapi_config_lab.evidence import sha256
@@ -127,12 +127,20 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(str(error))
     if not 1 <= args.attempts <= MAX_ATTEMPTS:
         parser.error(f"--attempts must be between 1 and {MAX_ATTEMPTS}")
-    budgets = {s: SCENARIOS[s].authoring_attempts for s in scenarios}
+    budgets = {}
+    for name in scenarios:
+        scenario = SCENARIOS[name]
+        benchmark = scenario.benchmark
+        budgets[name] = benchmark.budgets.authoring_attempts if benchmark is not None else scenario.authoring_attempts
     capped = [s for s, budget in budgets.items() if budget is not None and args.attempts > budget]
     if capped:
         parser.error("--attempts exceeds the authoring budget of " + ", ".join(capped))
-    if args.catalog != "full" and any(SCENARIOS[s].hosted for s in scenarios):
-        parser.error("--catalog scenario applies to fixture scenarios only")
+    for name in scenarios:
+        benchmark = SCENARIOS[name].benchmark
+        if benchmark is not None and args.catalog not in benchmark.config.get("authoring", {}).get(
+            "catalogs", ("full",)
+        ):
+            parser.error("--catalog scenario applies to fixture scenarios only")
     output = args.report_dir or ROOT / "reports" / (datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-generation")
     ceiling = len(scenarios) * args.attempts
     report: dict[str, Any] = {
@@ -183,7 +191,7 @@ def main(argv: list[str] | None = None) -> int:
             report["catalog"]["sha256"] = {s: hashlib.sha256(text.encode()).hexdigest() for s, text in shown.items()}
         report["fixture_overlay"] = sorted(overlays)
         report["private_cases_sha256"] = {
-            s: sha256(run.tasks / s / "tests/cases.json") for s in scenarios if SCENARIOS[s].environment == "fixtures"
+            s: sha256(run.tasks / s / "tests/cases.json") for s in scenarios if selected_cases(SCENARIOS[s]) is not None
         }
         report_path = run.output / "report.json"
         jobs = []
