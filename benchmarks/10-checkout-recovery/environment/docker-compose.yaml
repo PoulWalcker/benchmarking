@@ -13,6 +13,7 @@ services:
     command: [python3, -m, payload.environment.server]
     volumes:
       - checkout-credentials:/run/checkout
+      - ${HOST_VERIFIER_LOGS_PATH}:/logs/verifier
     networks: [verification]
     cpus: 1
     mem_limit: 512m

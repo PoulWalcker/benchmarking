@@ -27,7 +27,11 @@ def now() -> str:
 
 
 def _valid_receipt(result: Document) -> bool:
-    if type(result.get("ok")) is not bool or set(result) != ({"ok", "value"} if result["ok"] else {"ok", "error"}):
+    if (
+        not isinstance(result, dict)
+        or type(result.get("ok")) is not bool
+        or set(result) != ({"ok", "value"} if result["ok"] else {"ok", "error"})
+    ):
         return False
     error = result.get("error")
     return result["ok"] or (
@@ -42,7 +46,7 @@ def _valid_receipt(result: Document) -> bool:
 class World:
     """Run-scoped receipts and semantic finalization, with no container lifecycle."""
 
-    def __init__(self, world, definition: dict):
+    def __init__(self, world, definition: dict, *, evidence_path: Path | None = None):
         self.world, self.definition = world, definition
         self.limit_seconds = definition["limits"]["wall_clock_seconds"]
         self._candidate_token, self._admin_token = (secrets.token_urlsafe(32) for _ in range(2))
@@ -54,11 +58,50 @@ class World:
         self.started: float | None = None
         self.window: Document | None = None
         self._snapshot: Document | None = None
+        self._timer: threading.Timer | None = None
+        self._evidence_path = evidence_path
+        self._observation_number = 0
+
+    def _redact(self, value):
+        if isinstance(value, str):
+            for token in (self._candidate_token, self._admin_token):
+                value = value.replace(token, "[redacted]")
+            return value
+        if isinstance(value, list):
+            return [self._redact(item) for item in value]
+        if isinstance(value, dict):
+            return {self._redact(key): self._redact(item) for key, item in value.items()}
+        return value
+
+    def _persist(self, kind: str, value: Document) -> None:
+        if self._evidence_path is None:
+            return
+        # Each complete observation is immutable; a killed write leaves only a .tmp.
+        destination = self._evidence_path / f"{self._observation_number:06d}-{kind}.json"
+        temporary = destination.with_suffix(".tmp")
+        with temporary.open("x") as handle:
+            json.dump(self._redact(value), handle, sort_keys=True, ensure_ascii=False, allow_nan=False)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary.replace(destination)
+        descriptor = os.open(self._evidence_path, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        self._observation_number += 1
+
+    def _deadline(self) -> None:
+        self.snapshot()
 
     def prepare(self) -> Document:
         with self._lock:
             if self.started is not None:
                 raise ValueError("Workflow window already bound")
+            # Harbor clears verifier output after sidecars start, before this hook.
+            if self._evidence_path is not None:
+                self._evidence_path.mkdir(parents=True, exist_ok=False)
             self.started = time.monotonic()
             self.window = {
                 "run_id": "trial-" + uuid.uuid4().hex,
@@ -66,6 +109,10 @@ class World:
                 "deadline_at": time.time() + self.limit_seconds,
                 "limit_seconds": self.limit_seconds,
             }
+            self._persist("window", self.window)
+            self._timer = threading.Timer(self.limit_seconds, self._deadline)
+            self._timer.daemon = True
+            self._timer.start()
             return copy.deepcopy(self.window)
 
     def snapshot(self) -> Document:
@@ -73,15 +120,31 @@ class World:
             if self.started is None or self.window is None:
                 raise ValueError("Workflow window is not bound")
             if self._snapshot is None:
-                self._snapshot = {
-                    "environment": self.finalize(),
-                    "transport": self.transport_evidence(),
-                    "window": {
-                        **self.window,
-                        "finished_at": now(),
-                        "duration_seconds": time.monotonic() - self.started,
-                    },
+                # Finalizer latency is outside the workflow's semantic window.
+                duration = time.monotonic() - self.started
+                window = {
+                    **self.window,
+                    "finished_at": now(),
+                    "duration_seconds": duration,
+                    "termination_reason": "timeout" if duration >= self.limit_seconds else "finished",
                 }
+                self._frozen = True
+                if self._timer is not None:
+                    self._timer.cancel()
+                self._persist("terminal-window", window)
+                errors = []
+                try:
+                    environment = self.finalize()
+                except (OSError, ValueError, RuntimeError) as error:
+                    environment = None
+                    errors.append({"source": "environment", "error": type(error).__name__})
+                self._snapshot = {
+                    "environment": environment,
+                    "transport": self.transport_evidence(),
+                    "window": window,
+                    "evidence_errors": errors,
+                }
+                self._persist("snapshot", self._snapshot)
             return copy.deepcopy(self._snapshot)
 
     def call(
@@ -132,6 +195,7 @@ class World:
                         "PROJECT_OPERATION_ID_CONFLICT", "Operation ID was already reserved for a different request"
                     )
                 self._transport_events.append({"kind": "receipt_replayed", "operation_id": operation_id})
+                self._persist("transport", self.transport_evidence())
                 return copy.deepcopy(prior["receipt"])
             if self._ambiguous:
                 return failure(
@@ -151,23 +215,33 @@ class World:
                 self._receipts[operation_id] = row
             for attempt in range(max_attempts):
                 row["attempts"] = attempt + 1
+                self._persist("transport", self.transport_evidence())
+                known_receipt = False
                 try:
-                    result = self.world.execute(operation, arguments)
-                    if not _valid_receipt(result):
-                        raise ValueError("Malformed upstream receipt")
+                    try:
+                        result = self.world.execute(operation, arguments)
+                        if not _valid_receipt(result):
+                            raise ValueError("Malformed upstream receipt")
+                        row["receipt"] = copy.deepcopy(result)
+                        known_receipt = True
+                    finally:
+                        # Unexpected failures must also leave the reservation closed.
+                        if not known_receipt:
+                            self._ambiguous = True
+                            row.update(
+                                state="ambiguous",
+                                receipt=failure(
+                                    "PROJECT_AMBIGUOUS_OUTCOME", "Tool may have completed; no automatic retry is safe"
+                                ),
+                            )
+                            self._persist("transport", self.transport_evidence())
                 except OSError, ValueError:
-                    self._ambiguous = True
-                    row.update(
-                        state="ambiguous",
-                        receipt=failure(
-                            "PROJECT_AMBIGUOUS_OUTCOME", "Tool may have completed; no automatic retry is safe"
-                        ),
-                    )
                     return copy.deepcopy(row["receipt"])
-                row["receipt"] = copy.deepcopy(result)
+                self._persist("transport", self.transport_evidence())
                 if result["ok"] or not result["error"]["retryable"]:
                     break
             row["state"] = "received"
+            self._persist("transport", self.transport_evidence())
             return copy.deepcopy(row["receipt"])
 
     def transport_evidence(self) -> Document:
@@ -175,9 +249,9 @@ class World:
         with self._lock:
             return {
                 "policy": "sapi-lab-run-scoped-receipts/v1",
-                "durability": "live-session-only",
+                "durability": "immutable-observations" if self._evidence_path is not None else "live-session-only",
                 "ambiguous_outcome": self._ambiguous,
-                "events": copy.deepcopy(self._transport_events),
+                "events": self._redact(copy.deepcopy(self._transport_events)),
             }
 
     def finalize(self) -> Document:
@@ -186,7 +260,7 @@ class World:
             if self._evidence is not None:
                 return copy.deepcopy(self._evidence)
             self._frozen = True
-            self._evidence = self.world.finalize()
+            self._evidence = self._redact(self.world.finalize())
             return copy.deepcopy(self._evidence)
 
 
@@ -212,7 +286,7 @@ def handler_for(world: World):
             if self.path not in {"/tools", "/prepare", "/snapshot"}:
                 return self.reply(404, {"error": "Not found"})
             token = world._candidate_token if self.path == "/tools" else world._admin_token
-            if not hmac.compare_digest(self.headers.get("Authorization", ""), "Bearer " + token):
+            if not hmac.compare_digest(self.headers.get("Authorization", "").encode(), ("Bearer " + token).encode()):
                 return self.reply(401, {"error": "Unauthorized"})
             try:
                 size = int(self.headers.get("Content-Length", "-1"))
@@ -252,7 +326,7 @@ def main() -> None:
     from autowfbench.runtime.environment import ChallengeEnvironment
 
     package = load_challenge(CHALLENGE)
-    world = World(ChallengeEnvironment(package, 0), package["definition"])
+    world = World(ChallengeEnvironment(package, 0), package["definition"], evidence_path=Path("/logs/verifier/world"))
     credentials = Path("/run/checkout")
     credentials.mkdir(parents=True, exist_ok=True)
     credentials.chmod(0o700)

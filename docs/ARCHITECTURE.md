@@ -81,6 +81,14 @@ A scenario has one of two placements (`scenario.hosted`): in the container (fixt
 
 Execution evidence is written once; evaluation writes separate derived files beside it. `reports/` holds local runs (ignored). `evidence/` holds committed extracts that durable claims cite; they are never rewritten.
 
+Checkout's native simulator mounts Harbor's verifier output and writes immutable
+`world/` observations before tool dispatch and after receipts. Its semantic deadline
+and explicit snapshot share one terminal decision; finalizer latency does not extend
+the workflow window. Forced process termination can leave only earlier observations,
+with no final worker record. Snapshot recovery preserves that absence as unknown and
+never constructs missing environment evidence. These observations do not implement
+container cleanup or automatic retries; those remain Harbor responsibilities.
+
 Pinned inputs are explicit and fail closed: the upstream source manifest under `provenance/`, the Harbor and n8n versions in `execute/`, the image identity, the source manifest of a run, prompt hashes in `tests/test_packaging.py`, and the inspected model-wrapper identity before live dispatch.
 
 ## Backend boundary

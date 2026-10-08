@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import ProxyHandler, Request, build_opener
+import uuid
 
 from sapi_config_lab.contracts import RunBinding
 from sapi_config_lab.net import NoRedirect
@@ -56,6 +57,9 @@ def _post(context: Mapping, route: str) -> dict:
 
 def prepare(context: Mapping) -> RunBinding:
     window = _post(context, "/prepare")
+    evidence = Path(context["evidence"])
+    evidence.mkdir(parents=True, exist_ok=True)
+    _record_once(evidence / "window.json", window)
     return RunBinding(
         deadline_at=window["deadline_at"],
         operation_url=context["options"].get("world_url", "http://simulator:8000") + "/tools",
@@ -64,7 +68,7 @@ def prepare(context: Mapping) -> RunBinding:
 
 
 def terminal_submission(record: dict, elapsed: float, run_id: str, limit: float) -> tuple[str, dict | None]:
-    if elapsed > limit:
+    if elapsed >= limit:
         return "timeout", None
     if record.get("status") != "success":
         return "solution_failed", None
@@ -89,10 +93,27 @@ def terminal_submission(record: dict, elapsed: float, run_id: str, limit: float)
 
 def _record_once(path: Path, value: dict) -> None:
     data = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False) + "\n"
-    with path.open("x") as handle:
+    if path.exists():
+        if path.read_text() != data:
+            raise ValueError("Recorded evidence cannot be rewritten")
+        return
+    temporary = path.with_suffix(path.suffix + "." + uuid.uuid4().hex + ".tmp")
+    with temporary.open("x") as handle:
         handle.write(data)
         handle.flush()
         os.fsync(handle.fileno())
+    try:
+        os.link(temporary, path)
+    except FileExistsError:
+        if path.read_text() != data:
+            raise ValueError("Recorded evidence cannot be rewritten") from None
+    finally:
+        temporary.unlink()
+    descriptor = os.open(path.parent, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 def snapshot(context: Mapping) -> dict:
@@ -100,12 +121,36 @@ def snapshot(context: Mapping) -> dict:
     evidence.mkdir(parents=True, exist_ok=True)
     if (evidence / "trial.json").exists():
         return json.loads((evidence / "trial.json").read_text())
-    frozen = _post(context, "/snapshot")
+    try:
+        frozen = _post(context, "/snapshot")
+    except (OSError, ValueError) as error:
+        # The native output mount retains observations even if the service is gone.
+        snapshots = sorted((Path(context.get("output", evidence.parent)) / "world").glob("*-snapshot.json"))
+        if snapshots:
+            frozen = json.loads(snapshots[-1].read_text())
+        else:
+            window = json.loads((evidence / "window.json").read_text())
+            frozen = {
+                "window": {
+                    **window,
+                    "finished_at": None,
+                    "duration_seconds": None,
+                    "termination_reason": "unknown",
+                },
+                "environment": None,
+                "transport": None,
+                "evidence_errors": [{"source": "snapshot", "error": type(error).__name__}],
+            }
     window = frozen["window"]
     record = context.get("record") or {"status": "unknown", "output": None}
-    reason, submission = terminal_submission(
-        record, window["duration_seconds"], window["run_id"], window["limit_seconds"]
-    )
+    if window["duration_seconds"] is None:
+        reason, submission = "unknown", None
+    elif window.get("termination_reason") == "timeout":
+        reason, submission = "timeout", None
+    else:
+        reason, submission = terminal_submission(
+            record, window["duration_seconds"], window["run_id"], window["limit_seconds"]
+        )
     source = Path(context["submission"])
     trial = {
         "schema": "sapi-lab-simulator-trial/v1",
@@ -123,7 +168,7 @@ def snapshot(context: Mapping) -> dict:
         "terminal_completion": reason == "completed",
         "submission": submission,
         "submission_sha256": hashlib.sha256(source.read_bytes()).hexdigest() if source.is_file() else None,
-        "evidence_errors": [],
+        "evidence_errors": frozen.get("evidence_errors", []),
         "solution": {
             "id": "sapi-lab-yaml",
             "name": "Frozen YAML in real n8n",
@@ -131,8 +176,9 @@ def snapshot(context: Mapping) -> dict:
             "runtime": "n8n-" + (record.get("n8n_version") or record.get("engine_version") or "2.41.5"),
         },
     }
-    _record_once(evidence / "environment-evidence.json", frozen["environment"])
-    _record_once(evidence / "transport-evidence.json", frozen["transport"])
+    for name, key in (("environment-evidence.json", "environment"), ("transport-evidence.json", "transport")):
+        if frozen.get(key) is not None:
+            _record_once(evidence / name, frozen[key])
     _record_once(evidence / "native-record.json", record)
     _record_once(evidence / "trial.json", trial)
     return trial
