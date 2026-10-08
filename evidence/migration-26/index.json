@@ -1,0 +1,484 @@
+{
+  "schema": "sapi-lab-migration-regression/v1",
+  "ticket": "26",
+  "status": "passed",
+  "tested_commit": "e25156db6eda95ed2be706c332cce52ff185f810",
+  "started_at": "2026-10-08T21:19:42.052363+00:00",
+  "finished_at": "2026-10-08T21:49:27.045892+00:00",
+  "source_files": 237,
+  "source_unchanged": true,
+  "commands": [
+    {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "sapi-lab",
+        "check"
+      ],
+      "log": "reports/migration-26/check-final.log",
+      "exit": 0,
+      "tests": 498,
+      "skips": 7,
+      "note": "Seven Docker opt-ins are omitted in deterministic discovery; required coverage runs fresh below."
+    },
+    {
+      "argv": [
+        "./run.sh",
+        "--scenario",
+        "invoice-total",
+        "--scenario",
+        "checkout-recovery",
+        "--report-dir",
+        "reports/migration-26/retained-controls"
+      ],
+      "log": "reports/migration-26/retained-controls.log",
+      "exit": 0,
+      "native_transport_cases": 19,
+      "control_trials": 4
+    },
+    {
+      "env": {
+        "SAPI_RUN_DOCKER_TESTS": "1",
+        "SAPI_CHECKOUT_FAULTS": "unset"
+      },
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "--extra",
+        "harbor",
+        "--extra",
+        "benchmark",
+        "python",
+        "-m",
+        "unittest",
+        "tests.test_benchmark_packages",
+        "tests.test_harbor_checkout",
+        "tests.test_benchmark_extensibility",
+        "-v"
+      ],
+      "log": "reports/migration-26/native-matrix.log",
+      "exit": 0,
+      "tests": 18,
+      "skips": 0,
+      "seconds": 1058.441
+    },
+    {
+      "env": {
+        "SAPI_RUN_DOCKER_TESTS": "1"
+      },
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "--extra",
+        "harbor",
+        "--extra",
+        "benchmark",
+        "python",
+        "-m",
+        "unittest",
+        "tests.test_refinement_verification.NativeRefinementDockerTests",
+        "tests.test_lifecycle_verification.NativeLifecycleTests",
+        "-v"
+      ],
+      "log": "reports/migration-26/generic-native.log",
+      "exit": 0,
+      "tests": 2,
+      "skips": 0,
+      "seconds": 56.127
+    }
+  ],
+  "acceptance": {
+    "AC1": {
+      "status": "passed",
+      "evidence": [
+        "prompt-semantic-bytes.json",
+        "retained-baseline-comparison.json",
+        "baseline-preservation.json",
+        "final-preservation.json"
+      ],
+      "deterministic_log": "reports/migration-26/check-final.log"
+    },
+    "AC2": {
+      "status": "passed",
+      "evidence": [
+        "extension-summary.json",
+        "extension-source-before.json",
+        "extension-source-after.json",
+        "source-manifest.json"
+      ],
+      "deterministic_log": "reports/migration-26/check-final.log"
+    },
+    "AC3": {
+      "status": "passed",
+      "evidence": [
+        "refinement-native-summary.json",
+        "extension-summary.json"
+      ],
+      "deterministic_log": "reports/migration-26/check-final.log"
+    },
+    "AC4": {
+      "status": "passed",
+      "evidence": [
+        "public-layer-inspection.json",
+        "checkout-public-inspection.json",
+        "checkout-fault-matrix.json"
+      ],
+      "deterministic_log": "reports/migration-26/check-final.log"
+    },
+    "AC5": {
+      "status": "passed",
+      "evidence": [
+        "retained-controls.json",
+        "checkout-fault-matrix.json",
+        "source-manifest.json"
+      ],
+      "deterministic_log": "reports/migration-26/check-final.log"
+    },
+    "AC6": {
+      "status": "passed",
+      "evidence": [
+        "refinement-native-summary.json",
+        "lifecycle-native-verification.json",
+        "source-manifest.json",
+        "resolved-admission.json"
+      ],
+      "deterministic_log": "reports/migration-26/check-final.log"
+    },
+    "AC7": {
+      "status": "passed",
+      "evidence": [
+        "fault-proof.json",
+        "historical-cli-proof.json",
+        "offline-summary.json",
+        "offline-current-replay-results.json"
+      ],
+      "deterministic_log": "reports/migration-26/check-final.log"
+    },
+    "AC8": {
+      "status": "passed",
+      "evidence": [
+        "offline-all-eleven-reader-proof.json",
+        "offline-sealed-historical-before-after.json",
+        "retained-baseline-comparison.json",
+        "offline-summary.json"
+      ],
+      "deterministic_log": "reports/migration-26/check-final.log"
+    },
+    "AC9": {
+      "status": "passed",
+      "evidence": [
+        "source-manifest.json",
+        "final-preservation.json"
+      ],
+      "deterministic_log": "reports/migration-26/check-final.log"
+    },
+    "AC10": {
+      "status": "passed",
+      "evidence": [
+        "retained-controls.json",
+        "checkout-fault-matrix.json",
+        "extension-summary.json",
+        "refinement-native-summary.json",
+        "lifecycle-native-verification.json"
+      ],
+      "deterministic_log": "reports/migration-26/check-final.log"
+    },
+    "AC11": {
+      "status": "passed",
+      "evidence": [
+        "extension-summary.json",
+        "extension-source-before.json",
+        "extension-source-after.json",
+        "extension-commands.json"
+      ],
+      "deterministic_log": "reports/migration-26/check-final.log"
+    }
+  },
+  "risks": {
+    "R1": {
+      "status": "closed",
+      "evidence": [
+        "checkout-normal-proof.json",
+        "checkout-public-inspection.json",
+        "public-layer-inspection.json"
+      ]
+    },
+    "R2": {
+      "status": "closed",
+      "evidence": [
+        "checkout-fault-matrix.json",
+        "fault-proof.json"
+      ]
+    },
+    "R3": {
+      "status": "closed",
+      "evidence": [
+        "public-layer-inspection.json",
+        "checkout-public-inspection.json",
+        "checkout-fault-matrix.json"
+      ]
+    },
+    "R4": {
+      "status": "closed",
+      "evidence": [
+        "retained-controls.json",
+        "refinement-native-summary.json",
+        "lifecycle-native-verification.json",
+        "resolved-admission.json"
+      ]
+    },
+    "R5": {
+      "status": "closed",
+      "evidence": [
+        "historical-cli-proof.json",
+        "offline-summary.json",
+        "offline-all-eleven-reader-proof.json"
+      ]
+    }
+  },
+  "R6": {
+    "status": "limited",
+    "scope": "Pinned Harbor 0.21.0 single-step Linux Docker; CPU and memory supported, storage/GPU/TPU requirements refused. No other-provider or universal-final-snapshot equivalence claimed."
+  },
+  "baseline_notes": {
+    "sealed_files": 85,
+    "raw_files": 1592,
+    "historical_files": 78,
+    "baseline_trial_facts": 22,
+    "retired_benchmarks": 9,
+    "active_control_trials": 4,
+    "original_source_files_validated": 94,
+    "timer_startpoints": "../migration-01-baseline/INDEX.md#deadline-inventory-audited-implementation",
+    "prior_native_admission_comparison": "/private/tmp/sapi-migration-24/reports/migration-24/deadline-admission-comparison.json",
+    "checkout_operations": "Descriptor delegate stub is new; pinned upstream world implementations retain original source identity. No raw adapter-byte equality claim."
+  },
+  "distribution": {
+    "sdist_files": 254,
+    "wheel_files": 127,
+    "declared_resources": 53,
+    "installed_staged": [
+      "invoice-total",
+      "checkout-recovery",
+      "distribution-shared"
+    ]
+  },
+  "proofs": {
+    "source-manifest.json": {
+      "raw_path": "reports/migration-26/source-final.json",
+      "sha256": "d5b90e585c759043fb4512e681e16270cd3f03260b6d6d2fca668fcd08eab278",
+      "bytes": 26000
+    },
+    "pinned-source.json": {
+      "raw_path": "reports/migration-26/pinned-source.json",
+      "sha256": "2c8e76c0903b43c2049fbe7b2c494d744680f2a652e94618772cfbc1718b3d80",
+      "bytes": 6695
+    },
+    "retained-baseline-comparison.json": {
+      "raw_path": "reports/migration-26/retained-baseline-comparison.json",
+      "sha256": "6f6745fb8ab970530a5086b3d0fc3e2ae89f9b3e1dba24f1c3e8fa10fd542110",
+      "bytes": 4333
+    },
+    "prompt-semantic-bytes.json": {
+      "raw_path": "reports/migration-26/prompt-semantic-bytes.json",
+      "sha256": "8df1f9e62a36b3b530e5bad32c2c2e6c7f37b60bfa7bf0e68eaa4378e8f63079",
+      "bytes": 2099
+    },
+    "fault-proof.json": {
+      "raw_path": "reports/migration-26/fault-proof.json",
+      "sha256": "c7f395ffb8e23e80d9b80fff2513836e6d57d47002093672ed467aa50abf7ed0",
+      "bytes": 3429
+    },
+    "baseline-preservation.json": {
+      "raw_path": "reports/migration-26/baseline-preservation-before.json",
+      "sha256": "cf4d604480015fc3349c193c019f0505ff2ddcc23bc9bd06a407eb8a69abf369",
+      "bytes": 9556
+    },
+    "final-preservation.json": {
+      "raw_path": "reports/migration-26/final-preservation.json",
+      "sha256": "859bc5ce6da82f22e632386078e6d79a3b707d8fd2d0ddcf58849dd09feb3235",
+      "bytes": 329
+    },
+    "final-containers.txt": {
+      "raw_path": "reports/migration-26/final-containers.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "retained-controls.json": {
+      "raw_path": "reports/migration-26/retained-controls/report.json",
+      "sha256": "3e6cc53d150c2596e7e1b09f3ed764d0688ed69238460a148ea16420776d5840",
+      "bytes": 100667
+    },
+    "public-layer-inspection.json": {
+      "raw_path": "reports/migration-03/docker-b7f48fe52e/layer-inspection.json",
+      "sha256": "39aee0507fb7febc51098052c075b714a712203a8572ee162a7ba3399db19977",
+      "bytes": 1967
+    },
+    "checkout-normal-proof.json": {
+      "raw_path": "reports/migration-05/docker-6625257c2e/proof.json",
+      "sha256": "fe5aa32b774df2e6245ed5c8a3148a40ead57d97b5a6e9db790f033d7963dcb4",
+      "bytes": 346
+    },
+    "checkout-public-inspection.json": {
+      "raw_path": "reports/migration-05/docker-6625257c2e/public-inspection.json",
+      "sha256": "d26071726426953f35ad5014d4673cc6d1cd690df9849ae0c0d83316e62decb9",
+      "bytes": 1145
+    },
+    "checkout-fault-matrix.json": {
+      "raw_path": "reports/migration-06/faults-e82c9aa0c3/matrix.json",
+      "sha256": "7b06c75f15bd6a727b3bbff24fa8d46b131c60c84fe7b5329262bda72d340db0",
+      "bytes": 45969
+    },
+    "extension-source-before.json": {
+      "raw_path": "reports/migration-20/extension-083943919f/source-before.json",
+      "sha256": "10c136969a2c8fcf49a85d68789aa4f31f8bccaa0d4fbb681f38c55330045f85",
+      "bytes": 52646
+    },
+    "extension-source-after.json": {
+      "raw_path": "reports/migration-20/extension-083943919f/source-after.json",
+      "sha256": "10c136969a2c8fcf49a85d68789aa4f31f8bccaa0d4fbb681f38c55330045f85",
+      "bytes": 52646
+    },
+    "extension-commands.json": {
+      "raw_path": "reports/migration-20/extension-083943919f/commands.json",
+      "sha256": "fd0f60d1b54df1c3f6151f9ee253413d414abf52ad51a6290194acc1afb59182",
+      "bytes": 2112
+    },
+    "extension-summary.json": {
+      "raw_path": "reports/migration-20/extension-083943919f/summary-extract.json",
+      "sha256": "d5576f4d7d12ec03c51d8ae6d85178860d7249875693e60b5c61b9940ec6c435",
+      "bytes": 985
+    },
+    "refinement-native-summary.json": {
+      "raw_path": "reports/migration-11/native-refinement-6cqyy4bv/jobs/refinement/task__AdCEkQs/verifier/refinement/summary.json",
+      "sha256": "391e2c8c5a9f40e0f0a3b9e81c106ef7d2f0fa85be7525c920815a2d62f2a1ec",
+      "bytes": 847
+    },
+    "lifecycle-native-verification.json": {
+      "raw_path": "reports/migration-12/native-ddb73650dd/verification.json",
+      "sha256": "2da7dd6c6cef16e7086a9ebc68b61ac043f2958b4e90147484327c778331df2a",
+      "bytes": 837
+    },
+    "offline-summary.json": {
+      "raw_path": "reports/migration-26/offline-compatibility/summary.json",
+      "sha256": "997d203df2bfae8413dfd65f220144af3f49872db3f3746b2717e8857c93facb",
+      "bytes": 7407
+    },
+    "offline-current-replay-results.json": {
+      "raw_path": "reports/migration-26/offline-compatibility/current-replay-results.json",
+      "sha256": "97ae2ed11241424e043ffc0141278a7a2e60c7ab9643dbcbfca712fb56915311",
+      "bytes": 5449
+    },
+    "offline-historical-proof-validation.json": {
+      "raw_path": "reports/migration-26/offline-compatibility/historical-proof-validation.json",
+      "sha256": "3445db021abd0ad88ed64d30499387806f7bb120cd961ffb21f4d24c3be58410",
+      "bytes": 2243
+    },
+    "offline-all-eleven-reader-proof.json": {
+      "raw_path": "reports/migration-26/offline-compatibility/all-eleven-reader-proof.json",
+      "sha256": "2c23c78b659d1b5f6a02187492731d09f4da3cc73efe4794e765dfb77f4c5914",
+      "bytes": 7613
+    },
+    "offline-original-source-inventory.json": {
+      "raw_path": "reports/migration-26/offline-compatibility/original-source-inventory.json",
+      "sha256": "1727b3ffa71e247b759281b865e8b637c0f99a3923ac2987cd68c0dece3286bb",
+      "bytes": 10991
+    },
+    "offline-sealed-historical-before-after.json": {
+      "raw_path": "reports/migration-26/offline-compatibility/sealed-historical-before-after.json",
+      "sha256": "cb533be1122289e38d20bfd4f0b546ebe97448a00f38dfc2074c1b4b1045274e",
+      "bytes": 24720
+    },
+    "offline-current-checkout-saved-original-hashes.json": {
+      "raw_path": "reports/migration-26/offline-compatibility/current-checkout-saved-original-hashes.json",
+      "sha256": "6068f78206c7e15185b338af802b914f1ff876b67440336e5f240b7e02e3e430",
+      "bytes": 10814
+    },
+    "offline-current-invoice-offline-original-hashes.json": {
+      "raw_path": "reports/migration-26/offline-compatibility/current-invoice-offline-original-hashes.json",
+      "sha256": "c17701fa3b66dd813788a5876bdbdaac8ecd97c50f6a2a2f6448d6c0cb70d762",
+      "bytes": 33924
+    },
+    "historical-cli-proof.json": {
+      "raw_path": "reports/migration-26/offline/historical-proof.json",
+      "sha256": "2eb6016d7d3e83c4fbdc0b25e7ee6f4303f7a3d9e83024e839cbee4c123c73a8",
+      "bytes": 3323
+    },
+    "resolved-admission.json": {
+      "raw_path": "reports/migration-26/resolved-admission.json",
+      "sha256": "f43dd30878015078eef443161170b8ec667d406c79c6415d0e453a42f6f6546e",
+      "bytes": 863
+    }
+  },
+  "raw_logs": {
+    "reports/migration-26/check-final.log": {
+      "sha256": "d2ec7c8c32341c71b7159b06b07a8f12d8605cd8ba76cd2d679faa80d1b1390c",
+      "bytes": 91186
+    },
+    "reports/migration-26/retained-controls.log": {
+      "sha256": "c5f096d9324b314a957626f5f3343178eaae2f55d8f483533c4634e58a5c643c",
+      "bytes": 676
+    },
+    "reports/migration-26/native-matrix.log": {
+      "sha256": "6fba9bff1730f617e96972525f44940bd16829150cb950f50ce2f15b19d82a4c",
+      "bytes": 3936
+    },
+    "reports/migration-26/generic-native.log": {
+      "sha256": "3f2e89457c9b43b00adea7c8a5c8e20214adfc619c1eadcd52336a664b34f6ef",
+      "bytes": 681
+    },
+    "reports/migration-26/offline-compatibility/current-checkout-saved.log": {
+      "sha256": "f31c6310078038b31b6fc981a7c663da4fd1c23914f84824010254168223d6ad",
+      "bytes": 147
+    },
+    "reports/migration-26/offline-compatibility/current-invoice-offline.log": {
+      "sha256": "39a3bc871d4af58f1bdfff7afe815e3fbdb87365f5afa8911aa84a0f8b1ff7c0",
+      "bytes": 755
+    },
+    "reports/migration-26/offline-compatibility/current-saved-judge-refusal.log": {
+      "sha256": "ad8608237193ca0ed5326fba99a3fdf68adeed3d2c1f26f5e906b6f6061caf3f",
+      "bytes": 103
+    },
+    "reports/migration-26/offline-compatibility/current-source-identity-refusal.log": {
+      "sha256": "0e516465da1c86128d06a4b52d63c50eb04b5c5f95b5821f77bac2fe9b671e14",
+      "bytes": 102
+    },
+    "reports/migration-26/offline-compatibility/current-unavailable-benchmark-refusal.log": {
+      "sha256": "24d2816b1c3339ba90769244065aa718f2ed00116d55a810c3e123041b4df295",
+      "bytes": 92
+    },
+    "reports/migration-26/offline/historical-fixture.log": {
+      "sha256": "4819413430a0aeac4aa7c21a02eff108a3657a083f2e6f221b66a3565f320c23",
+      "bytes": 121
+    },
+    "reports/migration-26/offline/historical-hosted-saved.log": {
+      "sha256": "adb5e54cbd427bc5f42a50a485f64299f99f2ca07538efb9d5359d4a73581c91",
+      "bytes": 123
+    },
+    "reports/migration-26/offline/historical-judge-refusal.log": {
+      "sha256": "ad8608237193ca0ed5326fba99a3fdf68adeed3d2c1f26f5e906b6f6061caf3f",
+      "bytes": 103
+    },
+    "reports/migration-26/offline/historical-missing-source-refusal.log": {
+      "sha256": "9ac4beae8626abc58a375061e7fcefdc5d2088126ed5e10bb2c2531b36de21a5",
+      "bytes": 190
+    }
+  },
+  "harbor_version": "0.21.0",
+  "harbor_fork_or_upgrade": false,
+  "paid_calls": 0,
+  "push_performed": false,
+  "cleanup": {
+    "existing_container_identities_preserved": true,
+    "running_containers": [],
+    "fault_managed_services_remaining": 0,
+    "temporary_extension_removed": true
+  },
+  "limitations": [
+    "Forced kills need not deliver a final snapshot; missing native/terminal observations remain unknown as recorded.",
+    "The seven deterministic Docker skips are not counted as passes; final native commands have no skips.",
+    "This evidence tests the frozen code commit; later documentation-only integration has its own check."
+  ]
+}

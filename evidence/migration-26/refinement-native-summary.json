@@ -1,0 +1,47 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "name": "first",
+      "accepted_attempt": 1,
+      "attempts": 1,
+      "native_calls": 1,
+      "bridge_calls": 1,
+      "exhausted": false,
+      "output": {
+        "value": 1
+      }
+    },
+    {
+      "name": "later",
+      "accepted_attempt": 2,
+      "attempts": 2,
+      "native_calls": 2,
+      "bridge_calls": 2,
+      "exhausted": false,
+      "output": {
+        "value": 2
+      }
+    },
+    {
+      "name": "exhausted",
+      "accepted_attempt": null,
+      "attempts": 3,
+      "native_calls": 3,
+      "bridge_calls": 3,
+      "exhausted": true,
+      "output": null
+    },
+    {
+      "name": "stub",
+      "accepted_attempt": 2,
+      "attempts": 2,
+      "native_calls": 0,
+      "bridge_calls": 0,
+      "exhausted": false,
+      "output": {
+        "value": 2
+      }
+    }
+  ]
+}

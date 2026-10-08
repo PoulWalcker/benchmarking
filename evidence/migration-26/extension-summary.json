@@ -1,0 +1,42 @@
+{
+  "rows": [
+    {
+      "agent": "oracle",
+      "native_reward": {
+        "reward": 1.0
+      },
+      "result": {
+        "execution": true,
+        "acceptance": true,
+        "quality": null
+      },
+      "offline_result": {
+        "execution": true,
+        "acceptance": true,
+        "quality": null
+      },
+      "native_result_sha256": "83541cf599c136689d7b8caeaee375dd63e3ed35e04ce5a8bd2eb49e60960b0b"
+    },
+    {
+      "agent": "nop",
+      "native_reward": {
+        "reward": 0.0
+      },
+      "result": {
+        "execution": false,
+        "acceptance": false,
+        "quality": null
+      },
+      "offline_result": {
+        "execution": false,
+        "acceptance": false,
+        "quality": null
+      },
+      "native_result_sha256": "e734ca054fc0e024a8434e35df72a4892c3748e976081dd830389c0498b5bc93"
+    }
+  ],
+  "corruption_rejected": true,
+  "source_before_after_identical": true,
+  "existing_source_files": 421,
+  "temporary_benchmark_removed": true
+}

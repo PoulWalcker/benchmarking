@@ -1,0 +1,162 @@
+{
+  "baseline": "evidence/migration-01-baseline/control-report.json",
+  "current": "reports/migration-26/retained-controls/report.json",
+  "rows": [
+    {
+      "agent": "oracle",
+      "scenario": "checkout-recovery",
+      "baseline": {
+        "result": {
+          "execution": true,
+          "acceptance": true,
+          "quality": {
+            "status": "complete",
+            "score_0_10": 7.32,
+            "normalized_reward": 0.732
+          }
+        },
+        "rewards": {
+          "reward": 0.732
+        },
+        "exception_type": null
+      },
+      "current": {
+        "result": {
+          "execution": true,
+          "acceptance": true,
+          "quality": {
+            "status": "complete",
+            "score_0_10": 7.32,
+            "normalized_reward": 0.732
+          }
+        },
+        "rewards": {
+          "reward": 0.732
+        },
+        "exception_type": null
+      },
+      "identical_semantic_facts": true,
+      "current_trial_path": "jobs/oracle/checkout-recovery__LBZvXBo"
+    },
+    {
+      "agent": "oracle",
+      "scenario": "invoice-total",
+      "baseline": {
+        "result": {
+          "execution": true,
+          "acceptance": true,
+          "quality": {
+            "status": "complete",
+            "score_0_10": 10.0,
+            "normalized_reward": 1.0
+          }
+        },
+        "rewards": {
+          "reward": 1.0
+        },
+        "exception_type": null
+      },
+      "current": {
+        "result": {
+          "execution": true,
+          "acceptance": true,
+          "quality": {
+            "status": "complete",
+            "score_0_10": 10.0,
+            "normalized_reward": 1.0
+          }
+        },
+        "rewards": {
+          "reward": 1.0
+        },
+        "exception_type": null
+      },
+      "identical_semantic_facts": true,
+      "current_trial_path": "jobs/oracle/invoice-total__spQyXja"
+    },
+    {
+      "agent": "nop",
+      "scenario": "checkout-recovery",
+      "baseline": {
+        "result": {
+          "execution": false,
+          "acceptance": false,
+          "quality": {
+            "status": "judge_failed",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": null,
+        "exception_type": "RewardFileNotFoundError"
+      },
+      "current": {
+        "result": {
+          "execution": false,
+          "acceptance": false,
+          "quality": {
+            "status": "judge_failed",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": null,
+        "exception_type": "RewardFileNotFoundError"
+      },
+      "identical_semantic_facts": true,
+      "current_trial_path": "jobs/nop/checkout-recovery__ezTvC6F"
+    },
+    {
+      "agent": "nop",
+      "scenario": "invoice-total",
+      "baseline": {
+        "result": {
+          "execution": null,
+          "acceptance": false,
+          "quality": {
+            "status": "unscored",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": {
+          "reward": 0.0
+        },
+        "exception_type": null
+      },
+      "current": {
+        "result": {
+          "execution": null,
+          "acceptance": false,
+          "quality": {
+            "status": "unscored",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": {
+          "reward": 0.0
+        },
+        "exception_type": null
+      },
+      "identical_semantic_facts": true,
+      "current_trial_path": "jobs/nop/invoice-total__VURGE8n"
+    }
+  ],
+  "allowed_nonsemantic_differences": [
+    "wall-clock timestamps and durations caused by infrastructure overhead",
+    "run/trial/session ids and checkout/output paths",
+    "exception stack frames from the intentional shared-to-separate-verifier ownership change"
+  ],
+  "not_compared_for_raw_equality": [
+    "changed source and image ownership identities"
+  ],
+  "both_jobs_exit_zero": true,
+  "native_transport_cases": 19,
+  "run_timestamps": {
+    "started": "2026-10-08T21:22:29.500431+00:00",
+    "finished": "2026-10-08T21:28:51.346704+00:00"
+  },
+  "image_id": "sha256:d8d0ccde18dc5a00dc07526811c406c201f9f281c807f171d8188cf0e8177fef",
+  "frozen_image_tag": "sapi-lab-harbor-base:d8d0ccde18dc5a00"
+}

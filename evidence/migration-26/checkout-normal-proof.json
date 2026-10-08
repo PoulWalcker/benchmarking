@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "fresh_run_ids": [
+    "trial-ccb0b4f44b81419eb28dd66df3f6d4b1",
+    "trial-19e18ec080ae437eb2db3201572d77cf"
+  ],
+  "fresh_simulator_ids": [
+    "ebcaf6771ce184160930cc863aed0e0742e4a45536640bd92636d24e1c4aaab4",
+    "08e7c8dee1770dacaf4feb65406dc8d13cfa3152cfb7786402a8b962f69421f0"
+  ],
+  "same_initial_state": true
+}

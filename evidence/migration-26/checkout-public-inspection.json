@@ -1,0 +1,38 @@
+{
+  "image": "sha256:242724e73e6a84b24344815ce0a7ed8380b264f0c4202b7313266e6292c2f0f3",
+  "layers": [
+    {
+      "path": "blobs/sha256/a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00",
+      "files": 83
+    },
+    {
+      "path": "blobs/sha256/9a6839f013794f706a64bf41947f8d255ba75705bc111f06e79efd566116b358",
+      "files": 1897
+    },
+    {
+      "path": "blobs/sha256/ae35f6667c01a4cf43445b1d744446ec3862dd1fb869cdb06832bf12be1243cc",
+      "files": 111236
+    },
+    {
+      "path": "blobs/sha256/7dc1d1af654ca9c17208b89de0d369e9e800ca2cd8cac025416e1f70b8fdc7ab",
+      "files": 1
+    },
+    {
+      "path": "blobs/sha256/0506dd8be5487ba934614f29ce4240155ae66a1697294841f24ae56ea7d1960a",
+      "files": 0
+    },
+    {
+      "path": "blobs/sha256/f569de44be6cf455cebe90abef2d039bf6da1c2e3812e5fc61284ceb4d9de2ac",
+      "files": 4
+    },
+    {
+      "path": "blobs/sha256/40ee94ed3bf4e8a1b078b3b075367d21956420bb3a885ee6f032323530cd1361",
+      "files": 1
+    },
+    {
+      "path": "blobs/sha256/3b9472e79ed2a82af80d8dfe253001d031b0d3e9373854b0cf4d5a054d7ad653",
+      "files": 6
+    }
+  ],
+  "filesystem_files": 113225
+}

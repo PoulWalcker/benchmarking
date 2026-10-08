@@ -1,0 +1,71 @@
+{
+  "rows": [
+    {
+      "name": "historical-fixture",
+      "exit": 0,
+      "result": {
+        "execution": true,
+        "acceptance": true,
+        "quality": {
+          "status": "complete",
+          "score_0_10": 10.0,
+          "normalized_reward": 1.0
+        }
+      },
+      "log": "reports/migration-26/offline/historical-fixture.log",
+      "dispatch_file_created": false,
+      "original_hashes_preserved": true
+    },
+    {
+      "name": "historical-hosted-saved",
+      "exit": 0,
+      "result": {
+        "execution": true,
+        "acceptance": true,
+        "quality": {
+          "status": "complete",
+          "score_0_10": 7.32,
+          "normalized_reward": 0.732
+        }
+      },
+      "log": "reports/migration-26/offline/historical-hosted-saved.log",
+      "dispatch_file_created": false,
+      "original_hashes_preserved": true
+    },
+    {
+      "name": "historical-missing-source-refusal",
+      "exit": 2,
+      "result": null,
+      "log": "reports/migration-26/offline/historical-missing-source-refusal.log",
+      "dispatch_file_created": false,
+      "original_hashes_preserved": true
+    },
+    {
+      "name": "historical-judge-refusal",
+      "exit": 2,
+      "result": null,
+      "log": "reports/migration-26/offline/historical-judge-refusal.log",
+      "dispatch_file_created": false,
+      "original_hashes_preserved": true
+    }
+  ],
+  "hosted_original_hashes": {
+    "evaluation/evaluation.json": "7604b5d5a68d44da36f884327eef1547d31ac7c2b915f53d46de898a65a02558",
+    "evaluation/judge/judgement-pyoo5h9u/judge-request.txt": "8423475544026d52de5c1e2e5772db74e8905196d8872037884709984278a4a5",
+    "evaluation/judge/judgement-pyoo5h9u/judge-result.json": "e0461e558c4e9f7173407aea982f303b7041bc517f21280bbbcd9843d3c3e8d7",
+    "evaluation/judge/judgement-pyoo5h9u/judge.schema.json": "dae55d43a72d0f6a2f7ba5b1a8a752d31ac8c764bab943ba484863f2f5942188",
+    "evaluation/judge/judgement-pyoo5h9u/provenance.json": "adbbb60d5713ac15e4b060739269e86300081a26163c51cec0b13d23e5c11593",
+    "evaluation/judge-dispatch.json": "17573375de104b1cdd1f8446c8274896719dcfea6120d6f76bb7c9d5ad2127c1",
+    "evaluation/judge-reply.json": "0af5a1b5ffd8cc704cb67a0c4a15afbbebf95b4a3389216f735699c15cbc178b",
+    "evaluation/report.json": "0c2644714d472a6def58509837557578c30d1f666dda9defb1532787881d81e7",
+    "evaluation/reward.txt": "f9d115b4b2204a8bdfe8a12dea1e16bb8b89dee7152ef26e75a59b4d0326a5ff",
+    "evaluation/run-log.json": "23f4024b181013e8e8534857f14a4c42809fdc3b555f19411d9924065f1b5ba4",
+    "evaluation/task-contract.json": "68b72ba71788edf58634c7501ca9fb67f3bd395d739f99e870983aa048c12dfa",
+    "evidence/environment-evidence.json": "42918816cdb61063551190b62abf477a229fa36b22c43d26aa023cc92ad0ef38",
+    "evidence/native-record.json": "9588d61343722c1047dd421092843256ab255c3e81a113e422ea99d167fcf89b",
+    "evidence/transport-evidence.json": "f85b077c75faa844026602e5d38f2e3dce60090175bf82c342fe19063a56954b",
+    "evidence/trial.json": "5b83bc84a6a8ac744ef93ed5dfd0bad9eba542bea49657c6808fd3d9bd52c0d9"
+  },
+  "historical_fixture_original_root": "/private/tmp/sapi-baseline-01/reports/migration-01/all-eleven",
+  "initial_harness_expected_refusal_exit_corrected_from_1_to_2": "Actual public CLI uses exit2 for ValueError; no source change or successful evaluation rerun"
+}

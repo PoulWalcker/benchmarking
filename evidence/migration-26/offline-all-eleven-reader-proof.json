@@ -1,0 +1,349 @@
+{
+  "status": "passed",
+  "all_original_control_trials": 22,
+  "original_benchmark_names": [
+    "bulletin-market-brief",
+    "checkout-recovery",
+    "competitor-report",
+    "crm-lead-qualification",
+    "daily-digest",
+    "dual-ledger-closeout",
+    "invoice-total",
+    "priority-support-brief",
+    "revise-answer",
+    "support-review-packet",
+    "ticket-routing"
+  ],
+  "retired_benchmark_names": [
+    "bulletin-market-brief",
+    "competitor-report",
+    "crm-lead-qualification",
+    "daily-digest",
+    "dual-ledger-closeout",
+    "priority-support-brief",
+    "revise-answer",
+    "support-review-packet",
+    "ticket-routing"
+  ],
+  "ordinary_reader_needs_no_evaluator_snapshot": true,
+  "sealed_historical_files_read": 78,
+  "control_report_sha256": "8747bdceccb1fb7b9c33572f7d180f8d47e791b5ced151e5cd505b2bc51fe616",
+  "original_hashes_preserved": true,
+  "distinct_null_semantics_preserved": {
+    "revise_answer_accepted_execution": false,
+    "daily_digest_accepted_execution": null,
+    "checkout_and_crm_nop_reward": null
+  },
+  "facts": {
+    "bulletin-market-brief": [
+      {
+        "result": {
+          "execution": true,
+          "acceptance": true,
+          "quality": {
+            "status": "not_evaluated",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": {
+          "reward": 1.0
+        }
+      },
+      {
+        "result": {
+          "execution": null,
+          "acceptance": false,
+          "quality": {
+            "status": "not_evaluated",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": {
+          "reward": 0.0
+        }
+      }
+    ],
+    "checkout-recovery": [
+      {
+        "result": {
+          "execution": true,
+          "acceptance": true,
+          "quality": {
+            "status": "complete",
+            "score_0_10": 7.32,
+            "normalized_reward": 0.732
+          }
+        },
+        "rewards": {
+          "reward": 0.732
+        }
+      },
+      {
+        "result": {
+          "execution": false,
+          "acceptance": false,
+          "quality": {
+            "status": "judge_failed",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": null
+      }
+    ],
+    "competitor-report": [
+      {
+        "result": {
+          "execution": true,
+          "acceptance": true,
+          "quality": {
+            "status": "not_evaluated",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": {
+          "reward": 1.0
+        }
+      },
+      {
+        "result": {
+          "execution": null,
+          "acceptance": false,
+          "quality": {
+            "status": "not_evaluated",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": {
+          "reward": 0.0
+        }
+      }
+    ],
+    "crm-lead-qualification": [
+      {
+        "result": {
+          "execution": true,
+          "acceptance": true,
+          "quality": {
+            "status": "complete",
+            "score_0_10": 7.32,
+            "normalized_reward": 0.732
+          }
+        },
+        "rewards": {
+          "reward": 0.732
+        }
+      },
+      {
+        "result": {
+          "execution": false,
+          "acceptance": false,
+          "quality": {
+            "status": "judge_failed",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": null
+      }
+    ],
+    "daily-digest": [
+      {
+        "result": {
+          "execution": null,
+          "acceptance": true,
+          "quality": null
+        },
+        "rewards": {
+          "reward": 1.0
+        }
+      },
+      {
+        "result": {
+          "execution": null,
+          "acceptance": false,
+          "quality": null
+        },
+        "rewards": {
+          "reward": 0.0
+        }
+      }
+    ],
+    "dual-ledger-closeout": [
+      {
+        "result": {
+          "execution": true,
+          "acceptance": true,
+          "quality": {
+            "status": "complete",
+            "score_0_10": 10.0,
+            "normalized_reward": 1.0
+          }
+        },
+        "rewards": {
+          "reward": 1.0
+        }
+      },
+      {
+        "result": {
+          "execution": null,
+          "acceptance": false,
+          "quality": {
+            "status": "unscored",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": {
+          "reward": 0.0
+        }
+      }
+    ],
+    "invoice-total": [
+      {
+        "result": {
+          "execution": true,
+          "acceptance": true,
+          "quality": {
+            "status": "complete",
+            "score_0_10": 10.0,
+            "normalized_reward": 1.0
+          }
+        },
+        "rewards": {
+          "reward": 1.0
+        }
+      },
+      {
+        "result": {
+          "execution": null,
+          "acceptance": false,
+          "quality": {
+            "status": "unscored",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": {
+          "reward": 0.0
+        }
+      }
+    ],
+    "priority-support-brief": [
+      {
+        "result": {
+          "execution": true,
+          "acceptance": true,
+          "quality": {
+            "status": "not_evaluated",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": {
+          "reward": 1.0
+        }
+      },
+      {
+        "result": {
+          "execution": null,
+          "acceptance": false,
+          "quality": {
+            "status": "not_evaluated",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": {
+          "reward": 0.0
+        }
+      }
+    ],
+    "revise-answer": [
+      {
+        "result": {
+          "execution": false,
+          "acceptance": true,
+          "quality": null
+        },
+        "rewards": {
+          "reward": 1.0
+        }
+      },
+      {
+        "result": {
+          "execution": null,
+          "acceptance": false,
+          "quality": null
+        },
+        "rewards": {
+          "reward": 0.0
+        }
+      }
+    ],
+    "support-review-packet": [
+      {
+        "result": {
+          "execution": true,
+          "acceptance": true,
+          "quality": {
+            "status": "not_evaluated",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": {
+          "reward": 1.0
+        }
+      },
+      {
+        "result": {
+          "execution": null,
+          "acceptance": false,
+          "quality": {
+            "status": "not_evaluated",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": {
+          "reward": 0.0
+        }
+      }
+    ],
+    "ticket-routing": [
+      {
+        "result": {
+          "execution": true,
+          "acceptance": true,
+          "quality": {
+            "status": "complete",
+            "score_0_10": 10.0,
+            "normalized_reward": 1.0
+          }
+        },
+        "rewards": {
+          "reward": 1.0
+        }
+      },
+      {
+        "result": {
+          "execution": null,
+          "acceptance": false,
+          "quality": {
+            "status": "not_evaluated",
+            "score_0_10": null,
+            "normalized_reward": null
+          }
+        },
+        "rewards": {
+          "reward": 0.0
+        }
+      }
+    ]
+  }
+}
