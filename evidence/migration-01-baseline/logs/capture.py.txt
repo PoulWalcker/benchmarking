@@ -1,0 +1,89 @@
+"""Capture ticket 01 inputs without executing workflows or dispatching models."""
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+from sapi_config_lab.coordinate.cli import PUBLIC, INTERNAL
+from sapi_config_lab.coordinate.controls import suite_seconds
+from sapi_config_lab.coordinate.packages import generation_prompt, scenario_catalog, verifier_bounds, runtime_grant_seconds, job_seconds
+from sapi_config_lab.coordinate.provenance import source_manifest, host_environment
+from sapi_config_lab.coordinate.providers import contract_for, EVALUATORS
+from sapi_config_lab.coordinate.scenarios import SCENARIOS
+from sapi_config_lab.profile import read
+from verification.verify import plan
+from verification.fixture_evaluators import evaluator_for, fresh_cases
+
+root = Path.cwd()
+out = root / 'evidence/migration-01-baseline'
+def save(name, value):
+    path = out / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+def digest(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+save('source-manifest.json', source_manifest())
+save('host.json', host_environment())
+save('planning-inputs.json', {str(p): digest(p.read_bytes()) for p in [
+    Path('/Users/pashvel/Desktop/sapi-config-lab/.claude/audit_report.md'),
+    *[Path('/Users/pashvel/Desktop/sapi-config-lab/.scratch/benchmark-ownership-migration') / p for p in ('spec.md', 'index.md', 'issues/01-freeze-baseline.md')]
+]})
+inputs = [p for directory in ('generation', 'benchmarks', 'provenance') for p in (root / directory).rglob('*') if p.is_file() and '__pycache__' not in p.parts]
+inputs += [root / p for p in ('src/sapi_config_lab/bindings.yaml', 'src/sapi_config_lab/execute/agency-prompt.md', 'src/sapi_config_lab/compile/operations.js', 'uv.lock', '.python-version')]
+save('input-hashes.json', {str(p.relative_to(root)): digest(p.read_bytes()) for p in sorted(inputs)})
+benchmarks = {}
+bounds = verifier_bounds(tuple(SCENARIOS))
+for name, scenario in SCENARIOS.items():
+    item = {
+        'manifest': json.loads((scenario.directory / 'scenario.json').read_text()),
+        'resolved_harbor': scenario.harbor,
+        'deadline_seconds': read(scenario.config)['execution']['deadline_seconds'],
+        'verifier_required_seconds': bounds[name],
+        'live_grant_seconds': runtime_grant_seconds(scenario),
+        'prompts': {},
+    }
+    for arm in ('full',) if scenario.hosted else ('full', 'scenario'):
+        prompt = generation_prompt(root, scenario, arm).encode()
+        catalog = scenario.bindings.read_bytes() if arm == 'full' else scenario_catalog(scenario).encode()
+        for kind, raw in (('prompt', prompt), ('catalog', catalog)):
+            path = out / 'prompts' / f'{name}.{arm}.{kind}.txt'
+            path.parent.mkdir(exist_ok=True)
+            path.write_bytes(raw)
+            item['prompts'][f'{arm}_{kind}'] = {'path': str(path.relative_to(out)), 'sha256': digest(raw)}
+    if scenario.hosted:
+        contract = contract_for(scenario)
+        save(f'contracts/{name}.json', contract.as_dict())
+        item['judge_calls_if_paid'] = EVALUATORS[scenario.evaluator].judge_calls
+    else:
+        cases = scenario.cases()
+        save(f'plans/{name}.json', plan(name, scenario.config, cases))
+        evaluator = evaluator_for(name)
+        item['procedure'] = evaluator.procedure
+        item['cases'] = {kind: [c['name'] for c in cases[kind]] for kind in ('positive', 'negative')}
+        item['extra_corruptions'] = [n for n, _ in evaluator.extra_corruptions]
+        item['fresh_fixtures'] = scenario.fresh_fixtures
+        if scenario.fresh_fixtures:
+            save(f'fresh-fixtures/{name}.json', fresh_cases(name, cases))
+    benchmarks[name] = item
+save('benchmarks.json', benchmarks)
+save('bounds.json', {'job_seconds': job_seconds(bounds), 'suite_seconds': suite_seconds(tuple(SCENARIOS)), 'verifier_bounds': bounds})
+cli = {}
+for command in [None, *PUBLIC, *INTERNAL]:
+    args = [sys.executable, '-m', 'sapi_config_lab', *([command] if command else []), '--help']
+    p = subprocess.run(args, text=True, capture_output=True)
+    cli[command or 'root'] = {'argv': args, 'exit': p.returncode, 'stdout': p.stdout, 'stderr': p.stderr}
+save('cli.json', cli)
+historical = []
+for p in sorted((root / 'evidence').rglob('*.json')):
+    if p.is_relative_to(out):
+        continue
+    value = json.loads(p.read_text())
+    row = {'path': str(p.relative_to(root)), 'sha256': digest(p.read_bytes()), 'bytes': p.stat().st_size}
+    if isinstance(value, dict):
+        row['keys'] = sorted(value)
+        row['schema'] = value.get('schema', value.get('report_schema', value.get('schema_version')))
+    historical.append(row)
+save('historical-files.json', historical)
+print(f'Captured {len(benchmarks)} benchmarks, {len(inputs)} inputs, {len(historical)} historical JSON artifacts')

@@ -1,0 +1,59 @@
+# Logical catalog. Stub and live transports enforce these same output contracts.
+schema: sapi-bindings/v0
+target:
+  demo: n8n_json
+  code_node_version: 2
+  merge_node_version: 3.2
+  execution_order: v1
+operations:
+  ticket.classify:
+    kind: LLM
+    inputs: [ticket]
+    outputs: [category, priority]
+    implementation: agency_bridge
+    prompt: Classify the supplied ticket. Use category delivery; priority high if days_overdue > 2, otherwise normal. Return JSON only.
+    output_contract: "{category: delivery, priority: high|normal}"
+    input_schema:
+      type: object
+      required: [ticket]
+      additionalProperties: false
+      properties:
+        ticket:
+          type: object
+          required: [id, days_overdue]
+          additionalProperties: false
+          properties:
+            id: {type: string, minLength: 1}
+            text: {type: string}
+            days_overdue: {type: integer, minimum: 0}
+    output_schema:
+      type: object
+      required: [category, priority]
+      additionalProperties: false
+      properties:
+        category: {type: string, enum: [delivery]}
+        priority: {type: string, enum: [high, normal]}
+  ticket.escalation_draft:
+    kind: Script
+    inputs: [ticket]
+    outputs: [ticket_id, action, mode]
+    implementation: local_js
+  ticket.normal_draft:
+    kind: Script
+    inputs: [ticket]
+    outputs: [ticket_id, action, mode]
+    implementation: local_js
+  branch.select_one:
+    kind: Script
+    inputs: [escalated, normal]
+    outputs: [ticket_id, action, mode]
+    implementation: local_js
+production_bridge_contract:
+  scope: local_research_adapter
+  transport: HTTP
+  endpoint: /v1/agency/execute
+  request_fields: [invocation_id, operation, actor, inputs]
+  response_fields: [invocation_id, output, usage, status]
+  authentication: deployment_binding
+  state_restoration: wrapper_validates_response_and_attaches_output_to_original_envelope
+  notes: Adapter owns model and deployment settings. No secrets are embedded in workflow exports. No retries or durable admission are implemented.

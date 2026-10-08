@@ -1,0 +1,58 @@
+"""Seal raw baseline controls and copy only cited observations into versioned evidence."""
+import hashlib
+import json
+from pathlib import Path
+import shutil
+import tarfile
+
+root = Path.cwd()
+local = root / 'reports/migration-01'
+run = local / 'all-eleven'
+out = root / 'evidence/migration-01-baseline'
+def save(name, value):
+    (out / name).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+report = json.loads((run / 'report.json').read_text())
+assert report['status'] == 'passed', report.get('error')
+assert json.loads((run / 'source-manifest.json').read_text()) == json.loads((out / 'source-manifest.json').read_text())
+rows = []
+for agent in ('oracle', 'nop'):
+    job = report[agent]
+    assert job['passed'] and job['harbor_exit_code'] == 0 and len(job['trials']) == 11
+    for trial in job['trials']:
+        raw = json.loads(Path(trial['result_path']).read_text())
+        evaluation = Path(trial['evaluation_path'])
+        accepted = trial['acceptance'] or {}
+        row = {
+            'agent': agent, 'benchmark': trial['task_name'], 'job_exit': job['harbor_exit_code'],
+            'result': trial['result'], 'rewards': trial['rewards'],
+            'exception_type': (trial['exception'] or {}).get('exception_type'),
+            'result_path': trial['result_path'], 'result_sha256': digest(Path(trial['result_path'])),
+            'evaluation_path': trial['evaluation_path'], 'evaluation_sha256': digest(evaluation),
+            'native_execution': accepted.get('native_execution'),
+            'terminal_completion': accepted.get('terminal_completion'),
+            'timing': {k: raw.get(k) for k in ('started_at', 'finished_at', 'environment_setup', 'agent_setup', 'agent_execution', 'verifier')},
+        }
+        if accepted.get('schema') == 'sapi-lab-upstream-acceptance/v1':
+            record = evaluation.parent.parent
+            hosted = json.loads((record / 'evidence/trial.json').read_text())
+            row['hosted_trial'] = hosted
+            row['evidence_path'] = str(record / 'evidence')
+            row['judge_dispatch'] = json.loads((record / 'evaluation/judge-dispatch.json').read_text())
+        else:
+            row['evidence_path'] = str(evaluation.parent.parent / 'evidence')
+            row['cases_and_probes'] = accepted.get('cases')
+        rows.append(row)
+save('controls.json', rows)
+for source, destination in [('report.json', 'control-report.json'), ('transport/summary.json', 'transport-summary.json'), ('runtime-versions.txt', 'runtime-versions.txt'), ('task-package-hashes.json', 'task-package-hashes.json'), ('existing-containers.txt', 'existing-containers.txt')]:
+    shutil.copyfile(run / source, out / destination)
+shutil.copyfile(local / 'image-identity.txt', out / 'image-identity.txt')
+files = {str(p.relative_to(run)): digest(p) for p in sorted(run.rglob('*')) if p.is_file()}
+archive = local / 'all-eleven.tar.gz'
+with tarfile.open(archive, 'w:gz') as tar:
+    for name in files:
+        tar.add(run / name, arcname='all-eleven/' + name, recursive=False)
+assert files == {str(p.relative_to(run)): digest(p) for p in sorted(run.rglob('*')) if p.is_file()}
+save('artifacts.json', {'root': str(run), 'files': files, 'archive': str(archive), 'archive_sha256': digest(archive), 'archive_bytes': archive.stat().st_size})
+print(json.dumps({'trials': len(rows), 'files': len(files), 'archive_bytes': archive.stat().st_size}))

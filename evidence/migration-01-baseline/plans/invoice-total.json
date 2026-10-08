@@ -1,0 +1,1283 @@
+{
+  "entries": [
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "benchmark.invoice_batch_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "invoices-requested",
+          "workflow_ref": {
+            "id": "invoice-total",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Every invoice is counted once; integer minor units and currency are preserved.",
+          "dependencies": [
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ]
+          ],
+          "id": "invoice-total",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 12500,
+                "currency": "AED",
+                "id": "INV-1"
+              },
+              {
+                "amount_minor": 8000,
+                "currency": "AED",
+                "id": "INV-2"
+              },
+              {
+                "amount_minor": 17500,
+                "currency": "AED",
+                "id": "INV-3"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "ref": "steps.report"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "original-38000",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "benchmark.invoice_batch_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "invoices-requested",
+          "workflow_ref": {
+            "id": "invoice-total",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Every invoice is counted once; integer minor units and currency are preserved.",
+          "dependencies": [
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ]
+          ],
+          "id": "invoice-total",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 0,
+                "currency": "EUR",
+                "id": "Q-9"
+              },
+              {
+                "amount_minor": 719,
+                "currency": "EUR",
+                "id": "Q-1"
+              },
+              {
+                "amount_minor": 43,
+                "currency": "EUR",
+                "id": "Q-3"
+              },
+              {
+                "amount_minor": 8,
+                "currency": "EUR",
+                "id": "Q-7"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "ref": "steps.report"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "alternate-values-zero",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "benchmark.invoice_batch_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "invoices-requested",
+          "workflow_ref": {
+            "id": "invoice-total",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Every invoice is counted once; integer minor units and currency are preserved.",
+          "dependencies": [
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ]
+          ],
+          "id": "invoice-total",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 9007199254740990,
+                "currency": "USD",
+                "id": "MAX"
+              },
+              {
+                "amount_minor": 1,
+                "currency": "USD",
+                "id": "ONE"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "ref": "steps.report"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "maximum-safe-total",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "benchmark.invoice_batch_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "invoices-requested",
+          "workflow_ref": {
+            "id": "invoice-total",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Every invoice is counted once; integer minor units and currency are preserved.",
+          "dependencies": [
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ]
+          ],
+          "id": "invoice-total",
+          "inputs": {
+            "invoices": []
+          },
+          "kind": "Pipeline",
+          "output": {
+            "ref": "steps.report"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "empty",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "benchmark.invoice_batch_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "invoices-requested",
+          "workflow_ref": {
+            "id": "invoice-total",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Every invoice is counted once; integer minor units and currency are preserved.",
+          "dependencies": [
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ]
+          ],
+          "id": "invoice-total",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 1,
+                "currency": "AED",
+                "id": "D"
+              },
+              {
+                "amount_minor": 2,
+                "currency": "AED",
+                "id": "D"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "ref": "steps.report"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "duplicate-id",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "benchmark.invoice_batch_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "invoices-requested",
+          "workflow_ref": {
+            "id": "invoice-total",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Every invoice is counted once; integer minor units and currency are preserved.",
+          "dependencies": [
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ]
+          ],
+          "id": "invoice-total",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 1,
+                "currency": "AED",
+                "id": "A"
+              },
+              {
+                "amount_minor": 2,
+                "currency": "USD",
+                "id": "B"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "ref": "steps.report"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "mixed-currencies",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "benchmark.invoice_batch_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "invoices-requested",
+          "workflow_ref": {
+            "id": "invoice-total",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Every invoice is counted once; integer minor units and currency are preserved.",
+          "dependencies": [
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ]
+          ],
+          "id": "invoice-total",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": -1,
+                "currency": "AED",
+                "id": "A"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "ref": "steps.report"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "negative-amount",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "benchmark.invoice_batch_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "invoices-requested",
+          "workflow_ref": {
+            "id": "invoice-total",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Every invoice is counted once; integer minor units and currency are preserved.",
+          "dependencies": [
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ]
+          ],
+          "id": "invoice-total",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 1.5,
+                "currency": "AED",
+                "id": "A"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "ref": "steps.report"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "fractional-amount",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "benchmark.invoice_batch_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "invoices-requested",
+          "workflow_ref": {
+            "id": "invoice-total",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Every invoice is counted once; integer minor units and currency are preserved.",
+          "dependencies": [
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ]
+          ],
+          "id": "invoice-total",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 9007199254740992,
+                "currency": "AED",
+                "id": "A"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "ref": "steps.report"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "unsafe-amount",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "benchmark.invoice_batch_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "invoices-requested",
+          "workflow_ref": {
+            "id": "invoice-total",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Every invoice is counted once; integer minor units and currency are preserved.",
+          "dependencies": [
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ]
+          ],
+          "id": "invoice-total",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 9007199254740991,
+                "currency": "AED",
+                "id": "A"
+              },
+              {
+                "amount_minor": 1,
+                "currency": "AED",
+                "id": "B"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "ref": "steps.report"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "total-overflow",
+      "procedure": "case"
+    },
+    {
+      "artifact_transform": "wrong-result",
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "benchmark.invoice_batch_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "invoices-requested",
+          "workflow_ref": {
+            "id": "invoice-total",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Every invoice is counted once; integer minor units and currency are preserved.",
+          "dependencies": [
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ]
+          ],
+          "id": "invoice-total",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 12500,
+                "currency": "AED",
+                "id": "INV-1"
+              },
+              {
+                "amount_minor": 8000,
+                "currency": "AED",
+                "id": "INV-2"
+              },
+              {
+                "amount_minor": 17500,
+                "currency": "AED",
+                "id": "INV-3"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "ref": "steps.report"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "mutated-generated-workflow",
+      "name": "mutated-generated-result",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "benchmark.invoice_batch_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "invoices-requested",
+          "workflow_ref": {
+            "id": "invoice-total",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Every invoice is counted once; integer minor units and currency are preserved.",
+          "dependencies": [
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ]
+          ],
+          "id": "invoice-total",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 12500,
+                "currency": "AED",
+                "id": "INV-1"
+              },
+              {
+                "amount_minor": 8000,
+                "currency": "AED",
+                "id": "INV-2"
+              },
+              {
+                "amount_minor": 17500,
+                "currency": "AED",
+                "id": "INV-3"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "ref": "steps.report"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "unregistered.must_be_rejected",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unknown-operation",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "benchmark.invoice_batch_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "invoices-requested",
+          "workflow_ref": {
+            "id": "invoice-total",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Every invoice is counted once; integer minor units and currency are preserved.",
+          "dependencies": [
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ],
+            [
+              "total",
+              "validate"
+            ]
+          ],
+          "id": "invoice-total",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 12500,
+                "currency": "AED",
+                "id": "INV-1"
+              },
+              {
+                "amount_minor": 8000,
+                "currency": "AED",
+                "id": "INV-2"
+              },
+              {
+                "amount_minor": 17500,
+                "currency": "AED",
+                "id": "INV-3"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "ref": "steps.report"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-cycle",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "benchmark.invoice_batch_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "invoices-requested",
+          "workflow_ref": {
+            "id": "invoice-total",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "required_parallel",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Every invoice is counted once; integer minor units and currency are preserved.",
+          "dependencies": [
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ]
+          ],
+          "id": "invoice-total",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 12500,
+                "currency": "AED",
+                "id": "INV-1"
+              },
+              {
+                "amount_minor": 8000,
+                "currency": "AED",
+                "id": "INV-2"
+              },
+              {
+                "amount_minor": 17500,
+                "currency": "AED",
+                "id": "INV-3"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "ref": "steps.report"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unsupported-required-parallel",
+      "procedure": "case"
+    }
+  ],
+  "fixture_sha256": "3f7e36ac546ded4fa5199d38c735638a82a1445ee57f9806d77f4ae1f7276b5e",
+  "mode": "stub",
+  "scenario": "invoice-total",
+  "schema": "sapi-lab-observation-plan/v1",
+  "submission_sha256": "2b4d9b5569cd811053bb2e504de4111b171be188b2deff88b4ca63f187406e99"
+}

@@ -99,3 +99,37 @@ Pinned inputs are explicit and fail closed: the upstream source manifest under `
 | oracle / nop | positive control (reference submission) / negative control (no submission) |
 | scenario / case | one benchmark directory / one fixture input of it |
 | hosted | a scenario whose `environment` is a provider, not `fixtures`: the host serves its world and runs its evaluator per trial |
+
+## Migration ownership constraints
+
+The approved migration targets `BENCHMARKS -> CORE -> HARBOR`, with the conceptual
+flow `benchmark -> compile -> execute -> evidence -> evaluate -> result`.
+Benchmarks will own operations, world semantics and independent business scoring;
+core will own generic workflow semantics, immutable evidence and experiment policy;
+the Harbor integration will own task translation and invocation of pinned Harbor
+0.21.0. Evaluation must continue to read evidence without rerunning workflows, and
+independent expected-value checks must not import the implementation under test.
+
+These are migration constraints, not a description of completed extraction. The
+stage model above remains the current implementation. In particular, the global
+catalog/operation bundle, provider and fixture-evaluator tables, digest acceptance,
+TrialHost lifecycle, image scrubbing and copied Harbor job trees still exist.
+Nothing in the baseline ticket removes them or establishes separate-verifier parity.
+
+`MigrationOwnershipTests` in `tests/test_boundaries.py` rejects new imports of
+`benchmarks` or the explicitly identified legacy business/provider modules from
+application or verifier code. It also rejects additional direct Harbor imports
+outside `sapi_config_lab.harbor_integration`. The exact existing 25 source/target
+edges are frozen in the [baseline import snapshot](../evidence/migration-01-baseline/legacy-imports.json).
+An exception belongs to that edge, never to an entire directory or future module.
+Removing an edge is allowed; adding a caller is not. Static absolute/relative and
+literal dynamic imports are checked, including imports nested inside functions.
+These checks do not claim to detect arbitrary computed imports, business logic
+embedded in JavaScript, file reads or name dispatch; those remain explicit migration
+work. Existing stage checks continue to enforce verifier independence.
+
+The [ticket 01 baseline index](../evidence/migration-01-baseline/INDEX.md) records
+source/prompt identities, control observations, deadline and historical-format
+inventories, permitted comparison normalization and the limits of the evidence.
+Use fresh controls after changing source/package/image identity. Preserve the
+snapshot; it is not an allowlist to expand when a later ticket needs a new edge.

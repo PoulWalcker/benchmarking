@@ -1,0 +1,217 @@
+{
+  "bridge": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "bridge",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: sapi-lab bridge [-h] [--host HOST] [--port PORT] [--upstream UPSTREAM]\n                       [--timeout TIMEOUT] [--bindings BINDINGS] --audit AUDIT\n                       [--budget BUDGET] [--reject-tool-use]\n\nAgency bridge: n8n's catalog operations forwarded to the local model wrapper,\nbudgeted and audited. No credentials, stderr, arbitrary prompts or model\noverrides are exposed. This is a research adapter, not a durable Agency\nservice: no retries, idempotency or cancellation.\n\noptions:\n  -h, --help           show this help message and exit\n  --host HOST          Bind address (SAPI_LISTEN_HOST)\n  --port PORT\n  --upstream UPSTREAM\n  --timeout TIMEOUT\n  --bindings BINDINGS\n  --audit AUDIT\n  --budget BUDGET\n  --reject-tool-use    Fail a call whose wrapper reports tool use\n"
+  },
+  "build": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "build",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: python -m sapi_config_lab [-h] [--output-dir OUTPUT_DIR]\n\nCompile supported examples; reject unsupported extensions.\n\noptions:\n  -h, --help            show this help message and exit\n  --output-dir OUTPUT_DIR\n"
+  },
+  "check": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "check",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: sapi-lab check [-h]\n\nRun every required local check.\n\noptions:\n  -h, --help  show this help message and exit\n"
+  },
+  "compile": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "compile",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: python -m sapi_config_lab [-h] --output OUTPUT [--bindings BINDINGS]\n                                 [--llm-mode {stub,live}]\n                                 [--bridge-url BRIDGE_URL]\n                                 [--request-timeout-seconds REQUEST_TIMEOUT_SECONDS]\n                                 config\n\nValidate YAML and produce n8n JSON; does not execute it.\n\npositional arguments:\n  config\n\noptions:\n  -h, --help            show this help message and exit\n  --output OUTPUT\n  --bindings BINDINGS\n  --llm-mode {stub,live}\n  --bridge-url BRIDGE_URL\n  --request-timeout-seconds REQUEST_TIMEOUT_SECONDS\n"
+  },
+  "evaluate": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "evaluate",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: sapi-lab evaluate [-h] --record RECORD --output OUTPUT [--cases CASES]\n                         [--judgement JUDGEMENT] [--dispatch-judge]\n                         [--calibration CALIBRATION]\n                         [--judge-model JUDGE_MODEL] [--series-dir SERIES_DIR]\n                         [--series-ceiling SERIES_CEILING]\n\nEvaluate one recorded trial again into a new directory.\n\noptions:\n  -h, --help            show this help message and exit\n  --record RECORD       <trial>/verifier, or environments/<job>/<scenario>\n  --output OUTPUT\n  --cases CASES         Verifier fixtures the trial ran with (its staged\n                        tests/cases.json)\n  --judgement JUDGEMENT\n                        A saved judge reply for exactly this judge and run\n  --dispatch-judge      Call the judge. A codex judge costs one call\n  --calibration CALIBRATION\n                        Judge a predefined counterfactual of the recorded run\n                        instead\n  --judge-model JUDGE_MODEL\n                        Judge identity for --calibration\n  --series-dir SERIES_DIR\n                        Reserve the judge call in a shared ledger\n  --series-ceiling SERIES_CEILING\n"
+  },
+  "execute": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "execute",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: python -m sapi_config_lab [-h] --config CONFIG --artifacts ARTIFACTS\n                                 [--llm-mode {stub,live}]\n                                 [--bridge-url BRIDGE_URL]\n\nCompile and execute a workflow through the selected backend; never grade it.\n\noptions:\n  -h, --help            show this help message and exit\n  --config CONFIG\n  --artifacts ARTIFACTS\n  --llm-mode {stub,live}\n  --bridge-url BRIDGE_URL\n"
+  },
+  "fetch-source": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "fetch-source",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: python -m sapi_config_lab [-h] name\n\nFetch a source pinned by provenance/<name>-source.json.\n\npositional arguments:\n  name        e.g. autowfbench\n\noptions:\n  -h, --help  show this help message and exit\n"
+  },
+  "generate": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "generate",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: sapi-lab generate [-h] [--attempts ATTEMPTS] [--report-dir REPORT_DIR]\n                         [--upstream UPSTREAM] [--scenario SCENARIO]\n                         [--series-dir SERIES_DIR]\n                         [--series-ceiling SERIES_CEILING]\n                         [--stop-after-failure] [--catalog {full,scenario}]\n\nFresh controls, then model-authored YAML trials in Harbor/n8n, one reserved\nattempt at a time.\n\noptions:\n  -h, --help            show this help message and exit\n  --attempts ATTEMPTS   Independent calls per task, no feedback/repair\n  --report-dir REPORT_DIR\n  --upstream UPSTREAM   Model wrapper URL (SAPI_WRAPPER_URL)\n  --scenario SCENARIO   Explicit selection; defaults to the default scenarios\n  --series-dir SERIES_DIR\n                        Reserve in a ledger shared with other runs\n  --series-ceiling SERIES_CEILING\n                        PHASE=N, fixed when a series ledger is created\n  --stop-after-failure  A failed attempt blocks later ones\n  --catalog {full,scenario}\n                        Experiment arm: the full operation catalog (default)\n                        or only the operations the scenario's reference uses\n"
+  },
+  "harbor": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "harbor",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: sapi-lab harbor [-h] [--report-dir REPORT_DIR]\n                       [--scenario {bulletin-market-brief,checkout-recovery,competitor-report,crm-lead-qualification,daily-digest,dual-ledger-closeout,invoice-total,priority-support-brief,revise-answer,support-review-packet,ticket-routing}]\n                       [--skip-build]\n\nUnpaid controls: local tests, pinned n8n image, transport probes, Harbor\noracle and nop.\n\noptions:\n  -h, --help            show this help message and exit\n  --report-dir REPORT_DIR\n  --scenario {bulletin-market-brief,checkout-recovery,competitor-report,crm-lead-qualification,daily-digest,dual-ledger-closeout,invoice-total,priority-support-brief,revise-answer,support-review-packet,ticket-routing}\n  --skip-build          Reuse already built lab image (development only)\n"
+  },
+  "hosted-worker": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "hosted-worker",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: sapi-lab hosted-worker [-h] {admit,run}\n\nTrusted container step for hosted scenarios: admit a submission, or run it\nonce against the host's environment.\n\npositional arguments:\n  {admit,run}\n\noptions:\n  -h, --help   show this help message and exit\n"
+  },
+  "lifecycle": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "lifecycle",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: sapi-lab lifecycle [-h] --registry REGISTRY [--llm-mode {stub,live}]\n                          [--bridge-url BRIDGE_URL] [--bindings BINDINGS]\n                          [--rebuilder-url REBUILDER_URL]\n                          [--rebuild-model REBUILD_MODEL]\n                          {register,callback,restore,status,tick,drain,serve} ...\n\nDurable candidate lifecycle: registry, event admission, test, release and\nrebuild around native executions. None of this lives in the exported graph;\nonly admitted Callback/Cron events execute it.\n\npositional arguments:\n  {register,callback,restore,status,tick,drain,serve}\n\noptions:\n  -h, --help            show this help message and exit\n  --registry REGISTRY\n  --llm-mode {stub,live}\n  --bridge-url BRIDGE_URL\n  --bindings BINDINGS\n  --rebuilder-url REBUILDER_URL\n                        Explicit real wrapper URL for bounded candidate repair\n  --rebuild-model REBUILD_MODEL\n                        Expected wrapper model identity (SAPI_WRAPPER_MODEL);\n                        does not select or override it\n"
+  },
+  "live": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "live",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: sapi-lab live [-h] --stub-report STUB_REPORT\n                     [--submissions-manifest SUBMISSIONS_MANIFEST]\n                     [--scenario SCENARIO] --max-calls MAX_CALLS\n                     [--report-dir REPORT_DIR] [--preflight-only]\n                     [--wrapper-evidence WRAPPER_EVIDENCE]\n                     [--wrapper-file WRAPPER_FILE] [--upstream UPSTREAM]\n                     [--bridge-port BRIDGE_PORT] [--series-dir SERIES_DIR]\n                     [--series-ceiling SERIES_CEILING] [--stop-after-failure]\n                     [--judge-model JUDGE_MODEL]\n\nLive replay of saved submissions: one bounded Agency grant per case, after\nunpaid controls.\n\noptions:\n  -h, --help            show this help message and exit\n  --stub-report STUB_REPORT\n                        A passing control report for this image\n  --submissions-manifest SUBMISSIONS_MANIFEST\n                        From `sapi-lab select`; default: reference configs\n  --scenario SCENARIO   Reference scenarios when no manifest is given\n  --max-calls MAX_CALLS\n                        Aggregate model-call ceiling for this run\n  --report-dir REPORT_DIR\n  --preflight-only\n  --wrapper-evidence WRAPPER_EVIDENCE\n                        The inspected wrapper identity record\n  --wrapper-file WRAPPER_FILE\n                        NAME=PATH: where an inspected wrapper file is on this\n                        machine\n  --upstream UPSTREAM   Model wrapper URL (SAPI_WRAPPER_URL)\n  --bridge-port BRIDGE_PORT\n                        (SAPI_BRIDGE_PORT)\n  --series-dir SERIES_DIR\n                        Reserve in a ledger shared with other runs\n  --series-ceiling SERIES_CEILING\n                        PHASE=N, fixed when a series ledger is created\n  --stop-after-failure  A failed case blocks later reservations\n  --judge-model JUDGE_MODEL\n                        Judge model for hosted evaluators that call one\n"
+  },
+  "package-tasks": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "package-tasks",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: python -m sapi_config_lab [-h] [--mode {oracle,generation}]\n                                 [--image IMAGE] [--scenario SCENARIOS]\n                                 [--catalog {full,scenario}]\n                                 destination\n\nAssemble disposable Harbor task packages.\n\npositional arguments:\n  destination\n\noptions:\n  -h, --help            show this help message and exit\n  --mode {oracle,generation}\n                        stage_tasks also has a replay mode, deliberately not\n                        offered here: a replay package is only meaningful with\n                        a validated submissions manifest and the image that\n                        run freezes. Use 'sapi-lab live --submissions-\n                        manifest' for it.\n  --image IMAGE\n  --scenario SCENARIOS\n  --catalog {full,scenario}\n                        generation catalog arm\n"
+  },
+  "review-export": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "review-export",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: sapi-lab review-export [-h] [--force] [--rewards] [--dry-run] jobs_dir\n\nRender recorded evaluations as `<trial>/analysis.md`, the Harbor viewer's\ntrial summary. Derived files only: no recorded artifact is rewritten.\n\npositional arguments:\n  jobs_dir    A Harbor jobs directory, as passed to `harbor view`\n\noptions:\n  -h, --help  show this help message and exit\n  --force     Replace a derived file this command wrote before\n  --rewards   Also write reward.json and reward-details.json\n  --dry-run   Report what would be written; change nothing\n"
+  },
+  "root": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: python -m sapi_config_lab [-h] command ...\n\nSapiens YAML research lab.\n\npositional arguments:\n  command\n  arguments\n\noptions:\n  -h, --help  show this help message and exit\n\ncommands you run:\n  check                Run every required local check (tests, lint, format, types, distribution); no Docker.\n  compile              Validate one YAML; write the n8n JSON and its step-to-node map.\n  build                Compile every benchmarks/*/config.yaml and record which were rejected.\n  harbor               Unpaid control suite: pinned image, transport probes, oracle and nop trials.\n  generate             Model-authored YAML after the control suite passes. Costs model calls.\n  select               Select generated submissions for replay by a fixed rule; runs nothing.\n  live                 Replay saved or reference submissions against live operations. Costs model calls.\n  evaluate             Evaluate one recorded trial again; a judge is called only with --dispatch-judge.\n  ui                   Import graphs into local n8n and prepare one bounded manual session.\n  lifecycle            The durable lifecycle controller against a registry directory.\n  review-export        Write a derived analysis.md beside recorded evaluations; adds files only.\n  fetch-source         Fetch a pinned upstream source into .cache/ and verify every byte against provenance/.\n\ninternal commands (a container or another command runs these, not you):\n  execute              Run one config through the engine. Needs the real n8n CLI on PATH.\n  package-tasks        Assemble Harbor task packages into a new directory; runs nothing.\n  transport            HTTP transport probes. Runs inside the lab image; run.sh invokes it there.\n  bridge               Foreground Agency HTTP adapter. live and ui start it themselves.\n  hosted-worker        Trusted verifier step inside a hosted task container; needs /tests and /logs.\n\nEvery command accepts --help.\n"
+  },
+  "select": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "select",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: sapi-lab select [-h] --source-report SOURCE_REPORT --scenario SCENARIO\n                       --output OUTPUT\n\nSelect recorded generated submissions for replay; never generate or repair YAML.\n\noptions:\n  -h, --help            show this help message and exit\n  --source-report SOURCE_REPORT\n                        A generation run's report.json\n  --scenario SCENARIO\n  --output OUTPUT\n"
+  },
+  "transport": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "transport",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: sapi-lab transport [-h] --artifacts ARTIFACTS\n\nTransport contract probes: the live HTTP path in real n8n against a fake\nbridge, inside the lab image.\n\noptions:\n  -h, --help            show this help message and exit\n  --artifacts ARTIFACTS\n"
+  },
+  "ui": {
+    "argv": [
+      "/private/tmp/sapi-baseline-01/.venv/bin/python",
+      "-m",
+      "sapi_config_lab",
+      "ui",
+      "--help"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "stdout": "usage: sapi-lab ui [-h] {open,prepare,serve} ...\n\nImport inactive graphs into a local n8n and serve one explicitly bounded\nmanual live run.\n\npositional arguments:\n  {open,prepare,serve}\n    open                Compile and import inactive graphs, then open their\n                        editor links\n    prepare             Compile an inactive UI graph; never call a model\n    serve               Start a foreground bounded bridge; manual workflow\n                        execution remains explicit\n\noptions:\n  -h, --help            show this help message and exit\n"
+  }
+}

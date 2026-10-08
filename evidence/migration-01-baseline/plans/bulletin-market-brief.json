@@ -1,0 +1,2416 @@
+{
+  "entries": [
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.bulletin_preview_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "bulletin-preview-requested",
+          "workflow_ref": {
+            "id": "bulletin-market-brief",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "brief-writer": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writing"
+          },
+          "digest-editor": {
+            "allowed_operations": [
+              "digest.summarize"
+            ],
+            "context_scope": "digest"
+          },
+          "market-analyst": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-analyst": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Preserve bulletin facts, article IDs and source evidence through digest and brief.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ],
+            [
+              "summarize",
+              "product"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "bulletin-market-brief",
+          "inputs": {
+            "articles": [
+              {
+                "id": "BL-1",
+                "text": "The product supports offline inventory.",
+                "title": "Offline inventory"
+              },
+              {
+                "id": "BL-2",
+                "text": "The product supports CSV export.",
+                "title": "CSV export"
+              }
+            ],
+            "marketing_material": "The service targets rural cooperatives through printed catalogues."
+          },
+          "kind": "Gantt",
+          "output": {
+            "brief": {
+              "ref": "steps.write"
+            },
+            "digest": {
+              "ref": "steps.preview"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "digest.prepare",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "actor": "digest-editor",
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            },
+            {
+              "actor": "product-analyst",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "steps.summarize.text"
+                }
+              }
+            },
+            {
+              "actor": "market-analyst",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "brief-writer",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "base-bulletins",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.bulletin_preview_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "bulletin-preview-requested",
+          "workflow_ref": {
+            "id": "bulletin-market-brief",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "brief-writer": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writing"
+          },
+          "digest-editor": {
+            "allowed_operations": [
+              "digest.summarize"
+            ],
+            "context_scope": "digest"
+          },
+          "market-analyst": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-analyst": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Preserve bulletin facts, article IDs and source evidence through digest and brief.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ],
+            [
+              "summarize",
+              "product"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "bulletin-market-brief",
+          "inputs": {
+            "articles": [
+              {
+                "id": "ALT-7",
+                "text": "The product supports appointment booking.",
+                "title": "Appointment booking"
+              },
+              {
+                "id": "ALT-9",
+                "text": "The product supports SMS reminders.",
+                "title": "SMS reminders"
+              }
+            ],
+            "marketing_material": "The service targets dental clinics through radio adverts."
+          },
+          "kind": "Gantt",
+          "output": {
+            "brief": {
+              "ref": "steps.write"
+            },
+            "digest": {
+              "ref": "steps.preview"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "digest.prepare",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "actor": "digest-editor",
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            },
+            {
+              "actor": "product-analyst",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "steps.summarize.text"
+                }
+              }
+            },
+            {
+              "actor": "market-analyst",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "brief-writer",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "alternate-bulletins",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.bulletin_preview_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "bulletin-preview-requested",
+          "workflow_ref": {
+            "id": "bulletin-market-brief",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "brief-writer": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writing"
+          },
+          "digest-editor": {
+            "allowed_operations": [
+              "digest.summarize"
+            ],
+            "context_scope": "digest"
+          },
+          "market-analyst": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-analyst": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Preserve bulletin facts, article IDs and source evidence through digest and brief.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ],
+            [
+              "summarize",
+              "product"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "bulletin-market-brief",
+          "inputs": {
+            "articles": [
+              {
+                "id": "BL-2",
+                "text": "The product supports CSV export.",
+                "title": "CSV export"
+              },
+              {
+                "id": "BL-1",
+                "text": "The product supports offline inventory.",
+                "title": "Offline inventory"
+              }
+            ],
+            "marketing_material": "The service targets rural cooperatives through printed catalogues."
+          },
+          "kind": "Gantt",
+          "output": {
+            "brief": {
+              "ref": "steps.write"
+            },
+            "digest": {
+              "ref": "steps.preview"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "digest.prepare",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "actor": "digest-editor",
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            },
+            {
+              "actor": "product-analyst",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "steps.summarize.text"
+                }
+              }
+            },
+            {
+              "actor": "market-analyst",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "brief-writer",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "reordered-bulletins",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.bulletin_preview_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "bulletin-preview-requested",
+          "workflow_ref": {
+            "id": "bulletin-market-brief",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "brief-writer": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writing"
+          },
+          "digest-editor": {
+            "allowed_operations": [
+              "digest.summarize"
+            ],
+            "context_scope": "digest"
+          },
+          "market-analyst": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-analyst": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Preserve bulletin facts, article IDs and source evidence through digest and brief.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ],
+            [
+              "summarize",
+              "product"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "bulletin-market-brief",
+          "inputs": {
+            "articles": [
+              {
+                "id": "BL-1",
+                "text": "The product supports offline inventory.",
+                "title": "Offline inventory"
+              },
+              {
+                "id": "BL-NEW",
+                "text": "The product supports barcode scanning.",
+                "title": "Barcode scanning"
+              }
+            ],
+            "marketing_material": "The service targets rural cooperatives through printed catalogues."
+          },
+          "kind": "Gantt",
+          "output": {
+            "brief": {
+              "ref": "steps.write"
+            },
+            "digest": {
+              "ref": "steps.preview"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "digest.prepare",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "actor": "digest-editor",
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            },
+            {
+              "actor": "product-analyst",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "steps.summarize.text"
+                }
+              }
+            },
+            {
+              "actor": "market-analyst",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "brief-writer",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "replaced-capability",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.bulletin_preview_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "bulletin-preview-requested",
+          "workflow_ref": {
+            "id": "bulletin-market-brief",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "brief-writer": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writing"
+          },
+          "digest-editor": {
+            "allowed_operations": [
+              "digest.summarize"
+            ],
+            "context_scope": "digest"
+          },
+          "market-analyst": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-analyst": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Preserve bulletin facts, article IDs and source evidence through digest and brief.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ],
+            [
+              "summarize",
+              "product"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "bulletin-market-brief",
+          "inputs": {
+            "articles": [
+              {
+                "id": "BL-1",
+                "text": "The product supports offline inventory.",
+                "title": "Offline inventory"
+              },
+              {
+                "id": "BL-2",
+                "text": "The product supports CSV export.",
+                "title": "CSV export"
+              }
+            ],
+            "marketing_material": "The service targets dental clinics through radio adverts."
+          },
+          "kind": "Gantt",
+          "output": {
+            "brief": {
+              "ref": "steps.write"
+            },
+            "digest": {
+              "ref": "steps.preview"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "digest.prepare",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "actor": "digest-editor",
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            },
+            {
+              "actor": "product-analyst",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "steps.summarize.text"
+                }
+              }
+            },
+            {
+              "actor": "market-analyst",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "brief-writer",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "changed-marketing",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.bulletin_preview_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "bulletin-preview-requested",
+          "workflow_ref": {
+            "id": "bulletin-market-brief",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "brief-writer": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writing"
+          },
+          "digest-editor": {
+            "allowed_operations": [
+              "digest.summarize"
+            ],
+            "context_scope": "digest"
+          },
+          "market-analyst": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-analyst": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Preserve bulletin facts, article IDs and source evidence through digest and brief.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ],
+            [
+              "summarize",
+              "product"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "bulletin-market-brief",
+          "inputs": {
+            "articles": [],
+            "marketing_material": "The service targets rural cooperatives through printed catalogues."
+          },
+          "kind": "Gantt",
+          "output": {
+            "brief": {
+              "ref": "steps.write"
+            },
+            "digest": {
+              "ref": "steps.preview"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "digest.prepare",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "actor": "digest-editor",
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            },
+            {
+              "actor": "product-analyst",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "steps.summarize.text"
+                }
+              }
+            },
+            {
+              "actor": "market-analyst",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "brief-writer",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "empty-articles",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.bulletin_preview_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "bulletin-preview-requested",
+          "workflow_ref": {
+            "id": "bulletin-market-brief",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "brief-writer": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writing"
+          },
+          "digest-editor": {
+            "allowed_operations": [
+              "digest.summarize"
+            ],
+            "context_scope": "digest"
+          },
+          "market-analyst": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-analyst": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Preserve bulletin facts, article IDs and source evidence through digest and brief.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ],
+            [
+              "summarize",
+              "product"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "bulletin-market-brief",
+          "inputs": {
+            "articles": [
+              {
+                "id": "BL-1",
+                "text": "The product supports offline inventory.",
+                "title": "Offline inventory"
+              },
+              {
+                "id": "BL-1",
+                "text": "The product supports offline inventory.",
+                "title": "Offline inventory"
+              }
+            ],
+            "marketing_material": "The service targets rural cooperatives through printed catalogues."
+          },
+          "kind": "Gantt",
+          "output": {
+            "brief": {
+              "ref": "steps.write"
+            },
+            "digest": {
+              "ref": "steps.preview"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "digest.prepare",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "actor": "digest-editor",
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            },
+            {
+              "actor": "product-analyst",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "steps.summarize.text"
+                }
+              }
+            },
+            {
+              "actor": "market-analyst",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "brief-writer",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "duplicate-articles",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.bulletin_preview_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "bulletin-preview-requested",
+          "workflow_ref": {
+            "id": "bulletin-market-brief",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "brief-writer": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writing"
+          },
+          "digest-editor": {
+            "allowed_operations": [
+              "digest.summarize"
+            ],
+            "context_scope": "digest"
+          },
+          "market-analyst": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-analyst": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Preserve bulletin facts, article IDs and source evidence through digest and brief.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ],
+            [
+              "summarize",
+              "product"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "bulletin-market-brief",
+          "inputs": {
+            "articles": [
+              {
+                "id": "BL-1",
+                "text": "The product supports offline inventory.",
+                "title": ""
+              }
+            ],
+            "marketing_material": "The service targets rural cooperatives through printed catalogues."
+          },
+          "kind": "Gantt",
+          "output": {
+            "brief": {
+              "ref": "steps.write"
+            },
+            "digest": {
+              "ref": "steps.preview"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "digest.prepare",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "actor": "digest-editor",
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            },
+            {
+              "actor": "product-analyst",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "steps.summarize.text"
+                }
+              }
+            },
+            {
+              "actor": "market-analyst",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "brief-writer",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "malformed-article-title",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.bulletin_preview_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "bulletin-preview-requested",
+          "workflow_ref": {
+            "id": "bulletin-market-brief",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "brief-writer": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writing"
+          },
+          "digest-editor": {
+            "allowed_operations": [
+              "digest.summarize"
+            ],
+            "context_scope": "digest"
+          },
+          "market-analyst": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-analyst": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Preserve bulletin facts, article IDs and source evidence through digest and brief.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ],
+            [
+              "summarize",
+              "product"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "bulletin-market-brief",
+          "inputs": {
+            "articles": [
+              {
+                "id": "BL-1",
+                "text": "The product supports offline inventory.",
+                "title": "Offline inventory"
+              },
+              {
+                "id": "BL-2",
+                "text": "The product supports CSV export.",
+                "title": "CSV export"
+              }
+            ],
+            "marketing_material": ""
+          },
+          "kind": "Gantt",
+          "output": {
+            "brief": {
+              "ref": "steps.write"
+            },
+            "digest": {
+              "ref": "steps.preview"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "digest.prepare",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "actor": "digest-editor",
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            },
+            {
+              "actor": "product-analyst",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "steps.summarize.text"
+                }
+              }
+            },
+            {
+              "actor": "market-analyst",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "brief-writer",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "empty-marketing",
+      "procedure": "case"
+    },
+    {
+      "artifact_transform": "wrong-result",
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.bulletin_preview_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "bulletin-preview-requested",
+          "workflow_ref": {
+            "id": "bulletin-market-brief",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "brief-writer": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writing"
+          },
+          "digest-editor": {
+            "allowed_operations": [
+              "digest.summarize"
+            ],
+            "context_scope": "digest"
+          },
+          "market-analyst": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-analyst": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Preserve bulletin facts, article IDs and source evidence through digest and brief.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ],
+            [
+              "summarize",
+              "product"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "bulletin-market-brief",
+          "inputs": {
+            "articles": [
+              {
+                "id": "BL-1",
+                "text": "The product supports offline inventory.",
+                "title": "Offline inventory"
+              },
+              {
+                "id": "BL-2",
+                "text": "The product supports CSV export.",
+                "title": "CSV export"
+              }
+            ],
+            "marketing_material": "The service targets rural cooperatives through printed catalogues."
+          },
+          "kind": "Gantt",
+          "output": {
+            "brief": {
+              "ref": "steps.write"
+            },
+            "digest": {
+              "ref": "steps.preview"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "digest.prepare",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "actor": "digest-editor",
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            },
+            {
+              "actor": "product-analyst",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "steps.summarize.text"
+                }
+              }
+            },
+            {
+              "actor": "market-analyst",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "brief-writer",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "mutated-generated-workflow",
+      "name": "mutated-generated-result",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.bulletin_preview_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "bulletin-preview-requested",
+          "workflow_ref": {
+            "id": "bulletin-market-brief",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "brief-writer": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writing"
+          },
+          "digest-editor": {
+            "allowed_operations": [
+              "digest.summarize"
+            ],
+            "context_scope": "digest"
+          },
+          "market-analyst": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-analyst": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Preserve bulletin facts, article IDs and source evidence through digest and brief.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ],
+            [
+              "summarize",
+              "product"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "bulletin-market-brief",
+          "inputs": {
+            "articles": [
+              {
+                "id": "BL-1",
+                "text": "The product supports offline inventory.",
+                "title": "Offline inventory"
+              },
+              {
+                "id": "BL-2",
+                "text": "The product supports CSV export.",
+                "title": "CSV export"
+              }
+            ],
+            "marketing_material": "The service targets rural cooperatives through printed catalogues."
+          },
+          "kind": "Gantt",
+          "output": {
+            "brief": {
+              "ref": "steps.write"
+            },
+            "digest": {
+              "ref": "steps.preview"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "unregistered.must_be_rejected",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "actor": "digest-editor",
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            },
+            {
+              "actor": "product-analyst",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "steps.summarize.text"
+                }
+              }
+            },
+            {
+              "actor": "market-analyst",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "brief-writer",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unknown-operation",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.bulletin_preview_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "bulletin-preview-requested",
+          "workflow_ref": {
+            "id": "bulletin-market-brief",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "brief-writer": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writing"
+          },
+          "digest-editor": {
+            "allowed_operations": [
+              "digest.summarize"
+            ],
+            "context_scope": "digest"
+          },
+          "market-analyst": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-analyst": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Preserve bulletin facts, article IDs and source evidence through digest and brief.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ],
+            [
+              "summarize",
+              "product"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ],
+            [
+              "summarize",
+              "prepare"
+            ]
+          ],
+          "id": "bulletin-market-brief",
+          "inputs": {
+            "articles": [
+              {
+                "id": "BL-1",
+                "text": "The product supports offline inventory.",
+                "title": "Offline inventory"
+              },
+              {
+                "id": "BL-2",
+                "text": "The product supports CSV export.",
+                "title": "CSV export"
+              }
+            ],
+            "marketing_material": "The service targets rural cooperatives through printed catalogues."
+          },
+          "kind": "Gantt",
+          "output": {
+            "brief": {
+              "ref": "steps.write"
+            },
+            "digest": {
+              "ref": "steps.preview"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "digest.prepare",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "actor": "digest-editor",
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            },
+            {
+              "actor": "product-analyst",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "steps.summarize.text"
+                }
+              }
+            },
+            {
+              "actor": "market-analyst",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "brief-writer",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-cycle",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.bulletin_preview_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "bulletin-preview-requested",
+          "workflow_ref": {
+            "id": "bulletin-market-brief",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "brief-writer": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writing"
+          },
+          "digest-editor": {
+            "allowed_operations": [
+              "digest.summarize"
+            ],
+            "context_scope": "digest"
+          },
+          "market-analyst": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-analyst": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          }
+        },
+        "execution": {
+          "concurrency": "required_parallel",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Preserve bulletin facts, article IDs and source evidence through digest and brief.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ],
+            [
+              "summarize",
+              "product"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "bulletin-market-brief",
+          "inputs": {
+            "articles": [
+              {
+                "id": "BL-1",
+                "text": "The product supports offline inventory.",
+                "title": "Offline inventory"
+              },
+              {
+                "id": "BL-2",
+                "text": "The product supports CSV export.",
+                "title": "CSV export"
+              }
+            ],
+            "marketing_material": "The service targets rural cooperatives through printed catalogues."
+          },
+          "kind": "Gantt",
+          "output": {
+            "brief": {
+              "ref": "steps.write"
+            },
+            "digest": {
+              "ref": "steps.preview"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "digest.prepare",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "actor": "digest-editor",
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            },
+            {
+              "actor": "product-analyst",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "steps.summarize.text"
+                }
+              }
+            },
+            {
+              "actor": "market-analyst",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "brief-writer",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unsupported-required-parallel",
+      "procedure": "case"
+    }
+  ],
+  "fixture_sha256": "6315bd7ac04ca2bd79e2411f70093947894607dfc3b31fbf859545acc875fc4e",
+  "mode": "stub",
+  "scenario": "bulletin-market-brief",
+  "schema": "sapi-lab-observation-plan/v1",
+  "submission_sha256": "6b01ffb55e345ab7bbb7c976a99da3f7929fe123f27bddd7110fd8f331e312a3"
+}

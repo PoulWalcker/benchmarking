@@ -1,0 +1,2900 @@
+{
+  "entries": [
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.review_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "support-review-requested",
+          "workflow_ref": {
+            "id": "support-review-packet",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Return the selected action, invoice report, one actual draft and its honest review.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ],
+            [
+              "select",
+              "draft"
+            ],
+            [
+              "report",
+              "draft"
+            ],
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "support-review-packet",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "B-1"
+              },
+              {
+                "amount_minor": 349,
+                "currency": "AED",
+                "id": "B-2"
+              }
+            ],
+            "max_characters": 120,
+            "required_order_id": "A9137",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "S-31",
+              "text": "Please check order A9137, delayed three days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "invoice_report": {
+              "ref": "steps.report"
+            },
+            "reply": {
+              "ref": "steps.draft"
+            },
+            "review": {
+              "ref": "steps.check"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            },
+            {
+              "id": "draft",
+              "join": "all_terminal",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": [],
+                "previous": null,
+                "ticket": {
+                  "id": {
+                    "ref": "inputs.ticket.id"
+                  },
+                  "text": {
+                    "ref": "inputs.ticket.text"
+                  }
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "high-packet",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.review_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "support-review-requested",
+          "workflow_ref": {
+            "id": "support-review-packet",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Return the selected action, invoice report, one actual draft and its honest review.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ],
+            [
+              "select",
+              "draft"
+            ],
+            [
+              "report",
+              "draft"
+            ],
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "support-review-packet",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 0,
+                "currency": "EUR",
+                "id": "N-1"
+              },
+              {
+                "amount_minor": 17,
+                "currency": "EUR",
+                "id": "N-2"
+              }
+            ],
+            "max_characters": 120,
+            "required_order_id": "Z204",
+            "ticket": {
+              "days_overdue": 2,
+              "id": "S-N",
+              "text": "Please check order Z204, delayed two days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "invoice_report": {
+              "ref": "steps.report"
+            },
+            "reply": {
+              "ref": "steps.draft"
+            },
+            "review": {
+              "ref": "steps.check"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            },
+            {
+              "id": "draft",
+              "join": "all_terminal",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": [],
+                "previous": null,
+                "ticket": {
+                  "id": {
+                    "ref": "inputs.ticket.id"
+                  },
+                  "text": {
+                    "ref": "inputs.ticket.text"
+                  }
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "normal-packet",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.review_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "support-review-requested",
+          "workflow_ref": {
+            "id": "support-review-packet",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Return the selected action, invoice report, one actual draft and its honest review.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ],
+            [
+              "select",
+              "draft"
+            ],
+            [
+              "report",
+              "draft"
+            ],
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "support-review-packet",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "B-1"
+              },
+              {
+                "amount_minor": 349,
+                "currency": "AED",
+                "id": "B-2"
+              }
+            ],
+            "max_characters": 1,
+            "required_order_id": "A9137",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "S-31",
+              "text": "Please check order A9137, delayed three days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "invoice_report": {
+              "ref": "steps.report"
+            },
+            "reply": {
+              "ref": "steps.draft"
+            },
+            "review": {
+              "ref": "steps.check"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            },
+            {
+              "id": "draft",
+              "join": "all_terminal",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": [],
+                "previous": null,
+                "ticket": {
+                  "id": {
+                    "ref": "inputs.ticket.id"
+                  },
+                  "text": {
+                    "ref": "inputs.ticket.text"
+                  }
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "small-review-limit",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.review_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "support-review-requested",
+          "workflow_ref": {
+            "id": "support-review-packet",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Return the selected action, invoice report, one actual draft and its honest review.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ],
+            [
+              "select",
+              "draft"
+            ],
+            [
+              "report",
+              "draft"
+            ],
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "support-review-packet",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 1252,
+                "currency": "AED",
+                "id": "B-1"
+              },
+              {
+                "amount_minor": 349,
+                "currency": "AED",
+                "id": "B-2"
+              }
+            ],
+            "max_characters": 120,
+            "required_order_id": "A9137",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "S-31",
+              "text": "Please check order A9137, delayed three days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "invoice_report": {
+              "ref": "steps.report"
+            },
+            "reply": {
+              "ref": "steps.draft"
+            },
+            "review": {
+              "ref": "steps.check"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            },
+            {
+              "id": "draft",
+              "join": "all_terminal",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": [],
+                "previous": null,
+                "ticket": {
+                  "id": {
+                    "ref": "inputs.ticket.id"
+                  },
+                  "text": {
+                    "ref": "inputs.ticket.text"
+                  }
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "invoice-amount-changed",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.review_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "support-review-requested",
+          "workflow_ref": {
+            "id": "support-review-packet",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Return the selected action, invoice report, one actual draft and its honest review.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ],
+            [
+              "select",
+              "draft"
+            ],
+            [
+              "report",
+              "draft"
+            ],
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "support-review-packet",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 0,
+                "currency": "EUR",
+                "id": "N-1"
+              },
+              {
+                "amount_minor": 17,
+                "currency": "EUR",
+                "id": "N-2"
+              }
+            ],
+            "max_characters": 120,
+            "required_order_id": "Z204",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "S-N",
+              "text": "Please check order Z204, delayed two days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "invoice_report": {
+              "ref": "steps.report"
+            },
+            "reply": {
+              "ref": "steps.draft"
+            },
+            "review": {
+              "ref": "steps.check"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            },
+            {
+              "id": "draft",
+              "join": "all_terminal",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": [],
+                "previous": null,
+                "ticket": {
+                  "id": {
+                    "ref": "inputs.ticket.id"
+                  },
+                  "text": {
+                    "ref": "inputs.ticket.text"
+                  }
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "boundary-high",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.review_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "support-review-requested",
+          "workflow_ref": {
+            "id": "support-review-packet",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Return the selected action, invoice report, one actual draft and its honest review.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ],
+            [
+              "select",
+              "draft"
+            ],
+            [
+              "report",
+              "draft"
+            ],
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "support-review-packet",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "B-1"
+              },
+              {
+                "amount_minor": 349,
+                "currency": "AED",
+                "id": "B-2"
+              }
+            ],
+            "max_characters": 120,
+            "required_order_id": "UNMENTIONED-ORDER",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "S-31",
+              "text": "Please check order A9137, delayed three days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "invoice_report": {
+              "ref": "steps.report"
+            },
+            "reply": {
+              "ref": "steps.draft"
+            },
+            "review": {
+              "ref": "steps.check"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            },
+            {
+              "id": "draft",
+              "join": "all_terminal",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": [],
+                "previous": null,
+                "ticket": {
+                  "id": {
+                    "ref": "inputs.ticket.id"
+                  },
+                  "text": {
+                    "ref": "inputs.ticket.text"
+                  }
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "wrong-order-id",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.review_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "support-review-requested",
+          "workflow_ref": {
+            "id": "support-review-packet",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Return the selected action, invoice report, one actual draft and its honest review.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ],
+            [
+              "select",
+              "draft"
+            ],
+            [
+              "report",
+              "draft"
+            ],
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "support-review-packet",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 1,
+                "currency": "AED",
+                "id": "DUP"
+              },
+              {
+                "amount_minor": 2,
+                "currency": "AED",
+                "id": "DUP"
+              }
+            ],
+            "max_characters": 120,
+            "required_order_id": "A9137",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "S-31",
+              "text": "Please check order A9137, delayed three days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "invoice_report": {
+              "ref": "steps.report"
+            },
+            "reply": {
+              "ref": "steps.draft"
+            },
+            "review": {
+              "ref": "steps.check"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            },
+            {
+              "id": "draft",
+              "join": "all_terminal",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": [],
+                "previous": null,
+                "ticket": {
+                  "id": {
+                    "ref": "inputs.ticket.id"
+                  },
+                  "text": {
+                    "ref": "inputs.ticket.text"
+                  }
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "duplicate-invoices",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.review_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "support-review-requested",
+          "workflow_ref": {
+            "id": "support-review-packet",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Return the selected action, invoice report, one actual draft and its honest review.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ],
+            [
+              "select",
+              "draft"
+            ],
+            [
+              "report",
+              "draft"
+            ],
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "support-review-packet",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "B-1"
+              },
+              {
+                "amount_minor": 349,
+                "currency": "AED",
+                "id": "B-2"
+              }
+            ],
+            "max_characters": 120,
+            "required_order_id": "A9137",
+            "ticket": {
+              "days_overdue": -1,
+              "id": "S-31",
+              "text": "Please check order A9137, delayed three days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "invoice_report": {
+              "ref": "steps.report"
+            },
+            "reply": {
+              "ref": "steps.draft"
+            },
+            "review": {
+              "ref": "steps.check"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            },
+            {
+              "id": "draft",
+              "join": "all_terminal",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": [],
+                "previous": null,
+                "ticket": {
+                  "id": {
+                    "ref": "inputs.ticket.id"
+                  },
+                  "text": {
+                    "ref": "inputs.ticket.text"
+                  }
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "invalid-days--1",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.review_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "support-review-requested",
+          "workflow_ref": {
+            "id": "support-review-packet",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Return the selected action, invoice report, one actual draft and its honest review.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ],
+            [
+              "select",
+              "draft"
+            ],
+            [
+              "report",
+              "draft"
+            ],
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "support-review-packet",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "B-1"
+              },
+              {
+                "amount_minor": 349,
+                "currency": "AED",
+                "id": "B-2"
+              }
+            ],
+            "max_characters": 120,
+            "required_order_id": "A9137",
+            "ticket": {
+              "days_overdue": 2.5,
+              "id": "S-31",
+              "text": "Please check order A9137, delayed three days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "invoice_report": {
+              "ref": "steps.report"
+            },
+            "reply": {
+              "ref": "steps.draft"
+            },
+            "review": {
+              "ref": "steps.check"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            },
+            {
+              "id": "draft",
+              "join": "all_terminal",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": [],
+                "previous": null,
+                "ticket": {
+                  "id": {
+                    "ref": "inputs.ticket.id"
+                  },
+                  "text": {
+                    "ref": "inputs.ticket.text"
+                  }
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "invalid-days-2.5",
+      "procedure": "case"
+    },
+    {
+      "artifact_transform": "wrong-result",
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.review_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "support-review-requested",
+          "workflow_ref": {
+            "id": "support-review-packet",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Return the selected action, invoice report, one actual draft and its honest review.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ],
+            [
+              "select",
+              "draft"
+            ],
+            [
+              "report",
+              "draft"
+            ],
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "support-review-packet",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "B-1"
+              },
+              {
+                "amount_minor": 349,
+                "currency": "AED",
+                "id": "B-2"
+              }
+            ],
+            "max_characters": 120,
+            "required_order_id": "A9137",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "S-31",
+              "text": "Please check order A9137, delayed three days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "invoice_report": {
+              "ref": "steps.report"
+            },
+            "reply": {
+              "ref": "steps.draft"
+            },
+            "review": {
+              "ref": "steps.check"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            },
+            {
+              "id": "draft",
+              "join": "all_terminal",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": [],
+                "previous": null,
+                "ticket": {
+                  "id": {
+                    "ref": "inputs.ticket.id"
+                  },
+                  "text": {
+                    "ref": "inputs.ticket.text"
+                  }
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "mutated-generated-workflow",
+      "name": "mutated-generated-result",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.review_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "support-review-requested",
+          "workflow_ref": {
+            "id": "support-review-packet",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Return the selected action, invoice report, one actual draft and its honest review.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ],
+            [
+              "select",
+              "draft"
+            ],
+            [
+              "report",
+              "draft"
+            ],
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "support-review-packet",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "B-1"
+              },
+              {
+                "amount_minor": 349,
+                "currency": "AED",
+                "id": "B-2"
+              }
+            ],
+            "max_characters": 120,
+            "required_order_id": "A9137",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "S-31",
+              "text": "Please check order A9137, delayed three days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "invoice_report": {
+              "ref": "steps.report"
+            },
+            "reply": {
+              "ref": "steps.draft"
+            },
+            "review": {
+              "ref": "steps.check"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "unregistered.must_be_rejected",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            },
+            {
+              "id": "draft",
+              "join": "all_terminal",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": [],
+                "previous": null,
+                "ticket": {
+                  "id": {
+                    "ref": "inputs.ticket.id"
+                  },
+                  "text": {
+                    "ref": "inputs.ticket.text"
+                  }
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unknown-operation",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.review_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "support-review-requested",
+          "workflow_ref": {
+            "id": "support-review-packet",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Return the selected action, invoice report, one actual draft and its honest review.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ],
+            [
+              "select",
+              "draft"
+            ],
+            [
+              "report",
+              "draft"
+            ],
+            [
+              "draft",
+              "check"
+            ],
+            [
+              "escalate",
+              "classify"
+            ]
+          ],
+          "id": "support-review-packet",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "B-1"
+              },
+              {
+                "amount_minor": 349,
+                "currency": "AED",
+                "id": "B-2"
+              }
+            ],
+            "max_characters": 120,
+            "required_order_id": "A9137",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "S-31",
+              "text": "Please check order A9137, delayed three days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "invoice_report": {
+              "ref": "steps.report"
+            },
+            "reply": {
+              "ref": "steps.draft"
+            },
+            "review": {
+              "ref": "steps.check"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            },
+            {
+              "id": "draft",
+              "join": "all_terminal",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": [],
+                "previous": null,
+                "ticket": {
+                  "id": {
+                    "ref": "inputs.ticket.id"
+                  },
+                  "text": {
+                    "ref": "inputs.ticket.text"
+                  }
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-cycle",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.review_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "support-review-requested",
+          "workflow_ref": {
+            "id": "support-review-packet",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "required_parallel",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Return the selected action, invoice report, one actual draft and its honest review.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "validate",
+              "total"
+            ],
+            [
+              "total",
+              "report"
+            ],
+            [
+              "select",
+              "draft"
+            ],
+            [
+              "report",
+              "draft"
+            ],
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "support-review-packet",
+          "inputs": {
+            "invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "B-1"
+              },
+              {
+                "amount_minor": 349,
+                "currency": "AED",
+                "id": "B-2"
+              }
+            ],
+            "max_characters": 120,
+            "required_order_id": "A9137",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "S-31",
+              "text": "Please check order A9137, delayed three days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "invoice_report": {
+              "ref": "steps.report"
+            },
+            "reply": {
+              "ref": "steps.draft"
+            },
+            "review": {
+              "ref": "steps.check"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.invoices"
+                }
+              }
+            },
+            {
+              "id": "total",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.total"
+                }
+              }
+            },
+            {
+              "id": "draft",
+              "join": "all_terminal",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": [],
+                "previous": null,
+                "ticket": {
+                  "id": {
+                    "ref": "inputs.ticket.id"
+                  },
+                  "text": {
+                    "ref": "inputs.ticket.text"
+                  }
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unsupported-required-parallel",
+      "procedure": "case"
+    }
+  ],
+  "fixture_sha256": "245481ea7560f59d9281bdc9d0c4e59c7fd4adcf3eef225444d4acaaee56ed44",
+  "mode": "stub",
+  "scenario": "support-review-packet",
+  "schema": "sapi-lab-observation-plan/v1",
+  "submission_sha256": "e1453dcc4f581eb0641984f912076a87e8404efd565ed8bf452dfb10203e3753"
+}

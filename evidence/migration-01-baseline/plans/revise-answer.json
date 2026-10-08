@@ -1,0 +1,656 @@
+{
+  "entries": [
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.reply_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "reply-requested",
+          "workflow_ref": {
+            "id": "revise-answer",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail",
+          "refinement": {
+            "carry": {
+              "feedback": {
+                "ref": "steps.check.errors"
+              },
+              "previous": {
+                "ref": "steps.draft"
+              }
+            },
+            "exhausted": "failed",
+            "initial_state": {
+              "feedback": [],
+              "previous": null
+            },
+            "max_attempts": 3,
+            "output_policy": "last_accepted_only",
+            "region": [
+              "draft",
+              "check"
+            ],
+            "until": {
+              "eq": true,
+              "ref": "steps.check.pass"
+            }
+          }
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Reply contains the order ID, stays within the character limit, and passes check.",
+          "dependencies": [
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "revise-answer",
+          "inputs": {
+            "max_characters": 280,
+            "required_order_id": "A7842",
+            "ticket": {
+              "id": "T-17",
+              "text": "Where is order A7842?"
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.draft"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "draft",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": {
+                  "ref": "runtime.feedback"
+                },
+                "previous": {
+                  "ref": "runtime.previous"
+                },
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "valid-reply",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.reply_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "reply-requested",
+          "workflow_ref": {
+            "id": "revise-answer",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail",
+          "refinement": {
+            "carry": {
+              "feedback": {
+                "ref": "steps.check.errors"
+              },
+              "previous": {
+                "ref": "steps.draft"
+              }
+            },
+            "exhausted": "failed",
+            "initial_state": {
+              "feedback": [],
+              "previous": null
+            },
+            "max_attempts": 3,
+            "output_policy": "last_accepted_only",
+            "region": [
+              "draft",
+              "check"
+            ],
+            "until": {
+              "eq": true,
+              "ref": "steps.check.pass"
+            }
+          }
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Reply contains the order ID, stays within the character limit, and passes check.",
+          "dependencies": [
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "revise-answer",
+          "inputs": {
+            "max_characters": 1,
+            "required_order_id": "A7842",
+            "ticket": {
+              "id": "T-17",
+              "text": "Where is order A7842?"
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.draft"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "draft",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": {
+                  "ref": "runtime.feedback"
+                },
+                "previous": {
+                  "ref": "runtime.previous"
+                },
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "impossible-limit",
+      "procedure": "case"
+    },
+    {
+      "artifact_transform": "wrong-result",
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.reply_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "reply-requested",
+          "workflow_ref": {
+            "id": "revise-answer",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail",
+          "refinement": {
+            "carry": {
+              "feedback": {
+                "ref": "steps.check.errors"
+              },
+              "previous": {
+                "ref": "steps.draft"
+              }
+            },
+            "exhausted": "failed",
+            "initial_state": {
+              "feedback": [],
+              "previous": null
+            },
+            "max_attempts": 3,
+            "output_policy": "last_accepted_only",
+            "region": [
+              "draft",
+              "check"
+            ],
+            "until": {
+              "eq": true,
+              "ref": "steps.check.pass"
+            }
+          }
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Reply contains the order ID, stays within the character limit, and passes check.",
+          "dependencies": [
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "revise-answer",
+          "inputs": {
+            "max_characters": 280,
+            "required_order_id": "A7842",
+            "ticket": {
+              "id": "T-17",
+              "text": "Where is order A7842?"
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.draft"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "draft",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": {
+                  "ref": "runtime.feedback"
+                },
+                "previous": {
+                  "ref": "runtime.previous"
+                },
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "mutated-generated-workflow",
+      "name": "mutated-generated-result",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.reply_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "reply-requested",
+          "workflow_ref": {
+            "id": "revise-answer",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail",
+          "refinement": {
+            "carry": {
+              "feedback": {
+                "ref": "steps.check.errors"
+              },
+              "previous": {
+                "ref": "steps.draft"
+              }
+            },
+            "exhausted": "failed",
+            "initial_state": {
+              "feedback": [],
+              "previous": null
+            },
+            "max_attempts": 3,
+            "output_policy": "last_accepted_only",
+            "region": [
+              "draft",
+              "check"
+            ],
+            "until": {
+              "eq": true,
+              "ref": "steps.check.pass"
+            }
+          }
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Reply contains the order ID, stays within the character limit, and passes check.",
+          "dependencies": [
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "revise-answer",
+          "inputs": {
+            "max_characters": 280,
+            "required_order_id": "A7842",
+            "ticket": {
+              "id": "T-17",
+              "text": "Where is order A7842?"
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.draft"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "draft",
+              "kind": "LLM",
+              "uses": "unregistered.must_be_rejected",
+              "with": {
+                "feedback": {
+                  "ref": "runtime.feedback"
+                },
+                "previous": {
+                  "ref": "runtime.previous"
+                },
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unknown-operation",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.reply_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "reply-requested",
+          "workflow_ref": {
+            "id": "revise-answer",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail",
+          "refinement": {
+            "carry": {
+              "feedback": {
+                "ref": "steps.check.errors"
+              },
+              "previous": {
+                "ref": "steps.draft"
+              }
+            },
+            "exhausted": "failed",
+            "initial_state": {
+              "feedback": [],
+              "previous": null
+            },
+            "max_attempts": 3,
+            "output_policy": "last_accepted_only",
+            "region": [
+              "draft",
+              "check"
+            ],
+            "until": {
+              "eq": true,
+              "ref": "steps.check.pass"
+            }
+          }
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Reply contains the order ID, stays within the character limit, and passes check.",
+          "dependencies": [
+            [
+              "draft",
+              "check"
+            ],
+            [
+              "check",
+              "draft"
+            ]
+          ],
+          "id": "revise-answer",
+          "inputs": {
+            "max_characters": 280,
+            "required_order_id": "A7842",
+            "ticket": {
+              "id": "T-17",
+              "text": "Where is order A7842?"
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.draft"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "draft",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": {
+                  "ref": "runtime.feedback"
+                },
+                "previous": {
+                  "ref": "runtime.previous"
+                },
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-cycle",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.reply_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "reply-requested",
+          "workflow_ref": {
+            "id": "revise-answer",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "required_parallel",
+          "deadline_seconds": 120,
+          "on_step_error": "fail",
+          "refinement": {
+            "carry": {
+              "feedback": {
+                "ref": "steps.check.errors"
+              },
+              "previous": {
+                "ref": "steps.draft"
+              }
+            },
+            "exhausted": "failed",
+            "initial_state": {
+              "feedback": [],
+              "previous": null
+            },
+            "max_attempts": 3,
+            "output_policy": "last_accepted_only",
+            "region": [
+              "draft",
+              "check"
+            ],
+            "until": {
+              "eq": true,
+              "ref": "steps.check.pass"
+            }
+          }
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Reply contains the order ID, stays within the character limit, and passes check.",
+          "dependencies": [
+            [
+              "draft",
+              "check"
+            ]
+          ],
+          "id": "revise-answer",
+          "inputs": {
+            "max_characters": 280,
+            "required_order_id": "A7842",
+            "ticket": {
+              "id": "T-17",
+              "text": "Where is order A7842?"
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.draft"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "draft",
+              "kind": "LLM",
+              "uses": "reply.generate",
+              "with": {
+                "feedback": {
+                  "ref": "runtime.feedback"
+                },
+                "previous": {
+                  "ref": "runtime.previous"
+                },
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "check",
+              "kind": "Script",
+              "uses": "reply.check",
+              "with": {
+                "draft": {
+                  "ref": "steps.draft"
+                },
+                "max_characters": {
+                  "ref": "inputs.max_characters"
+                },
+                "order_id": {
+                  "ref": "inputs.required_order_id"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unsupported-required-parallel",
+      "procedure": "case"
+    }
+  ],
+  "fixture_sha256": "1adfcc9df406fffec9301ba886181a739f00b1dd73b6c1fc8b0c3d32b26cb831",
+  "mode": "stub",
+  "scenario": "revise-answer",
+  "schema": "sapi-lab-observation-plan/v1",
+  "submission_sha256": "bccbcb095b47a327fce02f92fba643247c30b05811b66d686d0f66f12fcb7b46"
+}

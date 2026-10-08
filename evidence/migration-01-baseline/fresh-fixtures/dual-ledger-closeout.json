@@ -1,0 +1,352 @@
+{
+  "live_cases": [
+    "base-ledgers",
+    "alternate-ledgers"
+  ],
+  "negative": [
+    {
+      "error": "Duplicate invoice ID",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "amount_minor": 1,
+            "currency": "AED",
+            "id": "657E0F1F5333-DUP"
+          },
+          {
+            "amount_minor": 2,
+            "currency": "AED",
+            "id": "657E0F1F5333-DUP"
+          }
+        ],
+        "export_invoices": [
+          {
+            "amount_minor": 73,
+            "currency": "EUR",
+            "id": "657E0F1F5333-X-A"
+          },
+          {
+            "amount_minor": 210,
+            "currency": "EUR",
+            "id": "657E0F1F5333-X-B"
+          }
+        ]
+      },
+      "name": "domestic-duplicate",
+      "operation": "invoices.validate",
+      "role": "domestic_validate"
+    },
+    {
+      "error": "Mixed/invalid currency",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "amount_minor": 1,
+            "currency": "AED",
+            "id": "657E0F1F5333-A"
+          },
+          {
+            "amount_minor": 2,
+            "currency": "JPY",
+            "id": "657E0F1F5333-B"
+          }
+        ],
+        "export_invoices": [
+          {
+            "amount_minor": 73,
+            "currency": "EUR",
+            "id": "657E0F1F5333-X-A"
+          },
+          {
+            "amount_minor": 210,
+            "currency": "EUR",
+            "id": "657E0F1F5333-X-B"
+          }
+        ]
+      },
+      "name": "domestic-mixed",
+      "operation": "invoices.validate",
+      "role": "domestic_validate"
+    },
+    {
+      "error": "Total exceeds safe integer range",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "amount_minor": 9007199254740991,
+            "currency": "AED",
+            "id": "657E0F1F5333-MAX"
+          },
+          {
+            "amount_minor": 1,
+            "currency": "AED",
+            "id": "657E0F1F5333-ONE"
+          }
+        ],
+        "export_invoices": [
+          {
+            "amount_minor": 73,
+            "currency": "EUR",
+            "id": "657E0F1F5333-X-A"
+          },
+          {
+            "amount_minor": 210,
+            "currency": "EUR",
+            "id": "657E0F1F5333-X-B"
+          }
+        ]
+      },
+      "name": "domestic-overflow",
+      "operation": "invoices.sum",
+      "role": "domestic_sum"
+    },
+    {
+      "error": "Duplicate invoice ID",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "amount_minor": 1251,
+            "currency": "AED",
+            "id": "657E0F1F5333-D-A"
+          },
+          {
+            "amount_minor": 0,
+            "currency": "AED",
+            "id": "657E0F1F5333-D-B"
+          }
+        ],
+        "export_invoices": [
+          {
+            "amount_minor": 1,
+            "currency": "EUR",
+            "id": "657E0F1F5333-DUP"
+          },
+          {
+            "amount_minor": 2,
+            "currency": "EUR",
+            "id": "657E0F1F5333-DUP"
+          }
+        ]
+      },
+      "name": "export-duplicate",
+      "operation": "invoices.validate",
+      "role": "export_validate"
+    },
+    {
+      "error": "Mixed/invalid currency",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "amount_minor": 1251,
+            "currency": "AED",
+            "id": "657E0F1F5333-D-A"
+          },
+          {
+            "amount_minor": 0,
+            "currency": "AED",
+            "id": "657E0F1F5333-D-B"
+          }
+        ],
+        "export_invoices": [
+          {
+            "amount_minor": 1,
+            "currency": "EUR",
+            "id": "657E0F1F5333-A"
+          },
+          {
+            "amount_minor": 2,
+            "currency": "JPY",
+            "id": "657E0F1F5333-B"
+          }
+        ]
+      },
+      "name": "export-mixed",
+      "operation": "invoices.validate",
+      "role": "export_validate"
+    },
+    {
+      "error": "Total exceeds safe integer range",
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "amount_minor": 1251,
+            "currency": "AED",
+            "id": "657E0F1F5333-D-A"
+          },
+          {
+            "amount_minor": 0,
+            "currency": "AED",
+            "id": "657E0F1F5333-D-B"
+          }
+        ],
+        "export_invoices": [
+          {
+            "amount_minor": 9007199254740991,
+            "currency": "EUR",
+            "id": "657E0F1F5333-MAX"
+          },
+          {
+            "amount_minor": 1,
+            "currency": "EUR",
+            "id": "657E0F1F5333-ONE"
+          }
+        ]
+      },
+      "name": "export-overflow",
+      "operation": "invoices.sum",
+      "role": "export_sum"
+    }
+  ],
+  "positive": [
+    {
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "amount_minor": 1521,
+            "currency": "AED",
+            "id": "657E0F1F5333-D-A"
+          },
+          {
+            "amount_minor": 0,
+            "currency": "AED",
+            "id": "657E0F1F5333-D-B"
+          }
+        ],
+        "export_invoices": [
+          {
+            "amount_minor": 343,
+            "currency": "EUR",
+            "id": "657E0F1F5333-X-A"
+          },
+          {
+            "amount_minor": 480,
+            "currency": "EUR",
+            "id": "657E0F1F5333-X-B"
+          }
+        ]
+      },
+      "name": "base-ledgers"
+    },
+    {
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "amount_minor": 361,
+            "currency": "USD",
+            "id": "657E0F1F5333-L-Q"
+          }
+        ],
+        "export_invoices": [
+          {
+            "amount_minor": 275,
+            "currency": "GBP",
+            "id": "657E0F1F5333-R-A"
+          },
+          {
+            "amount_minor": 0,
+            "currency": "GBP",
+            "id": "657E0F1F5333-R-B"
+          },
+          {
+            "amount_minor": 278,
+            "currency": "GBP",
+            "id": "657E0F1F5333-R-C"
+          }
+        ]
+      },
+      "name": "alternate-ledgers"
+    },
+    {
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "amount_minor": 0,
+            "currency": "AED",
+            "id": "657E0F1F5333-D-B"
+          },
+          {
+            "amount_minor": 1521,
+            "currency": "AED",
+            "id": "657E0F1F5333-D-A"
+          }
+        ],
+        "export_invoices": [
+          {
+            "amount_minor": 480,
+            "currency": "EUR",
+            "id": "657E0F1F5333-X-B"
+          },
+          {
+            "amount_minor": 343,
+            "currency": "EUR",
+            "id": "657E0F1F5333-X-A"
+          }
+        ]
+      },
+      "name": "reversed-ledgers"
+    },
+    {
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "amount_minor": 1521,
+            "currency": "AED",
+            "id": "657E0F1F5333-D-A"
+          },
+          {
+            "amount_minor": 0,
+            "currency": "AED",
+            "id": "657E0F1F5333-D-B"
+          },
+          {
+            "amount_minor": 0,
+            "currency": "AED",
+            "id": "657E0F1F5333-D-ZERO"
+          }
+        ],
+        "export_invoices": [
+          {
+            "amount_minor": 343,
+            "currency": "EUR",
+            "id": "657E0F1F5333-X-A"
+          },
+          {
+            "amount_minor": 480,
+            "currency": "EUR",
+            "id": "657E0F1F5333-X-B"
+          }
+        ]
+      },
+      "name": "domestic-zero-added"
+    },
+    {
+      "inputs": {
+        "domestic_invoices": [
+          {
+            "amount_minor": 1521,
+            "currency": "AED",
+            "id": "657E0F1F5333-D-A"
+          },
+          {
+            "amount_minor": 0,
+            "currency": "AED",
+            "id": "657E0F1F5333-D-B"
+          }
+        ],
+        "export_invoices": [
+          {
+            "amount_minor": 344,
+            "currency": "EUR",
+            "id": "657E0F1F5333-X-A"
+          },
+          {
+            "amount_minor": 480,
+            "currency": "EUR",
+            "id": "657E0F1F5333-X-B"
+          }
+        ]
+      },
+      "name": "export-amount-changed"
+    }
+  ]
+}

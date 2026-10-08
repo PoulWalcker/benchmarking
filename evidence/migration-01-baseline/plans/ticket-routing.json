@@ -1,0 +1,1144 @@
+{
+  "entries": [
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.ticket_received",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "ticket-received",
+          "workflow_ref": {
+            "id": "ticket-routing",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 60,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Exactly one action draft; high priority routes to escalation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "result"
+            ],
+            [
+              "normal",
+              "result"
+            ]
+          ],
+          "id": "ticket-routing",
+          "inputs": {
+            "ticket": {
+              "days_overdue": 3,
+              "id": "T-17",
+              "text": "Order A7842 is three days late. Please help."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.result"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "result",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "high-three-days",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.ticket_received",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "ticket-received",
+          "workflow_ref": {
+            "id": "ticket-routing",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 60,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Exactly one action draft; high priority routes to escalation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "result"
+            ],
+            [
+              "normal",
+              "result"
+            ]
+          ],
+          "id": "ticket-routing",
+          "inputs": {
+            "ticket": {
+              "days_overdue": 2,
+              "id": "BOUNDARY-2",
+              "text": "Delivery delayed two days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.result"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "result",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "normal-boundary-two",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.ticket_received",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "ticket-received",
+          "workflow_ref": {
+            "id": "ticket-routing",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 60,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Exactly one action draft; high priority routes to escalation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "result"
+            ],
+            [
+              "normal",
+              "result"
+            ]
+          ],
+          "id": "ticket-routing",
+          "inputs": {
+            "ticket": {
+              "days_overdue": 0,
+              "id": "ZERO-0",
+              "text": "Checking delivery today."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.result"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "result",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "normal-zero",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.ticket_received",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "ticket-received",
+          "workflow_ref": {
+            "id": "ticket-routing",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 60,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Exactly one action draft; high priority routes to escalation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "result"
+            ],
+            [
+              "normal",
+              "result"
+            ]
+          ],
+          "id": "ticket-routing",
+          "inputs": {
+            "ticket": {
+              "days_overdue": 12,
+              "id": "LATE-42",
+              "text": "Delivery delayed twelve days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.result"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "result",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "high-alternate",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.ticket_received",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "ticket-received",
+          "workflow_ref": {
+            "id": "ticket-routing",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 60,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Exactly one action draft; high priority routes to escalation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "result"
+            ],
+            [
+              "normal",
+              "result"
+            ]
+          ],
+          "id": "ticket-routing",
+          "inputs": {
+            "ticket": {
+              "days_overdue": -1,
+              "id": "BAD",
+              "text": "Invalid days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.result"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "result",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "negative-days",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.ticket_received",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "ticket-received",
+          "workflow_ref": {
+            "id": "ticket-routing",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 60,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Exactly one action draft; high priority routes to escalation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "result"
+            ],
+            [
+              "normal",
+              "result"
+            ]
+          ],
+          "id": "ticket-routing",
+          "inputs": {
+            "ticket": {
+              "days_overdue": 2.5,
+              "id": "BAD",
+              "text": "Invalid days."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.result"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "result",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "fractional-days",
+      "procedure": "case"
+    },
+    {
+      "artifact_transform": "wrong-result",
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.ticket_received",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "ticket-received",
+          "workflow_ref": {
+            "id": "ticket-routing",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 60,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Exactly one action draft; high priority routes to escalation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "result"
+            ],
+            [
+              "normal",
+              "result"
+            ]
+          ],
+          "id": "ticket-routing",
+          "inputs": {
+            "ticket": {
+              "days_overdue": 3,
+              "id": "T-17",
+              "text": "Order A7842 is three days late. Please help."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.result"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "result",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "mutated-generated-workflow",
+      "name": "mutated-generated-result",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.ticket_received",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "ticket-received",
+          "workflow_ref": {
+            "id": "ticket-routing",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 60,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Exactly one action draft; high priority routes to escalation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "result"
+            ],
+            [
+              "normal",
+              "result"
+            ]
+          ],
+          "id": "ticket-routing",
+          "inputs": {
+            "ticket": {
+              "days_overdue": 3,
+              "id": "T-17",
+              "text": "Order A7842 is three days late. Please help."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.result"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "unregistered.must_be_rejected",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "result",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unknown-operation",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.ticket_received",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "ticket-received",
+          "workflow_ref": {
+            "id": "ticket-routing",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 60,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Exactly one action draft; high priority routes to escalation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "result"
+            ],
+            [
+              "normal",
+              "result"
+            ],
+            [
+              "escalate",
+              "classify"
+            ]
+          ],
+          "id": "ticket-routing",
+          "inputs": {
+            "ticket": {
+              "days_overdue": 3,
+              "id": "T-17",
+              "text": "Order A7842 is three days late. Please help."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.result"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "result",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-cycle",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.ticket_received",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "ticket-received",
+          "workflow_ref": {
+            "id": "ticket-routing",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "required_parallel",
+          "deadline_seconds": 60,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Exactly one action draft; high priority routes to escalation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "result"
+            ],
+            [
+              "normal",
+              "result"
+            ]
+          ],
+          "id": "ticket-routing",
+          "inputs": {
+            "ticket": {
+              "days_overdue": 3,
+              "id": "T-17",
+              "text": "Order A7842 is three days late. Please help."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.result"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "result",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unsupported-required-parallel",
+      "procedure": "case"
+    }
+  ],
+  "fixture_sha256": "e207bd6ef02202f17e158415a6c1e829b4dfb9bd44e14c802602f3d8e158eda3",
+  "mode": "stub",
+  "scenario": "ticket-routing",
+  "schema": "sapi-lab-observation-plan/v1",
+  "submission_sha256": "4d8206637405fbe373bb23503963c09ac43db67f0561c04b8477aea2d36f8ee5"
+}

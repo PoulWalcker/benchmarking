@@ -1,0 +1,17 @@
+{
+  "job_seconds": 52620,
+  "suite_seconds": 108540,
+  "verifier_bounds": {
+    "bulletin-market-brief": 5190,
+    "checkout-recovery": 1095,
+    "competitor-report": 3240,
+    "crm-lead-qualification": 1095,
+    "daily-digest": 720,
+    "dual-ledger-closeout": 5520,
+    "invoice-total": 5160,
+    "priority-support-brief": 4410,
+    "revise-answer": 2460,
+    "support-review-packet": 5190,
+    "ticket-routing": 3720
+  }
+}

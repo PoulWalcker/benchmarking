@@ -1,0 +1,121 @@
+# Logical catalog. Stub and live transports enforce these same output contracts.
+schema: sapi-bindings/v0
+target:
+  demo: n8n_json
+  code_node_version: 2
+  merge_node_version: 3.2
+  execution_order: v1
+operations:
+  research.product:
+    kind: LLM
+    inputs: [material]
+    outputs: [summary, evidence]
+    implementation: agency_bridge
+    prompt: Summarize product capabilities using only the supplied material. Preserve every explicitly named capability. Write in the same language as the supplied material. The evidence field must be an exact contiguous substring of material, copied character for character. Do not add quotation marks, labels, ellipses, or any other characters to evidence. Return JSON matching the output schema.
+    output_contract: "{summary: string, evidence: string}"
+    input_schema: &material_input
+      type: object
+      required: [material]
+      additionalProperties: false
+      properties:
+        material: {type: string, minLength: 1}
+    output_schema: &analysis_output
+      type: object
+      required: [summary, evidence]
+      additionalProperties: false
+      properties:
+        summary: {type: string, minLength: 1}
+        evidence: {type: string, minLength: 1}
+  research.marketing:
+    kind: LLM
+    inputs: [material]
+    outputs: [summary, evidence]
+    implementation: agency_bridge
+    prompt: Summarize the target customers and channels using only the supplied material. Preserve every explicitly named audience and channel. Write in the same language as the supplied material. The evidence field must be an exact contiguous substring of material, copied character for character. Do not add quotation marks, labels, ellipses, or any other characters to evidence. Return JSON matching the output schema.
+    output_contract: "{summary: string, evidence: string}"
+    input_schema: *material_input
+    output_schema: *analysis_output
+  research.combine:
+    kind: Script
+    inputs: [product, marketing]
+    outputs: [product, marketing]
+    implementation: local_js
+  research.write:
+    kind: LLM
+    inputs: [brief]
+    outputs: [report, evidence]
+    implementation: agency_bridge
+    prompt: Write a short report covering both supplied analyses. Preserve all explicitly named capabilities, target customers and channels from both analyses. Preserve their evidence excerpts exactly, in product then marketing order. Add no outside facts. Write in the same language as the supplied analyses. Return JSON matching the output schema.
+    output_contract: "{report: string, evidence: string[2]}"
+    input_schema:
+      type: object
+      required: [brief]
+      additionalProperties: false
+      properties:
+        brief:
+          type: object
+          required: [product, marketing]
+          additionalProperties: false
+          properties:
+            product: *analysis_output
+            marketing: *analysis_output
+    output_schema:
+      type: object
+      required: [report, evidence]
+      additionalProperties: false
+      properties:
+        report: {type: string, minLength: 1}
+        evidence:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items: {type: string, minLength: 1}
+  digest.prepare:
+    kind: Script
+    inputs: [articles]
+    outputs: [articles]
+    implementation: local_js
+  digest.summarize:
+    kind: LLM
+    inputs: [articles]
+    outputs: [text, article_ids]
+    implementation: agency_bridge
+    prompt: Summarize only the supplied articles and list the article IDs used.
+    output_contract: "{text: string, article_ids: string[]}"
+    input_schema:
+      type: object
+      required: [articles]
+      additionalProperties: false
+      properties:
+        articles:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [id, title, text]
+            additionalProperties: false
+            properties:
+              id: {type: string, minLength: 1}
+              title: {type: string, minLength: 1}
+              text: {type: string, minLength: 1}
+    output_schema:
+      type: object
+      required: [text, article_ids]
+      additionalProperties: false
+      properties:
+        text: {type: string, minLength: 1}
+        article_ids: {type: array, minItems: 1, items: {type: string, minLength: 1}}
+  digest.preview:
+    kind: Script
+    inputs: [summary]
+    outputs: [mode, text, article_ids]
+    implementation: local_js
+production_bridge_contract:
+  scope: local_research_adapter
+  transport: HTTP
+  endpoint: /v1/agency/execute
+  request_fields: [invocation_id, operation, actor, inputs]
+  response_fields: [invocation_id, output, usage, status]
+  authentication: deployment_binding
+  state_restoration: wrapper_validates_response_and_attaches_output_to_original_envelope
+  notes: Adapter owns model and deployment settings. No secrets are embedded in workflow exports. No retries or durable admission are implemented.

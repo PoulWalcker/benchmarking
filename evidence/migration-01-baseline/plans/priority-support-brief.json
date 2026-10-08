@@ -1,0 +1,2214 @@
+{
+  "entries": [
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.priority_brief_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "priority-brief-requested",
+          "workflow_ref": {
+            "id": "priority-support-brief",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "High priority includes a source-grounded brief; normal skips every research operation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "select",
+              "product"
+            ],
+            [
+              "select",
+              "marketing"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "priority-support-brief",
+          "inputs": {
+            "marketing_material": "The service targets local shops through partner referrals.",
+            "product_material": "The product supports barcode scanning and offline inventory.",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "P-72",
+              "text": "Delivery is three days late."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "brief": {
+              "optional_ref": "steps.write"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "marketing": {
+                  "optional_ref": "steps.marketing"
+                },
+                "product": {
+                  "optional_ref": "steps.product"
+                }
+              }
+            },
+            {
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "brief": {
+                  "optional_ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "high-brief",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.priority_brief_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "priority-brief-requested",
+          "workflow_ref": {
+            "id": "priority-support-brief",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "High priority includes a source-grounded brief; normal skips every research operation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "select",
+              "product"
+            ],
+            [
+              "select",
+              "marketing"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "priority-support-brief",
+          "inputs": {
+            "marketing_material": "",
+            "product_material": "",
+            "ticket": {
+              "days_overdue": 2,
+              "id": "P-72",
+              "text": "Delivery is three days late."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "brief": {
+              "optional_ref": "steps.write"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "marketing": {
+                  "optional_ref": "steps.marketing"
+                },
+                "product": {
+                  "optional_ref": "steps.product"
+                }
+              }
+            },
+            {
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "brief": {
+                  "optional_ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "normal-empty",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.priority_brief_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "priority-brief-requested",
+          "workflow_ref": {
+            "id": "priority-support-brief",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "High priority includes a source-grounded brief; normal skips every research operation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "select",
+              "product"
+            ],
+            [
+              "select",
+              "marketing"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "priority-support-brief",
+          "inputs": {
+            "marketing_material": "The service targets local shops through partner referrals.",
+            "product_material": "The product supports barcode scanning and offline inventory.",
+            "ticket": {
+              "days_overdue": 0,
+              "id": "P-72",
+              "text": "Delivery is three days late."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "brief": {
+              "optional_ref": "steps.write"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "marketing": {
+                  "optional_ref": "steps.marketing"
+                },
+                "product": {
+                  "optional_ref": "steps.product"
+                }
+              }
+            },
+            {
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "brief": {
+                  "optional_ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "normal-zero",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.priority_brief_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "priority-brief-requested",
+          "workflow_ref": {
+            "id": "priority-support-brief",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "High priority includes a source-grounded brief; normal skips every research operation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "select",
+              "product"
+            ],
+            [
+              "select",
+              "marketing"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "priority-support-brief",
+          "inputs": {
+            "marketing_material": "The service targets local shops through partner referrals.",
+            "product_material": "The product supports barcode scanning and offline inventory.",
+            "ticket": {
+              "days_overdue": 2,
+              "id": "P-72",
+              "text": "Delivery is three days late."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "brief": {
+              "optional_ref": "steps.write"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "marketing": {
+                  "optional_ref": "steps.marketing"
+                },
+                "product": {
+                  "optional_ref": "steps.product"
+                }
+              }
+            },
+            {
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "brief": {
+                  "optional_ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "normal-valid",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.priority_brief_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "priority-brief-requested",
+          "workflow_ref": {
+            "id": "priority-support-brief",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "High priority includes a source-grounded brief; normal skips every research operation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "select",
+              "product"
+            ],
+            [
+              "select",
+              "marketing"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "priority-support-brief",
+          "inputs": {
+            "marketing_material": "The service targets local shops through partner referrals.",
+            "product_material": "The product supports barcode scanning and offline inventory.",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "P-72",
+              "text": "Delivery is three days late."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "brief": {
+              "optional_ref": "steps.write"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "marketing": {
+                  "optional_ref": "steps.marketing"
+                },
+                "product": {
+                  "optional_ref": "steps.product"
+                }
+              }
+            },
+            {
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "brief": {
+                  "optional_ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "boundary-high",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.priority_brief_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "priority-brief-requested",
+          "workflow_ref": {
+            "id": "priority-support-brief",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "High priority includes a source-grounded brief; normal skips every research operation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "select",
+              "product"
+            ],
+            [
+              "select",
+              "marketing"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "priority-support-brief",
+          "inputs": {
+            "marketing_material": "The service targets local shops through partner referrals.",
+            "product_material": "",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "P-72",
+              "text": "Delivery is three days late."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "brief": {
+              "optional_ref": "steps.write"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "marketing": {
+                  "optional_ref": "steps.marketing"
+                },
+                "product": {
+                  "optional_ref": "steps.product"
+                }
+              }
+            },
+            {
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "brief": {
+                  "optional_ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "high-empty-product",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.priority_brief_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "priority-brief-requested",
+          "workflow_ref": {
+            "id": "priority-support-brief",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "High priority includes a source-grounded brief; normal skips every research operation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "select",
+              "product"
+            ],
+            [
+              "select",
+              "marketing"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "priority-support-brief",
+          "inputs": {
+            "marketing_material": "",
+            "product_material": "The product supports barcode scanning and offline inventory.",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "P-72",
+              "text": "Delivery is three days late."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "brief": {
+              "optional_ref": "steps.write"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "marketing": {
+                  "optional_ref": "steps.marketing"
+                },
+                "product": {
+                  "optional_ref": "steps.product"
+                }
+              }
+            },
+            {
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "brief": {
+                  "optional_ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "high-empty-marketing",
+      "procedure": "case"
+    },
+    {
+      "artifact_transform": "wrong-result",
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.priority_brief_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "priority-brief-requested",
+          "workflow_ref": {
+            "id": "priority-support-brief",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "High priority includes a source-grounded brief; normal skips every research operation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "select",
+              "product"
+            ],
+            [
+              "select",
+              "marketing"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "priority-support-brief",
+          "inputs": {
+            "marketing_material": "The service targets local shops through partner referrals.",
+            "product_material": "The product supports barcode scanning and offline inventory.",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "P-72",
+              "text": "Delivery is three days late."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "brief": {
+              "optional_ref": "steps.write"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "marketing": {
+                  "optional_ref": "steps.marketing"
+                },
+                "product": {
+                  "optional_ref": "steps.product"
+                }
+              }
+            },
+            {
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "brief": {
+                  "optional_ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "mutated-generated-workflow",
+      "name": "mutated-generated-result",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.priority_brief_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "priority-brief-requested",
+          "workflow_ref": {
+            "id": "priority-support-brief",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "High priority includes a source-grounded brief; normal skips every research operation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "select",
+              "product"
+            ],
+            [
+              "select",
+              "marketing"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "priority-support-brief",
+          "inputs": {
+            "marketing_material": "The service targets local shops through partner referrals.",
+            "product_material": "The product supports barcode scanning and offline inventory.",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "P-72",
+              "text": "Delivery is three days late."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "brief": {
+              "optional_ref": "steps.write"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "unregistered.must_be_rejected",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "marketing": {
+                  "optional_ref": "steps.marketing"
+                },
+                "product": {
+                  "optional_ref": "steps.product"
+                }
+              }
+            },
+            {
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "brief": {
+                  "optional_ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unknown-operation",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.priority_brief_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "priority-brief-requested",
+          "workflow_ref": {
+            "id": "priority-support-brief",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "High priority includes a source-grounded brief; normal skips every research operation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "select",
+              "product"
+            ],
+            [
+              "select",
+              "marketing"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ],
+            [
+              "escalate",
+              "classify"
+            ]
+          ],
+          "id": "priority-support-brief",
+          "inputs": {
+            "marketing_material": "The service targets local shops through partner referrals.",
+            "product_material": "The product supports barcode scanning and offline inventory.",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "P-72",
+              "text": "Delivery is three days late."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "brief": {
+              "optional_ref": "steps.write"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "marketing": {
+                  "optional_ref": "steps.marketing"
+                },
+                "product": {
+                  "optional_ref": "steps.product"
+                }
+              }
+            },
+            {
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "brief": {
+                  "optional_ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-cycle",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "support.priority_brief_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "priority-brief-requested",
+          "workflow_ref": {
+            "id": "priority-support-brief",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "required_parallel",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "High priority includes a source-grounded brief; normal skips every research operation.",
+          "dependencies": [
+            [
+              "classify",
+              "escalate"
+            ],
+            [
+              "classify",
+              "normal"
+            ],
+            [
+              "escalate",
+              "select"
+            ],
+            [
+              "normal",
+              "select"
+            ],
+            [
+              "select",
+              "product"
+            ],
+            [
+              "select",
+              "marketing"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "priority-support-brief",
+          "inputs": {
+            "marketing_material": "The service targets local shops through partner referrals.",
+            "product_material": "The product supports barcode scanning and offline inventory.",
+            "ticket": {
+              "days_overdue": 3,
+              "id": "P-72",
+              "text": "Delivery is three days late."
+            }
+          },
+          "kind": "Gantt",
+          "output": {
+            "action": {
+              "ref": "steps.select"
+            },
+            "brief": {
+              "optional_ref": "steps.write"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "classify",
+              "kind": "LLM",
+              "uses": "ticket.classify",
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "escalate",
+              "kind": "Script",
+              "uses": "ticket.escalation_draft",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "normal",
+              "kind": "Script",
+              "uses": "ticket.normal_draft",
+              "when": {
+                "eq": "normal",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "ticket": {
+                  "ref": "inputs.ticket"
+                }
+              }
+            },
+            {
+              "id": "select",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "branch.select_one",
+              "with": {
+                "escalated": {
+                  "optional_ref": "steps.escalate"
+                },
+                "normal": {
+                  "optional_ref": "steps.normal"
+                }
+              }
+            },
+            {
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "marketing": {
+                  "optional_ref": "steps.marketing"
+                },
+                "product": {
+                  "optional_ref": "steps.product"
+                }
+              }
+            },
+            {
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "when": {
+                "eq": "high",
+                "ref": "steps.classify.priority"
+              },
+              "with": {
+                "brief": {
+                  "optional_ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unsupported-required-parallel",
+      "procedure": "case"
+    }
+  ],
+  "fixture_sha256": "e4d991bf8a8f49d214a9ab6bf207bf29c416b7c4e3aec25e54e63157b01377ef",
+  "mode": "stub",
+  "scenario": "priority-support-brief",
+  "schema": "sapi-lab-observation-plan/v1",
+  "submission_sha256": "e0d94f34b31c613f15403656d20e17683aef52bb0d466335ea098f226633afee"
+}

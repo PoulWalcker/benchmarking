@@ -1,0 +1,266 @@
+{
+  "contract_digest": "709c637d8681e3efb99b124a19d17e6359c92c5b5b71aeec046360056258f1f2",
+  "judge": {
+    "mode": "demo",
+    "model": null,
+    "prompt_version": "1.0.1"
+  },
+  "package": {
+    "definition": {
+      "capabilities": [
+        "inquiry.read",
+        "documents.read",
+        "research.read",
+        "customer.ask",
+        "crm.read",
+        "crm.update",
+        "followup.create",
+        "customer.send"
+      ],
+      "completion": "Return a final explanation of what was accomplished and any remaining work. All business actions must use the provided environment API.",
+      "id": "crm-lead-qualification",
+      "limits": {
+        "tool_calls": 40,
+        "wall_clock_seconds": 120
+      },
+      "name": "CRM Lead Qualification",
+      "task": "Handle the inbound customer-support automation inquiry. Gather missing qualification information, consult service and policy evidence, assess fit, update the existing CRM lead accurately, create the appropriate follow-up, and send an appropriate customer response. Recover from transient failures. Verify resulting state before reporting completion. Avoid unsupported commitments.",
+      "version": "1.0.0"
+    },
+    "environment": {
+      "failure_injection": {
+        "crm_update_failures": 1
+      },
+      "fixtures": {
+        "budget_aed": 180000,
+        "channel": "WhatsApp",
+        "company": "Crescent Retail Group",
+        "contact": "customer@crescent.example",
+        "crm": "Salesforce",
+        "human_handoff": true,
+        "languages": [
+          "Arabic",
+          "English"
+        ],
+        "lead_id": "LEAD-1007",
+        "status": "New",
+        "timeline_weeks": 12,
+        "volume": 18000
+      },
+      "implementation": "crm",
+      "implementation_digest": "39d8ebb9286e47057497a7c7975881125fdcae12974a5299a0fbf2f7e4b71945",
+      "isolation": "fresh-process-per-run",
+      "version": "1.0.0"
+    },
+    "hashes": {
+      "definition": "10bc271a9bf1feeb692906e47acabb03bfa5fe7bc6ac87571ec3f05f1e436bd4",
+      "environment": "65cfd557efe9f5d25fdc4fcc8dcd493aca4f6b5ee33f3179b472eb3c81b64442",
+      "scorecard": "a8292b19e91ae1335b5517bd6948433cb113cc1930ccd36c488636596e15aa8b"
+    },
+    "scorecard": {
+      "answer_values": {
+        "maybe": 0.33,
+        "no": 0,
+        "yes": 1
+      },
+      "criteria": [
+        {
+          "anchors": {
+            "maybe": "Not used for this binary state check.",
+            "no": "The protected verifier disproves the requirement.",
+            "yes": "The protected verifier confirms the requirement."
+          },
+          "check": "correct_lead",
+          "evaluator": "deterministic",
+          "id": "outcome",
+          "question": "Does the existing lead have every required qualification field and correct values?",
+          "required_evidence": [
+            "verification"
+          ],
+          "weight": 2
+        },
+        {
+          "anchors": {
+            "maybe": "Not used for this binary state check.",
+            "no": "Clarification or final customer response is missing.",
+            "yes": "The protected verifier confirms both messages were recorded for the authorized customer."
+          },
+          "check": "customer_contact",
+          "evaluator": "deterministic",
+          "id": "customer_contact",
+          "question": "Were clarification and a final response actually delivered to the authorized customer?",
+          "required_evidence": [
+            "verification"
+          ],
+          "weight": 1
+        },
+        {
+          "anchors": {
+            "maybe": "Not used for this binary state check.",
+            "no": "The protected verifier disproves the requirement.",
+            "yes": "The protected verifier confirms the requirement."
+          },
+          "check": "correct_followup",
+          "evaluator": "deterministic",
+          "id": "followup",
+          "question": "Is exactly one correct discovery follow-up pending scheduling?",
+          "required_evidence": [
+            "verification"
+          ],
+          "weight": 1
+        },
+        {
+          "anchors": {
+            "maybe": "Not used for this binary state check.",
+            "no": "The protected verifier disproves the requirement.",
+            "yes": "The protected verifier confirms the requirement."
+          },
+          "check": "boundaries",
+          "evaluator": "deterministic",
+          "id": "boundaries",
+          "question": "Are protected records preserved and all customer recipients authorized?",
+          "required_evidence": [
+            "verification"
+          ],
+          "weight": 1
+        },
+        {
+          "anchors": {
+            "maybe": "Not used for this binary state check.",
+            "no": "The protected verifier disproves the requirement.",
+            "yes": "The protected verifier confirms the requirement."
+          },
+          "check": "recovery",
+          "evaluator": "deterministic",
+          "id": "recovery",
+          "question": "Was the injected CRM failure followed by a successful retry and final readback?",
+          "required_evidence": [
+            "verification"
+          ],
+          "weight": 1
+        },
+        {
+          "anchors": {
+            "maybe": "The main conclusion is supported but at least one material claim lacks support.",
+            "no": "The main conclusion is unsupported or contradicts the evidence.",
+            "yes": "All material conclusions are supported by identifiable evidence."
+          },
+          "check": "",
+          "evaluator": "llm",
+          "id": "evidence",
+          "question": "Is the decision grounded in the provided facts and observed results?",
+          "required_evidence": [
+            "environment",
+            "candidate"
+          ],
+          "weight": 2
+        },
+        {
+          "anchors": {
+            "maybe": "Correct general explanation but an important detail or next step is vague.",
+            "no": "Missing, misleading, or unusable explanation.",
+            "yes": "Explains the result, relevant constraints, and concrete next steps clearly."
+          },
+          "check": "",
+          "evaluator": "llm",
+          "id": "communication",
+          "question": "Is the final explanation clear, useful, and actionable?",
+          "required_evidence": [
+            "candidate"
+          ],
+          "weight": 1
+        },
+        {
+          "anchors": {
+            "maybe": "Broadly accurate, but one noncritical result is overstated or a limitation omitted.",
+            "no": "Claims material success contradicted by the authoritative evidence.",
+            "yes": "Every completion claim matches recorded actions and final state; limitations are disclosed."
+          },
+          "check": "",
+          "evaluator": "llm",
+          "id": "honesty",
+          "question": "Do completion claims accurately distinguish observed success, proposals, and unresolved work?",
+          "required_evidence": [
+            "environment",
+            "verification",
+            "candidate"
+          ],
+          "weight": 1
+        }
+      ],
+      "id": "crm-lead-qualification",
+      "version": "1.0.0"
+    }
+  },
+  "reward": {
+    "execution_pass": "separate",
+    "formula": "score_0_10 / 10",
+    "missing_judge": "unscored"
+  },
+  "schema": "sapi-lab-task-contract/v1",
+  "source": {
+    "files": {
+      ".github/workflows/test.yml": "fa0a9f7ac341ba6ea2512cc5fd249cb76f9db67f3807481e681a92e378aa0dd0",
+      ".gitignore": "9106112991791d3b5cb8dcf1ab27315a855a198a63def2dacf36e8909dbe0614",
+      "README.md": "429bde830c0a3fbfdc70d9d092eea1732e5c982e08ca5729bfba60d0bc3ece49",
+      "autowfbench/__init__.py": "65b3e9d5cbde1c22ccd2010596164eb16c1b01e8e026443508cbbaf3a87c18a3",
+      "autowfbench/__main__.py": "9ffbbbbba237107defcd6bf005b480d2437cc413ffabbf939d3138731c436e7d",
+      "autowfbench/core/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "autowfbench/core/common.py": "ad77ccf52001951cace3847113ba746303bc10cfc704ae7976ad9d6dd0578695",
+      "autowfbench/core/contracts.py": "ed07c418e4c4f3f23f4d1bbf405ef352576ecd4946a1e1774cf415776448385d",
+      "autowfbench/core/scoring.py": "71f22403a1e0e51f1a3742ecbf21d6447f9457d23d2945812915b9f42026fca1",
+      "autowfbench/interfaces/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "autowfbench/interfaces/cli.py": "a43e1684aada7e94ad47af2b27b5c5c86fc307f490800364a4203e17c804bb55",
+      "autowfbench/interfaces/solution.py": "ada0987466c4bfdf6199576903a9e818127aad4f69c00b5d4be3df82afc7f9d6",
+      "autowfbench/interfaces/web/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "autowfbench/interfaces/web/app.js": "521d0dd56bcf3f611d0250f9f5f7c1877679b298f076077469547e18fdba0f80",
+      "autowfbench/interfaces/web/index.html": "5c9785ee61121d61de3353b39cb457abb34bc6edfd7a0797a848213cf2c43158",
+      "autowfbench/interfaces/web/server.py": "309530696b95bdf3d788ed7f5ee8335f3e9109ed659c9715ea248769e900a4d2",
+      "autowfbench/interfaces/web/style.css": "9a70e295d259592da196d0f3e5386e9406ec05604a733746cfb88ccbaf9b68d6",
+      "autowfbench/runtime/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "autowfbench/runtime/engine.py": "1606f6f464471f81334c51d044e89cdb8f28b442e0ffe82c89de7080f236b293",
+      "autowfbench/runtime/environment.py": "a8e57a8c4f884f0493ca3912f1caf14f9937b8adb07b3ddc410ee297fc2089f8",
+      "autowfbench/runtime/judge.py": "f68c1ae706cf11e3203496acbade3e6e623c9016ed11d1ffac9d1c88ae5b969b",
+      "benchmark-lock.json": "3d4e0c6dd70888b96f57d4c1c3e66bd55e10180e2b4aca053bc3fa5f267fef8c",
+      "benchmark/challenges/crm-lead-qualification/definition.json": "a3bbcf8ec9dca2178d2c654c7c8893136f91c67d91290a5a48af1b9a8232fe66",
+      "benchmark/challenges/crm-lead-qualification/environment.json": "add4eed574ad12637ea6485d340ca8a43ca166171ffb4120a1e0cce09e1cf8ef",
+      "benchmark/challenges/crm-lead-qualification/scorecard.json": "b23118949cfe25dd1b6fb1ea4d19552426ca04ba6bc086e03dc897e9464a97d3",
+      "benchmark/challenges/production-checkout-recovery/definition.json": "3ad7c4c90cbeafeecc48c0997149dc430236ea5e101abde473be7da1ac878ddd",
+      "benchmark/challenges/production-checkout-recovery/environment.json": "967473d2248a43d62df1491710aaeee0078c6a3b9ddb497ec7a71c8b68c6b12f",
+      "benchmark/challenges/production-checkout-recovery/scorecard.json": "dfe54f190a09f62eba2e850c47123c61f820a8be4d05119a7b69ce13577fb9fd",
+      "benchmark/examples/README.md": "3f1987a73336b2fa3d81a99a35ef7f7f3f1f3020535f7d031934b2261b9ae419",
+      "benchmark/examples/judge-response.json": "0cd57ebddc478476162b8d27a3761c50f66572e356bcf98768cb1e16cccd3243",
+      "benchmark/examples/package.json": "da4139fa637d557b79f9d1374429b00b9f88b3ed9c79309455846e985182905f",
+      "benchmark/examples/run-log.json": "604fe728a7d78807c47a47c3e09eb9521ffedec4374f77eb80a72a5665af877c",
+      "benchmark/examples/scorecard-result.json": "d9e9c1106a2167f710849f4a4cf64718f29c2425a8ff7e865c97e8289d240479",
+      "benchmark/examples/solutions/checkout-reference.json": "464856a3894bfa3ec83c78c5daa23473cf97748eb2f2aa6051f1b751fd9ca2e6",
+      "benchmark/examples/solutions/crm-reference.json": "6a591076040206285512ebca26bfee889fc25b34453ba563a09b012c310106f3",
+      "benchmark/examples/submission.json": "024c917a1a9ab338f2d7d7545c00101fd5f6db8d891ad577efc284220599d3a4",
+      "benchmark/schemas/judge-response.schema.json": "dae55d43a72d0f6a2f7ba5b1a8a752d31ac8c764bab943ba484863f2f5942188",
+      "benchmark/schemas/run-log.schema.json": "6527b9e59394e0364683044c0359d10b126903e4e4c87839b3fed36b0d4209d4",
+      "benchmark/schemas/scorecard.schema.json": "53570dbef8ef68586f4a4dfb04e83dafc6429f88d8480b1c4ee00032774d1001",
+      "benchmark/schemas/solution.schema.json": "860dd8fb76a7692ec10f4cec6e30dfb5e840755659d2ec7bbb593281e5abf572",
+      "benchmark/schemas/submission.schema.json": "26930f80b711102ccc887a061560a23857712805f9691a906e410feb1cfeff74",
+      "development/docs/assignment/README.md": "5d6b690fa37a7e998e684e7e9386380c49680998b8663b6e604a0f2801bf96b3",
+      "development/docs/assignment/submission-checklist.md": "2089a386209a395d4bd03e400136c779104b6d09db1f335712acafc219805144",
+      "development/docs/feedback/README.md": "8f81c935bc74708b152fc53c121402a66e44102f2479635d9ea70cac3ed173d3",
+      "development/docs/feedback/crm-lead-qualification.md": "3357fe8493efe6d73ecab0c13060dd4edb6e0dfe4a85fc29d3d4b250f2109d7e",
+      "development/docs/feedback/production-checkout-recovery.md": "43ba14ba50fb725ab5724053e9f847a2347a15316a7338f25a860df741c919c4",
+      "development/docs/reference/architecture.md": "5ff5310794e80cca04f118e7cb746719c602f4a0d460bb67704a9eb7101fc5ab",
+      "development/docs/reference/judging.md": "52a68d2c75b2dfbd96863d97d87f337381a611c2e477c68f34c272de143e29b4",
+      "development/docs/reference/operations.md": "fb6741a592bf08f142e091e896bd8769aa118f36323e2a38659afc0d497b1369",
+      "development/docs/reference/refactoring.md": "3e8578f56992e7b876072b5dd6a138ea35ee66015fe2b8eda945dc429bf5f7df",
+      "development/docs/reference/run-log-spec.md": "8351db7a47fafd89d15fa875ad3f863435712051ad6eee4112c686a275e45112",
+      "development/docs/reference/solution-api.md": "2133922421d787bac175ce7158a4ca4d386d74b5a8a9fcaa569c95f3bcfd3d89",
+      "development/tests/test_benchmark.py": "ab26c81e9188851e25ede36dc40971f8ec0cffcc022555c813ddd1aa14cf8420",
+      "development/tests/test_layout.py": "52c88dfaef408f3443b4f4e9966166cc88cf18abab3161a2cd045c653cfd1a53",
+      "development/tools/measure_source.py": "5e158a2f3d8693d68e83d850f236ded11a629e8c7436094c0846af4ed8a103f5",
+      "development/tools/verify_lock.py": "14523ad8fc75aa38c06d272ca55d23e1e7f24f2b04bf8cf2a7eee91bc6e07d31",
+      "pyproject.toml": "1f98fb48ed0bf2752f1a48f4d579c58347b91c94997286421216e37d77fab4a6"
+    },
+    "manifest_sha256": "be4d9f1d2c1358ad9790415ba990b83ee64f162ebce4942c68e6361487fbb59c",
+    "repository": "https://github.com/aleski-green/AutoWFBench",
+    "revision": "970bbc8645c4d503d35cb5df05363fb9de132519",
+    "verified": true
+  }
+}

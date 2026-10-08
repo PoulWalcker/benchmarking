@@ -1,0 +1,982 @@
+{
+  "entries": [
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.report_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "report-requested",
+          "workflow_ref": {
+            "id": "competitor-report",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "marketing-sapi": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-sapi": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          },
+          "writer-sapi": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writer"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "The report includes both analyses and their source excerpts.",
+          "dependencies": [
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "competitor-report",
+          "inputs": {
+            "marketing_material": "Marketing targets small shops using webinars and partner referrals.",
+            "product_material": "Product has invoicing, stock tracking and a public API."
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.write"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "actor": "product-sapi",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "actor": "marketing-sapi",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "writer-sapi",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "original-evidence",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.report_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "report-requested",
+          "workflow_ref": {
+            "id": "competitor-report",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "marketing-sapi": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-sapi": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          },
+          "writer-sapi": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writer"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "The report includes both analyses and their source excerpts.",
+          "dependencies": [
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "competitor-report",
+          "inputs": {
+            "marketing_material": "M-BETA-91: Rural cooperatives hear about the service through printed catalogues.",
+            "product_material": "P-ALPHA-73: Offline inventory includes barcode scanning and CSV export."
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.write"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "actor": "product-sapi",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "actor": "marketing-sapi",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "writer-sapi",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "unseen-source-markers",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.report_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "report-requested",
+          "workflow_ref": {
+            "id": "competitor-report",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "marketing-sapi": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-sapi": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          },
+          "writer-sapi": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writer"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "The report includes both analyses and their source excerpts.",
+          "dependencies": [
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "competitor-report",
+          "inputs": {
+            "marketing_material": "M: local shops through referrals.",
+            "product_material": ""
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.write"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "actor": "product-sapi",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "actor": "marketing-sapi",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "writer-sapi",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "missing-product",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.report_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "report-requested",
+          "workflow_ref": {
+            "id": "competitor-report",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "marketing-sapi": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-sapi": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          },
+          "writer-sapi": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writer"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "The report includes both analyses and their source excerpts.",
+          "dependencies": [
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "competitor-report",
+          "inputs": {
+            "marketing_material": "",
+            "product_material": "P: barcode inventory."
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.write"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "actor": "product-sapi",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "actor": "marketing-sapi",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "writer-sapi",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "missing-marketing",
+      "procedure": "case"
+    },
+    {
+      "artifact_transform": "wrong-result",
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.report_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "report-requested",
+          "workflow_ref": {
+            "id": "competitor-report",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "marketing-sapi": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-sapi": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          },
+          "writer-sapi": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writer"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "The report includes both analyses and their source excerpts.",
+          "dependencies": [
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "competitor-report",
+          "inputs": {
+            "marketing_material": "Marketing targets small shops using webinars and partner referrals.",
+            "product_material": "Product has invoicing, stock tracking and a public API."
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.write"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "actor": "product-sapi",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "actor": "marketing-sapi",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "writer-sapi",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "mutated-generated-workflow",
+      "name": "mutated-generated-result",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.report_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "report-requested",
+          "workflow_ref": {
+            "id": "competitor-report",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "marketing-sapi": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-sapi": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          },
+          "writer-sapi": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writer"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "The report includes both analyses and their source excerpts.",
+          "dependencies": [
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "competitor-report",
+          "inputs": {
+            "marketing_material": "Marketing targets small shops using webinars and partner referrals.",
+            "product_material": "Product has invoicing, stock tracking and a public API."
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.write"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "actor": "product-sapi",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "unregistered.must_be_rejected",
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "actor": "marketing-sapi",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "writer-sapi",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unknown-operation",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.report_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "report-requested",
+          "workflow_ref": {
+            "id": "competitor-report",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "marketing-sapi": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-sapi": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          },
+          "writer-sapi": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writer"
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "The report includes both analyses and their source excerpts.",
+          "dependencies": [
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ],
+            [
+              "combine",
+              "product"
+            ]
+          ],
+          "id": "competitor-report",
+          "inputs": {
+            "marketing_material": "Marketing targets small shops using webinars and partner referrals.",
+            "product_material": "Product has invoicing, stock tracking and a public API."
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.write"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "actor": "product-sapi",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "actor": "marketing-sapi",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "writer-sapi",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-cycle",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "research.report_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "report-requested",
+          "workflow_ref": {
+            "id": "competitor-report",
+            "revision": 1
+          }
+        },
+        "actors": {
+          "marketing-sapi": {
+            "allowed_operations": [
+              "research.marketing"
+            ],
+            "context_scope": "marketing"
+          },
+          "product-sapi": {
+            "allowed_operations": [
+              "research.product"
+            ],
+            "context_scope": "product"
+          },
+          "writer-sapi": {
+            "allowed_operations": [
+              "research.write"
+            ],
+            "context_scope": "writer"
+          }
+        },
+        "execution": {
+          "concurrency": "required_parallel",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "The report includes both analyses and their source excerpts.",
+          "dependencies": [
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "id": "competitor-report",
+          "inputs": {
+            "marketing_material": "Marketing targets small shops using webinars and partner referrals.",
+            "product_material": "Product has invoicing, stock tracking and a public API."
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.write"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "actor": "product-sapi",
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "inputs.product_material"
+                }
+              }
+            },
+            {
+              "actor": "marketing-sapi",
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "inputs.marketing_material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "join": "all_terminal",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "marketing": {
+                  "ref": "steps.marketing"
+                },
+                "product": {
+                  "ref": "steps.product"
+                }
+              }
+            },
+            {
+              "actor": "writer-sapi",
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unsupported-required-parallel",
+      "procedure": "case"
+    }
+  ],
+  "fixture_sha256": "7babdc74aa5e1b5eff2d49b4250d3944c98c225181004b42ed261c73cd304bc8",
+  "mode": "stub",
+  "scenario": "competitor-report",
+  "schema": "sapi-lab-observation-plan/v1",
+  "submission_sha256": "b19d085455e85bbc2fb95d9c9f27d34b55854e1cf4f709921aaa700c1e28544e"
+}

@@ -1,0 +1,215 @@
+# Logical catalog. Stub and live transports enforce these same output contracts.
+schema: sapi-bindings/v0
+target:
+  demo: n8n_json
+  code_node_version: 2
+  merge_node_version: 3.2
+  execution_order: v1
+operations:
+  invoices.validate:
+    kind: Script
+    inputs: [invoices]
+    outputs: [invoices]
+    implementation: local_js
+  invoices.sum:
+    kind: Script
+    inputs: [invoices]
+    outputs: [amount_minor, currency, count]
+    implementation: local_js
+  invoices.report:
+    kind: Script
+    inputs: [total]
+    outputs: [total_minor, currency, invoice_count]
+    implementation: local_js
+  ticket.classify:
+    kind: LLM
+    inputs: [ticket]
+    outputs: [category, priority]
+    implementation: agency_bridge
+    prompt: Classify the supplied ticket. Use category delivery; priority high if days_overdue > 2, otherwise normal. Return JSON only.
+    output_contract: "{category: delivery, priority: high|normal}"
+    input_schema:
+      type: object
+      required: [ticket]
+      additionalProperties: false
+      properties:
+        ticket:
+          type: object
+          required: [id, days_overdue]
+          additionalProperties: false
+          properties:
+            id: {type: string, minLength: 1}
+            text: {type: string}
+            days_overdue: {type: integer, minimum: 0}
+    output_schema:
+      type: object
+      required: [category, priority]
+      additionalProperties: false
+      properties:
+        category: {type: string, enum: [delivery]}
+        priority: {type: string, enum: [high, normal]}
+  ticket.escalation_draft:
+    kind: Script
+    inputs: [ticket]
+    outputs: [ticket_id, action, mode]
+    implementation: local_js
+  ticket.normal_draft:
+    kind: Script
+    inputs: [ticket]
+    outputs: [ticket_id, action, mode]
+    implementation: local_js
+  branch.select_one:
+    kind: Script
+    inputs: [escalated, normal]
+    outputs: [ticket_id, action, mode]
+    implementation: local_js
+  research.product:
+    kind: LLM
+    inputs: [material]
+    outputs: [summary, evidence]
+    implementation: agency_bridge
+    prompt: Summarize product capabilities using only the supplied material. Preserve every explicitly named capability. Write in the same language as the supplied material. The evidence field must be an exact contiguous substring of material, copied character for character. Do not add quotation marks, labels, ellipses, or any other characters to evidence. Return JSON matching the output schema.
+    output_contract: "{summary: string, evidence: string}"
+    input_schema: &material_input
+      type: object
+      required: [material]
+      additionalProperties: false
+      properties:
+        material: {type: string, minLength: 1}
+    output_schema: &analysis_output
+      type: object
+      required: [summary, evidence]
+      additionalProperties: false
+      properties:
+        summary: {type: string, minLength: 1}
+        evidence: {type: string, minLength: 1}
+  research.marketing:
+    kind: LLM
+    inputs: [material]
+    outputs: [summary, evidence]
+    implementation: agency_bridge
+    prompt: Summarize the target customers and channels using only the supplied material. Preserve every explicitly named audience and channel. Write in the same language as the supplied material. The evidence field must be an exact contiguous substring of material, copied character for character. Do not add quotation marks, labels, ellipses, or any other characters to evidence. Return JSON matching the output schema.
+    output_contract: "{summary: string, evidence: string}"
+    input_schema: *material_input
+    output_schema: *analysis_output
+  research.combine:
+    kind: Script
+    inputs: [product, marketing]
+    outputs: [product, marketing]
+    implementation: local_js
+  research.write:
+    kind: LLM
+    inputs: [brief]
+    outputs: [report, evidence]
+    implementation: agency_bridge
+    prompt: Write a short report covering both supplied analyses. Preserve all explicitly named capabilities, target customers and channels from both analyses. Preserve their evidence excerpts exactly, in product then marketing order. Add no outside facts. Write in the same language as the supplied analyses. Return JSON matching the output schema.
+    output_contract: "{report: string, evidence: string[2]}"
+    input_schema:
+      type: object
+      required: [brief]
+      additionalProperties: false
+      properties:
+        brief:
+          type: object
+          required: [product, marketing]
+          additionalProperties: false
+          properties:
+            product: *analysis_output
+            marketing: *analysis_output
+    output_schema:
+      type: object
+      required: [report, evidence]
+      additionalProperties: false
+      properties:
+        report: {type: string, minLength: 1}
+        evidence:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items: {type: string, minLength: 1}
+  reply.generate:
+    kind: LLM
+    inputs: [ticket, previous, feedback]
+    outputs: [text]
+    implementation: agency_bridge
+    prompt: Draft a helpful answer about the supplied order. If previous and feedback are given, revise it accordingly. Do not promise unverified actions.
+    output_contract: "{text: string}"
+    input_schema:
+      type: object
+      required: [ticket, previous, feedback]
+      additionalProperties: false
+      properties:
+        ticket:
+          type: object
+          required: [id, text]
+          additionalProperties: false
+          properties:
+            id: {type: string, minLength: 1}
+            text: {type: string, minLength: 1}
+        previous:
+          type: [object, 'null']
+          required: [text]
+          additionalProperties: false
+          properties:
+            text: {type: string}
+        feedback: {type: array, items: {type: string}}
+    output_schema:
+      type: object
+      required: [text]
+      additionalProperties: false
+      properties:
+        text: {type: string, minLength: 1}
+  reply.check:
+    kind: Script
+    inputs: [draft, order_id, max_characters]
+    outputs: [pass, errors]
+    implementation: local_js
+  digest.prepare:
+    kind: Script
+    inputs: [articles]
+    outputs: [articles]
+    implementation: local_js
+  digest.summarize:
+    kind: LLM
+    inputs: [articles]
+    outputs: [text, article_ids]
+    implementation: agency_bridge
+    prompt: Summarize only the supplied articles and list the article IDs used.
+    output_contract: "{text: string, article_ids: string[]}"
+    input_schema:
+      type: object
+      required: [articles]
+      additionalProperties: false
+      properties:
+        articles:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [id, title, text]
+            additionalProperties: false
+            properties:
+              id: {type: string, minLength: 1}
+              title: {type: string, minLength: 1}
+              text: {type: string, minLength: 1}
+    output_schema:
+      type: object
+      required: [text, article_ids]
+      additionalProperties: false
+      properties:
+        text: {type: string, minLength: 1}
+        article_ids: {type: array, minItems: 1, items: {type: string, minLength: 1}}
+  digest.preview:
+    kind: Script
+    inputs: [summary]
+    outputs: [mode, text, article_ids]
+    implementation: local_js
+production_bridge_contract:
+  scope: local_research_adapter
+  transport: HTTP
+  endpoint: /v1/agency/execute
+  request_fields: [invocation_id, operation, actor, inputs]
+  response_fields: [invocation_id, output, usage, status]
+  authentication: deployment_binding
+  state_restoration: wrapper_validates_response_and_attaches_output_to_original_envelope
+  notes: Adapter owns model and deployment settings. No secrets are embedded in workflow exports. No retries or durable admission are implemented.

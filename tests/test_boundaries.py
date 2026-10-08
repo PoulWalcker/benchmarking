@@ -8,6 +8,7 @@ its line here.
 """
 
 import ast
+import json
 from pathlib import Path
 import unittest
 
@@ -194,3 +195,111 @@ class StageBoundaryTests(unittest.TestCase):
             for node in ast.walk(ast.parse(path.read_text())):
                 if isinstance(node, ast.ImportFrom):
                     self.assertFalse(owned & {alias.name for alias in node.names}, module)
+
+
+# These mixed legacy modules own benchmark behavior today; moving them is later work.
+BENCHMARK_IMPLEMENTATIONS = {
+    "sapi_config_lab.coordinate.providers",
+    "sapi_config_lab.execute.autowfbench",
+    "sapi_config_lab.evaluate.autowfbench",
+    "sapi_config_lab.evaluate.judge_calibration",
+    "sapi_config_lab.evaluate.operational",
+    "verification.business",
+    "verification.scenario_business",
+    "verification.fixture_evaluators",
+    "verification.fixture_freshness",
+    "verification.fixture_prose",
+    "verification.roles",
+    "verification.extensions",
+    "verification.lifecycle",
+    "verification.lifecycle_submission",
+}
+
+
+def ownership_imports(source: str, module: str, *, package: bool = False) -> set[str]:
+    """Resolve static and literal dynamic imports without importing benchmark code."""
+    tree = ast.parse(source)
+    parent_parts = module.split(".") if package else module.split(".")[:-1]
+    names = set()
+    loaders = {"__import__"}
+    importlibs = {"importlib"}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            names.update(alias.name for alias in node.names)
+            importlibs.update(alias.asname or alias.name for alias in node.names if alias.name == "importlib")
+        elif isinstance(node, ast.ImportFrom):
+            parent = node.module or ""
+            if node.level:
+                parent = ".".join([*parent_parts[: len(parent_parts) - node.level + 1], *parent.split(".")]).rstrip(".")
+            names.add(parent)
+            names.update(f"{parent}.{alias.name}" for alias in node.names)
+            if parent == "importlib":
+                loaders.update(alias.asname or alias.name for alias in node.names if alias.name == "import_module")
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not node.args:
+            continue
+        function = node.func
+        dynamic = isinstance(function, ast.Name) and function.id in loaders
+        dynamic |= (
+            isinstance(function, ast.Attribute)
+            and isinstance(function.value, ast.Name)
+            and function.value.id in importlibs
+            and function.attr == "import_module"
+        )
+        argument = node.args[0]
+        if dynamic and isinstance(argument, ast.Constant) and isinstance(argument.value, str):
+            names.add(argument.value)
+    return names
+
+
+def ownership_edges(module: str, source: str, *, package: bool = False) -> set[tuple[str, str]]:
+    """Edges requiring removal or an explicitly frozen legacy exception."""
+    found = set()
+    for name in ownership_imports(source, module, package=package):
+        if name == "benchmarks" or name.startswith("benchmarks."):
+            found.add((module, "benchmarks"))
+        for implementation in BENCHMARK_IMPLEMENTATIONS:
+            if name == implementation or name.startswith(implementation + "."):
+                found.add((module, implementation))
+        if (
+            (name == "harbor" or name.startswith("harbor."))
+            and not module.startswith("sapi_config_lab.harbor_integration.")
+            and module != "sapi_config_lab.harbor_integration"
+        ):
+            found.add((module, "harbor"))
+    return found
+
+
+class MigrationOwnershipTests(unittest.TestCase):
+    def test_no_additional_benchmark_or_harbor_imports(self):
+        baseline = ROOT / "evidence/migration-01-baseline/legacy-imports.json"
+        frozen = {tuple(edge) for edge in json.loads(baseline.read_text())["edges"]}
+        found = set()
+        for module, path, verifier in modules():
+            qualified = module if verifier else PACKAGE + ("." + module if module else "")
+            found.update(ownership_edges(qualified, path.read_text(), package=path.name == "__init__.py"))
+        self.assertFalse(found - frozen, f"New ownership violations: {sorted(found - frozen)}")
+        # The snapshot is immutable evidence; removed edges need not remain in source.
+
+    def test_new_core_cannot_import_benchmarks_or_legacy_business(self):
+        examples = (
+            "import benchmarks.new_task.evaluation",
+            "from benchmarks import new_task",
+            "from sapi_config_lab.execute import autowfbench",
+            "from ..execute.autowfbench import start_environment",
+            "from verification import business",
+            "from sapi_config_lab.coordinate.providers import ENVIRONMENTS",
+            "from importlib import import_module as load\nload('benchmarks.new_task')",
+            "import importlib as loader\nloader.import_module('verification.business')",
+            "__import__('benchmarks.new_task')",
+        )
+        for source in examples:
+            with self.subTest(source=source):
+                self.assertTrue(ownership_edges("sapi_config_lab.core.loader", source))
+        self.assertTrue(ownership_edges("sapi_config_lab.core", "from ..execute import autowfbench", package=True))
+
+    def test_harbor_is_reached_only_through_new_integration(self):
+        source = "from harbor.models.task.config import TaskConfig"
+        self.assertTrue(ownership_edges("sapi_config_lab.core.runner", source))
+        self.assertFalse(ownership_edges("sapi_config_lab.harbor_integration.tasks", source))
+        self.assertFalse(ownership_edges("sapi_config_lab.core.runner", "from sapi_config_lab.core import contracts"))

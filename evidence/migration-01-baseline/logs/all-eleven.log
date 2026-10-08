@@ -1,0 +1,12 @@
+warning: `VIRTUAL_ENV=/Users/pashvel/Desktop/sapi-config-lab/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead
+local tests; report directory /private/tmp/sapi-baseline-01/reports/migration-01/all-eleven
+image: building the isolated pinned n8n image
+transport: real n8n HTTP transport and rejection probes
+0e72d4530cadb45458844ab65e52de2018f4ecb437de24174d951ff46cb1d005
+staging: 11 oracle task packages
+oracle: 11 Harbor tasks through real n8n
+oracle: passed
+nop: 11 Harbor tasks through real n8n
+nop: passed
+finalizing: cleanup, final source check and report
+{"status": "passed", "report": "/private/tmp/sapi-baseline-01/reports/migration-01/all-eleven/report.json"}

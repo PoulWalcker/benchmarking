@@ -1,0 +1,2194 @@
+{
+  "entries": [
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "finance.closeout_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "closeout-requested",
+          "workflow_ref": {
+            "id": "dual-ledger-closeout",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Independently close both ledgers without mixing invoices or currencies.",
+          "dependencies": [
+            [
+              "domestic_validate",
+              "domestic_sum"
+            ],
+            [
+              "domestic_sum",
+              "domestic_report"
+            ],
+            [
+              "export_validate",
+              "export_sum"
+            ],
+            [
+              "export_sum",
+              "export_report"
+            ]
+          ],
+          "id": "dual-ledger-closeout",
+          "inputs": {
+            "domestic_invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "D-A"
+              },
+              {
+                "amount_minor": 0,
+                "currency": "AED",
+                "id": "D-B"
+              }
+            ],
+            "export_invoices": [
+              {
+                "amount_minor": 73,
+                "currency": "EUR",
+                "id": "X-A"
+              },
+              {
+                "amount_minor": 210,
+                "currency": "EUR",
+                "id": "X-B"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "domestic": {
+              "ref": "steps.domestic_report"
+            },
+            "export": {
+              "ref": "steps.export_report"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "domestic_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.domestic_invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.domestic_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.domestic_sum"
+                }
+              }
+            },
+            {
+              "id": "export_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.export_invoices"
+                }
+              }
+            },
+            {
+              "id": "export_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.export_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "export_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.export_sum"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "base-ledgers",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "finance.closeout_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "closeout-requested",
+          "workflow_ref": {
+            "id": "dual-ledger-closeout",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Independently close both ledgers without mixing invoices or currencies.",
+          "dependencies": [
+            [
+              "domestic_validate",
+              "domestic_sum"
+            ],
+            [
+              "domestic_sum",
+              "domestic_report"
+            ],
+            [
+              "export_validate",
+              "export_sum"
+            ],
+            [
+              "export_sum",
+              "export_report"
+            ]
+          ],
+          "id": "dual-ledger-closeout",
+          "inputs": {
+            "domestic_invoices": [
+              {
+                "amount_minor": 91,
+                "currency": "USD",
+                "id": "L-Q"
+              }
+            ],
+            "export_invoices": [
+              {
+                "amount_minor": 5,
+                "currency": "GBP",
+                "id": "R-A"
+              },
+              {
+                "amount_minor": 0,
+                "currency": "GBP",
+                "id": "R-B"
+              },
+              {
+                "amount_minor": 8,
+                "currency": "GBP",
+                "id": "R-C"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "domestic": {
+              "ref": "steps.domestic_report"
+            },
+            "export": {
+              "ref": "steps.export_report"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "domestic_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.domestic_invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.domestic_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.domestic_sum"
+                }
+              }
+            },
+            {
+              "id": "export_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.export_invoices"
+                }
+              }
+            },
+            {
+              "id": "export_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.export_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "export_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.export_sum"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "alternate-ledgers",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "finance.closeout_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "closeout-requested",
+          "workflow_ref": {
+            "id": "dual-ledger-closeout",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Independently close both ledgers without mixing invoices or currencies.",
+          "dependencies": [
+            [
+              "domestic_validate",
+              "domestic_sum"
+            ],
+            [
+              "domestic_sum",
+              "domestic_report"
+            ],
+            [
+              "export_validate",
+              "export_sum"
+            ],
+            [
+              "export_sum",
+              "export_report"
+            ]
+          ],
+          "id": "dual-ledger-closeout",
+          "inputs": {
+            "domestic_invoices": [
+              {
+                "amount_minor": 0,
+                "currency": "AED",
+                "id": "D-B"
+              },
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "D-A"
+              }
+            ],
+            "export_invoices": [
+              {
+                "amount_minor": 210,
+                "currency": "EUR",
+                "id": "X-B"
+              },
+              {
+                "amount_minor": 73,
+                "currency": "EUR",
+                "id": "X-A"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "domestic": {
+              "ref": "steps.domestic_report"
+            },
+            "export": {
+              "ref": "steps.export_report"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "domestic_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.domestic_invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.domestic_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.domestic_sum"
+                }
+              }
+            },
+            {
+              "id": "export_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.export_invoices"
+                }
+              }
+            },
+            {
+              "id": "export_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.export_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "export_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.export_sum"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "reversed-ledgers",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "finance.closeout_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "closeout-requested",
+          "workflow_ref": {
+            "id": "dual-ledger-closeout",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Independently close both ledgers without mixing invoices or currencies.",
+          "dependencies": [
+            [
+              "domestic_validate",
+              "domestic_sum"
+            ],
+            [
+              "domestic_sum",
+              "domestic_report"
+            ],
+            [
+              "export_validate",
+              "export_sum"
+            ],
+            [
+              "export_sum",
+              "export_report"
+            ]
+          ],
+          "id": "dual-ledger-closeout",
+          "inputs": {
+            "domestic_invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "D-A"
+              },
+              {
+                "amount_minor": 0,
+                "currency": "AED",
+                "id": "D-B"
+              },
+              {
+                "amount_minor": 0,
+                "currency": "AED",
+                "id": "D-ZERO"
+              }
+            ],
+            "export_invoices": [
+              {
+                "amount_minor": 73,
+                "currency": "EUR",
+                "id": "X-A"
+              },
+              {
+                "amount_minor": 210,
+                "currency": "EUR",
+                "id": "X-B"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "domestic": {
+              "ref": "steps.domestic_report"
+            },
+            "export": {
+              "ref": "steps.export_report"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "domestic_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.domestic_invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.domestic_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.domestic_sum"
+                }
+              }
+            },
+            {
+              "id": "export_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.export_invoices"
+                }
+              }
+            },
+            {
+              "id": "export_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.export_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "export_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.export_sum"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "domestic-zero-added",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "finance.closeout_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "closeout-requested",
+          "workflow_ref": {
+            "id": "dual-ledger-closeout",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Independently close both ledgers without mixing invoices or currencies.",
+          "dependencies": [
+            [
+              "domestic_validate",
+              "domestic_sum"
+            ],
+            [
+              "domestic_sum",
+              "domestic_report"
+            ],
+            [
+              "export_validate",
+              "export_sum"
+            ],
+            [
+              "export_sum",
+              "export_report"
+            ]
+          ],
+          "id": "dual-ledger-closeout",
+          "inputs": {
+            "domestic_invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "D-A"
+              },
+              {
+                "amount_minor": 0,
+                "currency": "AED",
+                "id": "D-B"
+              }
+            ],
+            "export_invoices": [
+              {
+                "amount_minor": 74,
+                "currency": "EUR",
+                "id": "X-A"
+              },
+              {
+                "amount_minor": 210,
+                "currency": "EUR",
+                "id": "X-B"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "domestic": {
+              "ref": "steps.domestic_report"
+            },
+            "export": {
+              "ref": "steps.export_report"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "domestic_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.domestic_invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.domestic_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.domestic_sum"
+                }
+              }
+            },
+            {
+              "id": "export_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.export_invoices"
+                }
+              }
+            },
+            {
+              "id": "export_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.export_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "export_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.export_sum"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "export-amount-changed",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "finance.closeout_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "closeout-requested",
+          "workflow_ref": {
+            "id": "dual-ledger-closeout",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Independently close both ledgers without mixing invoices or currencies.",
+          "dependencies": [
+            [
+              "domestic_validate",
+              "domestic_sum"
+            ],
+            [
+              "domestic_sum",
+              "domestic_report"
+            ],
+            [
+              "export_validate",
+              "export_sum"
+            ],
+            [
+              "export_sum",
+              "export_report"
+            ]
+          ],
+          "id": "dual-ledger-closeout",
+          "inputs": {
+            "domestic_invoices": [
+              {
+                "amount_minor": 1,
+                "currency": "AED",
+                "id": "DUP"
+              },
+              {
+                "amount_minor": 2,
+                "currency": "AED",
+                "id": "DUP"
+              }
+            ],
+            "export_invoices": [
+              {
+                "amount_minor": 73,
+                "currency": "EUR",
+                "id": "X-A"
+              },
+              {
+                "amount_minor": 210,
+                "currency": "EUR",
+                "id": "X-B"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "domestic": {
+              "ref": "steps.domestic_report"
+            },
+            "export": {
+              "ref": "steps.export_report"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "domestic_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.domestic_invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.domestic_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.domestic_sum"
+                }
+              }
+            },
+            {
+              "id": "export_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.export_invoices"
+                }
+              }
+            },
+            {
+              "id": "export_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.export_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "export_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.export_sum"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "domestic-duplicate",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "finance.closeout_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "closeout-requested",
+          "workflow_ref": {
+            "id": "dual-ledger-closeout",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Independently close both ledgers without mixing invoices or currencies.",
+          "dependencies": [
+            [
+              "domestic_validate",
+              "domestic_sum"
+            ],
+            [
+              "domestic_sum",
+              "domestic_report"
+            ],
+            [
+              "export_validate",
+              "export_sum"
+            ],
+            [
+              "export_sum",
+              "export_report"
+            ]
+          ],
+          "id": "dual-ledger-closeout",
+          "inputs": {
+            "domestic_invoices": [
+              {
+                "amount_minor": 1,
+                "currency": "AED",
+                "id": "A"
+              },
+              {
+                "amount_minor": 2,
+                "currency": "JPY",
+                "id": "B"
+              }
+            ],
+            "export_invoices": [
+              {
+                "amount_minor": 73,
+                "currency": "EUR",
+                "id": "X-A"
+              },
+              {
+                "amount_minor": 210,
+                "currency": "EUR",
+                "id": "X-B"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "domestic": {
+              "ref": "steps.domestic_report"
+            },
+            "export": {
+              "ref": "steps.export_report"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "domestic_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.domestic_invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.domestic_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.domestic_sum"
+                }
+              }
+            },
+            {
+              "id": "export_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.export_invoices"
+                }
+              }
+            },
+            {
+              "id": "export_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.export_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "export_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.export_sum"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "domestic-mixed",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "finance.closeout_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "closeout-requested",
+          "workflow_ref": {
+            "id": "dual-ledger-closeout",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Independently close both ledgers without mixing invoices or currencies.",
+          "dependencies": [
+            [
+              "domestic_validate",
+              "domestic_sum"
+            ],
+            [
+              "domestic_sum",
+              "domestic_report"
+            ],
+            [
+              "export_validate",
+              "export_sum"
+            ],
+            [
+              "export_sum",
+              "export_report"
+            ]
+          ],
+          "id": "dual-ledger-closeout",
+          "inputs": {
+            "domestic_invoices": [
+              {
+                "amount_minor": 9007199254740991,
+                "currency": "AED",
+                "id": "MAX"
+              },
+              {
+                "amount_minor": 1,
+                "currency": "AED",
+                "id": "ONE"
+              }
+            ],
+            "export_invoices": [
+              {
+                "amount_minor": 73,
+                "currency": "EUR",
+                "id": "X-A"
+              },
+              {
+                "amount_minor": 210,
+                "currency": "EUR",
+                "id": "X-B"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "domestic": {
+              "ref": "steps.domestic_report"
+            },
+            "export": {
+              "ref": "steps.export_report"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "domestic_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.domestic_invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.domestic_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.domestic_sum"
+                }
+              }
+            },
+            {
+              "id": "export_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.export_invoices"
+                }
+              }
+            },
+            {
+              "id": "export_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.export_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "export_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.export_sum"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "domestic-overflow",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "finance.closeout_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "closeout-requested",
+          "workflow_ref": {
+            "id": "dual-ledger-closeout",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Independently close both ledgers without mixing invoices or currencies.",
+          "dependencies": [
+            [
+              "domestic_validate",
+              "domestic_sum"
+            ],
+            [
+              "domestic_sum",
+              "domestic_report"
+            ],
+            [
+              "export_validate",
+              "export_sum"
+            ],
+            [
+              "export_sum",
+              "export_report"
+            ]
+          ],
+          "id": "dual-ledger-closeout",
+          "inputs": {
+            "domestic_invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "D-A"
+              },
+              {
+                "amount_minor": 0,
+                "currency": "AED",
+                "id": "D-B"
+              }
+            ],
+            "export_invoices": [
+              {
+                "amount_minor": 1,
+                "currency": "EUR",
+                "id": "DUP"
+              },
+              {
+                "amount_minor": 2,
+                "currency": "EUR",
+                "id": "DUP"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "domestic": {
+              "ref": "steps.domestic_report"
+            },
+            "export": {
+              "ref": "steps.export_report"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "domestic_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.domestic_invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.domestic_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.domestic_sum"
+                }
+              }
+            },
+            {
+              "id": "export_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.export_invoices"
+                }
+              }
+            },
+            {
+              "id": "export_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.export_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "export_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.export_sum"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "export-duplicate",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "finance.closeout_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "closeout-requested",
+          "workflow_ref": {
+            "id": "dual-ledger-closeout",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Independently close both ledgers without mixing invoices or currencies.",
+          "dependencies": [
+            [
+              "domestic_validate",
+              "domestic_sum"
+            ],
+            [
+              "domestic_sum",
+              "domestic_report"
+            ],
+            [
+              "export_validate",
+              "export_sum"
+            ],
+            [
+              "export_sum",
+              "export_report"
+            ]
+          ],
+          "id": "dual-ledger-closeout",
+          "inputs": {
+            "domestic_invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "D-A"
+              },
+              {
+                "amount_minor": 0,
+                "currency": "AED",
+                "id": "D-B"
+              }
+            ],
+            "export_invoices": [
+              {
+                "amount_minor": 1,
+                "currency": "EUR",
+                "id": "A"
+              },
+              {
+                "amount_minor": 2,
+                "currency": "JPY",
+                "id": "B"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "domestic": {
+              "ref": "steps.domestic_report"
+            },
+            "export": {
+              "ref": "steps.export_report"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "domestic_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.domestic_invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.domestic_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.domestic_sum"
+                }
+              }
+            },
+            {
+              "id": "export_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.export_invoices"
+                }
+              }
+            },
+            {
+              "id": "export_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.export_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "export_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.export_sum"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "export-mixed",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "finance.closeout_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "closeout-requested",
+          "workflow_ref": {
+            "id": "dual-ledger-closeout",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Independently close both ledgers without mixing invoices or currencies.",
+          "dependencies": [
+            [
+              "domestic_validate",
+              "domestic_sum"
+            ],
+            [
+              "domestic_sum",
+              "domestic_report"
+            ],
+            [
+              "export_validate",
+              "export_sum"
+            ],
+            [
+              "export_sum",
+              "export_report"
+            ]
+          ],
+          "id": "dual-ledger-closeout",
+          "inputs": {
+            "domestic_invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "D-A"
+              },
+              {
+                "amount_minor": 0,
+                "currency": "AED",
+                "id": "D-B"
+              }
+            ],
+            "export_invoices": [
+              {
+                "amount_minor": 9007199254740991,
+                "currency": "EUR",
+                "id": "MAX"
+              },
+              {
+                "amount_minor": 1,
+                "currency": "EUR",
+                "id": "ONE"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "domestic": {
+              "ref": "steps.domestic_report"
+            },
+            "export": {
+              "ref": "steps.export_report"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "domestic_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.domestic_invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.domestic_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.domestic_sum"
+                }
+              }
+            },
+            {
+              "id": "export_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.export_invoices"
+                }
+              }
+            },
+            {
+              "id": "export_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.export_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "export_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.export_sum"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "negative",
+      "name": "export-overflow",
+      "procedure": "case"
+    },
+    {
+      "artifact_transform": "wrong-result",
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "finance.closeout_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "closeout-requested",
+          "workflow_ref": {
+            "id": "dual-ledger-closeout",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Independently close both ledgers without mixing invoices or currencies.",
+          "dependencies": [
+            [
+              "domestic_validate",
+              "domestic_sum"
+            ],
+            [
+              "domestic_sum",
+              "domestic_report"
+            ],
+            [
+              "export_validate",
+              "export_sum"
+            ],
+            [
+              "export_sum",
+              "export_report"
+            ]
+          ],
+          "id": "dual-ledger-closeout",
+          "inputs": {
+            "domestic_invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "D-A"
+              },
+              {
+                "amount_minor": 0,
+                "currency": "AED",
+                "id": "D-B"
+              }
+            ],
+            "export_invoices": [
+              {
+                "amount_minor": 73,
+                "currency": "EUR",
+                "id": "X-A"
+              },
+              {
+                "amount_minor": 210,
+                "currency": "EUR",
+                "id": "X-B"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "domestic": {
+              "ref": "steps.domestic_report"
+            },
+            "export": {
+              "ref": "steps.export_report"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "domestic_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.domestic_invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.domestic_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.domestic_sum"
+                }
+              }
+            },
+            {
+              "id": "export_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.export_invoices"
+                }
+              }
+            },
+            {
+              "id": "export_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.export_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "export_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.export_sum"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "mutated-generated-workflow",
+      "name": "mutated-generated-result",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "finance.closeout_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "closeout-requested",
+          "workflow_ref": {
+            "id": "dual-ledger-closeout",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Independently close both ledgers without mixing invoices or currencies.",
+          "dependencies": [
+            [
+              "domestic_validate",
+              "domestic_sum"
+            ],
+            [
+              "domestic_sum",
+              "domestic_report"
+            ],
+            [
+              "export_validate",
+              "export_sum"
+            ],
+            [
+              "export_sum",
+              "export_report"
+            ]
+          ],
+          "id": "dual-ledger-closeout",
+          "inputs": {
+            "domestic_invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "D-A"
+              },
+              {
+                "amount_minor": 0,
+                "currency": "AED",
+                "id": "D-B"
+              }
+            ],
+            "export_invoices": [
+              {
+                "amount_minor": 73,
+                "currency": "EUR",
+                "id": "X-A"
+              },
+              {
+                "amount_minor": 210,
+                "currency": "EUR",
+                "id": "X-B"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "domestic": {
+              "ref": "steps.domestic_report"
+            },
+            "export": {
+              "ref": "steps.export_report"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "domestic_validate",
+              "kind": "Script",
+              "uses": "unregistered.must_be_rejected",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.domestic_invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.domestic_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.domestic_sum"
+                }
+              }
+            },
+            {
+              "id": "export_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.export_invoices"
+                }
+              }
+            },
+            {
+              "id": "export_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.export_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "export_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.export_sum"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unknown-operation",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "finance.closeout_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "closeout-requested",
+          "workflow_ref": {
+            "id": "dual-ledger-closeout",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Independently close both ledgers without mixing invoices or currencies.",
+          "dependencies": [
+            [
+              "domestic_validate",
+              "domestic_sum"
+            ],
+            [
+              "domestic_sum",
+              "domestic_report"
+            ],
+            [
+              "export_validate",
+              "export_sum"
+            ],
+            [
+              "export_sum",
+              "export_report"
+            ],
+            [
+              "domestic_sum",
+              "domestic_validate"
+            ]
+          ],
+          "id": "dual-ledger-closeout",
+          "inputs": {
+            "domestic_invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "D-A"
+              },
+              {
+                "amount_minor": 0,
+                "currency": "AED",
+                "id": "D-B"
+              }
+            ],
+            "export_invoices": [
+              {
+                "amount_minor": 73,
+                "currency": "EUR",
+                "id": "X-A"
+              },
+              {
+                "amount_minor": 210,
+                "currency": "EUR",
+                "id": "X-B"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "domestic": {
+              "ref": "steps.domestic_report"
+            },
+            "export": {
+              "ref": "steps.export_report"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "domestic_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.domestic_invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.domestic_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.domestic_sum"
+                }
+              }
+            },
+            {
+              "id": "export_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.export_invoices"
+                }
+              }
+            },
+            {
+              "id": "export_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.export_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "export_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.export_sum"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-cycle",
+      "procedure": "case"
+    },
+    {
+      "config": {
+        "activation": {
+          "condition": "valid_input",
+          "hook": "finance.closeout_requested",
+          "kind": "Callback",
+          "reaction": "Trigger",
+          "rule_id": "closeout-requested",
+          "workflow_ref": {
+            "id": "dual-ledger-closeout",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "required_parallel",
+          "deadline_seconds": 30,
+          "on_step_error": "fail"
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Independently close both ledgers without mixing invoices or currencies.",
+          "dependencies": [
+            [
+              "domestic_validate",
+              "domestic_sum"
+            ],
+            [
+              "domestic_sum",
+              "domestic_report"
+            ],
+            [
+              "export_validate",
+              "export_sum"
+            ],
+            [
+              "export_sum",
+              "export_report"
+            ]
+          ],
+          "id": "dual-ledger-closeout",
+          "inputs": {
+            "domestic_invoices": [
+              {
+                "amount_minor": 1251,
+                "currency": "AED",
+                "id": "D-A"
+              },
+              {
+                "amount_minor": 0,
+                "currency": "AED",
+                "id": "D-B"
+              }
+            ],
+            "export_invoices": [
+              {
+                "amount_minor": 73,
+                "currency": "EUR",
+                "id": "X-A"
+              },
+              {
+                "amount_minor": 210,
+                "currency": "EUR",
+                "id": "X-B"
+              }
+            ]
+          },
+          "kind": "Pipeline",
+          "output": {
+            "domestic": {
+              "ref": "steps.domestic_report"
+            },
+            "export": {
+              "ref": "steps.export_report"
+            }
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "domestic_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.domestic_invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.domestic_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "domestic_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.domestic_sum"
+                }
+              }
+            },
+            {
+              "id": "export_validate",
+              "kind": "Script",
+              "uses": "invoices.validate",
+              "with": {
+                "invoices": {
+                  "ref": "inputs.export_invoices"
+                }
+              }
+            },
+            {
+              "id": "export_sum",
+              "kind": "Script",
+              "uses": "invoices.sum",
+              "with": {
+                "invoices": {
+                  "ref": "steps.export_validate.invoices"
+                }
+              }
+            },
+            {
+              "id": "export_report",
+              "kind": "Script",
+              "uses": "invoices.report",
+              "with": {
+                "total": {
+                  "ref": "steps.export_sum"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "invalid-definition",
+      "name": "invalid-yaml-unsupported-required-parallel",
+      "procedure": "case"
+    }
+  ],
+  "fixture_sha256": "ebb209e3dcd8cbbe1ce6cc93a592d69d9c71c8d726ec9c64ac709ebcba51a31a",
+  "mode": "stub",
+  "scenario": "dual-ledger-closeout",
+  "schema": "sapi-lab-observation-plan/v1",
+  "submission_sha256": "c5589666ebf845c14e59457727c7463a2e213a91b4118bfd24c27b729cc76e14"
+}

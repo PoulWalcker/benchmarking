@@ -1,0 +1,162 @@
+{
+  "live_cases": [
+    "high-brief",
+    "normal-empty"
+  ],
+  "negative": [
+    {
+      "error": "Missing product material",
+      "inputs": {
+        "marketing_material": "Fixture 4200C0D3F3E9: The service targets local shops through partner referrals.",
+        "product_material": "",
+        "ticket": {
+          "days_overdue": 3,
+          "id": "4200C0D3F3E9-P-72",
+          "text": "Fixture 4200C0D3F3E9: Delivery is three days late."
+        }
+      },
+      "name": "high-empty-product",
+      "operation": "research.product",
+      "role": "product",
+      "schema_error": "Schema violation at inputs.material"
+    },
+    {
+      "error": "Missing marketing material",
+      "inputs": {
+        "marketing_material": "",
+        "product_material": "Fixture 4200C0D3F3E9: The product supports barcode scanning and offline inventory.",
+        "ticket": {
+          "days_overdue": 3,
+          "id": "4200C0D3F3E9-P-72",
+          "text": "Fixture 4200C0D3F3E9: Delivery is three days late."
+        }
+      },
+      "name": "high-empty-marketing",
+      "operation": "research.marketing",
+      "role": "marketing",
+      "schema_error": "Schema violation at inputs.material"
+    }
+  ],
+  "positive": [
+    {
+      "inputs": {
+        "marketing_material": "Fixture 4200C0D3F3E9: The service targets local shops through partner referrals.",
+        "product_material": "Fixture 4200C0D3F3E9: The product supports barcode scanning and offline inventory.",
+        "ticket": {
+          "days_overdue": 3,
+          "id": "4200C0D3F3E9-P-72",
+          "text": "Fixture 4200C0D3F3E9: Delivery is three days late."
+        }
+      },
+      "marketing_anchors": [
+        [
+          "local"
+        ],
+        [
+          "shop",
+          "retail"
+        ],
+        [
+          "partner"
+        ],
+        [
+          "referral"
+        ]
+      ],
+      "name": "high-brief",
+      "product_anchors": [
+        [
+          "barcode"
+        ],
+        [
+          "scann"
+        ],
+        [
+          "offline"
+        ],
+        [
+          "inventory",
+          "stock"
+        ]
+      ]
+    },
+    {
+      "inputs": {
+        "marketing_material": "",
+        "product_material": "",
+        "ticket": {
+          "days_overdue": 2,
+          "id": "4200C0D3F3E9-P-72",
+          "text": "Fixture 4200C0D3F3E9: Delivery is three days late."
+        }
+      },
+      "name": "normal-empty"
+    },
+    {
+      "inputs": {
+        "marketing_material": "Fixture 4200C0D3F3E9: The service targets local shops through partner referrals.",
+        "product_material": "Fixture 4200C0D3F3E9: The product supports barcode scanning and offline inventory.",
+        "ticket": {
+          "days_overdue": 0,
+          "id": "4200C0D3F3E9-P-72",
+          "text": "Fixture 4200C0D3F3E9: Delivery is three days late."
+        }
+      },
+      "name": "normal-zero"
+    },
+    {
+      "inputs": {
+        "marketing_material": "Fixture 4200C0D3F3E9: The service targets local shops through partner referrals.",
+        "product_material": "Fixture 4200C0D3F3E9: The product supports barcode scanning and offline inventory.",
+        "ticket": {
+          "days_overdue": 2,
+          "id": "4200C0D3F3E9-P-72",
+          "text": "Fixture 4200C0D3F3E9: Delivery is three days late."
+        }
+      },
+      "name": "normal-valid"
+    },
+    {
+      "inputs": {
+        "marketing_material": "Fixture 4200C0D3F3E9: The service targets local shops through partner referrals.",
+        "product_material": "Fixture 4200C0D3F3E9: The product supports barcode scanning and offline inventory.",
+        "ticket": {
+          "days_overdue": 3,
+          "id": "4200C0D3F3E9-P-72",
+          "text": "Fixture 4200C0D3F3E9: Delivery is three days late."
+        }
+      },
+      "marketing_anchors": [
+        [
+          "local"
+        ],
+        [
+          "shop",
+          "retail"
+        ],
+        [
+          "partner"
+        ],
+        [
+          "referral"
+        ]
+      ],
+      "name": "boundary-high",
+      "product_anchors": [
+        [
+          "barcode"
+        ],
+        [
+          "scann"
+        ],
+        [
+          "offline"
+        ],
+        [
+          "inventory",
+          "stock"
+        ]
+      ]
+    }
+  ]
+}

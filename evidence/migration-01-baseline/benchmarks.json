@@ -1,0 +1,591 @@
+{
+  "bulletin-market-brief": {
+    "cases": {
+      "negative": [
+        "empty-articles",
+        "duplicate-articles",
+        "malformed-article-title",
+        "empty-marketing"
+      ],
+      "positive": [
+        "base-bulletins",
+        "alternate-bulletins",
+        "reordered-bulletins",
+        "replaced-capability",
+        "changed-marketing"
+      ]
+    },
+    "deadline_seconds": 120,
+    "extra_corruptions": [],
+    "fresh_fixtures": true,
+    "live_grant_seconds": 2220,
+    "manifest": {
+      "default": false,
+      "environment": "fixtures",
+      "evaluator": "verifier",
+      "fresh_fixtures": true,
+      "harbor": {
+        "verifier_timeout_sec": 5400
+      },
+      "human_review": true
+    },
+    "procedure": "case",
+    "prompts": {
+      "full_catalog": {
+        "path": "prompts/bulletin-market-brief.full.catalog.txt",
+        "sha256": "f59ba574360ceef5e23f34a94551061350b9675384e4006ebc43a29c9269b0a2"
+      },
+      "full_prompt": {
+        "path": "prompts/bulletin-market-brief.full.prompt.txt",
+        "sha256": "f1e595a18f8500edffa61029811a9e949107bd160b410a56150e1beb54ad7297"
+      },
+      "scenario_catalog": {
+        "path": "prompts/bulletin-market-brief.scenario.catalog.txt",
+        "sha256": "74b4c00705133c833c81e4392c191d18b96ef715bd8aae72cdcdd7651a3860a0"
+      },
+      "scenario_prompt": {
+        "path": "prompts/bulletin-market-brief.scenario.prompt.txt",
+        "sha256": "598364e7e198d500f0681d10531040e2f1b84af1623feb981d28b147d7c509a7"
+      }
+    },
+    "resolved_harbor": {
+      "agent_timeout_sec": 600,
+      "build_timeout_sec": 600,
+      "cpus": 1,
+      "memory_mb": 2048,
+      "storage_mb": 4096,
+      "verifier_timeout_sec": 5400
+    },
+    "verifier_required_seconds": 5190
+  },
+  "checkout-recovery": {
+    "deadline_seconds": 120,
+    "judge_calls_if_paid": 1,
+    "live_grant_seconds": 1980,
+    "manifest": {
+      "bindings": "bindings.yaml",
+      "budgets": {
+        "authoring_attempts": 2,
+        "runtime_model_calls": 4
+      },
+      "controls": {
+        "reference_reward": 0.732
+      },
+      "default": false,
+      "environment": "autowfbench",
+      "evaluator": "autowfbench",
+      "output": {
+        "artifact_field": "incident_summary",
+        "artifact_name": "incident-summary.md"
+      },
+      "provenance": {
+        "challenge": "production-checkout-recovery",
+        "source": "autowfbench"
+      },
+      "workflow_id": "checkout-workflow"
+    },
+    "prompts": {
+      "full_catalog": {
+        "path": "prompts/checkout-recovery.full.catalog.txt",
+        "sha256": "946edeff0de22a757d0574601f7f119cda9adf737d8396d8bc53f3056f7f13ba"
+      },
+      "full_prompt": {
+        "path": "prompts/checkout-recovery.full.prompt.txt",
+        "sha256": "920472a634ec32c6d55d66aceec6c4a66035d6cd69b5bc3ad36f3b3c315fae17"
+      }
+    },
+    "resolved_harbor": {
+      "agent_timeout_sec": 600,
+      "build_timeout_sec": 600,
+      "cpus": 1,
+      "memory_mb": 2048,
+      "storage_mb": 4096,
+      "verifier_timeout_sec": 1800
+    },
+    "verifier_required_seconds": 1095
+  },
+  "competitor-report": {
+    "cases": {
+      "negative": [
+        "missing-product",
+        "missing-marketing"
+      ],
+      "positive": [
+        "original-evidence",
+        "unseen-source-markers"
+      ]
+    },
+    "deadline_seconds": 120,
+    "extra_corruptions": [
+      "missing-analysis-execution",
+      "contentless-report-with-preserved-evidence"
+    ],
+    "fresh_fixtures": false,
+    "live_grant_seconds": 2220,
+    "manifest": {
+      "default": true,
+      "environment": "fixtures",
+      "evaluator": "verifier",
+      "harbor": {
+        "verifier_timeout_sec": 3600
+      }
+    },
+    "procedure": "case",
+    "prompts": {
+      "full_catalog": {
+        "path": "prompts/competitor-report.full.catalog.txt",
+        "sha256": "f59ba574360ceef5e23f34a94551061350b9675384e4006ebc43a29c9269b0a2"
+      },
+      "full_prompt": {
+        "path": "prompts/competitor-report.full.prompt.txt",
+        "sha256": "2d17a6ddd01a5261f62ba421906a600c2774cd23ab0bcbcbba1ff04184dff0d4"
+      },
+      "scenario_catalog": {
+        "path": "prompts/competitor-report.scenario.catalog.txt",
+        "sha256": "f320a298c3d081d4cd8726db39aec7c07e4c02f94a29463c2ea71ca47d09b239"
+      },
+      "scenario_prompt": {
+        "path": "prompts/competitor-report.scenario.prompt.txt",
+        "sha256": "d2f4f1f23e30d2827bebec8d6ba7bb667a9829b142a400b478533f49268a4838"
+      }
+    },
+    "resolved_harbor": {
+      "agent_timeout_sec": 600,
+      "build_timeout_sec": 600,
+      "cpus": 1,
+      "memory_mb": 2048,
+      "storage_mb": 4096,
+      "verifier_timeout_sec": 3600
+    },
+    "verifier_required_seconds": 3240
+  },
+  "crm-lead-qualification": {
+    "deadline_seconds": 120,
+    "judge_calls_if_paid": 1,
+    "live_grant_seconds": 1980,
+    "manifest": {
+      "bindings": "bindings.yaml",
+      "budgets": {
+        "authoring_attempts": 1,
+        "runtime_model_calls": 1
+      },
+      "controls": {
+        "reference_reward": 0.732
+      },
+      "default": false,
+      "environment": "autowfbench",
+      "evaluator": "autowfbench",
+      "provenance": {
+        "challenge": "crm-lead-qualification",
+        "source": "autowfbench"
+      },
+      "workflow_id": "crm-workflow"
+    },
+    "prompts": {
+      "full_catalog": {
+        "path": "prompts/crm-lead-qualification.full.catalog.txt",
+        "sha256": "316046d7161cd6d4ce1e7da31c450943a503d1e9032b5efc9069f4c118b2228f"
+      },
+      "full_prompt": {
+        "path": "prompts/crm-lead-qualification.full.prompt.txt",
+        "sha256": "79b6ae1e1a2afb19f7257cf6a608f1ec958564ca07f2293ca6909a7811dcb658"
+      }
+    },
+    "resolved_harbor": {
+      "agent_timeout_sec": 600,
+      "build_timeout_sec": 600,
+      "cpus": 1,
+      "memory_mb": 2048,
+      "storage_mb": 4096,
+      "verifier_timeout_sec": 1800
+    },
+    "verifier_required_seconds": 1095
+  },
+  "daily-digest": {
+    "cases": {
+      "negative": [],
+      "positive": [
+        "supplied-articles",
+        "alternate-articles"
+      ]
+    },
+    "deadline_seconds": 120,
+    "extra_corruptions": [],
+    "fresh_fixtures": false,
+    "live_grant_seconds": 2220,
+    "manifest": {
+      "budgets": {
+        "authoring_attempts": 0
+      },
+      "default": false,
+      "environment": "fixtures",
+      "evaluator": "verifier",
+      "prompt_extension": "TASK-SPECIFIC LIFECYCLE EXTENSION"
+    },
+    "procedure": "lifecycle",
+    "prompts": {
+      "full_catalog": {
+        "path": "prompts/daily-digest.full.catalog.txt",
+        "sha256": "f59ba574360ceef5e23f34a94551061350b9675384e4006ebc43a29c9269b0a2"
+      },
+      "full_prompt": {
+        "path": "prompts/daily-digest.full.prompt.txt",
+        "sha256": "70d11e29f5910912e9fd70947e41a7a1f31ac0f4a1396e12f511e3a1a0c197b6"
+      },
+      "scenario_catalog": {
+        "path": "prompts/daily-digest.scenario.catalog.txt",
+        "sha256": "f6e3f0ce3d696df6da56cd0783f8f7a5c125a0f01741713306f1321a36ca6229"
+      },
+      "scenario_prompt": {
+        "path": "prompts/daily-digest.scenario.prompt.txt",
+        "sha256": "6c75dc16c94b96da52686b3f18c04e44ad0fb0cbca88b8157211bf81d28ebf5a"
+      }
+    },
+    "resolved_harbor": {
+      "agent_timeout_sec": 600,
+      "build_timeout_sec": 600,
+      "cpus": 1,
+      "memory_mb": 2048,
+      "storage_mb": 4096,
+      "verifier_timeout_sec": 1800
+    },
+    "verifier_required_seconds": 720
+  },
+  "dual-ledger-closeout": {
+    "cases": {
+      "negative": [
+        "domestic-duplicate",
+        "domestic-mixed",
+        "domestic-overflow",
+        "export-duplicate",
+        "export-mixed",
+        "export-overflow"
+      ],
+      "positive": [
+        "base-ledgers",
+        "alternate-ledgers",
+        "reversed-ledgers",
+        "domestic-zero-added",
+        "export-amount-changed"
+      ]
+    },
+    "deadline_seconds": 30,
+    "extra_corruptions": [],
+    "fresh_fixtures": true,
+    "live_grant_seconds": 2220,
+    "manifest": {
+      "default": false,
+      "environment": "fixtures",
+      "evaluator": "verifier",
+      "fresh_fixtures": true,
+      "harbor": {
+        "verifier_timeout_sec": 6600
+      }
+    },
+    "procedure": "case",
+    "prompts": {
+      "full_catalog": {
+        "path": "prompts/dual-ledger-closeout.full.catalog.txt",
+        "sha256": "f59ba574360ceef5e23f34a94551061350b9675384e4006ebc43a29c9269b0a2"
+      },
+      "full_prompt": {
+        "path": "prompts/dual-ledger-closeout.full.prompt.txt",
+        "sha256": "7f2baad6cf11d00e45db9230ed1063ca9b722dcef3e9188ca27cfa08621a09e6"
+      },
+      "scenario_catalog": {
+        "path": "prompts/dual-ledger-closeout.scenario.catalog.txt",
+        "sha256": "a93b8bb0e0a00c97b90893221224a47cf621ce2b0852cdf785de79a216bd6a8a"
+      },
+      "scenario_prompt": {
+        "path": "prompts/dual-ledger-closeout.scenario.prompt.txt",
+        "sha256": "df78227a3807963556ca2e2ee43d3d3b413746c3a714a857eb6910d536a9151f"
+      }
+    },
+    "resolved_harbor": {
+      "agent_timeout_sec": 600,
+      "build_timeout_sec": 600,
+      "cpus": 1,
+      "memory_mb": 2048,
+      "storage_mb": 4096,
+      "verifier_timeout_sec": 6600
+    },
+    "verifier_required_seconds": 5520
+  },
+  "invoice-total": {
+    "cases": {
+      "negative": [
+        "empty",
+        "duplicate-id",
+        "mixed-currencies",
+        "negative-amount",
+        "fractional-amount",
+        "unsafe-amount",
+        "total-overflow"
+      ],
+      "positive": [
+        "original-38000",
+        "alternate-values-zero",
+        "maximum-safe-total"
+      ]
+    },
+    "deadline_seconds": 30,
+    "extra_corruptions": [],
+    "fresh_fixtures": false,
+    "live_grant_seconds": 2220,
+    "manifest": {
+      "default": true,
+      "environment": "fixtures",
+      "evaluator": "verifier",
+      "harbor": {
+        "verifier_timeout_sec": 6000
+      }
+    },
+    "procedure": "case",
+    "prompts": {
+      "full_catalog": {
+        "path": "prompts/invoice-total.full.catalog.txt",
+        "sha256": "f59ba574360ceef5e23f34a94551061350b9675384e4006ebc43a29c9269b0a2"
+      },
+      "full_prompt": {
+        "path": "prompts/invoice-total.full.prompt.txt",
+        "sha256": "d1e72a8298a682f09c6198beb8e26f54beaf086f56a65a79a7cc68e0a0625f49"
+      },
+      "scenario_catalog": {
+        "path": "prompts/invoice-total.scenario.catalog.txt",
+        "sha256": "a93b8bb0e0a00c97b90893221224a47cf621ce2b0852cdf785de79a216bd6a8a"
+      },
+      "scenario_prompt": {
+        "path": "prompts/invoice-total.scenario.prompt.txt",
+        "sha256": "8c43ed0f1fd947ba5430cd95cb5555a0575b183fa0d6fbc2883ca2c98981150a"
+      }
+    },
+    "resolved_harbor": {
+      "agent_timeout_sec": 600,
+      "build_timeout_sec": 600,
+      "cpus": 1,
+      "memory_mb": 2048,
+      "storage_mb": 4096,
+      "verifier_timeout_sec": 6000
+    },
+    "verifier_required_seconds": 5160
+  },
+  "priority-support-brief": {
+    "cases": {
+      "negative": [
+        "high-empty-product",
+        "high-empty-marketing"
+      ],
+      "positive": [
+        "high-brief",
+        "normal-empty",
+        "normal-zero",
+        "normal-valid",
+        "boundary-high"
+      ]
+    },
+    "deadline_seconds": 120,
+    "extra_corruptions": [],
+    "fresh_fixtures": true,
+    "live_grant_seconds": 2220,
+    "manifest": {
+      "default": false,
+      "environment": "fixtures",
+      "evaluator": "verifier",
+      "fresh_fixtures": true,
+      "harbor": {
+        "verifier_timeout_sec": 4800
+      },
+      "human_review": true
+    },
+    "procedure": "case",
+    "prompts": {
+      "full_catalog": {
+        "path": "prompts/priority-support-brief.full.catalog.txt",
+        "sha256": "f59ba574360ceef5e23f34a94551061350b9675384e4006ebc43a29c9269b0a2"
+      },
+      "full_prompt": {
+        "path": "prompts/priority-support-brief.full.prompt.txt",
+        "sha256": "446aefbcbfdbe3dcb4b37116241ca0964a3112943d95f3d2b7d48cf1f8dccd94"
+      },
+      "scenario_catalog": {
+        "path": "prompts/priority-support-brief.scenario.catalog.txt",
+        "sha256": "d501a439da5d7b7db20bebe5811a8e240644d8104e64081ca0528cfa24565257"
+      },
+      "scenario_prompt": {
+        "path": "prompts/priority-support-brief.scenario.prompt.txt",
+        "sha256": "968125d5376c2c8cd006ea1f982787db6ac06e5e8d4b6abc84c749a79c868789"
+      }
+    },
+    "resolved_harbor": {
+      "agent_timeout_sec": 600,
+      "build_timeout_sec": 600,
+      "cpus": 1,
+      "memory_mb": 2048,
+      "storage_mb": 4096,
+      "verifier_timeout_sec": 4800
+    },
+    "verifier_required_seconds": 4410
+  },
+  "revise-answer": {
+    "cases": {
+      "negative": [],
+      "positive": [
+        "valid-reply",
+        "impossible-limit"
+      ]
+    },
+    "deadline_seconds": 120,
+    "extra_corruptions": [],
+    "fresh_fixtures": false,
+    "live_grant_seconds": 2220,
+    "manifest": {
+      "default": false,
+      "environment": "fixtures",
+      "evaluator": "verifier",
+      "harbor": {
+        "verifier_timeout_sec": 3000
+      },
+      "prompt_extension": "TASK-SPECIFIC REFINEMENT EXTENSION"
+    },
+    "procedure": "refinement",
+    "prompts": {
+      "full_catalog": {
+        "path": "prompts/revise-answer.full.catalog.txt",
+        "sha256": "f59ba574360ceef5e23f34a94551061350b9675384e4006ebc43a29c9269b0a2"
+      },
+      "full_prompt": {
+        "path": "prompts/revise-answer.full.prompt.txt",
+        "sha256": "94a2fa3749b2c3be6355247ae36d7759f71db995c9e4b54212d1c2e4dd6f5e96"
+      },
+      "scenario_catalog": {
+        "path": "prompts/revise-answer.scenario.catalog.txt",
+        "sha256": "66dee79201157577d9aaab552006003d7f6802a2f9f0da758f39c012cc1704d3"
+      },
+      "scenario_prompt": {
+        "path": "prompts/revise-answer.scenario.prompt.txt",
+        "sha256": "6ecdd336c2df7988c7ef7eedbec15b008eddbde4c8d23270f81e98aee45a27b4"
+      }
+    },
+    "resolved_harbor": {
+      "agent_timeout_sec": 600,
+      "build_timeout_sec": 600,
+      "cpus": 1,
+      "memory_mb": 2048,
+      "storage_mb": 4096,
+      "verifier_timeout_sec": 3000
+    },
+    "verifier_required_seconds": 2460
+  },
+  "support-review-packet": {
+    "cases": {
+      "negative": [
+        "duplicate-invoices",
+        "invalid-days--1",
+        "invalid-days-2.5"
+      ],
+      "positive": [
+        "high-packet",
+        "normal-packet",
+        "small-review-limit",
+        "invoice-amount-changed",
+        "boundary-high",
+        "wrong-order-id"
+      ]
+    },
+    "deadline_seconds": 120,
+    "extra_corruptions": [],
+    "fresh_fixtures": true,
+    "live_grant_seconds": 2220,
+    "manifest": {
+      "default": false,
+      "environment": "fixtures",
+      "evaluator": "verifier",
+      "fresh_fixtures": true,
+      "harbor": {
+        "verifier_timeout_sec": 5400
+      }
+    },
+    "procedure": "case",
+    "prompts": {
+      "full_catalog": {
+        "path": "prompts/support-review-packet.full.catalog.txt",
+        "sha256": "f59ba574360ceef5e23f34a94551061350b9675384e4006ebc43a29c9269b0a2"
+      },
+      "full_prompt": {
+        "path": "prompts/support-review-packet.full.prompt.txt",
+        "sha256": "8817f0794c1f945059287ec85503d6d517e6f571f0f8c00233dc182a76e7a9f0"
+      },
+      "scenario_catalog": {
+        "path": "prompts/support-review-packet.scenario.catalog.txt",
+        "sha256": "f1182a67dd6739988b16332e7324735f1914338fa23b37310fe8de2a31cf7cfc"
+      },
+      "scenario_prompt": {
+        "path": "prompts/support-review-packet.scenario.prompt.txt",
+        "sha256": "098993bd827c98e10629b34bed3da9ffecc60d526e90cb44170c49c4ce9e9171"
+      }
+    },
+    "resolved_harbor": {
+      "agent_timeout_sec": 600,
+      "build_timeout_sec": 600,
+      "cpus": 1,
+      "memory_mb": 2048,
+      "storage_mb": 4096,
+      "verifier_timeout_sec": 5400
+    },
+    "verifier_required_seconds": 5190
+  },
+  "ticket-routing": {
+    "cases": {
+      "negative": [
+        "negative-days",
+        "fractional-days"
+      ],
+      "positive": [
+        "high-three-days",
+        "normal-boundary-two",
+        "normal-zero",
+        "high-alternate"
+      ]
+    },
+    "deadline_seconds": 60,
+    "extra_corruptions": [],
+    "fresh_fixtures": false,
+    "live_grant_seconds": 2220,
+    "manifest": {
+      "default": true,
+      "environment": "fixtures",
+      "evaluator": "verifier",
+      "harbor": {
+        "verifier_timeout_sec": 4200
+      }
+    },
+    "procedure": "case",
+    "prompts": {
+      "full_catalog": {
+        "path": "prompts/ticket-routing.full.catalog.txt",
+        "sha256": "f59ba574360ceef5e23f34a94551061350b9675384e4006ebc43a29c9269b0a2"
+      },
+      "full_prompt": {
+        "path": "prompts/ticket-routing.full.prompt.txt",
+        "sha256": "21ea6dc4070a0070ee7f1cb59d9556ba262d6919eae426ed9f56f5743bdc4a77"
+      },
+      "scenario_catalog": {
+        "path": "prompts/ticket-routing.scenario.catalog.txt",
+        "sha256": "082749fb331555d43e0d8a86abda7567769adf1d969f038d5295e1c45ae520ac"
+      },
+      "scenario_prompt": {
+        "path": "prompts/ticket-routing.scenario.prompt.txt",
+        "sha256": "dbe964d99ebb1cd0a2dee4d3bed13a05afcda353f0d693c5e7e33c89b6b743b4"
+      }
+    },
+    "resolved_harbor": {
+      "agent_timeout_sec": 600,
+      "build_timeout_sec": 600,
+      "cpus": 1,
+      "memory_mb": 2048,
+      "storage_mb": 4096,
+      "verifier_timeout_sec": 4200
+    },
+    "verifier_required_seconds": 3720
+  }
+}

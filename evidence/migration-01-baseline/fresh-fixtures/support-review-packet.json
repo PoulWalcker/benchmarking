@@ -1,0 +1,237 @@
+{
+  "live_cases": [
+    "high-packet",
+    "normal-packet"
+  ],
+  "negative": [
+    {
+      "error": "Duplicate invoice ID",
+      "inputs": {
+        "invoices": [
+          {
+            "amount_minor": 1,
+            "currency": "AED",
+            "id": "3060E22CF7E3-DUP"
+          },
+          {
+            "amount_minor": 2,
+            "currency": "AED",
+            "id": "3060E22CF7E3-DUP"
+          }
+        ],
+        "max_characters": 120,
+        "required_order_id": "3060E22CF7E3-A9137",
+        "ticket": {
+          "days_overdue": 3,
+          "id": "3060E22CF7E3-S-31",
+          "text": "Fixture 3060E22CF7E3: Please check order 3060E22CF7E3-A9137, delayed three days."
+        }
+      },
+      "name": "duplicate-invoices",
+      "operation": "invoices.validate",
+      "role": "validate"
+    },
+    {
+      "error": "Invalid overdue days",
+      "inputs": {
+        "invoices": [
+          {
+            "amount_minor": 1251,
+            "currency": "AED",
+            "id": "3060E22CF7E3-B-1"
+          },
+          {
+            "amount_minor": 349,
+            "currency": "AED",
+            "id": "3060E22CF7E3-B-2"
+          }
+        ],
+        "max_characters": 120,
+        "required_order_id": "3060E22CF7E3-A9137",
+        "ticket": {
+          "days_overdue": -1,
+          "id": "3060E22CF7E3-S-31",
+          "text": "Fixture 3060E22CF7E3: Please check order 3060E22CF7E3-A9137, delayed three days."
+        }
+      },
+      "name": "invalid-days--1",
+      "operation": "ticket.classify",
+      "role": "classify",
+      "schema_error": "Schema violation at inputs.ticket.days_overdue"
+    },
+    {
+      "error": "Invalid overdue days",
+      "inputs": {
+        "invoices": [
+          {
+            "amount_minor": 1251,
+            "currency": "AED",
+            "id": "3060E22CF7E3-B-1"
+          },
+          {
+            "amount_minor": 349,
+            "currency": "AED",
+            "id": "3060E22CF7E3-B-2"
+          }
+        ],
+        "max_characters": 120,
+        "required_order_id": "3060E22CF7E3-A9137",
+        "ticket": {
+          "days_overdue": 2.5,
+          "id": "3060E22CF7E3-S-31",
+          "text": "Fixture 3060E22CF7E3: Please check order 3060E22CF7E3-A9137, delayed three days."
+        }
+      },
+      "name": "invalid-days-2.5",
+      "operation": "ticket.classify",
+      "role": "classify",
+      "schema_error": "Schema violation at inputs.ticket.days_overdue"
+    }
+  ],
+  "positive": [
+    {
+      "inputs": {
+        "invoices": [
+          {
+            "amount_minor": 1465,
+            "currency": "AED",
+            "id": "3060E22CF7E3-B-1"
+          },
+          {
+            "amount_minor": 563,
+            "currency": "AED",
+            "id": "3060E22CF7E3-B-2"
+          }
+        ],
+        "max_characters": 120,
+        "required_order_id": "3060E22CF7E3-A9137",
+        "ticket": {
+          "days_overdue": 3,
+          "id": "3060E22CF7E3-S-31",
+          "text": "Fixture 3060E22CF7E3: Please check order 3060E22CF7E3-A9137, delayed three days."
+        }
+      },
+      "name": "high-packet"
+    },
+    {
+      "inputs": {
+        "invoices": [
+          {
+            "amount_minor": 0,
+            "currency": "EUR",
+            "id": "3060E22CF7E3-N-1"
+          },
+          {
+            "amount_minor": 231,
+            "currency": "EUR",
+            "id": "3060E22CF7E3-N-2"
+          }
+        ],
+        "max_characters": 120,
+        "required_order_id": "3060E22CF7E3-Z204",
+        "ticket": {
+          "days_overdue": 2,
+          "id": "3060E22CF7E3-S-N",
+          "text": "Fixture 3060E22CF7E3: Please check order 3060E22CF7E3-Z204, delayed two days."
+        }
+      },
+      "name": "normal-packet"
+    },
+    {
+      "inputs": {
+        "invoices": [
+          {
+            "amount_minor": 1465,
+            "currency": "AED",
+            "id": "3060E22CF7E3-B-1"
+          },
+          {
+            "amount_minor": 563,
+            "currency": "AED",
+            "id": "3060E22CF7E3-B-2"
+          }
+        ],
+        "max_characters": 1,
+        "required_order_id": "3060E22CF7E3-A9137",
+        "ticket": {
+          "days_overdue": 3,
+          "id": "3060E22CF7E3-S-31",
+          "text": "Fixture 3060E22CF7E3: Please check order 3060E22CF7E3-A9137, delayed three days."
+        }
+      },
+      "name": "small-review-limit"
+    },
+    {
+      "inputs": {
+        "invoices": [
+          {
+            "amount_minor": 1466,
+            "currency": "AED",
+            "id": "3060E22CF7E3-B-1"
+          },
+          {
+            "amount_minor": 563,
+            "currency": "AED",
+            "id": "3060E22CF7E3-B-2"
+          }
+        ],
+        "max_characters": 120,
+        "required_order_id": "3060E22CF7E3-A9137",
+        "ticket": {
+          "days_overdue": 3,
+          "id": "3060E22CF7E3-S-31",
+          "text": "Fixture 3060E22CF7E3: Please check order 3060E22CF7E3-A9137, delayed three days."
+        }
+      },
+      "name": "invoice-amount-changed"
+    },
+    {
+      "inputs": {
+        "invoices": [
+          {
+            "amount_minor": 0,
+            "currency": "EUR",
+            "id": "3060E22CF7E3-N-1"
+          },
+          {
+            "amount_minor": 231,
+            "currency": "EUR",
+            "id": "3060E22CF7E3-N-2"
+          }
+        ],
+        "max_characters": 120,
+        "required_order_id": "3060E22CF7E3-Z204",
+        "ticket": {
+          "days_overdue": 3,
+          "id": "3060E22CF7E3-S-N",
+          "text": "Fixture 3060E22CF7E3: Please check order 3060E22CF7E3-Z204, delayed two days."
+        }
+      },
+      "name": "boundary-high"
+    },
+    {
+      "inputs": {
+        "invoices": [
+          {
+            "amount_minor": 1465,
+            "currency": "AED",
+            "id": "3060E22CF7E3-B-1"
+          },
+          {
+            "amount_minor": 563,
+            "currency": "AED",
+            "id": "3060E22CF7E3-B-2"
+          }
+        ],
+        "max_characters": 120,
+        "required_order_id": "3060E22CF7E3-UNMENTIONED-ORDER",
+        "ticket": {
+          "days_overdue": 3,
+          "id": "3060E22CF7E3-S-31",
+          "text": "Fixture 3060E22CF7E3: Please check order A9137, delayed three days."
+        }
+      },
+      "name": "wrong-order-id"
+    }
+  ]
+}

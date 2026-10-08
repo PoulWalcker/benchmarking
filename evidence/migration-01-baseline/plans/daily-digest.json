@@ -1,0 +1,427 @@
+{
+  "entries": [
+    {
+      "callback": "stub-test",
+      "config": {
+        "activation": {
+          "enabled": false,
+          "kind": "Cron",
+          "rule_id": "daily-digest-0900",
+          "schedule": "0 9 * * *",
+          "timezone": "Asia/Dubai",
+          "workflow_ref": {
+            "id": "daily-digest",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "lifecycle": {
+          "initial_state": "draft",
+          "on_test_fail": {
+            "action": "wbs_rebuild",
+            "archive_original": "after_fork_persisted",
+            "exhausted": "suspend_and_create_adhoc",
+            "max_rebuilds": 2,
+            "next": "request_test_via_callback",
+            "objective": "Repair the candidate using verifier findings.",
+            "output": "new_workflow_fork",
+            "source_work": "current_candidate"
+          },
+          "on_test_pass": {
+            "action": "release_candidate",
+            "enable_cron": "daily-digest-0900",
+            "retarget": "exact_tested_revision"
+          },
+          "persistence": {
+            "deduplicate_by": [
+              "rule_id",
+              "event_id"
+            ],
+            "immutable_definitions": true,
+            "record_test_results": true,
+            "store": "workflow_registry"
+          },
+          "replacement": {
+            "activate_new_revision": "after_previous_run_finishes",
+            "in_flight": "finish_pinned_revision",
+            "restore_archive": "restore_definition_without_replay"
+          },
+          "scheduling": {
+            "missed_run": "skip",
+            "overlap": "skip_if_running",
+            "suspended": "do_not_start"
+          },
+          "test": {
+            "condition": "test_environment_ready",
+            "hook": "digest.test_requested",
+            "initiator": "Callback",
+            "output_mode": "preview",
+            "reaction": "Trigger",
+            "rule_id": "digest-test-requested",
+            "verifier": "digest.acceptance_v1"
+          }
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Digest references supplied article IDs and contains a nonempty summary.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ]
+          ],
+          "id": "daily-digest",
+          "inputs": {
+            "articles": [
+              {
+                "id": "a1",
+                "text": "A new warehouse opened in Dubai.",
+                "title": "Warehouse opens"
+              },
+              {
+                "id": "a2",
+                "text": "The shop added a payment option.",
+                "title": "New payment option"
+              }
+            ]
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.preview"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "digest.prepare",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "supplied-articles",
+      "procedure": "lifecycle",
+      "tick": "2026-10-04T05:00:00+00:00"
+    },
+    {
+      "callback": "stub-test",
+      "config": {
+        "activation": {
+          "enabled": false,
+          "kind": "Cron",
+          "rule_id": "daily-digest-0900",
+          "schedule": "0 9 * * *",
+          "timezone": "Asia/Dubai",
+          "workflow_ref": {
+            "id": "daily-digest",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "lifecycle": {
+          "initial_state": "draft",
+          "on_test_fail": {
+            "action": "wbs_rebuild",
+            "archive_original": "after_fork_persisted",
+            "exhausted": "suspend_and_create_adhoc",
+            "max_rebuilds": 2,
+            "next": "request_test_via_callback",
+            "objective": "Repair the candidate using verifier findings.",
+            "output": "new_workflow_fork",
+            "source_work": "current_candidate"
+          },
+          "on_test_pass": {
+            "action": "release_candidate",
+            "enable_cron": "daily-digest-0900",
+            "retarget": "exact_tested_revision"
+          },
+          "persistence": {
+            "deduplicate_by": [
+              "rule_id",
+              "event_id"
+            ],
+            "immutable_definitions": true,
+            "record_test_results": true,
+            "store": "workflow_registry"
+          },
+          "replacement": {
+            "activate_new_revision": "after_previous_run_finishes",
+            "in_flight": "finish_pinned_revision",
+            "restore_archive": "restore_definition_without_replay"
+          },
+          "scheduling": {
+            "missed_run": "skip",
+            "overlap": "skip_if_running",
+            "suspended": "do_not_start"
+          },
+          "test": {
+            "condition": "test_environment_ready",
+            "hook": "digest.test_requested",
+            "initiator": "Callback",
+            "output_mode": "preview",
+            "reaction": "Trigger",
+            "rule_id": "digest-test-requested",
+            "verifier": "digest.acceptance_v1"
+          }
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Digest references supplied article IDs and contains a nonempty summary.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ]
+          ],
+          "id": "daily-digest",
+          "inputs": {
+            "articles": [
+              {
+                "id": "clinic",
+                "text": "Dental clinics can book appointments offline.",
+                "title": "Appointment booking"
+              },
+              {
+                "id": "sms",
+                "text": "The clinic sends SMS appointment reminders.",
+                "title": "SMS reminders"
+              }
+            ]
+          },
+          "kind": "Gantt",
+          "output": {
+            "ref": "steps.preview"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "digest.prepare",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "positive",
+      "name": "alternate-articles",
+      "procedure": "lifecycle",
+      "tick": "2026-10-04T05:00:00+00:00"
+    },
+    {
+      "callback": "wrong-output",
+      "config": {
+        "activation": {
+          "enabled": false,
+          "kind": "Cron",
+          "rule_id": "daily-digest-0900",
+          "schedule": "0 9 * * *",
+          "timezone": "Asia/Dubai",
+          "workflow_ref": {
+            "id": "daily-digest",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 120,
+          "on_step_error": "fail"
+        },
+        "lifecycle": {
+          "initial_state": "draft",
+          "on_test_fail": {
+            "action": "wbs_rebuild",
+            "archive_original": "after_fork_persisted",
+            "exhausted": "suspend_and_create_adhoc",
+            "max_rebuilds": 2,
+            "next": "request_test_via_callback",
+            "objective": "Repair the candidate using verifier findings.",
+            "output": "new_workflow_fork",
+            "source_work": "current_candidate"
+          },
+          "on_test_pass": {
+            "action": "release_candidate",
+            "enable_cron": "daily-digest-0900",
+            "retarget": "exact_tested_revision"
+          },
+          "persistence": {
+            "deduplicate_by": [
+              "rule_id",
+              "event_id"
+            ],
+            "immutable_definitions": true,
+            "record_test_results": true,
+            "store": "workflow_registry"
+          },
+          "replacement": {
+            "activate_new_revision": "after_previous_run_finishes",
+            "in_flight": "finish_pinned_revision",
+            "restore_archive": "restore_definition_without_replay"
+          },
+          "scheduling": {
+            "missed_run": "skip",
+            "overlap": "skip_if_running",
+            "suspended": "do_not_start"
+          },
+          "test": {
+            "condition": "test_environment_ready",
+            "hook": "digest.test_requested",
+            "initiator": "Callback",
+            "output_mode": "preview",
+            "reaction": "Trigger",
+            "rule_id": "digest-test-requested",
+            "verifier": "digest.acceptance_v1"
+          }
+        },
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "acceptance": "Digest references supplied article IDs and contains a nonempty summary.",
+          "dependencies": [
+            [
+              "prepare",
+              "summarize"
+            ],
+            [
+              "summarize",
+              "preview"
+            ]
+          ],
+          "id": "daily-digest",
+          "inputs": {
+            "articles": [
+              {
+                "id": "clinic",
+                "text": "Dental clinics can book appointments offline.",
+                "title": "Appointment booking"
+              },
+              {
+                "id": "sms",
+                "text": "The clinic sends SMS appointment reminders.",
+                "title": "SMS reminders"
+              }
+            ]
+          },
+          "kind": "Gantt",
+          "output": {
+            "article_ids": [
+              "wrong"
+            ],
+            "mode": "preview",
+            "text": "Unrelated fixed digest"
+          },
+          "revision": 1,
+          "steps": [
+            {
+              "id": "prepare",
+              "kind": "Script",
+              "uses": "digest.prepare",
+              "with": {
+                "articles": {
+                  "ref": "inputs.articles"
+                }
+              }
+            },
+            {
+              "id": "summarize",
+              "kind": "LLM",
+              "uses": "digest.summarize",
+              "with": {
+                "articles": {
+                  "ref": "steps.prepare.articles"
+                }
+              }
+            },
+            {
+              "id": "preview",
+              "kind": "Script",
+              "uses": "digest.preview",
+              "with": {
+                "summary": {
+                  "ref": "steps.summarize"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "kind": "mutated-generated-workflow",
+      "name": "intentional-output-mutation",
+      "procedure": "lifecycle",
+      "tick": null
+    }
+  ],
+  "fixture_sha256": "a28e60beb82a11782538a450f92193df6dd7109dc4d90f7d54a550908a9cbb10",
+  "mode": "stub",
+  "scenario": "daily-digest",
+  "schema": "sapi-lab-observation-plan/v1",
+  "submission_sha256": "082ba62505569b20ada97f16ab724b20872936c2e483a71dd79ce30921dea757"
+}

@@ -1,0 +1,357 @@
+TASK
+Create a Gantt workflow with logical id priority-support-brief. Classify a delivery ticket and produce exactly one escalation or normal reply action draft using the existing more-than-two-days rule. After selecting the action, prepare an internal product-and-market brief only for high priority tickets: analyze the supplied product and marketing materials independently, combine both analyses, then write the brief. Every step of this optional region must use the unconditional classification decision as its guard. Return exactly action and brief; brief is null for normal priority. For normal priority, none of the optional research operations may be called, including when those source strings are empty. Preserve both sources and their evidence for high priority. All outputs remain drafts; send nothing. Use exactly one occurrence of each of ticket.classify, ticket.escalation_draft, ticket.normal_draft, branch.select_one, research.product, research.marketing, research.combine and research.write. The dependency list must contain exactly these nine edges between operation occurrences: ticket.classify -> ticket.escalation_draft; ticket.classify -> ticket.normal_draft; ticket.escalation_draft -> branch.select_one; ticket.normal_draft -> branch.select_one; branch.select_one -> research.product; branch.select_one -> research.marketing; research.product -> research.combine; research.marketing -> research.combine; research.combine -> research.write. Guard each of research.product, research.marketing, research.combine and research.write by comparing the unconditional ticket.classify step's priority to high. The research.write step must be the only terminal step. Step IDs and step list order are your choice. Do not add dependency edges, including redundant ones. Public sample inputs: {"ticket":{"id":"P-72","text":"Delivery is three days late.","days_overdue":3},"product_material":"The product supports barcode scanning and offline inventory.","marketing_material":"The service targets local shops through partner referrals."}
+
+FORMAT
+# Authoring a static sapi-lab/v0 workflow
+
+This is the authoring contract for an experimental YAML profile, not official
+Sapiens YAML. Return one YAML mapping with no markdown fences or explanation.
+Do not use tools, browse, inspect files or run commands. All task information
+is supplied in this prompt. There is one attempt and no verifier feedback.
+
+## Document fields
+
+Required top-level fields: schema, spec_revision, workflow, activation, execution.
+Optional top-level field for this experiment: actors. No other fields.
+
+- schema: the string sapi-lab/v0.
+- spec_revision: the string 06ddd3333109cea8a2cb3071609070d7a3c0d3ff.
+- workflow: a mapping containing exactly id, revision, kind, inputs, steps,
+  dependencies, acceptance and output.
+- workflow.id: the logical identifier given in the task. revision: integer 1.
+- workflow.kind: Pipeline for Script-only processes, Gantt if any step is LLM.
+- workflow.inputs: concrete sample values described by the task, not a schema.
+  Tests replace these values. Derive outputs from inputs; do not hard-code answers.
+- workflow.acceptance: a nonempty human-readable description of correctness.
+- workflow.steps: a nonempty list of step mappings described below.
+- workflow.dependencies: a list of two-element lists [upstream_id, downstream_id].
+  These edges determine order. The order of entries in steps does not.
+- workflow.output: a reference, or a literal object/array containing references
+  and values. For example, `{first: {ref: steps.a}, second: {ref: steps.b}}`
+  returns both results after all terminal steps finish. Step list order has no
+  evaluation restriction; dependencies determine execution order.
+
+## Steps and references
+
+Each step requires id, kind, uses and with. Optional fields are when, join, actor.
+IDs must match ^[a-z][a-z0-9_-]*$ and be unique. Use your own step IDs.
+kind must match the selected operation's kind. uses is an operation name from
+the supplied catalog. with is a mapping whose keys are exactly that operation's
+listed input names, with a value or reference for each.
+
+Reference syntax is a mapping with one key: {ref: inputs.FIELD},
+{ref: steps.STEP_ID.FIELD}, or {ref: steps.STEP_ID} for the whole result object.
+Every referenced producer must be an ancestor through dependencies. Values may
+be nested objects or arrays containing references. To project a closed input
+object, use `{id: {ref: inputs.ticket.id}, text: {ref: inputs.ticket.text}}`.
+This constructs an object from two existing references; it introduces no
+expression language, transformation, or new operation.
+
+A condition has the form when: {ref: steps.STEP_ID.FIELD, eq: VALUE}.
+It compares a value for equality. If false, the operation is skipped.
+Reading a conditional step's result requires {optional_ref: steps.STEP_ID}
+(or a field path). It returns null if that step was skipped. A missing producer envelope is an
+error, not an optional skip. For a multi-stage conditional region, every step
+may reuse an unconditional ancestor's scalar decision as its guard. The guard
+is evaluated before operation inputs. Do not guard on a possibly skipped
+producer or use optional_ref inside when.
+
+Any step with two or more direct predecessors requires join: all_terminal.
+This waits for both completed and skipped predecessors. Errors abort the run.
+Two independent steps have no edge between them and consume their own inputs.
+They can both be predecessors of a later join. Independence does not require
+simultaneous wall-clock execution.
+
+An actor field names a top-level actors entry. actors is a mapping from actor
+name to {context_scope: STRING, allowed_operations: LIST_OF_OPERATION_NAMES}.
+Every assigned operation must be allowed by its actor. Actors are metadata in
+this experiment, not separate processes. Tasks may require particular actor names.
+
+## Activation and execution
+
+Use a Callback activation with exactly these fields:
+kind: Callback; rule_id: a nonempty descriptive identifier; hook: a descriptive
+event name; condition: valid_input; reaction: Trigger; workflow_ref: a mapping
+containing id and revision matching the workflow exactly.
+The test supplies inputs and starts execution directly; no callback is registered.
+
+execution contains exactly concurrency: independent, deadline_seconds: 120,
+and on_step_error: fail. These are required settings for this experiment.
+Cycles, refinement, lifecycle, dynamic steps, mandatory parallelism, retries,
+custom JavaScript and new operations are outside this experiment.
+
+The catalog includes operations for other experiments. Select only operations
+needed for the task; the available catalog does not require using every entry.
+
+
+PROFILE
+# Experimental profile: sapi-lab/v0
+
+This is a concrete experimental interpretation of the pinned Haskell notation's
+leaf types, not an official Sapiens format. Config 04 uses bounded refinement
+compiled into one native graph. Config 05 requires the durable lifecycle
+controller around its native candidate graph; importing that graph alone does
+not implement lifecycle management.
+
+## Field semantics
+
+| Area | Rule |
+| --- | --- |
+| Identity | `workflow.id` and a positive `revision`; activation references exactly this pair |
+| Workflow type | `Pipeline` contains Script steps; `Gantt` allows Script and LLM steps |
+| Operation | `uses` selects an explicitly registered handler from `bindings.yaml` |
+| Inputs | `workflow.inputs` contains fixture values, not a schema; `with` binds operation inputs |
+| Data | `{ref: inputs.x}` or `{ref: steps.step_id.field}`; a step result is available only to descendants |
+| Order | `[a, b]` means b waits for a; YAML entry order does not define dependencies |
+| Condition | `when: {ref: ..., eq: ...}` uses exact equality; the examples compare scalar values |
+| Skip | A false condition produces `skipped`; the operation is not called, but the bookkeeping envelope still propagates |
+| Optional | `optional_ref` returns null only for `skipped`; a missing result remains an error |
+| Join | `all_terminal` waits for all specified branches, including skipped branches; a step error aborts the run |
+| Concurrency | `independent` allows sequential execution; `required_parallel` requires concurrent progress and is rejected by the demo backend |
+| Cycles | Ordinary dependencies form a DAG by our choice; the new source specification requires an explicit cycle policy |
+| Errors | Only fail-fast behavior is supported; transport retries are absent |
+| Result | `workflow.output` is resolved after all terminal steps finish |
+| Acceptance | A human-readable condition; a separate executable verifier is required |
+| Actors | Logical assignments and allowed-operation lists; no real Sapi processes or context isolation are provided here |
+| Activation | The profile supports Callback or Cron; the demo injects a fixture instead of admitting a real event |
+
+Execution data is represented by one JSON envelope containing
+`inputs`, `steps`, `statuses`, `events`, and `simulation`. Arrays remain inside
+that envelope. This profile does not use one n8n item per input record.
+At a join, results with the same name from shared ancestors must agree.
+
+The n8n wrapper executes each guarded Code node but does not call its operation
+when the condition is false. Merge append then collects the envelopes. This is a
+deliberate choice in the demo backend: it does not generate native IF nodes or
+wait for data from an inactive branch in stub mode.
+
+In `stub` mode, LLM stubs in `operations.js` are deterministic. They do not execute
+prompt text from bindings. Classification therefore demonstrates routing, and
+the research report demonstrates data transfer; model quality is not evaluated.
+
+## Bounded refinement and candidate lifecycle
+
+`execution.refinement` describes repeating one graph region with feedback.
+The `max_attempts: 3` limit includes the first generation. Success means `until`
+is true; only an accepted attempt can produce the result. Exhaustion means failed.
+`initial_state` and `carry` define how the result and feedback are passed on.
+The compiler unrolls the bounded whole graph into native attempt copies with
+IF continuation, separate invocation IDs and Checkpoint history. The same
+deadline covers all attempts. Later attempts never run after acceptance;
+exhaustion fails Result while native checkpoints remain available. The lowering
+is independent of operation names and scenario IDs.
+
+`lifecycle` is outside WorkflowDefinition: it describes candidate management,
+testing, WBS rebuilds, archiving, and release. `max_rebuilds: 2` allows at most
+three candidates, including the initial one. Cron is enabled for the exact tested
+revision. Overlap, missed-run, and in-flight replacement policies are explicit.
+A SQLite registry and `runtime.lifecycle.LifecycleController` implement these
+policies. Definitions and their hashes are immutable. Callback events persist
+before execution and deduplicate by rule/event ID. Test results release the
+exact tested revision. A configured rebuilder receives the rejected candidate
+and findings, returns a new validated fork, and cannot weaken the frozen inputs,
+acceptance or lifecycle policy. Fork persistence, old-definition archive and
+next test Callback commit atomically. Exhaustion suspends the family and records
+Adhoc work. Restoring an archive neither replays nor releases it.
+
+The supported Cron subset is one fixed minute and hour daily in an IANA timezone.
+The foreground scheduler admits the current minute, skips missed or overlapping
+runs, and deduplicates across restart. Runs retain their admitted revision;
+candidate executions serialize, so replacements cannot interrupt in-flight
+runs. Registered forks are distinguished from model-authored WBS rebuilds.
+The latter preserve returned YAML and an append-before-dispatch call record.
+Completed durable results can finish registry transactions after restart;
+uncertain native/model outcomes suspend instead of silently repeating work.
+See [the explicit lifecycle commands](LIFECYCLE.md). These are lab policies;
+the pinned upstream specification is unchanged.
+
+## Validator limits
+
+Checks cover operation existence, step kinds, unique IDs and YAML keys,
+dependency endpoints, DAG structure, reference ancestry, first-level output
+fields, explicit joins, actor restrictions, exact activation revision, and
+selected extension fields.
+
+Checks do not cover full nested JSON Schema, LLM answer truthfulness,
+complete ReactionPolicy semantics, dynamic step collections or durable retries.
+Lifecycle admission additionally validates the supported daily Cron/timezone
+and exact policies; it rejects other lifecycle strings. Invalid types in
+some structures can raise an ordinary Python exception instead of a helpful
+diagnostic. This is a narrow research validator.
+
+Pipeline validation trusts the catalog: forbidding a hidden LLM call inside a
+Script implementation requires reviewing its source and dependencies; `kind`
+alone is insufficient. The package's operation implementations were inspected
+and do not make network calls.
+
+## Cost of extensions
+
+A new scenario using existing operations and constructs needs new YAML.
+A new operation needs a contract, implementation, and binding. New execution
+semantics require changes to the profile, validator, runtime, and tests.
+A new backend must implement supported constructs and reject the others.
+
+The prototype's IR is an ordinary Python dict after validation. There is no
+fully typed IR, Haskell parser, or independent second backend.
+
+## Research harness transport modes
+
+`compile_n8n(..., llm_mode="stub"|"live")` uses one profile and catalog.
+`compile_demo` remains a compatible name for stub exports and unit tests.
+
+In `live` mode, an LLM step expands into Prepare → IF → HTTP Request → Restore.
+A false condition goes directly to Restore: the HTTP node does not execute,
+the step has no output, and its status is skipped. Separate real n8n probes
+check this behavior. Script steps retain their previous semantics.
+
+An HTTP request contains `invocation_id`, `operation`, `actor`, and `inputs`.
+The ID includes the logical revision/step and actual n8n workflow and execution
+IDs. A response contains `invocation_id`, `status: completed`, `output`, and
+optional `usage`. A mismatched ID, extra fields, an array instead of one response,
+an HTTP error, or an output-schema violation fails the run. Original context is
+restored from Prepare, not from the external service's response.
+
+LLM bindings have `input_schema` and `output_schema`. The supported JSON Schema
+subset is explicit: `type` (including unions with null), `properties`, `required`,
+`additionalProperties: false`, `enum`, `items`, `minLength`, `minItems`, `maxItems`,
+and `minimum`. The compiler rejects unsupported keywords. This is not a complete
+JSON Schema validator. Script operations validate their domain inputs and exact
+output field set; a nested schema is not implied for them. JavaScript `integer`
+values are restricted to safe integers.
+
+`Result` contains `output`, `trace`, `steps`, `statuses`, `workflow_ref`,
+`spec_revision`, `llm_mode`, and `simulation`. The last field remains true because
+inputs are injected as fixtures; `llm_mode` distinguishes live models from stubs.
+Live deadlines are explicit; transport timeouts do not extend them.
+
+The catalog does not select a model or credentials; the existing wrapper owns
+those settings. Refinement is compiled; lifecycle and event deduplication belong
+to the explicit controller. Neither path adds transport retries, actor memory
+or a Sapiens harness. n8n's
+`executionOrder: v1` is retained: independent analyses do not imply parallelism.
+
+
+OPERATION CATALOG
+# Logical catalog. Stub and live transports enforce these same output contracts.
+schema: sapi-bindings/v0
+target:
+  demo: n8n_json
+  code_node_version: 2
+  merge_node_version: 3.2
+  execution_order: v1
+operations:
+  ticket.classify:
+    kind: LLM
+    inputs: [ticket]
+    outputs: [category, priority]
+    implementation: agency_bridge
+    prompt: Classify the supplied ticket. Use category delivery; priority high if days_overdue > 2, otherwise normal. Return JSON only.
+    output_contract: "{category: delivery, priority: high|normal}"
+    input_schema:
+      type: object
+      required: [ticket]
+      additionalProperties: false
+      properties:
+        ticket:
+          type: object
+          required: [id, days_overdue]
+          additionalProperties: false
+          properties:
+            id: {type: string, minLength: 1}
+            text: {type: string}
+            days_overdue: {type: integer, minimum: 0}
+    output_schema:
+      type: object
+      required: [category, priority]
+      additionalProperties: false
+      properties:
+        category: {type: string, enum: [delivery]}
+        priority: {type: string, enum: [high, normal]}
+  ticket.escalation_draft:
+    kind: Script
+    inputs: [ticket]
+    outputs: [ticket_id, action, mode]
+    implementation: local_js
+  ticket.normal_draft:
+    kind: Script
+    inputs: [ticket]
+    outputs: [ticket_id, action, mode]
+    implementation: local_js
+  branch.select_one:
+    kind: Script
+    inputs: [escalated, normal]
+    outputs: [ticket_id, action, mode]
+    implementation: local_js
+  research.product:
+    kind: LLM
+    inputs: [material]
+    outputs: [summary, evidence]
+    implementation: agency_bridge
+    prompt: Summarize product capabilities using only the supplied material. Preserve every explicitly named capability. Write in the same language as the supplied material. The evidence field must be an exact contiguous substring of material, copied character for character. Do not add quotation marks, labels, ellipses, or any other characters to evidence. Return JSON matching the output schema.
+    output_contract: "{summary: string, evidence: string}"
+    input_schema: &material_input
+      type: object
+      required: [material]
+      additionalProperties: false
+      properties:
+        material: {type: string, minLength: 1}
+    output_schema: &analysis_output
+      type: object
+      required: [summary, evidence]
+      additionalProperties: false
+      properties:
+        summary: {type: string, minLength: 1}
+        evidence: {type: string, minLength: 1}
+  research.marketing:
+    kind: LLM
+    inputs: [material]
+    outputs: [summary, evidence]
+    implementation: agency_bridge
+    prompt: Summarize the target customers and channels using only the supplied material. Preserve every explicitly named audience and channel. Write in the same language as the supplied material. The evidence field must be an exact contiguous substring of material, copied character for character. Do not add quotation marks, labels, ellipses, or any other characters to evidence. Return JSON matching the output schema.
+    output_contract: "{summary: string, evidence: string}"
+    input_schema: *material_input
+    output_schema: *analysis_output
+  research.combine:
+    kind: Script
+    inputs: [product, marketing]
+    outputs: [product, marketing]
+    implementation: local_js
+  research.write:
+    kind: LLM
+    inputs: [brief]
+    outputs: [report, evidence]
+    implementation: agency_bridge
+    prompt: Write a short report covering both supplied analyses. Preserve all explicitly named capabilities, target customers and channels from both analyses. Preserve their evidence excerpts exactly, in product then marketing order. Add no outside facts. Write in the same language as the supplied analyses. Return JSON matching the output schema.
+    output_contract: "{report: string, evidence: string[2]}"
+    input_schema:
+      type: object
+      required: [brief]
+      additionalProperties: false
+      properties:
+        brief:
+          type: object
+          required: [product, marketing]
+          additionalProperties: false
+          properties:
+            product: *analysis_output
+            marketing: *analysis_output
+    output_schema:
+      type: object
+      required: [report, evidence]
+      additionalProperties: false
+      properties:
+        report: {type: string, minLength: 1}
+        evidence:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items: {type: string, minLength: 1}
+production_bridge_contract:
+  scope: local_research_adapter
+  transport: HTTP
+  endpoint: /v1/agency/execute
+  request_fields: [invocation_id, operation, actor, inputs]
+  response_fields: [invocation_id, output, usage, status]
+  authentication: deployment_binding
+  state_restoration: wrapper_validates_response_and_attaches_output_to_original_envelope
+  notes: Adapter owns model and deployment settings. No secrets are embedded in workflow exports. No retries or durable admission are implemented.

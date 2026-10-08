@@ -1,0 +1,330 @@
+{
+  "live_cases": [
+    "base-bulletins",
+    "alternate-bulletins"
+  ],
+  "negative": [
+    {
+      "error": "No articles",
+      "inputs": {
+        "articles": [],
+        "marketing_material": "Fixture E883DBD80337: The service targets rural cooperatives through printed catalogues."
+      },
+      "name": "empty-articles",
+      "operation": "digest.prepare",
+      "role": "prepare"
+    },
+    {
+      "error": "Duplicate article ID",
+      "inputs": {
+        "articles": [
+          {
+            "id": "E883DBD80337-BL-1",
+            "text": "Fixture E883DBD80337: The product supports offline inventory.",
+            "title": "Offline inventory"
+          },
+          {
+            "id": "E883DBD80337-BL-1",
+            "text": "Fixture E883DBD80337: The product supports offline inventory.",
+            "title": "Offline inventory"
+          }
+        ],
+        "marketing_material": "Fixture E883DBD80337: The service targets rural cooperatives through printed catalogues."
+      },
+      "name": "duplicate-articles",
+      "operation": "digest.prepare",
+      "role": "prepare"
+    },
+    {
+      "error": "Schema violation at inputs.articles[0].title",
+      "inputs": {
+        "articles": [
+          {
+            "id": "E883DBD80337-BL-1",
+            "text": "Fixture E883DBD80337: The product supports offline inventory.",
+            "title": ""
+          }
+        ],
+        "marketing_material": "Fixture E883DBD80337: The service targets rural cooperatives through printed catalogues."
+      },
+      "name": "malformed-article-title",
+      "operation": "digest.summarize",
+      "role": "summarize",
+      "schema_error": "Schema violation at inputs.articles[0].title"
+    },
+    {
+      "error": "Missing marketing material",
+      "inputs": {
+        "articles": [
+          {
+            "id": "E883DBD80337-BL-1",
+            "text": "Fixture E883DBD80337: The product supports offline inventory.",
+            "title": "Offline inventory"
+          },
+          {
+            "id": "E883DBD80337-BL-2",
+            "text": "Fixture E883DBD80337: The product supports CSV export.",
+            "title": "CSV export"
+          }
+        ],
+        "marketing_material": ""
+      },
+      "name": "empty-marketing",
+      "operation": "research.marketing",
+      "role": "marketing",
+      "schema_error": "Schema violation at inputs.material"
+    }
+  ],
+  "positive": [
+    {
+      "forbidden_anchors": [
+        "appointment",
+        "\\bsms\\b"
+      ],
+      "inputs": {
+        "articles": [
+          {
+            "id": "E883DBD80337-BL-1",
+            "text": "Fixture E883DBD80337: The product supports offline inventory.",
+            "title": "Offline inventory"
+          },
+          {
+            "id": "E883DBD80337-BL-2",
+            "text": "Fixture E883DBD80337: The product supports CSV export.",
+            "title": "CSV export"
+          }
+        ],
+        "marketing_material": "Fixture E883DBD80337: The service targets rural cooperatives through printed catalogues."
+      },
+      "marketing_anchors": [
+        [
+          "rural"
+        ],
+        [
+          "cooperativ"
+        ],
+        [
+          "printed"
+        ],
+        [
+          "catalog"
+        ]
+      ],
+      "name": "base-bulletins",
+      "product_anchors": [
+        [
+          "offline"
+        ],
+        [
+          "inventory",
+          "stock"
+        ],
+        [
+          "\\bcsv\\b",
+          "comma.separated"
+        ]
+      ]
+    },
+    {
+      "forbidden_anchors": [
+        "offline",
+        "\\bcsv\\b",
+        "cooperativ",
+        "catalog"
+      ],
+      "inputs": {
+        "articles": [
+          {
+            "id": "E883DBD80337-ALT-7",
+            "text": "Fixture E883DBD80337: The product supports appointment booking.",
+            "title": "Appointment booking"
+          },
+          {
+            "id": "E883DBD80337-ALT-9",
+            "text": "Fixture E883DBD80337: The product supports SMS reminders.",
+            "title": "SMS reminders"
+          }
+        ],
+        "marketing_material": "Fixture E883DBD80337: The service targets dental clinics through radio adverts."
+      },
+      "marketing_anchors": [
+        [
+          "dental"
+        ],
+        [
+          "clinic"
+        ],
+        [
+          "radio"
+        ],
+        [
+          "advert",
+          "commercial"
+        ]
+      ],
+      "name": "alternate-bulletins",
+      "product_anchors": [
+        [
+          "appointment"
+        ],
+        [
+          "booking",
+          "schedul"
+        ],
+        [
+          "\\bsms\\b",
+          "text.message"
+        ],
+        [
+          "remind"
+        ]
+      ]
+    },
+    {
+      "inputs": {
+        "articles": [
+          {
+            "id": "E883DBD80337-BL-2",
+            "text": "Fixture E883DBD80337: The product supports CSV export.",
+            "title": "CSV export"
+          },
+          {
+            "id": "E883DBD80337-BL-1",
+            "text": "Fixture E883DBD80337: The product supports offline inventory.",
+            "title": "Offline inventory"
+          }
+        ],
+        "marketing_material": "Fixture E883DBD80337: The service targets rural cooperatives through printed catalogues."
+      },
+      "marketing_anchors": [
+        [
+          "rural"
+        ],
+        [
+          "cooperativ"
+        ],
+        [
+          "printed"
+        ],
+        [
+          "catalog"
+        ]
+      ],
+      "name": "reordered-bulletins",
+      "product_anchors": [
+        [
+          "offline"
+        ],
+        [
+          "inventory",
+          "stock"
+        ],
+        [
+          "\\bcsv\\b",
+          "comma.separated"
+        ]
+      ]
+    },
+    {
+      "forbidden_anchors": [
+        "\\bcsv\\b",
+        "comma.separated"
+      ],
+      "inputs": {
+        "articles": [
+          {
+            "id": "E883DBD80337-BL-1",
+            "text": "Fixture E883DBD80337: The product supports offline inventory.",
+            "title": "Offline inventory"
+          },
+          {
+            "id": "E883DBD80337-BL-NEW",
+            "text": "Fixture E883DBD80337: The product supports barcode scanning.",
+            "title": "Barcode scanning"
+          }
+        ],
+        "marketing_material": "Fixture E883DBD80337: The service targets rural cooperatives through printed catalogues."
+      },
+      "marketing_anchors": [
+        [
+          "rural"
+        ],
+        [
+          "cooperativ"
+        ],
+        [
+          "printed"
+        ],
+        [
+          "catalog"
+        ]
+      ],
+      "name": "replaced-capability",
+      "product_anchors": [
+        [
+          "offline"
+        ],
+        [
+          "inventory",
+          "stock"
+        ],
+        [
+          "barcode"
+        ],
+        [
+          "scann"
+        ]
+      ]
+    },
+    {
+      "forbidden_anchors": [
+        "cooperativ",
+        "catalog"
+      ],
+      "inputs": {
+        "articles": [
+          {
+            "id": "E883DBD80337-BL-1",
+            "text": "Fixture E883DBD80337: The product supports offline inventory.",
+            "title": "Offline inventory"
+          },
+          {
+            "id": "E883DBD80337-BL-2",
+            "text": "Fixture E883DBD80337: The product supports CSV export.",
+            "title": "CSV export"
+          }
+        ],
+        "marketing_material": "Fixture E883DBD80337: The service targets dental clinics through radio adverts."
+      },
+      "marketing_anchors": [
+        [
+          "dental"
+        ],
+        [
+          "clinic"
+        ],
+        [
+          "radio"
+        ],
+        [
+          "advert",
+          "commercial"
+        ]
+      ],
+      "name": "changed-marketing",
+      "product_anchors": [
+        [
+          "offline"
+        ],
+        [
+          "inventory",
+          "stock"
+        ],
+        [
+          "\\bcsv\\b",
+          "comma.separated"
+        ]
+      ]
+    }
+  ]
+}

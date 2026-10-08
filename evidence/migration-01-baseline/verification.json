@@ -1,0 +1,64 @@
+{
+  "status": "completed",
+  "commands": [
+    {
+      "name": "check-original",
+      "command": "uv run --locked sapi-lab check",
+      "cwd": "/private/tmp/sapi-baseline-01",
+      "exit": 0,
+      "log": "logs/check-original.log",
+      "phase": "audited sources"
+    },
+    {
+      "name": "all-eleven",
+      "command": "./run.sh --scenario invoice-total --scenario ticket-routing --scenario competitor-report --scenario revise-answer --scenario daily-digest --scenario dual-ledger-closeout --scenario support-review-packet --scenario bulletin-market-brief --scenario priority-support-brief --scenario checkout-recovery --scenario crm-lead-qualification --report-dir reports/migration-01/all-eleven",
+      "cwd": "/private/tmp/sapi-baseline-01",
+      "exit": 0,
+      "log": "logs/all-eleven.log",
+      "phase": "audited sources"
+    },
+    {
+      "name": "targeted",
+      "command": "uv run --locked python -m unittest tests.test_packaging tests.test_evidence_boundary tests.test_transport_controls tests.test_boundaries -v",
+      "cwd": "/private/tmp/sapi-baseline-01",
+      "exit": 0,
+      "log": "logs/targeted.log",
+      "phase": "final test/documentation changes"
+    },
+    {
+      "name": "check-final",
+      "command": "uv run --locked sapi-lab check",
+      "cwd": "/private/tmp/sapi-baseline-01",
+      "exit": 0,
+      "log": "logs/check-final.log",
+      "phase": "final test/documentation changes"
+    }
+  ],
+  "paid_calls": 0,
+  "capture_command": "PYTHONPATH=. .venv/bin/python reports/migration-01/capture.py",
+  "collection_command": ".venv/bin/python reports/migration-01/collect.py",
+  "counts": {
+    "original_tests": 424,
+    "final_tests": 427,
+    "targeted_tests": 46,
+    "control_trials": 22,
+    "raw_files": 1592
+  },
+  "done_when": {
+    "eleven_passing_pairs": true,
+    "exact_bytes_hashes_and_no_paid_calls": true,
+    "deadline_historical_cli_and_artifact_inventory": true,
+    "new_import_constraints_with_frozen_legacy_edges": true
+  },
+  "preservation": {
+    "original_checkout_clean": true,
+    "input_hashes_unchanged": true,
+    "previous_committed_evidence_unchanged": true,
+    "raw_run_hashes_unchanged_after_archive": true,
+    "final_running_containers": []
+  },
+  "limitations": [
+    "Controls identify unchanged audited sources; final docs/tests have distinct hashes and this report is not a paid-work gate for the modified tree.",
+    "No future-architecture compliance, separate-verifier proof or complete historical-reader parity is claimed."
+  ]
+}

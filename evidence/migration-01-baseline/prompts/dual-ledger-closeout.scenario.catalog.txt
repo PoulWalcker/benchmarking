@@ -1,0 +1,32 @@
+# Logical catalog. Stub and live transports enforce these same output contracts.
+schema: sapi-bindings/v0
+target:
+  demo: n8n_json
+  code_node_version: 2
+  merge_node_version: 3.2
+  execution_order: v1
+operations:
+  invoices.validate:
+    kind: Script
+    inputs: [invoices]
+    outputs: [invoices]
+    implementation: local_js
+  invoices.sum:
+    kind: Script
+    inputs: [invoices]
+    outputs: [amount_minor, currency, count]
+    implementation: local_js
+  invoices.report:
+    kind: Script
+    inputs: [total]
+    outputs: [total_minor, currency, invoice_count]
+    implementation: local_js
+production_bridge_contract:
+  scope: local_research_adapter
+  transport: HTTP
+  endpoint: /v1/agency/execute
+  request_fields: [invocation_id, operation, actor, inputs]
+  response_fields: [invocation_id, output, usage, status]
+  authentication: deployment_binding
+  state_restoration: wrapper_validates_response_and_attaches_output_to_original_envelope
+  notes: Adapter owns model and deployment settings. No secrets are embedded in workflow exports. No retries or durable admission are implemented.

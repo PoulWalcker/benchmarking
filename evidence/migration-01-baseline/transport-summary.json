@@ -1,0 +1,535 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "case": "valid",
+      "passed": true,
+      "checks": {
+        "imported": true,
+        "persisted_execution": true,
+        "exact_request_count": true,
+        "request_contract": true,
+        "expected_runtime_status": true,
+        "result_presence": true,
+        "logical_status": true,
+        "result_data": true
+      },
+      "workflow_id": "6232080bb6524956",
+      "execution_id": "1",
+      "n8n_version": "2.41.5",
+      "request_count": 1,
+      "status": "success",
+      "error": null
+    },
+    {
+      "case": "guard_false",
+      "passed": true,
+      "checks": {
+        "imported": true,
+        "persisted_execution": true,
+        "exact_request_count": true,
+        "request_contract": true,
+        "expected_runtime_status": true,
+        "result_presence": true,
+        "logical_status": true,
+        "result_data": true,
+        "http_node_not_executed": true
+      },
+      "workflow_id": "d59281b557a24756",
+      "execution_id": "1",
+      "n8n_version": "2.41.5",
+      "request_count": 0,
+      "status": "success",
+      "error": null
+    },
+    {
+      "case": "guard_false_invalid_inputs",
+      "passed": true,
+      "checks": {
+        "imported": true,
+        "persisted_execution": true,
+        "exact_request_count": true,
+        "request_contract": true,
+        "expected_runtime_status": true,
+        "result_presence": true,
+        "logical_status": true,
+        "result_data": true,
+        "http_node_not_executed": true
+      },
+      "workflow_id": "a88632d924e7446c",
+      "execution_id": "1",
+      "n8n_version": "2.41.5",
+      "request_count": 0,
+      "status": "success",
+      "error": null
+    },
+    {
+      "case": "invalid_inputs",
+      "passed": true,
+      "checks": {
+        "imported": true,
+        "persisted_execution": true,
+        "exact_request_count": true,
+        "request_contract": true,
+        "expected_runtime_status": true,
+        "result_presence": true,
+        "error_present": true,
+        "no_success_output": true,
+        "expected_error_detected": true
+      },
+      "workflow_id": "3e63329c5dc44365",
+      "execution_id": "1",
+      "n8n_version": "2.41.5",
+      "request_count": 0,
+      "status": "error",
+      "error": {
+        "level": "info",
+        "shouldReport": false,
+        "description": null,
+        "tags": {},
+        "name": "WrappedExecutionError",
+        "lineNumber": 2,
+        "message": "Schema violation at inputs.ticket.days_overdue: minimum [line 2]",
+        "stack": "WrappedExecutionError: Schema violation at inputs.ticket.days_overdue: minimum [line 2]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+      }
+    },
+    {
+      "case": "wrong_invocation",
+      "passed": true,
+      "checks": {
+        "imported": true,
+        "persisted_execution": true,
+        "exact_request_count": true,
+        "request_contract": true,
+        "expected_runtime_status": true,
+        "result_presence": true,
+        "error_present": true,
+        "no_success_output": true,
+        "expected_error_detected": true
+      },
+      "workflow_id": "70f3083a12894af9",
+      "execution_id": "1",
+      "n8n_version": "2.41.5",
+      "request_count": 1,
+      "status": "error",
+      "error": {
+        "level": "info",
+        "shouldReport": false,
+        "description": null,
+        "tags": {},
+        "name": "WrappedExecutionError",
+        "lineNumber": 2,
+        "message": "Agency invocation ID mismatch [line 2]",
+        "stack": "WrappedExecutionError: Agency invocation ID mismatch [line 2]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+      }
+    },
+    {
+      "case": "wrong_schema",
+      "passed": true,
+      "checks": {
+        "imported": true,
+        "persisted_execution": true,
+        "exact_request_count": true,
+        "request_contract": true,
+        "expected_runtime_status": true,
+        "result_presence": true,
+        "error_present": true,
+        "no_success_output": true,
+        "expected_error_detected": true
+      },
+      "workflow_id": "960f87dc8bb941f6",
+      "execution_id": "1",
+      "n8n_version": "2.41.5",
+      "request_count": 1,
+      "status": "error",
+      "error": {
+        "level": "info",
+        "shouldReport": false,
+        "description": null,
+        "tags": {},
+        "name": "WrappedExecutionError",
+        "lineNumber": 2,
+        "message": "Schema violation at output.priority: enum [line 2]",
+        "stack": "WrappedExecutionError: Schema violation at output.priority: enum [line 2]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+      }
+    },
+    {
+      "case": "failed_status",
+      "passed": true,
+      "checks": {
+        "imported": true,
+        "persisted_execution": true,
+        "exact_request_count": true,
+        "request_contract": true,
+        "expected_runtime_status": true,
+        "result_presence": true,
+        "error_present": true,
+        "no_success_output": true,
+        "expected_error_detected": true
+      },
+      "workflow_id": "a9cdb0c56f65456f",
+      "execution_id": "1",
+      "n8n_version": "2.41.5",
+      "request_count": 1,
+      "status": "error",
+      "error": {
+        "level": "info",
+        "shouldReport": false,
+        "description": null,
+        "tags": {},
+        "name": "WrappedExecutionError",
+        "lineNumber": 2,
+        "message": "Agency did not complete [line 2]",
+        "stack": "WrappedExecutionError: Agency did not complete [line 2]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+      }
+    },
+    {
+      "case": "extra_field",
+      "passed": true,
+      "checks": {
+        "imported": true,
+        "persisted_execution": true,
+        "exact_request_count": true,
+        "request_contract": true,
+        "expected_runtime_status": true,
+        "result_presence": true,
+        "error_present": true,
+        "no_success_output": true,
+        "expected_error_detected": true
+      },
+      "workflow_id": "f73711372e8744e6",
+      "execution_id": "1",
+      "n8n_version": "2.41.5",
+      "request_count": 1,
+      "status": "error",
+      "error": {
+        "level": "info",
+        "shouldReport": false,
+        "description": null,
+        "tags": {},
+        "name": "WrappedExecutionError",
+        "lineNumber": 2,
+        "message": "Unexpected Agency response fields [line 2]",
+        "stack": "WrappedExecutionError: Unexpected Agency response fields [line 2]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+      }
+    },
+    {
+      "case": "malformed_json",
+      "passed": true,
+      "checks": {
+        "imported": true,
+        "persisted_execution": true,
+        "exact_request_count": true,
+        "request_contract": true,
+        "expected_runtime_status": true,
+        "result_presence": true,
+        "error_present": true,
+        "no_success_output": true,
+        "expected_error_detected": true
+      },
+      "workflow_id": "81df4da518ee4c58",
+      "execution_id": "1",
+      "n8n_version": "2.41.5",
+      "request_count": 1,
+      "status": "error",
+      "error": {
+        "level": "warning",
+        "shouldReport": true,
+        "tags": {},
+        "timestamp": 1791449727442,
+        "context": {
+          "itemIndex": 0
+        },
+        "functionality": "regular",
+        "name": "NodeOperationError",
+        "node": {
+          "id": "6918b03a-ebcf-512e-b34a-cc61023520e6",
+          "name": "Agency classify",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "parameters": {
+            "curlImport": "",
+            "method": "POST",
+            "url": "http://127.0.0.1:45447/v1/agency/execute",
+            "authentication": "none",
+            "provideSslCertificates": false,
+            "sendQuery": false,
+            "sendHeaders": false,
+            "sendBody": true,
+            "contentType": "json",
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify($json.request) }}",
+            "options": {
+              "redirect": {
+                "redirect": {
+                  "followRedirects": false
+                }
+              },
+              "response": {
+                "response": {
+                  "fullResponse": false,
+                  "neverError": false,
+                  "responseFormat": "json"
+                }
+              },
+              "timeout": 30000
+            },
+            "infoMessage": ""
+          },
+          "position": [
+            910,
+            -70
+          ],
+          "notes": "Live Agency transport. HTTP/status/schema errors fail the run; no retries."
+        },
+        "messages": [],
+        "message": "Response body is not valid JSON. Change \"Response Format\" to \"Text\"",
+        "stack": "NodeOperationError: Response body is not valid JSON. Change \"Response Format\" to \"Text\"\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/HttpRequest/V3/HttpRequestV3.node.ts:1133:17)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+      }
+    },
+    {
+      "case": "http_error",
+      "passed": true,
+      "checks": {
+        "imported": true,
+        "persisted_execution": true,
+        "exact_request_count": true,
+        "request_contract": true,
+        "expected_runtime_status": true,
+        "result_presence": true,
+        "error_present": true,
+        "no_success_output": true,
+        "expected_error_detected": true
+      },
+      "workflow_id": "575c7145519d4a2e",
+      "execution_id": "1",
+      "n8n_version": "2.41.5",
+      "request_count": 1,
+      "status": "error",
+      "error": {
+        "level": "warning",
+        "shouldReport": true,
+        "description": "503 - {\"invocation_id\":\"agency-transport-probe/r1/classify/575c7145519d4a2e/1\",\"status\":\"completed\",\"output\":{\"category\":\"delivery\",\"priority\":\"high\"}}",
+        "tags": {},
+        "timestamp": 1791449731162,
+        "context": {
+          "itemIndex": 0,
+          "request": {
+            "body": {
+              "invocation_id": "agency-transport-probe/r1/classify/575c7145519d4a2e/1",
+              "operation": "ticket.classify",
+              "actor": null,
+              "inputs": {
+                "ticket": {
+                  "id": "T-17",
+                  "text": "Order A7842 is three days late. Please help.",
+                  "days_overdue": 3
+                }
+              }
+            },
+            "headers": {
+              "accept": "application/json,text/*;q=0.99",
+              "content-type": "application/json"
+            },
+            "method": "POST",
+            "uri": "http://127.0.0.1:45447/v1/agency/execute",
+            "gzip": true,
+            "rejectUnauthorized": true,
+            "followRedirect": false,
+            "resolveWithFullResponse": true,
+            "sendCredentialsOnCrossOriginRedirect": true,
+            "followAllRedirects": false,
+            "timeout": 30000,
+            "json": true
+          }
+        },
+        "functionality": "regular",
+        "name": "NodeApiError",
+        "node": {
+          "id": "6918b03a-ebcf-512e-b34a-cc61023520e6",
+          "name": "Agency classify",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "parameters": {
+            "curlImport": "",
+            "method": "POST",
+            "url": "http://127.0.0.1:45447/v1/agency/execute",
+            "authentication": "none",
+            "provideSslCertificates": false,
+            "sendQuery": false,
+            "sendHeaders": false,
+            "sendBody": true,
+            "contentType": "json",
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify($json.request) }}",
+            "options": {
+              "redirect": {
+                "redirect": {
+                  "followRedirects": false
+                }
+              },
+              "response": {
+                "response": {
+                  "fullResponse": false,
+                  "neverError": false,
+                  "responseFormat": "json"
+                }
+              },
+              "timeout": 30000
+            },
+            "infoMessage": ""
+          },
+          "position": [
+            910,
+            -70
+          ],
+          "notes": "Live Agency transport. HTTP/status/schema errors fail the run; no retries."
+        },
+        "messages": [
+          "503 - {\"invocation_id\":\"agency-transport-probe/r1/classify/575c7145519d4a2e/1\",\"status\":\"completed\",\"output\":{\"category\":\"delivery\",\"priority\":\"high\"}}"
+        ],
+        "httpCode": "503",
+        "message": "Service unavailable - try again later or consider setting this node to retry automatically (in the node settings)",
+        "stack": "NodeApiError: Service unavailable - try again later or consider setting this node to retry automatically (in the node settings)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/HttpRequest/V3/HttpRequestV3.node.ts:892:16)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+      }
+    },
+    {
+      "case": "array_response",
+      "passed": true,
+      "checks": {
+        "imported": true,
+        "persisted_execution": true,
+        "exact_request_count": true,
+        "request_contract": true,
+        "expected_runtime_status": true,
+        "result_presence": true,
+        "error_present": true,
+        "no_success_output": true,
+        "expected_error_detected": true
+      },
+      "workflow_id": "0c23113265bb4990",
+      "execution_id": "1",
+      "n8n_version": "2.41.5",
+      "request_count": 1,
+      "status": "error",
+      "error": {
+        "level": "info",
+        "shouldReport": false,
+        "description": null,
+        "tags": {},
+        "name": "WrappedExecutionError",
+        "lineNumber": 2,
+        "message": "Agency must return exactly one response item [line 2]",
+        "stack": "WrappedExecutionError: Agency must return exactly one response item [line 2]\n    at throwExecutionError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/throw-execution-error.ts:11:9)\n    at JsTaskRunnerSandbox.runCodeAllItems (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/JsTaskRunnerSandbox.ts:46:23)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/Code/Code.node.ts:219:8)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+      }
+    },
+    {
+      "case": "timeout",
+      "passed": true,
+      "checks": {
+        "imported": true,
+        "persisted_execution": true,
+        "exact_request_count": true,
+        "request_contract": true,
+        "expected_runtime_status": true,
+        "result_presence": true,
+        "error_present": true,
+        "no_success_output": true,
+        "expected_error_detected": true
+      },
+      "workflow_id": "79981ed49ba84745",
+      "execution_id": "1",
+      "n8n_version": "2.41.5",
+      "request_count": 1,
+      "status": "error",
+      "error": {
+        "level": "warning",
+        "shouldReport": true,
+        "tags": {},
+        "timestamp": 1791449738668,
+        "context": {
+          "itemIndex": 0,
+          "request": {
+            "body": {
+              "invocation_id": "agency-transport-probe/r1/classify/79981ed49ba84745/1",
+              "operation": "ticket.classify",
+              "actor": null,
+              "inputs": {
+                "ticket": {
+                  "id": "T-17",
+                  "text": "Order A7842 is three days late. Please help.",
+                  "days_overdue": 3
+                }
+              }
+            },
+            "headers": {
+              "accept": "application/json,text/*;q=0.99",
+              "content-type": "application/json"
+            },
+            "method": "POST",
+            "uri": "http://127.0.0.1:45447/v1/agency/execute",
+            "gzip": true,
+            "rejectUnauthorized": true,
+            "followRedirect": false,
+            "resolveWithFullResponse": true,
+            "sendCredentialsOnCrossOriginRedirect": true,
+            "followAllRedirects": false,
+            "timeout": 200,
+            "json": true
+          }
+        },
+        "functionality": "regular",
+        "name": "NodeApiError",
+        "node": {
+          "id": "6918b03a-ebcf-512e-b34a-cc61023520e6",
+          "name": "Agency classify",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "parameters": {
+            "curlImport": "",
+            "method": "POST",
+            "url": "http://127.0.0.1:45447/v1/agency/execute",
+            "authentication": "none",
+            "provideSslCertificates": false,
+            "sendQuery": false,
+            "sendHeaders": false,
+            "sendBody": true,
+            "contentType": "json",
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify($json.request) }}",
+            "options": {
+              "redirect": {
+                "redirect": {
+                  "followRedirects": false
+                }
+              },
+              "response": {
+                "response": {
+                  "fullResponse": false,
+                  "neverError": false,
+                  "responseFormat": "json"
+                }
+              },
+              "timeout": 200
+            },
+            "infoMessage": ""
+          },
+          "position": [
+            910,
+            -70
+          ],
+          "notes": "Live Agency transport. HTTP/status/schema errors fail the run; no retries."
+        },
+        "messages": [
+          "timeout of 200ms exceeded",
+          "timeout of 200ms exceeded"
+        ],
+        "httpCode": "ECONNABORTED",
+        "message": "The connection was aborted, perhaps the server is offline",
+        "stack": "NodeApiError: The connection was aborted, perhaps the server is offline\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file++++home+runner+_work+n8n+n8n+packages+nodes-base/node_modules/n8n-nodes-base/nodes/HttpRequest/V3/HttpRequestV3.node.ts:892:16)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1129:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1431:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2333:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file++++home+runner+_work+n8n+n8n+packages+core/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2814:11"
+      }
+    }
+  ],
+  "engine": "real n8n",
+  "llm": "deterministic fake HTTP bridge; no model calls"
+}
