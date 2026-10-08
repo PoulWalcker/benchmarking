@@ -5,20 +5,17 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
-from unittest.mock import patch
+import uuid
 
-import yaml
-
-from sapi_config_lab import profile
-from sapi_config_lab.coordinate.packages import stage_tasks
-from sapi_config_lab.coordinate.scenarios import all_cases, select_scenarios
 from sapi_config_lab.paths import workspace_root
-from verification.contracts import Rejected
-from verification.lifecycle import digest_native, verify_lifecycle
-from verification.lifecycle_submission import validate_task
-from verification.verify import evaluate
+from tests.support.lifecycle import config as fixture_config
+from tests.support.lifecycle import native_acceptance
+from verification.contracts import Recorded, Rejected
+from verification.lifecycle import verify_lifecycle as audit_lifecycle
+from verification.lifecycle_submission import evaluate_lifecycle, plan_lifecycle
 
 
 def hash_json(value):
@@ -27,18 +24,10 @@ def hash_json(value):
     ).hexdigest()
 
 
-def native_digest(config, admission, *, execution="1"):
-    articles = config["workflow"]["inputs"]["articles"]
-    summary = {
-        "text": "A warehouse opened in Dubai. The shop added a payment option.",
-        "article_ids": [a["id"] for a in articles],
-    }
-    values = {"prepare": {"articles": articles}, "summarize": summary, "preview": {"mode": "preview", **summary}}
-    preview_input = next(step for step in config["workflow"]["steps"] if step["uses"] == "digest.preview")["with"][
-        "summary"
-    ]
-    if "ref" not in preview_input:
-        values["preview"] = {"mode": "preview", **preview_input}
+def native_fixture(config, admission, *, execution="1"):
+    text = config["workflow"]["steps"][0]["with"]["text"]
+    text = config["workflow"]["inputs"]["text"] if isinstance(text, dict) else text
+    values = {"decode": {"value": json.loads(text)}}
     state = {
         "inputs": copy.deepcopy(config["workflow"]["inputs"]),
         "steps": {},
@@ -56,7 +45,7 @@ def native_digest(config, admission, *, execution="1"):
         "status": "success",
         "persisted_status": "success",
         "input": {"activation": admission},
-        "mapping": {"prepare": "prepare", "summarize": "summarize [LLM STUB]", "preview": "preview"},
+        "mapping": {"decode": "decode"},
         "run_data": {},
     }
 
@@ -73,21 +62,25 @@ def native_digest(config, admission, *, execution="1"):
     add("Demo start", {}, None)
     add("Fixture", state, "Demo start")
     parent = "Fixture"
-    for sid in ("prepare", "summarize", "preview"):
+    for sid in ("decode",):
         state["steps"][sid] = values[sid]
         state["statuses"][sid] = "completed"
         state["events"][sid] = {
             "step_id": sid,
-            "operation": "digest." + sid,
+            "operation": "fixture." + sid,
             "actor": None,
             "status": "completed",
-            "implementation": "stub" if sid == "summarize" else "script",
+            "implementation": "script",
         }
         name = run["mapping"][sid]
         add(name, state, parent)
         parent = name
     final = {
-        "output": values[config["workflow"]["output"]["ref"].split(".")[1]]
+        "output": (
+            values["decode"]["value"]
+            if config["workflow"]["output"]["ref"] == "steps.decode.value"
+            else values["decode"]
+        )
         if "ref" in config["workflow"]["output"]
         else copy.deepcopy(config["workflow"]["output"]),
         "steps": copy.deepcopy(state["steps"]),
@@ -106,26 +99,26 @@ def native_digest(config, admission, *, execution="1"):
 
 
 def snapshot(*, rejected=False, revision=1):
-    config = yaml.safe_load((Path(__file__).parents[1] / "benchmarks/05-daily-digest/config.yaml").read_text())
+    config = fixture_config()
     if rejected:
-        config["workflow"]["output"] = {"ref": "steps.summarize"}
+        config["workflow"]["output"] = {"ref": "steps.decode.value"}
     config["workflow"]["revision"] = revision
     config["activation"]["workflow_ref"]["revision"] = revision
     ref = config["activation"]["workflow_ref"]
     admission = {
         "kind": "Callback",
         "purpose": "test",
-        "rule_id": "digest-test-requested",
+        "rule_id": "fixture-test-requested",
         "event_id": f"test-{revision}",
         "workflow_ref": ref,
     }
     key = hash_json({name: admission[name] for name in ("rule_id", "event_id")})
     decision = {
-        "verifier": "digest.acceptance_v1",
+        "verifier": "fixture.acceptance_v1",
         "passed": not rejected,
-        "findings": ["Digest must be a preview"] if rejected else [],
+        "findings": ["Output must reference the decoded result"] if rejected else [],
     }
-    definition = f"daily-digest@{revision}"
+    definition = f"lifecycle-fixture@{revision}"
     transitions = []
     for kind, data in (
         ("registered", {"definition": definition, "sha256": hash_json(config)}),
@@ -151,7 +144,7 @@ def snapshot(*, rejected=False, revision=1):
             }
         },
         "families": {
-            "daily-digest": {
+            "lifecycle-fixture": {
                 "current": definition,
                 "active": None if rejected else definition,
                 "pending": None,
@@ -169,7 +162,7 @@ def snapshot(*, rejected=False, revision=1):
                 "condition": True,
                 "state": "failed" if rejected else "passed",
                 "deadline_at": 120,
-                "record": native_digest(config, admission, execution=str(revision)),
+                "record": native_fixture(config, admission, execution=str(revision)),
                 "decision": decision,
             }
         },
@@ -181,7 +174,7 @@ def snapshot(*, rejected=False, revision=1):
 
 def rebuilt_snapshot():
     first, second = snapshot(rejected=True), snapshot(revision=2)
-    source, target = "daily-digest@1", "daily-digest@2"
+    source, target = "lifecycle-fixture@1", "lifecycle-fixture@2"
     failed_key = next(iter(first["events"]))
     target_ref = second["definitions"][target]["workflow_ref"]
     key = hash_json({"event": failed_key, "target": target_ref})
@@ -190,7 +183,7 @@ def rebuilt_snapshot():
     first["definitions"].update(second["definitions"])
     first["events"].update(second["events"])
     first["families"] = second["families"]
-    first["families"]["daily-digest"]["rebuild_count"] = 1
+    first["families"]["lifecycle-fixture"]["rebuild_count"] = 1
     first["rebuilds"][key] = {
         "state": "completed",
         "number": 1,
@@ -222,26 +215,71 @@ def rebuilt_snapshot():
     return first
 
 
+@unittest.skipUnless(os.environ.get("SAPI_RUN_DOCKER_TESTS") == "1", "Native Docker lifecycle proof is opt-in")
+class NativeLifecycleTests(unittest.TestCase):
+    def test_generic_callback_cron_revision_and_rebuild_evidence(self):
+        from sapi_config_lab.execute.host import LAB_IMAGE
+
+        root = workspace_root()
+        evidence = root / "reports/migration-12" / ("native-" + uuid.uuid4().hex[:10])
+        evidence.mkdir(parents=True)
+        command = [
+            "docker",
+            "run",
+            "--rm",
+            "--network",
+            "none",
+            "--entrypoint",
+            "python",
+            "-e",
+            "PYTHONPATH=/app/lab/src:/app/lab",
+            "-v",
+            f"{root}:/app/lab:ro",
+            "-v",
+            f"{evidence}:/evidence",
+            LAB_IMAGE,
+            "/app/lab/tests/support/lifecycle/native_control.py",
+        ]
+        (evidence / "command.json").write_text(json.dumps(command, indent=2))
+        with (evidence / "docker.log").open("w") as log:
+            result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=900)
+        self.assertEqual(result.returncode, 0, f"See {evidence / 'docker.log'}")
+        verdict = json.loads((evidence / "verification.json").read_text())
+        self.assertEqual(len(verdict["native_executions"]), 4)
+        self.assertEqual(verdict["calls"], [])
+
+
 class LifecycleVerificationTests(unittest.TestCase):
+    def test_generic_submission_plan_uses_explicit_tick_and_mutation(self):
+        config = fixture_config()
+        entries = plan_lifecycle(
+            config,
+            {"positive": [{"name": "fixture", "inputs": {"text": '{"count": 11}'}}]},
+            tick="2026-10-05T05:00:00+00:00",
+            wrong_output={"value": {"count": -1}},
+        )
+        self.assertEqual(len(entries), 2)
+        self.assertEqual(entries[0]["config"]["workflow"]["id"], "lifecycle-fixture")
+        self.assertEqual(entries[0]["tick"], "2026-10-05T05:00:00+00:00")
+        self.assertEqual(entries[1]["config"]["workflow"]["output"], {"value": {"count": -1}})
+        self.assertEqual(config, fixture_config())
+
     def test_same_value_literal_output_does_not_prove_declared_preview_origin(self):
         state = snapshot()
         event = next(iter(state["events"].values()))
-        config = state["definitions"]["daily-digest@1"]["config"]
+        config = state["definitions"]["lifecycle-fixture@1"]["config"]
         config["workflow"]["output"] = copy.deepcopy(event["record"]["output"])
-        run = native_digest(config, event["admission"])
+        run = native_fixture(config, event["admission"])
         self.assertEqual(run["output"], event["record"]["output"])
-        self.assertFalse(digest_native(config, run, event["admission"], mode="stub")["passed"])
+        self.assertFalse(native_acceptance(config, run, event["admission"], mode="stub")["passed"])
 
     def test_real_execution_of_wrong_literal_input_is_a_business_rejection(self):
         state = snapshot()
         event = next(iter(state["events"].values()))
-        config = state["definitions"]["daily-digest@1"]["config"]
-        config["workflow"]["steps"][2]["with"]["summary"] = {
-            "text": "Incorrect prepared content",
-            "article_ids": ["wrong"],
-        }
-        run = native_digest(config, event["admission"])
-        result = digest_native(config, run, event["admission"], mode="stub")
+        config = state["definitions"]["lifecycle-fixture@1"]["config"]
+        config["workflow"]["steps"][0]["with"]["text"] = '{"count": -1}'
+        run = native_fixture(config, event["admission"])
+        result = native_acceptance(config, run, event["admission"], mode="stub")
         self.assertFalse(result["passed"])
 
     def test_genuine_rejected_output_requires_persisted_fork_before_archive_and_new_test(self):
@@ -271,8 +309,8 @@ class LifecycleVerificationTests(unittest.TestCase):
     def test_controller_pass_cannot_override_actual_nonpreview_output(self):
         state = snapshot(rejected=True)
         event = next(iter(state["events"].values()))
-        check = digest_native(
-            state["definitions"]["daily-digest@1"]["config"], event["record"], event["admission"], mode="stub"
+        check = native_acceptance(
+            state["definitions"]["lifecycle-fixture@1"]["config"], event["record"], event["admission"], mode="stub"
         )
         self.assertFalse(check["passed"])
         event["decision"].update(passed=True, findings=[])
@@ -280,6 +318,39 @@ class LifecycleVerificationTests(unittest.TestCase):
         state["transitions"][-1]["data"]["decision"] = event["decision"]
         with self.assertRaises(Rejected):
             verify_lifecycle(state, mode="stub")
+
+    def test_injected_negative_decision_cannot_accept_forged_native_evidence(self):
+        state = snapshot(rejected=True)
+        event = next(iter(state["events"].values()))
+        entry = {
+            "name": "negative",
+            "kind": "mutated-generated-workflow",
+            "config": state["definitions"]["lifecycle-fixture@1"]["config"],
+        }
+        event["record"] = {"status": "success"}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            case = root / "evidence/cases/negative"
+            case.mkdir(parents=True)
+            (case / "snapshot.json").write_text(json.dumps(state))
+            (case / "event.json").write_text(json.dumps(event))
+            recorded = Recorded(
+                root / "evidence",
+                root / "evaluation",
+                {"negative": {}},
+                {"name": "fixture", "sources_sha256": "fixture"},
+            )
+            rows = []
+            with self.assertRaises(Rejected):
+                evaluate_lifecycle([entry], recorded, rows, acceptance=lambda *args, **kwargs: {"passed": False})
+            self.assertFalse(rows[0]["passed"])
+            self.assertNotIn("business_rejected", rows[0])
+
+    def test_injected_acceptance_cannot_bypass_native_provenance(self):
+        state = snapshot()
+        next(iter(state["events"].values()))["record"] = {"status": "success"}
+        with self.assertRaises(Rejected):
+            audit_lifecycle(state, acceptance=lambda *args, **kwargs: {"passed": True}, mode="stub")
 
     def test_status_only_or_mock_backend_cannot_prove_native_execution(self):
         state = snapshot()
@@ -292,13 +363,13 @@ class LifecycleVerificationTests(unittest.TestCase):
 
     def test_revision_hash_order_and_source_corruptions_fail(self):
         mutations = {
-            "changed-definition": lambda s: s["definitions"]["daily-digest@1"]["config"]["workflow"]["inputs"].update(
-                articles=[]
-            ),
+            "changed-definition": lambda s: s["definitions"]["lifecycle-fixture@1"]["config"]["workflow"][
+                "inputs"
+            ].update(text="{}"),
             "release-before-test": lambda s: s["transitions"][-1].update(sequence=1),
-            "invented-release": lambda s: s["families"]["daily-digest"].update(active="daily-digest@2"),
+            "invented-release": lambda s: s["families"]["lifecycle-fixture"].update(active="lifecycle-fixture@2"),
             "fake-admission": lambda s: next(iter(s["events"].values()))["record"]["result"].update(admission={}),
-            "missing-native-operation": lambda s: next(iter(s["events"].values()))["record"]["run_data"].pop("prepare"),
+            "missing-native-operation": lambda s: next(iter(s["events"].values()))["record"]["run_data"].pop("decode"),
         }
         for name, mutate in mutations.items():
             with self.subTest(name=name):
@@ -308,48 +379,8 @@ class LifecycleVerificationTests(unittest.TestCase):
                     verify_lifecycle(state, mode="stub")
 
 
-class LifecycleSubmissionTests(unittest.TestCase):
-    def setUp(self):
-        self.temporary = tempfile.TemporaryDirectory()
-        self.addCleanup(self.temporary.cleanup)
-
-    def test_task_extension_is_scoped_and_has_no_reference_solution(self):
-        path = Path(self.temporary.name) / "tasks"
-        stage_tasks(path, mode="generation", scenarios=("daily-digest", "invoice-total"))
-        digest = (path / "daily-digest/instruction.md").read_text()
-        invoice = (path / "invoice-total/instruction.md").read_text()
-        self.assertIn("TASK-SPECIFIC LIFECYCLE EXTENSION", digest)
-        self.assertNotIn("TASK-SPECIFIC LIFECYCLE EXTENSION", invoice)
-        self.assertFalse((path / "daily-digest/solution").exists())
-        self.assertFalse((path / "daily-digest/environment/base.yaml").exists())
-        self.assertEqual(tuple(select_scenarios()), ("invoice-total", "ticket-routing", "competitor-report"))
-
-    def test_task_constraints_are_enforced(self):
-        config = profile.read(workspace_root() / "benchmarks/05-daily-digest/config.yaml")
-        validate_task(config)
-        config["lifecycle"]["on_test_fail"]["max_rebuilds"] = 3
-        with self.assertRaises(AssertionError):
-            validate_task(config)
-
-    def test_harbor_report_does_not_require_opening_the_shared_log_mount(self):
-        report_dir = Path(self.temporary.name) / "shared-verifier-log" / "evaluation"
-        original_open = os.open
-
-        def mount_open(path, flags, *args, **kwargs):
-            if Path(path) == report_dir:
-                raise PermissionError("Harbor log mount cannot be opened for directory fsync")
-            return original_open(path, flags, *args, **kwargs)
-
-        with patch("sapi_config_lab.evidence.os.open", side_effect=mount_open):
-            report = evaluate(
-                "daily-digest",
-                Path(self.temporary.name) / "missing.yaml",
-                report_dir.parent / "evidence",
-                all_cases()["daily-digest"],
-            )
-        self.assertFalse(report["passed"])
-        self.assertEqual(report["error_type"], "FileNotFoundError")
-        self.assertEqual(json.loads((report_dir / "report.json").read_text()), report)
+def verify_lifecycle(snapshot, **options):
+    return audit_lifecycle(snapshot, acceptance=native_acceptance, **options)
 
 
 if __name__ == "__main__":

@@ -251,9 +251,9 @@ def plan(
     fixture = evaluator_for(scenario) if fixture is None else fixture
     if fixture.procedure == "lifecycle":
         if TYPE_CHECKING or __package__:
-            from .lifecycle_submission import plan_lifecycle
+            from .lifecycle_submission import plan_digest_lifecycle as plan_lifecycle
         else:
-            from lifecycle_submission import plan_lifecycle
+            from lifecycle_submission import plan_digest_lifecycle as plan_lifecycle
         require(mode == "stub", "Live lifecycle requires the bounded lifecycle experiment driver")
         entries = plan_lifecycle(config, cases)
     else:
@@ -578,9 +578,9 @@ def evaluate(
         report["observation"] = {"manifest": "evidence/observation.json", "plan_sha256": digest(expected)}
         if fixture.procedure == "lifecycle":
             if TYPE_CHECKING or __package__:
-                from .lifecycle_submission import evaluate_lifecycle
+                from .lifecycle_submission import evaluate_digest_lifecycle as evaluate_lifecycle
             else:
-                from lifecycle_submission import evaluate_lifecycle
+                from lifecycle_submission import evaluate_digest_lifecycle as evaluate_lifecycle
             evaluate_lifecycle(expected["entries"], recorded, report["cases"])
         else:
             judge_entries(scenario, expected["entries"], recorded, cases, mode, report, rubric_runs, fixture)

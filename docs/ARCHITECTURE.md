@@ -120,7 +120,7 @@ independent expected-value checks must not import the implementation under test.
 
 These are migration constraints, not a description of completed extraction. The
 stage model above remains the current implementation. In particular, the global
-catalog/operation bundle, provider and fixture-evaluator tables, digest acceptance,
+catalog/operation bundle, provider and fixture-evaluator tables, legacy digest acceptance,
 TrialHost lifecycle, image scrubbing and copied Harbor job trees still exist for legacy callers.
 Nothing in the baseline ticket removes them or establishes separate-verifier parity.
 
@@ -316,3 +316,31 @@ while its retired package awaits removal. Numeric test-only fixtures under
 `tests/support/refinement/` exercise these semantics with all production benchmark
 directories absent and with an unpaid local bridge in a Harbor-managed native
 n8n control. Infrastructure retries are zero and do not implement refinement.
+
+## Explicit lifecycle acceptance
+
+`LifecycleController` requires a trusted acceptance callable before registering or
+finalizing a candidate. Its verifier label is recorded data, never a dispatch key.
+`observe(..., acceptance=...)` and `lifecycle.main(..., verifier=...)` pass that
+callable explicitly; an absent callable fails closed instead of selecting digest
+behavior. Existing `sapi-lab lifecycle` and the legacy `observe.main` command
+compose their decision through `coordinate/legacy_lifecycle.py` until retirement.
+The generic controller and `observe(...)` never select a business callable.
+
+`verification/lifecycle.py` independently checks admitted native event identity,
+revision, graph lineage and unchanged deadline. `verify_lifecycle` receives an
+explicit independent acceptance callable and retains rebuild, archive, restoration,
+scheduling and unknown-reservation checks. Generic submission planning accepts the
+Cron instant and deliberately wrong output explicitly. Legacy digest verification
+wrappers remain compatibility code until retirement; they are never the generic
+controller or audit's default. Test-only lifecycle fixtures provide unrelated JSON
+decoding, its own catalog/operation source and independent expected values without
+reading a benchmark directory. Native proof uses these fixtures in pinned n8n.
+
+
+The single frozen legacy import from `coordinate/lifecycle.py` to
+`evaluate/operational.py` is relocated to `coordinate/legacy_lifecycle.py`.
+The boundary test replaces exactly that edge when comparing against the unchanged
+baseline snapshot; the original controller edge is now forbidden. This preserves
+existing command behavior during retirement without adding a registry or allowing
+any new business imports in generic lifecycle execution.

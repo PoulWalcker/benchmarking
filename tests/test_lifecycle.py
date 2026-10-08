@@ -1,7 +1,9 @@
 """Durable lifecycle decisions through its public interface; no Docker or models."""
 
+import contextlib
 import copy
 from datetime import UTC, datetime
+import io
 import json
 from pathlib import Path
 import shutil
@@ -9,11 +11,19 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import yaml
+
 from sapi_config_lab import profile
 from sapi_config_lab.contracts import CompiledWorkflow, CompileOptions, RunBinding
+from sapi_config_lab.coordinate.cli import dispatch
 from sapi_config_lab.coordinate.lifecycle import LifecycleController
+from sapi_config_lab.coordinate.observe import main as observe_main
+from sapi_config_lab.evaluate.operational import digest_acceptance
 from sapi_config_lab.evidence import durable_json
 from sapi_config_lab.paths import CATALOG, workspace_root
+from tests.support.lifecycle import FixtureN8n, acceptance
+from tests.support.lifecycle import bindings as fixture_bindings
+from tests.support.lifecycle import config as fixture_config
 from tests.support.native import SimulatedN8n
 
 
@@ -21,8 +31,8 @@ def record_error(record):
     return json.dumps(record["error"])
 
 
-class DigestBackend:
-    name = "digest-fixture"
+class LifecycleBackend:
+    name = "lifecycle-fixture"
 
     def __init__(self):
         self.calls = []
@@ -36,14 +46,9 @@ class DigestBackend:
     def execute(self, compiled, artifact_dir, binding):
         self.calls.append(compiled)
         self.bindings.append(binding)
-        articles = compiled.document["workflow"]["inputs"]["articles"]
-        output = {
-            "mode": "preview",
-            "text": "A warehouse opened in Dubai; payment option added.",
-            "article_ids": [article["id"] for article in articles],
-        }
+        output = {"value": json.loads(compiled.document["workflow"]["inputs"]["text"])}
         if len(self.calls) <= self.reject_count:
-            output["article_ids"] = ["invented-article"]
+            output["value"] = {"count": -1}
         return {
             "status": "success",
             "output": output,
@@ -53,24 +58,147 @@ class DigestBackend:
         }
 
 
+class LegacyLifecycleCompositionTests(unittest.TestCase):
+    def test_legacy_cli_register_callback_and_restart_keep_digest_acceptance(self):
+        config = fixture_config()
+        config["lifecycle"]["test"]["verifier"] = "digest.acceptance_v1"
+        config["workflow"].update(
+            inputs={"articles": [{"id": "one", "title": "Fixture", "text": "Synthetic input."}]},
+            steps=[
+                {
+                    "id": "prepare",
+                    "kind": "Script",
+                    "uses": "digest.prepare",
+                    "with": {"articles": {"ref": "inputs.articles"}},
+                },
+                {
+                    "id": "summarize",
+                    "kind": "LLM",
+                    "uses": "digest.summarize",
+                    "with": {"articles": {"ref": "steps.prepare.articles"}},
+                },
+                {
+                    "id": "preview",
+                    "kind": "Script",
+                    "uses": "digest.preview",
+                    "with": {"summary": {"ref": "steps.summarize"}},
+                },
+            ],
+            dependencies=[["prepare", "summarize"], ["summarize", "preview"]],
+            output={"ref": "steps.preview"},
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            submission = root / "config.yaml"
+            submission.write_text(yaml.safe_dump(config))
+            prefix = ["lifecycle", "--registry", str(root / "registry")]
+            with (
+                contextlib.redirect_stdout(io.StringIO()),
+                patch("sapi_config_lab.coordinate.cases.default_backend", return_value=SimulatedN8n()),
+            ):
+                self.assertEqual(dispatch([*prefix, "register", "--config", str(submission)]), 0)
+                callback = [
+                    *prefix,
+                    "callback",
+                    "--workflow-id",
+                    "lifecycle-fixture",
+                    "--revision",
+                    "1",
+                    "--event-id",
+                    "legacy-test",
+                ]
+                self.assertEqual(dispatch(callback), 0)
+                before = json.loads((root / "registry/snapshot.json").read_text())
+                self.assertEqual(dispatch(callback), 0)
+            after = json.loads((root / "registry/snapshot.json").read_text())
+            self.assertEqual(before, after)
+            event = next(iter(after["events"].values()))
+            self.assertEqual(event["state"], "passed")
+            self.assertEqual(event["decision"]["verifier"], "digest.acceptance_v1")
+            self.assertEqual(after["families"]["lifecycle-fixture"]["active"], "lifecycle-fixture@1")
+
+    def test_legacy_observe_entrypoint_explicitly_injects_compatibility_callable(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            plan = root / "plan.json"
+            plan.write_text("{}")
+            with (
+                patch("sapi_config_lab.coordinate.observe.observe", return_value={"entries": []}) as observation,
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                self.assertEqual(
+                    observe_main(
+                        [
+                            "--plan",
+                            str(plan),
+                            "--submission",
+                            str(root / "submission.yaml"),
+                            "--evidence",
+                            str(root / "evidence"),
+                        ]
+                    ),
+                    0,
+                )
+            self.assertIs(observation.call_args.kwargs["acceptance"], digest_acceptance)
+
+
 class LifecycleTests(unittest.TestCase):
     def setUp(self):
-        self.config = profile.read(workspace_root() / "benchmarks/05-daily-digest/config.yaml")
-        self.backend = DigestBackend()
+        self.config = fixture_config()
+        self.backend = LifecycleBackend()
+
+    def test_no_acceptance_default_or_name_dispatch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            controller = LifecycleController(Path(directory), backend=self.backend, bindings=fixture_bindings())
+            with self.assertRaisesRegex(profile.Invalid, "explicit acceptance callable"):
+                controller.register(self.config)
+            self.assertEqual(controller.snapshot()["definitions"], {})
+            self.assertEqual(self.backend.calls, [])
+
+    def test_restart_without_callable_refuses_queued_work_before_reserving_or_dispatching(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            controller = LifecycleController(
+                root, backend=self.backend, bindings=fixture_bindings(), verifier=acceptance
+            )
+            ref = controller.register(self.config)
+            controller._admit(ref, "Callback", "pending")
+            before = controller.snapshot()
+            restarted = LifecycleController(root, backend=self.backend, bindings=fixture_bindings())
+            with self.assertRaisesRegex(profile.Invalid, "explicit acceptance callable"):
+                restarted.drain()
+            self.assertEqual(restarted.snapshot(), before)
+            self.assertEqual(self.backend.calls, [])
+
+    def test_wrong_decision_identity_fails_before_release(self):
+        def wrong(config, record):
+            return {"verifier": "unrelated", "passed": True, "findings": []}
+
+        with tempfile.TemporaryDirectory() as directory:
+            controller = LifecycleController(
+                Path(directory), backend=self.backend, bindings=fixture_bindings(), verifier=wrong
+            )
+            with self.assertRaisesRegex(profile.Invalid, "Invalid operational verifier"):
+                controller.callback(controller.register(self.config), "wrong-decision")
+            self.assertIsNone(controller.snapshot()["families"]["lifecycle-fixture"]["active"])
 
     def test_callback_releases_exact_tested_definition_and_duplicate_survives_restart(self):
         with tempfile.TemporaryDirectory() as directory:
-            controller = LifecycleController(Path(directory), backend=self.backend)
+            controller = LifecycleController(
+                Path(directory), verifier=acceptance, bindings=fixture_bindings(), backend=self.backend
+            )
             ref = controller.register(self.config)
             event = controller.callback(ref, "test-001")
             self.assertEqual(event["state"], "passed")
-            self.assertEqual(controller.snapshot()["families"]["daily-digest"]["active"], "daily-digest@1")
-            restarted = LifecycleController(Path(directory), backend=self.backend)
+            self.assertEqual(controller.snapshot()["families"]["lifecycle-fixture"]["active"], "lifecycle-fixture@1")
+            restarted = LifecycleController(
+                Path(directory), verifier=acceptance, bindings=fixture_bindings(), backend=self.backend
+            )
             self.assertEqual(restarted.callback(ref, "test-001"), event)
             self.assertEqual(len(self.backend.calls), 1)
             self.assertEqual(self.backend.bindings[0].admission["kind"], "Callback")
             self.assertEqual(self.backend.bindings[0].admission["workflow_ref"], ref)
-            self.assertEqual(restarted.snapshot()["definitions"]["daily-digest@1"]["config"], self.config)
+            self.assertEqual(restarted.snapshot()["definitions"]["lifecycle-fixture@1"]["config"], self.config)
 
     def test_rejection_builds_a_persisted_fork_then_archives_and_tests_new_revision(self):
         self.backend.reject_count = 1
@@ -84,30 +212,40 @@ class LifecycleTests(unittest.TestCase):
             return candidate
 
         with tempfile.TemporaryDirectory() as directory:
-            controller = LifecycleController(Path(directory), backend=self.backend, rebuilder=rebuild)
+            controller = LifecycleController(
+                Path(directory),
+                verifier=acceptance,
+                bindings=fixture_bindings(),
+                backend=self.backend,
+                rebuilder=rebuild,
+            )
             ref = controller.register(self.config)
             first = controller.callback(ref, "test-fork")
             state = controller.snapshot()
         self.assertEqual(first["state"], "failed")
         self.assertEqual(len(calls), 1)
-        self.assertIn("article IDs", calls[0][1]["findings"][0])
-        self.assertEqual(state["families"]["daily-digest"]["active"], "daily-digest@2")
-        self.assertEqual(state["definitions"]["daily-digest@1"]["status"], "archived")
-        self.assertEqual(state["definitions"]["daily-digest@2"]["forked_from"], "daily-digest@1")
+        self.assertIn("Decoded value", calls[0][1]["findings"][0])
+        self.assertEqual(state["families"]["lifecycle-fixture"]["active"], "lifecycle-fixture@2")
+        self.assertEqual(state["definitions"]["lifecycle-fixture@1"]["status"], "archived")
+        self.assertEqual(state["definitions"]["lifecycle-fixture@2"]["forked_from"], "lifecycle-fixture@1")
         kinds = [transition["kind"] for transition in state["transitions"]]
         self.assertLess(kinds.index("fork_persisted"), kinds.index("archived"))
         self.assertEqual([binding.admission["workflow_ref"]["revision"] for binding in self.backend.bindings], [1, 2])
 
     def test_cron_admits_only_current_due_minute_and_deduplicates_across_restart(self):
         with tempfile.TemporaryDirectory() as directory:
-            controller = LifecycleController(Path(directory), backend=self.backend)
+            controller = LifecycleController(
+                Path(directory), verifier=acceptance, bindings=fixture_bindings(), backend=self.backend
+            )
             ref = controller.register(self.config)
             self.assertEqual(controller.tick(datetime(2026, 10, 4, 5, 0, tzinfo=UTC)), [])
             controller.callback(ref, "release")
             self.assertEqual(controller.tick(datetime(2026, 10, 4, 5, 1, tzinfo=UTC)), [])
             event = controller.tick(datetime(2026, 10, 5, 5, 0, tzinfo=UTC))[0]
             self.assertEqual(event["admission"]["kind"], "Cron")
-            restarted = LifecycleController(Path(directory), backend=self.backend)
+            restarted = LifecycleController(
+                Path(directory), verifier=acceptance, bindings=fixture_bindings(), backend=self.backend
+            )
             restarted.tick(datetime(2026, 10, 5, 5, 0, tzinfo=UTC))
             self.assertEqual(len(self.backend.calls), 2)
             self.assertEqual(event["state"], "passed")
@@ -121,14 +259,20 @@ class LifecycleTests(unittest.TestCase):
             return source
 
         with tempfile.TemporaryDirectory() as directory:
-            controller = LifecycleController(Path(directory), backend=self.backend, rebuilder=rebuild)
+            controller = LifecycleController(
+                Path(directory),
+                verifier=acceptance,
+                bindings=fixture_bindings(),
+                backend=self.backend,
+                rebuilder=rebuild,
+            )
             controller.callback(controller.register(self.config), "exhaust")
             state = controller.snapshot()
             self.assertEqual(controller.tick(datetime(2026, 10, 5, 5, 0, tzinfo=UTC)), [])
         self.assertEqual(len(self.backend.calls), 3)
         self.assertEqual(len(state["rebuilds"]), 2)
-        self.assertTrue(state["families"]["daily-digest"]["suspended"])
-        self.assertIsNone(state["families"]["daily-digest"]["active"])
+        self.assertTrue(state["families"]["lifecycle-fixture"]["suspended"])
+        self.assertIsNone(state["families"]["lifecycle-fixture"]["active"])
         self.assertEqual(state["adhoc"][0]["reason"], "Rebuild limit exhausted")
 
     def test_crash_after_reservation_is_unknown_on_restart_and_never_repeats(self):
@@ -137,14 +281,18 @@ class LifecycleTests(unittest.TestCase):
 
         self.backend.execute = crash
         with tempfile.TemporaryDirectory() as directory:
-            controller = LifecycleController(Path(directory), backend=self.backend)
+            controller = LifecycleController(
+                Path(directory), verifier=acceptance, bindings=fixture_bindings(), backend=self.backend
+            )
             ref = controller.register(self.config)
             with self.assertRaises(SystemExit):
                 controller.callback(ref, "crash")
-            restarted = LifecycleController(Path(directory), backend=DigestBackend())
+            restarted = LifecycleController(
+                Path(directory), verifier=acceptance, bindings=fixture_bindings(), backend=LifecycleBackend()
+            )
             restarted.drain()
             state = restarted.snapshot()
-            self.assertTrue(state["families"]["daily-digest"]["suspended"])
+            self.assertTrue(state["families"]["lifecycle-fixture"]["suspended"])
             self.assertEqual(next(iter(state["events"].values()))["state"], "unknown")
             self.assertEqual(restarted.backend.calls, [])
 
@@ -157,18 +305,26 @@ class LifecycleTests(unittest.TestCase):
             return source
 
         with tempfile.TemporaryDirectory() as directory:
-            controller = LifecycleController(Path(directory), backend=self.backend, rebuilder=rebuild)
+            controller = LifecycleController(
+                Path(directory),
+                verifier=acceptance,
+                bindings=fixture_bindings(),
+                backend=self.backend,
+                rebuilder=rebuild,
+            )
             ref = controller.register(self.config)
             controller.callback(ref, "fork")
             count = len(self.backend.calls)
             restored = controller.restore(ref)
             self.assertEqual(restored["status"], "draft")
             self.assertEqual(len(self.backend.calls), count)
-            self.assertEqual(controller.snapshot()["families"]["daily-digest"]["active"], "daily-digest@2")
+            self.assertEqual(controller.snapshot()["families"]["lifecycle-fixture"]["active"], "lifecycle-fixture@2")
 
     def test_overlapping_cron_is_skipped_while_admitted_run_keeps_its_revision(self):
         with tempfile.TemporaryDirectory() as directory:
-            controller = LifecycleController(Path(directory), backend=self.backend)
+            controller = LifecycleController(
+                Path(directory), verifier=acceptance, bindings=fixture_bindings(), backend=self.backend
+            )
             ref = controller.register(self.config)
             controller.callback(ref, "release")
             execute = self.backend.execute
@@ -194,23 +350,25 @@ class LifecycleTests(unittest.TestCase):
             return source
 
         with tempfile.TemporaryDirectory() as directory:
-            controller = LifecycleController(Path(directory), backend=self.backend, rebuilder=relax)
+            controller = LifecycleController(
+                Path(directory), verifier=acceptance, bindings=fixture_bindings(), backend=self.backend, rebuilder=relax
+            )
             controller.callback(controller.register(self.config), "bad-repair")
             state = controller.snapshot()
-        self.assertTrue(state["families"]["daily-digest"]["suspended"])
-        self.assertEqual(list(state["definitions"]), ["daily-digest@1"])
-        self.assertEqual(state["definitions"]["daily-digest@1"]["config"], self.config)
+        self.assertTrue(state["families"]["lifecycle-fixture"]["suspended"])
+        self.assertEqual(list(state["definitions"]), ["lifecycle-fixture@1"])
+        self.assertEqual(state["definitions"]["lifecycle-fixture@1"]["config"], self.config)
 
     def test_admitted_candidate_compiles_once_and_takes_its_event_and_deadline_at_run_time(self):
         admission = {
             "kind": "Callback",
-            "rule_id": "digest-test-requested",
+            "rule_id": "fixture-test-requested",
             "event_id": "actual-event",
-            "workflow_ref": {"id": "daily-digest", "revision": 1},
+            "workflow_ref": {"id": "lifecycle-fixture", "revision": 1},
             "purpose": "test",
         }
-        backend = SimulatedN8n()
-        bindings = profile.read_bindings(CATALOG)
+        backend = FixtureN8n()
+        bindings = fixture_bindings()
         with self.assertRaises(profile.Unsupported):
             backend.compile(self.config, bindings, CompileOptions())
         with self.assertRaises(ValueError):
@@ -237,11 +395,11 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(record["result"]["input_source"], "event")
         fixture = record["run_data"]["Fixture"][0]["data"]["main"][0][0]["json"]
         self.assertEqual(fixture["deadline_at_ms"], 9000000000.5 * 1000)
-        other = {**admission, "workflow_ref": {"id": "daily-digest", "revision": 2}}
+        other = {**admission, "workflow_ref": {"id": "lifecycle-fixture", "revision": 2}}
         self.assertIn(
             "Admission revision differs", record_error(run(RunBinding(deadline_at=9000000000, admission=other)))
         )
-        wrong_rule = {**admission, "rule_id": "digest-scheduled"}
+        wrong_rule = {**admission, "rule_id": "fixture-scheduled"}
         self.assertIn("Invalid lifecycle admission", record_error(run(RunBinding(9000000000, wrong_rule))))
 
     def test_an_ordinary_case_needs_no_binding_and_ignores_a_supplied_event(self):
@@ -256,7 +414,9 @@ class LifecycleTests(unittest.TestCase):
 
     def test_new_candidate_waits_for_in_flight_cron_and_restore_does_not_replay(self):
         with tempfile.TemporaryDirectory() as directory:
-            controller = LifecycleController(Path(directory), backend=self.backend)
+            controller = LifecycleController(
+                Path(directory), verifier=acceptance, bindings=fixture_bindings(), backend=self.backend
+            )
             original_ref = controller.register(self.config)
             controller.callback(original_ref, "release-original")
             execute = self.backend.execute
@@ -275,12 +435,12 @@ class LifecycleTests(unittest.TestCase):
             self.backend.execute = during_old_run
             controller.tick(datetime(2026, 10, 5, 5, 0, tzinfo=UTC))
             state = controller.snapshot()
-            self.assertEqual(state["families"]["daily-digest"]["active"], "daily-digest@2")
+            self.assertEqual(state["families"]["lifecycle-fixture"]["active"], "lifecycle-fixture@2")
             kinds = [t["kind"] for t in state["transitions"]]
             self.assertLess(kinds.index("cron_result"), len(kinds) - 1)
             last_release = state["transitions"][-1]
             self.assertEqual(last_release["kind"], "released")
-            self.assertEqual(last_release["data"]["definition"], "daily-digest@2")
+            self.assertEqual(last_release["data"]["definition"], "lifecycle-fixture@2")
 
     def test_restart_finishes_a_durable_native_result_without_reexecuting(self):
         def lose_process_after_write(path, value):
@@ -289,19 +449,25 @@ class LifecycleTests(unittest.TestCase):
                 raise SystemExit("crash between durable result and registry commit")
 
         with tempfile.TemporaryDirectory() as directory:
-            controller = LifecycleController(Path(directory), backend=self.backend)
+            controller = LifecycleController(
+                Path(directory), verifier=acceptance, bindings=fixture_bindings(), backend=self.backend
+            )
             ref = controller.register(self.config)
             with patch("sapi_config_lab.coordinate.lifecycle.durable_json", side_effect=lose_process_after_write):
                 with self.assertRaises(SystemExit):
                     controller.callback(ref, "recover-result")
-            restarted = LifecycleController(Path(directory), backend=self.backend)
+            restarted = LifecycleController(
+                Path(directory), verifier=acceptance, bindings=fixture_bindings(), backend=self.backend
+            )
             restarted.drain()
             self.assertEqual(len(self.backend.calls), 1)
-            self.assertEqual(restarted.snapshot()["families"]["daily-digest"]["active"], "daily-digest@1")
+            self.assertEqual(restarted.snapshot()["families"]["lifecycle-fixture"]["active"], "lifecycle-fixture@1")
 
     def test_empty_callback_condition_and_invalid_cron_cannot_start_native_work(self):
         with tempfile.TemporaryDirectory() as directory:
-            controller = LifecycleController(Path(directory), backend=self.backend)
+            controller = LifecycleController(
+                Path(directory), verifier=acceptance, bindings=fixture_bindings(), backend=self.backend
+            )
             ref = controller.register(self.config)
             event = controller.callback(ref, "not-ready", condition=False)
             self.assertEqual(event["state"], "dismissed")
@@ -309,19 +475,20 @@ class LifecycleTests(unittest.TestCase):
         self.config["activation"]["schedule"] = "* * * * *"
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(profile.Invalid, "fixed minute/hour"):
-                LifecycleController(Path(directory)).register(self.config)
+                LifecycleController(Path(directory), verifier=acceptance, bindings=fixture_bindings()).register(
+                    self.config
+                )
 
-    def test_literal_preview_is_rejected_even_if_its_output_looks_plausible(self):
-        self.config["workflow"]["steps"][-1]["with"]["summary"] = {
-            "text": "A plausible but fixed summary",
-            "article_ids": ["a1", "a2"],
-        }
+    def test_literal_decode_is_rejected_even_if_its_output_looks_plausible(self):
+        self.config["workflow"]["steps"][-1]["with"]["text"] = '{"count": 7}'
         with tempfile.TemporaryDirectory() as directory:
-            controller = LifecycleController(Path(directory), backend=self.backend)
+            controller = LifecycleController(
+                Path(directory), verifier=acceptance, bindings=fixture_bindings(), backend=self.backend
+            )
             event = controller.callback(controller.register(self.config), "literal-source")
             self.assertEqual(event["state"], "failed")
             self.assertIn("source", event["decision"]["findings"][0])
-            self.assertIsNone(controller.snapshot()["families"]["daily-digest"]["active"])
+            self.assertIsNone(controller.snapshot()["families"]["lifecycle-fixture"]["active"])
 
 
 if __name__ == "__main__":

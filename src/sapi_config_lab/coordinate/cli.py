@@ -24,7 +24,7 @@ MODULES = {
     "transport": "coordinate.transport",
     "ui": "coordinate.ui",
     "review-export": "evaluate.review_export",
-    "lifecycle": "coordinate.lifecycle",
+    "lifecycle": "coordinate.legacy_lifecycle",
     "hosted-worker": "coordinate.hosted_worker",
 }
 
