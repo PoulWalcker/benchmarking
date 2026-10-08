@@ -7,7 +7,6 @@ from dataclasses import dataclass, fields
 from importlib.metadata import PackageNotFoundError, version
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -81,41 +80,9 @@ def run_logged(command: Sequence[str], log: Path, *, timeout: float | None) -> i
     return completed.returncode
 
 
-BUILD_TIMEOUT_SECONDS = 1200
-
-
 def staging_dir(prefix: str, host: HostConfig) -> Path:
     """A fresh directory for task packages and Harbor jobs, outside the checkout."""
     return Path(tempfile.mkdtemp(prefix=prefix, dir=host.staging_dir or None))
-
-
-def collect_jobs(staging: Path, destination: Path) -> None:
-    """Copy Harbor's job tree out of staging, including a failed job's partial output."""
-    if (staging / "jobs").exists():
-        shutil.copytree(staging / "jobs", destination, dirs_exist_ok=True)
-
-
-def harbor_run_args(
-    harbor: Sequence[str],
-    tasks: Path | str,
-    jobs: Path | str,
-    job_name: str,
-    agent: str,
-    *,
-    agent_key: str | None = None,
-    attempts: str | None = None,
-    verifier_env: Sequence[str] = (),
-) -> list[str]:
-    """One serial `harbor run` without retries. Reports record this argv, so its order is evidence."""
-    args = [*harbor, "run", "--path", str(tasks), "--agent", agent]
-    if agent_key is not None:
-        args += ["--ak", agent_key]
-    if attempts is not None:
-        args += ["--n-attempts", attempts]
-    args += ["--n-concurrent", "1", "--max-retries", "0", "--jobs-dir", str(jobs), "--job-name", job_name]
-    for value in verifier_env:
-        args += ["--verifier-env", value]
-    return [*args, "--force-build"]
 
 
 def image_id(image: str) -> str:

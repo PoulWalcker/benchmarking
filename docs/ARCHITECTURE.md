@@ -51,6 +51,7 @@ Every Harbor experiment (`harbor`, `generate`, `live`) runs through `coordinate/
 - a new report directory, a source manifest, a pinned base image identity and staged task packages;
 - each phase re-checks sources, image and pinned inputs;
 - `Run.harbor` submits versioned packages through `harbor_integration/runner.py` directly into the report's `jobs/` tree. Harbor owns phase limits and resources; partial trial references remain in the report on failure. selected descriptors supply the trusted entrypoints and budgets;
+- `Run.transport` uses the same integration argv builder for its shared-verifier control; Harbor writes directly into durable output and owns its phase limits. Task input snapshots remain separate from the authoritative trial tree;
 - `Run.bridge` runs the budgeted Agency bridge;
 - the report is always written, cleanup errors included.
 

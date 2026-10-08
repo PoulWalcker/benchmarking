@@ -122,7 +122,7 @@ class StageBoundaryTests(unittest.TestCase):
             self.assertTrue((ROOT / "src" / PACKAGE / stage).is_dir(), stage)
 
     def test_experiments_reach_harbor_bridges_and_staging_only_through_a_run(self):
-        owned = {"harbor_run_args", "collect_jobs", "staging_dir", "pin_base_image", "start_bridge", "stop_bridge"}
+        owned = {"job_args", "run_job", "staging_dir", "pin_base_image", "start_bridge", "stop_bridge"}
         for module, path, _ in modules():
             if stage_of(module) != "coordinate" or module == "coordinate.runs":
                 continue

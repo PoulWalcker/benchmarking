@@ -22,7 +22,6 @@ from sapi_config_lab.execute.agency import start_bridge, stop_bridge
 from sapi_config_lab.execute.host import (
     HostConfig,
     checked_harbor,
-    harbor_run_args,
     image_id,
     pin_base_image,
     running_containers,
@@ -164,7 +163,7 @@ class Run:
         jobs = self.output / "jobs"
         if (jobs / "transport").exists():
             raise ValueError("A transport job cannot be dispatched twice")
-        argv = harbor_run_args(self.harbor_argv, task, jobs, "transport", "nop")
+        argv = job_args(self.harbor_argv, task, jobs, "transport", "nop")
         # Docker still removes containers/networks; retained engine bytes serve later adapters and skip-build.
         argv.append("--no-delete")
         if skip_build:
