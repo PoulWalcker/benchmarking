@@ -14,11 +14,12 @@ import subprocess
 import sys
 from typing import Any
 
-from sapi_config_lab.coordinate.evaluation import trial_result
 from sapi_config_lab.coordinate.packages import UPLOAD_ONLY_AGENTS, job_seconds, stage_tasks, verifier_bounds
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.providers import ENVIRONMENTS, EVALUATORS
 from sapi_config_lab.coordinate.scenarios import SCENARIOS
+from sapi_config_lab.evaluate.records import load_trials as load_trials
+from sapi_config_lab.evaluate.records import trial_seconds as trial_seconds
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.agency import start_bridge, stop_bridge
 from sapi_config_lab.execute.host import (
@@ -47,46 +48,6 @@ def fingerprint(path: Path) -> dict[str, str]:
 def progress(message: str) -> None:
     """Human progress on stderr; stdout stays machine-readable."""
     print(message, file=sys.stderr, flush=True)
-
-
-def trial_seconds(trial: dict) -> int | None:
-    """Wall-clock seconds Harbor recorded for one trial, if it recorded both ends."""
-    path = Path(trial["result_path"])
-    if not path.exists():
-        return None
-    recorded = json.loads(path.read_text())
-    try:
-        started, finished = (datetime.fromisoformat(recorded[key]) for key in ("started_at", "finished_at"))
-    except KeyError, TypeError, ValueError:
-        return None
-    return round((finished - started).total_seconds())
-
-
-def load_trials(job: Path, hosted: dict[str, Path] | None = None) -> list[dict]:
-    """One row per Harbor trial; a hosted trial's report is its host's record, never the container's copy."""
-    trials = []
-    for directory in sorted(path for path in job.glob("*") if path.is_dir()):
-        path = directory / "result.json"
-        trial = json.loads(path.read_text()) if path.exists() else {}
-        config = directory / "config.json"
-        task = json.loads(config.read_text()).get("task", {}) if config.exists() else {}
-        name = trial.get("task_name") or (Path(task["path"]).name if task.get("path") else None)
-        record = (hosted or {}).get(name, path.parent / "verifier") if name else path.parent / "verifier"
-        report_path = record / "evaluation/report.json"
-        row = {
-            "task_name": name,
-            "trial_id": trial.get("id") or directory.name,
-            "trial_path": str(directory.relative_to(job.parent.parent)),
-            "evidence_path": str(directory.relative_to(job.parent.parent) / "verifier"),
-            "partial": not path.exists(),
-            "rewards": (trial.get("verifier_result") or {}).get("rewards"),
-            "exception": trial.get("exception_info"),
-            "result_path": str(path),
-            "evaluation_path": str(report_path),
-            "acceptance": json.loads(report_path.read_text()) if report_path.exists() else None,
-        }
-        trials.append({**row, "result": trial_result(row)})
-    return trials
 
 
 @dataclass(frozen=True)

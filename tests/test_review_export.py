@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from sapi_config_lab.coordinate.runs import load_trials
+from sapi_config_lab.evaluate.records import load_trials
 from sapi_config_lab.evaluate.review_export import HOSTED_SCHEMA, export_trial, find_evaluations
 
 

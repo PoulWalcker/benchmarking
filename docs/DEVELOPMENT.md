@@ -334,3 +334,23 @@ closure, including its private source pins. Root pins still used by explicit leg
 readers remain in the source manifest through those benchmark declarations. The wheel
 contains the generic runtime; experiment commands retain their existing requirement
 for an editable checkout, as enforced by `workspace_root()`.
+
+
+Historical reports can be read through `evaluate.records.read_report(path, root=run_root)`
+and exported with `sapi-lab review-export <relocated-run>/jobs --dry-run`. Retired
+benchmark names in these records do not require runnable benchmark metadata.
+
+To re-evaluate a historical fixture or hosted record, supply the trusted snapshot
+and the source manifest frozen when it was recorded:
+
+```bash
+uv run --locked sapi-lab evaluate --record <old-record> --output <new-derived-directory> \
+  --source-root <historical-checkout> --source-manifest <frozen-source-manifest.json>
+```
+
+Add `--cases <recorded-cases.json>` for expanded fixture inputs and `--judgement
+<saved-judge-reply.json>` for a saved hosted judgement. Historical evaluation never
+dispatches a judge or starts a world. Unavailable or changed independent evaluator
+sources refuse re-evaluation; report inspection remains available. A matching
+versioned record uses its recorded descriptor identity and does not need these
+historical snapshot options.

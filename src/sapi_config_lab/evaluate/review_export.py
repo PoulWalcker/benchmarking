@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+from sapi_config_lab.evaluate.records import recorded_path
 from sapi_config_lab.evidence import json_text, sha256
 
 SCHEMA = "sapi-lab-task-evaluation/v1"
@@ -32,16 +33,16 @@ def find_evaluations(jobs_dir: Path) -> list[tuple[Path, Path]]:
         elif isinstance(value, dict):
             if value.get("result_path") and value.get("task_name"):
                 trial = (
-                    jobs_dir.parent / value["trial_path"]
+                    recorded_path(value["trial_path"], jobs_dir.parent)
                     if value.get("trial_path")
-                    else Path(value["result_path"]).parent
+                    else recorded_path(value["result_path"], jobs_dir.parent).parent
                 )
                 if trial.is_relative_to(jobs_dir):
                     # Older runs predate the explicit association but retained the same host layout.
                     source = (
                         trial / "verifier/evaluation/report.json"
                         if value.get("trial_path") and (trial / "verifier/evaluation/report.json").exists()
-                        else Path(value["evaluation_path"])
+                        else recorded_path(value["evaluation_path"], jobs_dir.parent)
                         if value.get("evaluation_path")
                         else (
                             jobs_dir.parent

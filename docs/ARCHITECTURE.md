@@ -356,3 +356,21 @@ The boundary test replaces exactly that edge when comparing against the unchange
 baseline snapshot; the original controller edge is now forbidden. This preserves
 existing command behavior during retirement without adding a registry or allowing
 any new business imports in generic lifecycle execution.
+
+
+## Historical records
+
+`evaluate/records.py` reads trial results and historical report layouts without
+importing execution, provider or lifecycle tables. The saved execution, acceptance,
+quality and reward remain separate facts; missing native and terminal observations
+remain null. Review export resolves absolute historical references through an
+explicit relocated run root without rewriting recorded paths or rewards.
+
+Historical re-evaluation uses `coordinate/historical_evaluation.py` with an explicit
+trusted source checkout and its frozen source manifest. It checks independent
+evaluator bytes and recorded source/contract identity before loading snapshot code.
+The known hosted contract layout names its scorer as historical data, never as an
+active provider registry. Fixture snapshots additionally match the recorded aggregate
+verifier identity. Re-evaluation is offline and writes a separate derived output;
+missing snapshots refuse precisely while ordinary reads remain available. Versioned
+records continue to use their declared evaluator and complete frozen identity.

@@ -64,9 +64,10 @@ KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
 # Modules named after a benchmark provider; stage and shared code reaches them only through coordination.
 PROVIDER_MODULES = {"execute.autowfbench", "evaluate.autowfbench", "evaluate.judge_calibration"}
 
-# Core modules that name a provider only as data, never as code; this may only shrink.
+# Core modules that name a provider only as data, never as an active dispatch registry.
 PROVIDER_NAMED_AS_DATA = {
     "coordinate.cli": "help text gives a provenance source name as an example",
+    "coordinate.historical_evaluation": "known historical contract layout selects only verified independent snapshot bytes",
 }
 
 

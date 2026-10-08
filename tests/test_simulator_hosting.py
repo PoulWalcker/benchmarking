@@ -1,8 +1,6 @@
 """Simulator tasks run through the one Run: hosted per job, credentials never persisted."""
 
-import contextlib
 from dataclasses import replace
-import io
 import json
 from pathlib import Path
 import tempfile
@@ -172,20 +170,12 @@ class HostedEvaluationTests(unittest.TestCase):
             },
         )
 
-    def test_deterministic_evaluator_rejects_irrelevant_judge_options(self):
-        output = self.record.parent / (self.record.name + "-unsupported")
-        with self.assertRaisesRegex(ValueError, "does not support judge"):
-            evaluation_main(
-                ["--record", str(self.record), "--output", str(output), "--judgement", str(self.record / "unused.json")]
-            )
+    def test_historical_record_requires_source_snapshot_before_any_evaluator_dispatch(self):
+        for extra in ([], ["--judgement", str(self.record / "unused.json")]):
+            output = self.record.parent / (self.record.name + "-" + str(len(extra)))
+            with self.assertRaisesRegex(ValueError, "Historical evaluator source snapshot unavailable"):
+                evaluation_main(["--record", str(self.record), "--output", str(output), *extra])
         self.assertEqual(self.calls, [])
-
-    def test_reevaluation_uses_the_scenario_the_trial_names(self):
-        output = self.record.parent / (self.record.name + "-again")
-        with contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(evaluation_main(["--record", str(self.record), "--output", str(output)]), 1)
-        self.assertEqual(self.calls, [("again", "checkout-recovery")])
-        self.assertEqual(json.loads((output / "result.json").read_text()), self.result)
 
 
 class ScoredControlTests(unittest.TestCase):

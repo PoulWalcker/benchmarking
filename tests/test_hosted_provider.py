@@ -326,16 +326,14 @@ class FakeProviderTests(unittest.TestCase):
         self.assertTrue(control_passed("nop", trial))
         self.assertFalse(control_passed("oracle", trial))
 
-    def test_a_recorded_trial_is_reevaluated_by_its_provider(self):
+    def test_record_without_declared_source_snapshot_is_not_dispatched_to_provider(self):
         run, *_ = self.run_trial()
         record = run.output / "environments/oracle/fake-crm"
         output = self.root / "again"
-        with patch("sys.stdout"):
-            self.assertEqual(evaluation.main(["--record", str(record), "--output", str(output)]), 0)
-        self.assertEqual(self.reevaluated, [("fake-crm", record, output)])
-        self.assertEqual(
-            json.loads((output / "result.json").read_text()), {"execution": True, "acceptance": True, "quality": None}
-        )
+        with self.assertRaisesRegex(ValueError, "Historical evaluator source snapshot unavailable"):
+            evaluation.main(["--record", str(record), "--output", str(output)])
+        self.assertEqual(self.reevaluated, [])
+        self.assertFalse((output / "result.json").exists())
 
 
 if __name__ == "__main__":
