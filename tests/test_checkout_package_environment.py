@@ -9,7 +9,7 @@ import sys
 import tempfile
 import threading
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from urllib.error import HTTPError
 from urllib.request import ProxyHandler, Request, build_opener
 
@@ -29,6 +29,84 @@ def load(name):
 
 
 SERVER, HOOKS = load("server"), load("hooks")
+
+
+class CheckoutSnapshotTests(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        self.upstream = Mock()
+        self.upstream.finalize.return_value = {"state": {"effect": "committed"}}
+        self.world = SERVER.World(
+            self.upstream, {"limits": {"wall_clock_seconds": 60}}, evidence_path=self.root / "world"
+        )
+        self.addCleanup(self.world.snapshot)
+
+    def context(self):
+        return {
+            "output": self.root,
+            "evidence": self.root / "evidence",
+            "submission": self.root / "missing.yaml",
+            "options": {"mode": "stub"},
+        }
+
+    def test_lost_worker_retains_world_without_inventing_native_outcome_or_acceptance(self):
+        self.world.prepare()
+        context = self.context()
+        with patch.object(HOOKS, "_post", side_effect=lambda *_args: self.world.snapshot()):
+            trial = HOOKS.snapshot(context)
+            self.assertIsNone(trial["native_execution"])
+            self.assertFalse(trial["terminal_completion"])
+            self.assertIsNone(trial["submission"])
+            self.assertNotIn("acceptance", trial)
+            environment = json.loads((context["evidence"] / "environment-evidence.json").read_text())
+            self.assertEqual(environment["state"], {"effect": "committed"})
+            self.assertTrue((context["evidence"] / "transport-evidence.json").is_file())
+            before = {p.name: p.read_bytes() for p in context["evidence"].iterdir()}
+            context["record"] = {"status": "success", "output": {"final_answer": "late", "incident_summary": "late"}}
+            self.assertEqual(HOOKS.snapshot(context), trial)
+            self.assertEqual({p.name: p.read_bytes() for p in context["evidence"].iterdir()}, before)
+        self.upstream.finalize.assert_called_once()
+
+    def test_real_semantic_deadline_persists_without_worker_and_prevents_late_overwrite(self):
+        self.world.limit_seconds = 0.02
+        self.world.prepare()
+        self.world._timer.join(timeout=2)
+        self.assertFalse(self.world._timer.is_alive())
+        before = {p.name: p.read_bytes() for p in (self.root / "world").iterdir()}
+        terminal = self.world.snapshot()
+        self.assertEqual(terminal["window"]["termination_reason"], "timeout")
+        context = {
+            **self.context(),
+            "record": {"status": "success", "output": {"final_answer": "late", "incident_summary": "late"}},
+        }
+        with patch.object(HOOKS, "_post", return_value=terminal):
+            self.assertEqual(HOOKS.snapshot(context)["termination_reason"], "timeout")
+        self.assertEqual({p.name: p.read_bytes() for p in (self.root / "world").iterdir()}, before)
+
+    def test_snapshot_and_deadline_race_freezes_one_terminal_observation(self):
+        self.world.prepare()
+        barrier = threading.Barrier(2)
+        thread = threading.Thread(target=lambda: (barrier.wait(), self.world.snapshot()))
+        thread.start()
+        barrier.wait()
+        self.world._deadline()
+        thread.join(timeout=2)
+        self.assertFalse(thread.is_alive())
+        self.upstream.finalize.assert_called_once()
+        self.assertEqual(len(list((self.root / "world").glob("*-terminal-window.json"))), 1)
+        self.assertEqual(len(list((self.root / "world").glob("*-snapshot.json"))), 1)
+
+    def test_environment_collection_failure_preserves_transport_and_unknown_native_record(self):
+        self.upstream.finalize.side_effect = RuntimeError("unavailable")
+        self.world.prepare()
+        context = self.context()
+        with patch.object(HOOKS, "_post", side_effect=lambda *_args: self.world.snapshot()):
+            trial = HOOKS.snapshot(context)
+        self.assertEqual(trial["evidence_errors"], [{"source": "environment", "error": "RuntimeError"}])
+        self.assertIsNone(trial["native_execution"])
+        self.assertFalse((context["evidence"] / "environment-evidence.json").exists())
+        self.assertTrue((context["evidence"] / "transport-evidence.json").is_file())
+        self.assertTrue((context["evidence"] / "native-record.json").is_file())
 
 
 class CheckoutTerminalTests(unittest.TestCase):

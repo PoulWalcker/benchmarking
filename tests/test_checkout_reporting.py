@@ -2,15 +2,11 @@
 
 import unittest
 
-from sapi_config_lab.contracts import OutputArtifact
-from sapi_config_lab.execute.hosting import terminal_submission as admitted
-
-CHECKOUT = OutputArtifact("incident_summary", "incident-summary.md")
-NO_ARTIFACT = None
+from tests.test_checkout_package_environment import HOOKS
 
 
-def terminal_submission(record, elapsed, run_id, artifact=CHECKOUT):
-    return admitted(record, elapsed, run_id, limit=120, artifact=artifact)
+def terminal_submission(record, elapsed, run_id):
+    return HOOKS.terminal_submission(record, elapsed, run_id, 120)
 
 
 class TerminalSubmissionTests(unittest.TestCase):
@@ -45,13 +41,6 @@ class TerminalSubmissionTests(unittest.TestCase):
             with self.subTest(status=status):
                 record = {"status": status, "output": {"final_answer": "Success", "incident_summary": "All fixed"}}
                 self.assertEqual(terminal_submission(record, 1, "run-one"), ("solution_failed", None))
-
-    def test_generic_result_does_not_require_checkout_artifact(self):
-        record = {"status": "success", "output": {"final_answer": "actual receipts"}}
-        reason, submission = terminal_submission(record, 1, "case", NO_ARTIFACT)
-        self.assertEqual(reason, "completed")
-        self.assertEqual(submission["artifacts"], [])
-        self.assertEqual(terminal_submission(record, 1, "case")[0], "protocol_error")
 
     def test_empty_explanation_remains_semantic_judge_responsibility(self):
         # Upstream allows empty strings: do not secretly turn prose quality into

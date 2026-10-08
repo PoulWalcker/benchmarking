@@ -61,9 +61,11 @@ Paid work is reserved in `coordinate/ledger.py` before it starts; an unknown out
 The selected benchmark owns world startup, seeding, tool receipts, completion rules
 and independent scoring. Harbor starts its declared verifier services; a trusted
 `prepare` hook supplies a `RunBinding` and `snapshot` records the world observations.
-There is no active `Run.hosted`, provider dispatch or hosted-worker path.
-`execute/hosting.py` and the old shared AutoWFBench execution/scoring modules still
-exist pending their separate removal; active descriptor execution does not use them.
+The generic trial host, begin/finish RPC, host tokens and trial timers have been
+deleted along with `Run.hosted`, provider dispatch and the hosted worker. Harbor
+owns trial environments and phase limits. The benchmark retains its semantic
+workflow deadline and evidence finalization. Old shared AutoWFBench
+execution/scoring modules remain pending their separate removal.
 
 `coordinate/evaluation.py` validates one result shape: execution, acceptance and
 optional quality (`null` is not zero). Controls use explicit descriptor controls
@@ -280,8 +282,8 @@ returns a `RunBinding` containing its tool endpoint, scoped token and absolute
 deadline. Core compiles and executes the single observation using the declared
 operation bundle. The benchmark's `snapshot` hook freezes receipts, environment
 state, native output and its final-answer/Markdown completion facts; its evaluator
-scores that recorded evidence independently. No TrialHost begin/finish RPC runs
-on this path. Harbor owns both services' startup, teardown and private volume.
+scores that recorded evidence independently. Harbor owns both services' startup,
+teardown and private volume.
 The separate network has no published ports; author containers share neither it
 nor its credentials volume.
 
@@ -292,8 +294,9 @@ other verdicts retain the acceptance projection. The generic worker knows neithe
 the checkout challenge nor its completion or scoring rules. Offline re-evaluation
 checks the recorded benchmark/options/core closure before loading the selected
 evaluator and checks saved task/judge/source identities before scoring. Original
-evidence is never rewritten. Historical hosted records remain available through snapshot readers; remaining
-shared hosted modules await their separate removal gate.
+evidence is never rewritten. Historical hosted records remain available through
+snapshot readers without an import shim to a trial server. Remaining shared
+execution/scoring modules await their separate removal gate.
 
 
 Selected versioned experiments stage native packages for generation, replay and
