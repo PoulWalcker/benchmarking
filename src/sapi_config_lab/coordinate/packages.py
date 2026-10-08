@@ -15,7 +15,7 @@ from sapi_config_lab.execute.n8n import execution_ceiling
 from sapi_config_lab.harbor_integration.tasks import validate_config
 from sapi_config_lab.profile import Invalid, read
 
-AUTHOR_AGENT = "sapi_config_lab.author.agent:WrapperYamlAgent"
+AUTHOR_AGENT = "sapi_config_lab.harbor_integration.yaml_agent:WrapperYamlAgent"
 UPLOAD_ONLY_AGENTS = frozenset({"oracle", "nop", AUTHOR_AGENT})
 CATALOG_VARIANTS = ("full", "scenario")
 AUTHORED_DEADLINE_SECONDS = 120

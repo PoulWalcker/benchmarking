@@ -4,9 +4,11 @@ import json
 from pathlib import Path
 import tempfile
 
+import sapi_config_lab
 from sapi_config_lab.benchmark import Benchmark
 from sapi_config_lab.evidence import json_text, sha256
 from sapi_config_lab.harbor_integration.tasks import stage_benchmark
+import verification
 
 # Explicit generic runtime closure; no host configuration, provider, ledger or legacy dispatch module.
 CORE_FILES = (
@@ -53,8 +55,10 @@ def stage_selected(
     oracle: bool = True,
     cases: dict | None = None,
 ) -> None:
-    files = {"sapi_config_lab/" + relative: root / "src/sapi_config_lab" / relative for relative in CORE_FILES}
-    files.update({"verification/" + relative: root / "verification" / relative for relative in VERIFIER_FILES})
+    package = Path(sapi_config_lab.__file__).resolve().parent
+    verifier = Path(verification.__file__).resolve().parent
+    files = {"sapi_config_lab/" + relative: package / relative for relative in CORE_FILES}
+    files.update({"verification/" + relative: verifier / relative for relative in VERIFIER_FILES})
     stage_benchmark(
         benchmark,
         destination,

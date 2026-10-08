@@ -37,7 +37,7 @@ def evaluate(evidence: Path, options: Mapping[str, Any]) -> Mapping[str, Any]:
     if output.is_relative_to(evidence):
         raise ValueError("Derived evaluation must be outside original evidence")
     saved = _document(options["contract"]) if options.get("contract") is not None else None
-    judge = saved["judge"] if saved else {"mode": "demo", "model": None}
+    judge: Mapping[str, Any] = saved["judge"] if saved else {"mode": "demo", "model": None}
     manifest = Path(options.get("source_manifest", ROOT / "provenance/autowfbench-source.json"))
     source_root = Path(options.get("source_root", ROOT / "vendor/autowfbench"))
     if "source_root" not in options and not source_root.is_dir():
@@ -79,7 +79,11 @@ def evaluate(evidence: Path, options: Mapping[str, Any]) -> Mapping[str, Any]:
     def score():
         return evaluate_once(contract, run_log, output, judgement=reply, dispatch=dispatch)
 
-    report = reserve(score) if dispatch and contract.judge_mode != "demo" else score()
+    if dispatch and contract.judge_mode != "demo":
+        assert callable(reserve)
+        report = reserve(score)
+    else:
+        report = score()
     if fixture is not None:
         (output.parent / "comparison.json").write_text(
             json.dumps(compare_calibration(fixture, report), indent=2) + "\n"

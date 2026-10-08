@@ -4,6 +4,23 @@ import os
 from pathlib import Path
 
 
+def resource_root() -> Path:
+    """Resolve packaged task material without relaxing editable experiment identity."""
+    package = Path(__file__).resolve().parent
+    source = package.parent.parent
+    if package == source / "src/sapi_config_lab" and (source / "generation/PROFILE.md").is_file():
+        return workspace_root()
+    resources = package / "resources"
+    if not (resources / "benchmarks").is_dir() or not (resources / "generation/PROFILE.md").is_file():
+        raise RuntimeError("Installed benchmark resources are missing")
+    return resources
+
+
+def benchmark_root() -> Path:
+    """The explicitly discoverable benchmark resources for this installation."""
+    return resource_root() / "benchmarks"
+
+
 def workspace_root() -> Path:
     """The checkout experiments read fixtures from: SAPI_LAB_ROOT, else the working directory or this source tree."""
     explicit = os.environ.get("SAPI_LAB_ROOT")

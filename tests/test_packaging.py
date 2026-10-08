@@ -14,7 +14,7 @@ from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.provenance import source_manifest as inventory
-from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.paths import resource_root, workspace_root
 from sapi_config_lab.profile import read, read_bindings
 from tests.support.invoice import CATALOG, fixture
 from tests.support.invoice import cases as invoice_cases
@@ -128,6 +128,23 @@ class PackagingTests(unittest.TestCase):
             with patch.dict("os.environ", {"SAPI_LAB_ROOT": str(ROOT)}):
                 with self.assertRaisesRegex(RuntimeError, "editable package"):
                     workspace_root()
+
+    def test_installed_resource_resolution_does_not_admit_checkout_experiments(self):
+        with tempfile.TemporaryDirectory() as directory:
+            package = Path(directory) / "site-packages/sapi_config_lab"
+            resources = package / "resources"
+            (resources / "benchmarks").mkdir(parents=True)
+            (resources / "generation").mkdir()
+            (resources / "generation/PROFILE.md").write_text("resource fixture")
+            with patch("sapi_config_lab.paths.__file__", str(package / "paths.py")):
+                with patch.dict("os.environ", {"SAPI_LAB_ROOT": str(ROOT)}):
+                    self.assertEqual(resource_root(), resources.resolve())
+                    with self.assertRaisesRegex(RuntimeError, "editable package"):
+                        workspace_root()
+
+    def test_source_inventory_uses_declared_pins_without_provider_filename_fallback(self):
+        self.assertNotIn("provenance/autowfbench-source.json", source_manifest())
+        self.assertIn("benchmarks/10-checkout-recovery/provenance/autowfbench-source.json", source_manifest())
 
     def test_oracle_packages_take_current_sources_and_only_own_cases(self):
         with tempfile.TemporaryDirectory() as directory:

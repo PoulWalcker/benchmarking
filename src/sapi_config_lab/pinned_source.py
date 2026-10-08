@@ -15,7 +15,7 @@ from urllib.request import Request
 
 from sapi_config_lab.evidence import sha256
 from sapi_config_lab.net import urlopen
-from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.paths import benchmark_root, workspace_root
 
 Document = dict[str, Any]
 SCHEMA = "sapi-lab-upstream-source/v1"
@@ -81,9 +81,20 @@ class PinnedSource:
 
 
 def pinned_source(name: str, *, cache: Path | None = None) -> PinnedSource:
-    """provenance/<name>-source.json and its checkout under .cache/<name>/<revision>."""
+    """Resolve a declared trusted source pin and its host-owned cache."""
+    from sapi_config_lab.benchmark import discover_benchmarks
+
     root = workspace_root()
-    manifest = root / "provenance" / f"{name}-source.json"
+    destination = f"provenance/{name}-source.json"
+    matches = {
+        item.source
+        for benchmark in discover_benchmarks(benchmark_root())
+        for item in benchmark.trusted
+        if item.destination == destination
+    }
+    if len(matches) != 1:
+        raise ValueError("Source pin must be declared by exactly one benchmark: " + name)
+    manifest = matches.pop()
     revision = read_manifest(manifest)["revision"]
     return PinnedSource(manifest, (cache or root / ".cache" / name) / revision)
 

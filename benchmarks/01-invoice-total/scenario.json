@@ -12,6 +12,7 @@
     "task.toml",
     "verifier.sh",
     "cases.json",
+    "evaluation/__init__.py",
     "evaluation/contract.json",
     "evaluation/rubric.json",
     "evaluation/outputs.json",

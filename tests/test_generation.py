@@ -6,10 +6,10 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from sapi_config_lab.author.agent import audit_stderr
 from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.generate import summarize_trials
 from sapi_config_lab.coordinate.packages import stage_tasks
+from sapi_config_lab.harbor_integration.yaml_agent import audit_stderr
 from sapi_config_lab.paths import workspace_root
 
 

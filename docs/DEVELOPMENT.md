@@ -135,7 +135,7 @@ uv run --locked sapi-lab compile candidate.yaml --output compiled.json \
 
 There is no installed global catalog, fixed operation bundle or detached fallback.
 Explicit file composition works without an experiment checkout; descriptor selection
-requires the editable workspace. Candidate YAML never selects executable paths.
+uses this installation's declared resources. Candidate YAML never selects executable paths.
 UI imports require local operations; remote tools require a Harbor trial.
 `package-tasks`, controls, generation and live execution receive selected descriptors
 explicitly. Generic lifecycle APIs require an injected trusted acceptance callable,
@@ -333,13 +333,26 @@ The legacy lifecycle adapter has been removed; callers inject their trusted
 acceptance callable through Python. There is no CLI or YAML option for selecting
 executable acceptance code.
 
-The source distribution verifies every selected descriptor's declared file/dependency
-closure, including its private source pins. Root pins still used by explicit legacy
-readers remain in the source manifest through those benchmark declarations. The wheel
-contains the generic runtime and independent verification mechanisms as importable
-packages. Benchmark-owned business rules and evaluator data enter only their
-declared trusted task payloads. Experiment commands retain their existing
-requirement for an editable checkout, as enforced by `workspace_root()`.
+The source distribution and wheel include each descriptor's declared file/dependency
+closure, including benchmark-owned source pins. Wheels include generic runtime and
+independent verification packages plus manifest-owned resources and unchanged
+generation prompts. The distribution check installs direct and source-built wheels
+into isolated environments, invokes discovery/compilation/staging from outside the
+checkout and checks declared shared dependencies and public/trusted placement.
+
+A clean installation of the built distribution with the `harbor` and `benchmark`
+extras supports `sapi-lab benchmarks`,
+`compile --scenario <name>`, `build` and `package-tasks <destination> --scenario <name>`
+using installed resources. The resulting native task directory can be supplied to
+Harbor 0.21.0. Controls, generation/live experiments and source/image identity gates
+require the matching editable checkout, as enforced by `workspace_root()`; resource
+staging alone does not bypass those gates. Historical re-evaluation requires explicit
+verified original source snapshots, including their original source pins.
+
+Ruff checks benchmark Python alongside generic source. `infra/check_types.py` checks
+generic packages together and each discovered benchmark separately because their
+local evaluator module names can coincide. Only external Harbor/upstream modules
+without type metadata are exempt from dependency analysis.
 
 
 Historical reports can be read through `evaluate.records.read_report(path, root=run_root)`

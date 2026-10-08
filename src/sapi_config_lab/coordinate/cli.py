@@ -12,7 +12,7 @@ from sapi_config_lab.contracts import CompileOptions, WorkflowBackend
 from sapi_config_lab.coordinate.compilation import compose_compilation
 from sapi_config_lab.evidence import write_json
 from sapi_config_lab.execute.host import LAB_IMAGE
-from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.paths import benchmark_root, resource_root, workspace_root
 from sapi_config_lab.profile import Invalid, Unsupported, read, read_bindings, validate
 
 MODULES = {
@@ -64,12 +64,12 @@ def command_help() -> str:
 
 
 # The required local checks, in order; each is the plain command docs/DEVELOPMENT.md used to list.
-LINTED = ("src", "tests", "verification", "infra")
+LINTED = ("src", "tests", "verification", "infra", "benchmarks")
 CHECKS = {
     "unittest": ("-m", "unittest", "discover", "-s", "tests", "-v"),
     "ruff check": ("-m", "ruff", "check", *LINTED),
     "ruff format": ("-m", "ruff", "format", "--check", *LINTED),
-    "mypy": ("-m", "mypy"),
+    "mypy": ("infra/check_types.py",),
     "distribution": ("infra/check_distribution.py",),
 }
 
@@ -92,11 +92,11 @@ def benchmarks_command(argv: list[str]) -> int:
 
     parser = argparse.ArgumentParser(description="List benchmark metadata without loading trusted code.")
     parser.add_argument(
-        "--root", type=Path, help="explicit benchmark search root; defaults to this workspace's benchmarks"
+        "--root", type=Path, help="explicit benchmark search root; defaults to this installation's benchmarks"
     )
     parser.add_argument("--defaults", action="store_true", help="list only default-selected benchmarks")
     args = parser.parse_args(argv)
-    root = args.root if args.root is not None else workspace_root() / "benchmarks"
+    root = args.root if args.root is not None else benchmark_root()
     rows = [
         {"id": item.name, "default": item.default, "version": item.version, "directory": str(item.directory)}
         for item in discover_benchmarks(root)
@@ -142,7 +142,7 @@ def build_command(argv: list[str], *, backend: WorkflowBackend | None = None) ->
 
     rows = []
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    root = workspace_root() / "benchmarks"
+    root = benchmark_root()
     for scenario in discover_benchmarks(root):
         path = scenario.reference.source
         context = compose_compilation(path, root, scenario=scenario.name)
@@ -194,7 +194,7 @@ def package_tasks_command(argv: list[str]) -> int:
     from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
     from sapi_config_lab.coordinate.packages import stage_tasks
 
-    root = workspace_root()
+    root = resource_root()
     items = select_benchmarks(root / "benchmarks", selected.scenarios)
     stage_tasks(selected.destination, root=root, benchmarks=items, mode=selected.mode, catalog=selected.catalog)
     print(selected.destination)

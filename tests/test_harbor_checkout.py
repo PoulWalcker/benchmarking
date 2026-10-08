@@ -86,7 +86,7 @@ class CheckoutHarborPackageTests(unittest.TestCase):
             {p.relative_to(staged_public).as_posix() for p in staged_public.rglob("*") if p.is_file()}, public
         )
         pin = self.task / "tests/payload/provenance/autowfbench-source.json"
-        self.assertEqual(pin.read_bytes(), (ROOT / "provenance/autowfbench-source.json").read_bytes())
+        self.assertEqual(pin.read_bytes(), (DIRECTORY / "provenance/autowfbench-source.json").read_bytes())
         self.assertEqual((self.task / "solution/config.yaml").read_bytes(), (DIRECTORY / "config.yaml").read_bytes())
         config = validate_config((self.task / "task.toml").read_text())
         self.assertEqual(config.verifier.environment_mode, "separate")

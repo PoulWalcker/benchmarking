@@ -64,8 +64,8 @@ and independent scoring. Harbor starts its declared verifier services; a trusted
 The generic trial host, begin/finish RPC, host tokens and trial timers have been
 deleted along with `Run.hosted`, provider dispatch and the hosted worker. Harbor
 owns trial environments and phase limits. The benchmark retains its semantic
-workflow deadline and evidence finalization. Old shared AutoWFBench
-execution/scoring modules remain pending their separate removal.
+workflow deadline and evidence finalization. Checkout's simulator, scorer and
+calibration modules live only in its declared benchmark package.
 
 `coordinate/evaluation.py` validates one result shape: execution, acceptance and
 optional quality (`null` is not zero). Controls use explicit descriptor controls
@@ -125,21 +125,19 @@ the Harbor integration owns task translation and invocation of pinned Harbor
 independent expected-value checks must not import the implementation under test.
 
 The global catalog/operation copies, provider and fixture-evaluator tables, legacy
-digest acceptance wrappers and legacy coordination adapters have been removed.
-Shared historical execution/scoring and image tooling remain pending later removal
-steps; their presence does not restore an active compatibility dispatch path.
+digest acceptance wrappers, shared business implementations and legacy coordination
+adapters have been removed. Historical scorer bytes survive only as verified fixture
+data, outside installed runtime packages.
 
-`MigrationOwnershipTests` in `tests/test_boundaries.py` rejects new imports of
-`benchmarks` or the explicitly identified legacy business/provider modules from
-application or verifier code. It also rejects additional direct Harbor imports
-outside `sapi_config_lab.harbor_integration`. The baseline source/target
-edges are recorded in the [baseline import snapshot](../evidence/migration-01-baseline/legacy-imports.json).
-An exception belongs to that edge, never to an entire directory or future module.
-Removing an edge is allowed; adding a caller is not. Static absolute/relative and
-literal dynamic imports are checked, including imports nested inside functions.
-These checks do not claim to detect arbitrary computed imports, business logic
-embedded in JavaScript, file reads or name dispatch; those remain explicit migration
-work. Existing stage checks continue to enforce verifier independence.
+`tests/test_boundaries.py` enforces structural ownership without migration allowlists.
+Every generic Python module and package initializer has a stage. Core and independent
+verification cannot import benchmark packages; only `harbor_integration` imports
+Harbor. Independent verification imports only its own mechanisms. Static absolute,
+relative and literal dynamic imports are checked, including function-level imports.
+The selected `benchmark_loading` seam loads declared trusted modules; resource access
+does not authorize dynamic code imports. These checks do not detect arbitrary computed
+imports, business logic embedded in JavaScript, file reads or name-based dispatch.
+The sealed baseline remains evidence, never an exemption from current ownership.
 
 The [ticket 01 baseline index](../evidence/migration-01-baseline/INDEX.md) records
 source/prompt identities, control observations, deadline and historical-format
@@ -185,7 +183,7 @@ root without global tables or caches. Only invoice-total (default) and
 checkout-recovery remain production-discoverable, both through positive packaging.
 Nine retired packages remain readable in sealed historical evidence; test-only
 graph specimens have no manifests or runtime selection. Verifier independence and
-the frozen migration ownership boundary remain enforced.
+the final structural ownership boundary remain enforced.
 
 ## Positive Harbor packages
 
@@ -295,8 +293,8 @@ the checkout challenge nor its completion or scoring rules. Offline re-evaluatio
 checks the recorded benchmark/options/core closure before loading the selected
 evaluator and checks saved task/judge/source identities before scoring. Original
 evidence is never rewritten. Historical hosted records remain available through
-snapshot readers without an import shim to a trial server. Remaining shared
-execution/scoring modules await their separate removal gate.
+snapshot readers using verified original evaluator bytes, without an import shim
+to a trial server or current business scorer.
 
 
 Selected versioned experiments stage native packages for generation, replay and
@@ -304,10 +302,28 @@ live execution. Descriptor budgets and live plans provide judge costs and model
 occurrences. Checkout declares its unchanged full authoring prompt as public
 material; invoice retains its full/scenario catalog arms. Wrapper HTTP transport,
 host settings and inspected identity live in `harbor_integration/model_wrapper.py`;
-the recorded author-agent import path remains a compatibility facade over the
-integration agent. Agency accounting remains in core and receives its transport
+new runs name the integration-owned YAML agent directly. Recorded historical agent
+paths remain immutable report data. Agency accounting remains in core and receives its transport
 explicitly. Integration can import generic execution contracts/mechanisms; core
 execution does not import concrete wrapper transport.
+
+## Installed resources
+
+Wheel resources contain each discovered manifest and its complete declared public,
+trusted, reference and shared dependency closure, plus unchanged generation prompts.
+The build hook resolves those declarations without importing benchmark implementation.
+Resource discovery, compilation and task staging work from a clean installation.
+Staging copies generic runtime and independent verifier sources from the actual
+installed packages; it never reconstructs an editable source tree. Public/trusted
+placement rules apply equally to installed and checkout resources.
+
+Experiment controls, live model dispatch and source/image identity checks still
+require the matching editable workspace. Installed task packages can be handed to
+pinned Harbor directly; installing resources does not authorize a paid experiment.
+Distribution checks install both a direct wheel and a wheel built from the source
+distribution in isolated environments, then inspect invoice, checkout and a declared
+shared dependency outside the checkout. Benchmark Python participates in lint and
+separate type checks for each manifest-owned namespace.
 
 The verifier receives a requested judge identity without host credentials or paid
 dispatch capability. After native execution, the host evaluates recorded evidence

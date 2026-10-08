@@ -158,7 +158,7 @@ class RedirectTests(unittest.TestCase):
                     )
                 )
                 with self.assertRaises(HTTPError) as error:
-                    from sapi_config_lab.author.agent import WrapperYamlAgent
+                    from sapi_config_lab.harbor_integration.yaml_agent import WrapperYamlAgent
 
                     agent = object.__new__(WrapperYamlAgent)
                     agent.upstream = url + "/author"

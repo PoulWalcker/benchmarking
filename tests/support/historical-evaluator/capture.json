@@ -1,0 +1,8 @@
+{
+  "schema": "sapi-lab-audited-source-fixture/v1",
+  "original_path": "src/sapi_config_lab/evaluate/autowfbench.py",
+  "sha256": "1305a28b886dee48e3d05d886bcc316a67e6574534c4aa784cc6ec7ed09e6335",
+  "audited_revision": "26e1d64b83a072e10b145e58000f1a0242ff3e61",
+  "sealed_manifest": "evidence/migration-01-baseline/source-manifest.json",
+  "capture": "autowfbench.py.txt"
+}

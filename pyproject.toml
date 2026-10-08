@@ -20,8 +20,11 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/sapi_config_lab", "verification"]
 
+[tool.hatch.build.hooks.custom]
+path = "infra/build_resources.py"
+
 [tool.hatch.build.targets.sdist]
-include = ["/src", "/tests", "/verification", "/benchmarks", "/docs", "/evidence", "/generation", "/harbor", "/infra", "/.github", "/README.md", "/AGENTS.md", "/pyproject.toml", "/uv.lock", "/.python-version", "/.gitignore", "/.dockerignore", "/provenance/SapiensSpecNotation.hs", "/provenance/spec-comparison.json", "/provenance/spec-source.json", "/provenance/autowfbench-source.json", "/run.sh", "/run-generation.sh"]
+include = ["/src", "/tests", "/verification", "/benchmarks", "/docs", "/evidence", "/generation", "/harbor", "/infra", "/.github", "/README.md", "/AGENTS.md", "/pyproject.toml", "/uv.lock", "/.python-version", "/.gitignore", "/.dockerignore", "/provenance/SapiensSpecNotation.hs", "/provenance/spec-comparison.json", "/provenance/spec-source.json", "/run.sh", "/run-generation.sh"]
 exclude = ["/reports", "/generated", "/validation", "/review", "/reviews", "/.scratch", "/.python", "/.cache", "/.venv", "/provenance/environment.json", "**/__pycache__", "*.py[cod]", ".env", ".env.*"]
 
 [dependency-groups]
@@ -38,7 +41,7 @@ extend-exclude = ["reports", "provenance", "generated", "validation"]
 
 [tool.ruff.lint]
 # Ruff owns imports and formatting. Rules are the low-noise families that catch real
-# defects here; src, tests, verification and infra are all checked.
+# defects here; benchmark-owned Python is checked alongside the generic packages.
 select = [
     "E4",    # pycodestyle: import errors
     "E7",    # pycodestyle: statement errors
@@ -81,6 +84,7 @@ force-sort-within-sections = true
 [tool.mypy]
 python_version = "3.14"
 files = ["src", "verification"]
+mypy_path = "src"
 check_untyped_defs = true
 warn_unused_ignores = true
 show_error_codes = true
@@ -88,5 +92,5 @@ pretty = true
 
 [[tool.mypy.overrides]]
 # Optional Harbor has no py.typed marker; project code is still checked.
-module = ["harbor.*"]
+module = ["harbor.*", "autowfbench.*"]
 ignore_missing_imports = true

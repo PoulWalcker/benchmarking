@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 from importlib.metadata import PackageNotFoundError, version
-import json
 from pathlib import Path
 import platform
 import sys
@@ -37,16 +36,6 @@ def source_manifest(root: Path | None = None) -> dict[str, str]:
     if (root / "benchmarks").is_dir():
         for benchmark in discover_benchmarks(root / "benchmarks"):
             files.update(item.source for item in benchmark.files)
-    # Legacy readers still use root pins; their names come only from benchmark declarations.
-    for manifest in (root / "benchmarks").glob("*/scenario.json"):
-        metadata = json.loads(manifest.read_text())
-        declaration = metadata.get("config", {}).get("legacy", metadata)
-        provenance = declaration.get("provenance")
-        if provenance:
-            source = provenance["source"]
-            if not isinstance(source, str) or not source.replace("-", "").isalnum():
-                raise ValueError("Invalid declared source identity")
-            files.add(root / "provenance" / (source + "-source.json"))
     for directory in SOURCE_DIRECTORIES:
         files.update(
             path

@@ -19,6 +19,7 @@
     "environment/docker-compose.yaml",
     "environment/verifier.Dockerfile",
     "provenance/autowfbench-source.json",
+    "evaluation/__init__.py",
     "evaluation/evaluator.py",
     "evaluation/scoring.py",
     "evaluation/calibration.py",

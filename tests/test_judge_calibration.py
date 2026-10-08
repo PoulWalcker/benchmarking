@@ -3,9 +3,8 @@
 import copy
 import unittest
 
-from sapi_config_lab.evaluate.autowfbench import evaluate
-from sapi_config_lab.evaluate.judge_calibration import calibration_fixture, compare_calibration
 from tests import test_task_evaluation as fixtures
+from tests.support.checkout_evaluation import CALIBRATION, SCORING
 
 
 @unittest.skipUnless(fixtures.AVAILABLE, "Requires pinned source and benchmark extra")
@@ -19,7 +18,7 @@ class CalibrationTests(unittest.TestCase):
     def test_bad_prose_does_not_rewrite_good_business_state_or_official_rubric(self):
         run = self.factory.run_log()
         before = copy.deepcopy(run)
-        fixture = calibration_fixture(self.contract, run, "contentless")
+        fixture = CALIBRATION.calibration_fixture(self.contract, run, "contentless")
         self.assertEqual(run, before)
         self.assertEqual(fixture["run_log"]["checks"], before["checks"])
         self.assertEqual(fixture["run_log"]["snapshots"], before["snapshots"])
@@ -28,15 +27,17 @@ class CalibrationTests(unittest.TestCase):
         self.assertEqual(fixture["run_log"]["submission"]["final_answer"], "")
         # Fixed responses here check bookkeeping, not semantic model quality.
         reply = self.factory.reply(fixture["run_log"], answer="no")
-        result = evaluate(self.contract, fixture["run_log"], reply)
+        result = SCORING.evaluate(self.contract, fixture["run_log"], reply)
         self.assertEqual(result["deterministic_points"], 6)
-        self.assertTrue(compare_calibration(fixture, result)["passed"])
+        self.assertTrue(CALIBRATION.compare_calibration(fixture, result)["passed"])
 
     def test_misleading_claims_preserve_failed_environment_and_expose_wrong_judgement(self):
-        fixture = calibration_fixture(self.contract, self.factory.run_log("none"), "misleading-success")
+        fixture = CALIBRATION.calibration_fixture(self.contract, self.factory.run_log("none"), "misleading-success")
         self.assertFalse(fixture["run_log"]["checks"]["eur_fixed"])
-        result = evaluate(self.contract, fixture["run_log"], self.factory.reply(fixture["run_log"], answer="yes"))
-        comparison = compare_calibration(fixture, result)
+        result = SCORING.evaluate(
+            self.contract, fixture["run_log"], self.factory.reply(fixture["run_log"], answer="yes")
+        )
+        comparison = CALIBRATION.compare_calibration(fixture, result)
         self.assertEqual(comparison["status"], "measured")
         self.assertFalse(comparison["passed"])
         self.assertFalse(comparison["checks"]["honesty"])
@@ -45,23 +46,23 @@ class CalibrationTests(unittest.TestCase):
         self.assertEqual(result["score_0_10"], 5)
 
     def test_missing_or_demo_results_are_never_live_calibration_passes(self):
-        fixture = calibration_fixture(self.contract, self.factory.run_log(), "supported-good")
-        self.assertIsNone(compare_calibration(fixture, None)["passed"])
-        result = evaluate(self.contract, fixture["run_log"], self.factory.reply(fixture["run_log"]))
+        fixture = CALIBRATION.calibration_fixture(self.contract, self.factory.run_log(), "supported-good")
+        self.assertIsNone(CALIBRATION.compare_calibration(fixture, None)["passed"])
+        result = SCORING.evaluate(self.contract, fixture["run_log"], self.factory.reply(fixture["run_log"]))
         result["evaluation_mode"] = "demo"
-        self.assertEqual(compare_calibration(fixture, result)["status"], "simulated_only")
-        self.assertIsNone(compare_calibration(fixture, result)["passed"])
+        self.assertEqual(CALIBRATION.compare_calibration(fixture, result)["status"], "simulated_only")
+        self.assertIsNone(CALIBRATION.compare_calibration(fixture, result)["passed"])
 
     def test_control_condition_and_result_identity_are_frozen(self):
         with self.assertRaises(ValueError):
-            calibration_fixture(self.contract, self.factory.run_log(), "misleading-success")
+            CALIBRATION.calibration_fixture(self.contract, self.factory.run_log(), "misleading-success")
         with self.assertRaises(ValueError):
-            calibration_fixture(self.contract, self.factory.run_log("no_actions"), "misleading-success")
-        fixture = calibration_fixture(self.contract, self.factory.run_log(), "supported-good")
-        result = evaluate(self.contract, fixture["run_log"], self.factory.reply(fixture["run_log"]))
+            CALIBRATION.calibration_fixture(self.contract, self.factory.run_log("no_actions"), "misleading-success")
+        fixture = CALIBRATION.calibration_fixture(self.contract, self.factory.run_log(), "supported-good")
+        result = SCORING.evaluate(self.contract, fixture["run_log"], self.factory.reply(fixture["run_log"]))
         result["run_log_digest"] = "different-attempt"
         with self.assertRaises(ValueError):
-            compare_calibration(fixture, result)
+            CALIBRATION.compare_calibration(fixture, result)
 
 
 if __name__ == "__main__":

@@ -1,14 +1,6 @@
-"""Stage boundaries: compile, execute, evaluate, author and coordinate.
-
-AGENTS.md states the rules; this test is their enforcement. Every Python module in
-the package and the independent verifier is assigned to exactly one stage, and an
-import is allowed only along the edges in ALLOWED. KNOWN_VIOLATIONS lists the
-edges that still break a rule; it may only shrink, so fixing one means deleting
-its line here.
-"""
+"""Enforce benchmark-neutral stages and the independent verifier without legacy exceptions."""
 
 import ast
-import json
 from pathlib import Path
 import unittest
 
@@ -54,20 +46,8 @@ STAGES = {
     "execute": "execute",
     "evaluate": "evaluate",
     "author": "author",
-    "author.agent": "harbor_integration",
     "coordinate": "coordinate",
     "harbor_integration": "harbor_integration",
-}
-
-KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
-
-# Modules named after a benchmark provider; stage and shared code reaches them only through coordination.
-PROVIDER_MODULES = {"execute.autowfbench", "evaluate.autowfbench", "evaluate.judge_calibration"}
-
-# Core modules that name a provider only as data, never as an active dispatch registry.
-PROVIDER_NAMED_AS_DATA = {
-    "coordinate.cli": "help text gives a provenance source name as an example",
-    "coordinate.historical_evaluation": "known historical contract layout selects only verified independent snapshot bytes",
 }
 
 
@@ -84,43 +64,22 @@ def modules():
     for path in sorted((ROOT / "src" / PACKAGE).rglob("*.py")):
         relative = path.relative_to(ROOT / "src" / PACKAGE).with_suffix("")
         yield ".".join(part for part in relative.parts if part != "__init__"), path, False
-    for path in sorted((ROOT / "verification").glob("*.py")):
-        yield "verification." + path.stem, path, True
-
-
-def is_module(name: str) -> bool:
-    parts = name.removeprefix(PACKAGE).lstrip(".").split(".")
-    base = ROOT / "src" / PACKAGE if name.startswith(PACKAGE) else ROOT
-    target = base.joinpath(*parts)
-    return target.with_suffix(".py").exists() or (target / "__init__.py").exists()
+    for path in sorted((ROOT / "verification").rglob("*.py")):
+        relative = path.relative_to(ROOT / "verification").with_suffix("")
+        yield ".".join(("verification", *(part for part in relative.parts if part != "__init__"))), path, True
 
 
 def imported(path: Path, module: str, verifier: bool) -> set[str]:
-    """Package-relative names this module imports, including function-level imports."""
+    """Resolve stage edges from static and literal dynamic imports, including initializers."""
+    qualified = module if verifier else PACKAGE + ("." + module if module else "")
     names = set()
-    package = module.split(".")[:-1] if path.name != "__init__.py" else module.split(".")
-    for node in ast.walk(ast.parse(path.read_text())):
-        if isinstance(node, ast.Import):
-            candidates = [alias.name for alias in node.names]
-        elif isinstance(node, ast.ImportFrom):
-            if node.level:
-                base = package[: len(package) - node.level + 1]
-                parent = ".".join([*base, node.module] if node.module else base)
-            else:
-                parent = node.module or ""
-            # `from package.core import profile` imports the submodule, not the package.
-            candidates = [
-                f"{parent}.{alias.name}" if is_module(f"{parent}.{alias.name}") else parent for alias in node.names
-            ]
-        else:
-            continue
-        for name in candidates:
-            if name == PACKAGE or name.startswith(PACKAGE + "."):
-                names.add(name.removeprefix(PACKAGE).lstrip("."))
-            elif verifier and (ROOT / "verification" / (name.split(".")[0] + ".py")).exists():
-                names.add("verification." + name.split(".")[0])
-            elif name.startswith("verification"):
-                names.add(name)
+    for name in ownership_imports(path.read_text(), qualified, package=path.name == "__init__.py"):
+        if name == PACKAGE or name.startswith(PACKAGE + "."):
+            names.add(name.removeprefix(PACKAGE).lstrip("."))
+        elif name == "verification" or name.startswith("verification."):
+            names.add(name)
+        elif verifier and (ROOT / "verification" / (name.split(".")[0] + ".py")).exists():
+            names.add("verification." + name.split(".")[0])
     return {name for name in names if name}
 
 
@@ -134,24 +93,8 @@ class StageBoundaryTests(unittest.TestCase):
                     found.add((module, name))
         return found
 
-    def test_fixture_machinery_does_not_select_business_rules_by_benchmark_name(self):
-        names = {path.parent.name[3:] for path in (ROOT / "benchmarks").glob("*/scenario.json")}
-        for relative in (
-            "verification/verify.py",
-            "verification/rubric_facts.py",
-            "src/sapi_config_lab/coordinate/generate.py",
-        ):
-            constants = {
-                node.value
-                for node in ast.walk(ast.parse((ROOT / relative).read_text()))
-                if isinstance(node, ast.Constant) and isinstance(node.value, str)
-            }
-            self.assertFalse(constants & names, relative)
-
     def test_imports_follow_stage_rules(self):
-        found = self.violations()
-        self.assertEqual(found - KNOWN_VIOLATIONS, set(), "New cross-stage import; see AGENTS.md")
-        self.assertEqual(KNOWN_VIOLATIONS - found, set(), "Fixed violation still listed; delete it here")
+        self.assertEqual(self.violations(), set(), "Cross-stage import; see docs/ARCHITECTURE.md")
 
     def test_dynamic_imports_have_explicit_boundaries(self):
         # The selected benchmark loader is the only neutral dynamic-import seam.
@@ -162,7 +105,11 @@ class StageBoundaryTests(unittest.TestCase):
             names = {alias.name for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names}
             names |= {node.module for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)}
             self.assertFalse(
-                any(name and name.startswith("importlib") and name != "importlib.metadata" for name in names), module
+                any(
+                    name and name.startswith("importlib") and name not in {"importlib.metadata", "importlib.resources"}
+                    for name in names
+                ),
+                module,
             )
 
     def test_every_module_has_a_stage(self):
@@ -174,33 +121,6 @@ class StageBoundaryTests(unittest.TestCase):
         for stage in stages:
             self.assertTrue((ROOT / "src" / PACKAGE / stage).is_dir(), stage)
 
-    def test_only_authoring_and_coordination_import_harbor(self):
-        # Harbor is an optional extra; compile, execute and evaluate must work without it.
-        for module, path, _ in modules():
-            if module == "author.agent" or stage_of(module) in {"coordinate", "harbor_integration"}:
-                continue
-            for node in ast.walk(ast.parse(path.read_text())):
-                if isinstance(node, ast.ImportFrom) and not node.level:
-                    self.assertFalse((node.module or "").split(".")[0] == "harbor", module)
-                if isinstance(node, ast.Import):
-                    self.assertFalse(any(a.name.split(".")[0] == "harbor" for a in node.names), module)
-
-    def test_only_coordination_and_providers_import_provider_modules(self):
-        # A provider is named where its code lives; everything else stays provider-neutral.
-        for module, path, verifier in modules():
-            if module in PROVIDER_MODULES or stage_of(module) == "coordinate":
-                continue
-            self.assertFalse(imported(path, module, verifier) & PROVIDER_MODULES, module)
-
-    def test_core_modules_reach_providers_only_through_the_provider_table(self):
-        # A new provider is a table entry in coordinate.providers; the rest of coordination stays unaware of it.
-        for module, path, verifier in modules():
-            if verifier or module == "coordinate.providers" or stage_of(module) not in {"coordinate", SHARED}:
-                continue
-            self.assertFalse(imported(path, module, verifier) & PROVIDER_MODULES, module)
-            named = "autowfbench" in path.read_text().lower()
-            self.assertEqual(named, module in PROVIDER_NAMED_AS_DATA, module)
-
     def test_experiments_reach_harbor_bridges_and_staging_only_through_a_run(self):
         owned = {"harbor_run_args", "collect_jobs", "staging_dir", "pin_base_image", "start_bridge", "stop_bridge"}
         for module, path, _ in modules():
@@ -209,25 +129,6 @@ class StageBoundaryTests(unittest.TestCase):
             for node in ast.walk(ast.parse(path.read_text())):
                 if isinstance(node, ast.ImportFrom):
                     self.assertFalse(owned & {alias.name for alias in node.names}, module)
-
-
-# These mixed legacy modules own benchmark behavior today; moving them is later work.
-BENCHMARK_IMPLEMENTATIONS = {
-    "sapi_config_lab.coordinate.providers",
-    "sapi_config_lab.execute.autowfbench",
-    "sapi_config_lab.evaluate.autowfbench",
-    "sapi_config_lab.evaluate.judge_calibration",
-    "sapi_config_lab.evaluate.operational",
-    "verification.business",
-    "verification.scenario_business",
-    "verification.fixture_evaluators",
-    "verification.fixture_freshness",
-    "verification.fixture_prose",
-    "verification.roles",
-    "verification.extensions",
-    "verification.lifecycle",
-    "verification.lifecycle_submission",
-}
 
 
 def ownership_imports(source: str, module: str, *, package: bool = False) -> set[str]:
@@ -267,14 +168,11 @@ def ownership_imports(source: str, module: str, *, package: bool = False) -> set
 
 
 def ownership_edges(module: str, source: str, *, package: bool = False) -> set[tuple[str, str]]:
-    """Edges requiring removal or an explicitly frozen legacy exception."""
+    """Forbidden benchmark and infrastructure imports, regardless of stage or import syntax."""
     found = set()
     for name in ownership_imports(source, module, package=package):
         if name == "benchmarks" or name.startswith("benchmarks."):
             found.add((module, "benchmarks"))
-        for implementation in BENCHMARK_IMPLEMENTATIONS:
-            if name == implementation or name.startswith(implementation + "."):
-                found.add((module, implementation))
         if (
             (name == "harbor" or name.startswith("harbor."))
             and not module.startswith("sapi_config_lab.harbor_integration.")
@@ -284,36 +182,33 @@ def ownership_edges(module: str, source: str, *, package: bool = False) -> set[t
     return found
 
 
-class MigrationOwnershipTests(unittest.TestCase):
-    def test_no_additional_benchmark_or_harbor_imports(self):
-        baseline = ROOT / "evidence/migration-01-baseline/legacy-imports.json"
-        frozen = {tuple(edge) for edge in json.loads(baseline.read_text())["edges"]}
+class OwnershipTests(unittest.TestCase):
+    def test_core_and_verifier_do_not_import_benchmarks_and_only_integration_imports_harbor(self):
         found = set()
         for module, path, verifier in modules():
             qualified = module if verifier else PACKAGE + ("." + module if module else "")
             found.update(ownership_edges(qualified, path.read_text(), package=path.name == "__init__.py"))
-        self.assertFalse(found - frozen, f"New ownership violations: {sorted(found - frozen)}")
-        # The snapshot is immutable evidence; removed edges need not remain in source.
+        self.assertEqual(found, set(), f"Ownership violations: {sorted(found)}")
 
-    def test_new_core_cannot_import_benchmarks_or_legacy_business(self):
+    def test_static_relative_and_literal_dynamic_imports_obey_boundaries(self):
         examples = (
             "import benchmarks.new_task.evaluation",
             "from benchmarks import new_task",
-            "from sapi_config_lab.execute import autowfbench",
-            "from ..execute.autowfbench import start_environment",
-            "from verification import business",
-            "from sapi_config_lab.coordinate.providers import ENVIRONMENTS",
             "from importlib import import_module as load\nload('benchmarks.new_task')",
-            "import importlib as loader\nloader.import_module('verification.business')",
+            "import importlib as loader\nloader.import_module('benchmarks.new_task')",
             "__import__('benchmarks.new_task')",
+            "from harbor.models.task.config import TaskConfig",
+            "from importlib import import_module as load\nload('harbor.models.task.config')",
         )
         for source in examples:
             with self.subTest(source=source):
-                self.assertTrue(ownership_edges("sapi_config_lab.core.loader", source))
-        self.assertTrue(ownership_edges("sapi_config_lab.core", "from ..execute import autowfbench", package=True))
-
-    def test_harbor_is_reached_only_through_new_integration(self):
-        source = "from harbor.models.task.config import TaskConfig"
-        self.assertTrue(ownership_edges("sapi_config_lab.core.runner", source))
-        self.assertFalse(ownership_edges("sapi_config_lab.harbor_integration.tasks", source))
-        self.assertFalse(ownership_edges("sapi_config_lab.core.runner", "from sapi_config_lab.core import contracts"))
+                self.assertTrue(ownership_edges("sapi_config_lab.coordinate.loader", source))
+                self.assertTrue(ownership_edges("sapi_config_lab", source, package=True))
+        self.assertIn(
+            "sapi_config_lab.execute.agency",
+            ownership_imports("from ..execute import agency", "sapi_config_lab.compile", package=True),
+        )
+        self.assertFalse(
+            ownership_edges("sapi_config_lab.harbor_integration.tasks", "from harbor.models.task import Task")
+        )
+        self.assertFalse(ownership_edges("sapi_config_lab.compile.n8n", "from sapi_config_lab import contracts"))

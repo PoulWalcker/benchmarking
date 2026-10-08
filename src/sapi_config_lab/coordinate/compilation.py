@@ -5,7 +5,7 @@ from pathlib import Path
 
 from sapi_config_lab.benchmark import discover_benchmarks
 from sapi_config_lab.coordinate.backend import N8nBackend
-from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.paths import benchmark_root
 from sapi_config_lab.profile import read_bindings
 
 
@@ -37,10 +37,10 @@ def compose_compilation(
     """Candidate YAML cannot select trusted paths; CLI selection resolves metadata only."""
     if root is None:
         try:
-            root = workspace_root() / "benchmarks"
+            root = benchmark_root()
         except RuntimeError as error:
             if scenario is not None:
-                raise ValueError("Explicit benchmark selection requires an editable workspace") from error
+                raise ValueError("Explicit benchmark selection requires installed benchmark resources") from error
     items = discover_benchmarks(root) if root is not None else ()
     matches = (
         [item for item in items if item.name == scenario]

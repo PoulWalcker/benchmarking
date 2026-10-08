@@ -1,6 +1,7 @@
 """Checkout-owned scoring preserves sealed evidence and saved judge identities offline."""
 
 import copy
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -31,10 +32,11 @@ CALIBRATION = __import__(PACKAGE + ".calibration", fromlist=["calibration_fixtur
 class CheckoutEvaluatorOwnershipTests(unittest.TestCase):
     def test_checkout_calibration_retains_only_its_own_exact_narratives(self):
         actual = json.loads((DIRECTORY / "judge-calibration.json").read_text())
-        legacy = json.loads((ROOT / "src/sapi_config_lab/evaluate/judge-calibration.json").read_text())
-        for case in legacy["cases"].values():
-            case["text"] = {"production-checkout-recovery": case["text"]["production-checkout-recovery"]}
-        self.assertEqual(actual, legacy)
+        # The digest pins checkout's subset of the audited baseline calibration document.
+        self.assertEqual(
+            hashlib.sha256(json.dumps(actual, sort_keys=True).encode()).hexdigest(),
+            "55e7edc0237a1715d69bd4d30068e50a914f210b9216d23bde80763974633bf0",
+        )
 
     def test_adapter_has_no_global_evaluator_provider_or_world_dependency(self):
         source = "\n".join(path.read_text() for path in DIRECTORY.glob("*.py"))

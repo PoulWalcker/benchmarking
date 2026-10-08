@@ -22,6 +22,17 @@ from tests.support.pinned import AVAILABLE, SOURCE
 
 ROOT = workspace_root()
 BASELINE = ROOT / "evidence/migration-01-baseline"
+CAPTURE = ROOT / "tests/support/historical-evaluator"
+
+
+def captured_scorer():
+    metadata = json.loads((CAPTURE / "capture.json").read_text())
+    original = metadata["original_path"]
+    sealed = json.loads((ROOT / metadata["sealed_manifest"]).read_text())
+    path = CAPTURE / metadata["capture"]
+    if sha256(path) != metadata["sha256"] or sealed[original] != metadata["sha256"]:
+        raise AssertionError("Audited historical evaluator identity differs")
+    return path.read_bytes()
 
 
 def inventory(root):
@@ -169,7 +180,7 @@ for row in json.loads((root / "historical-files.json").read_text()):
             adapter.parent.mkdir(parents=True)
             adapter.write_text("raise AssertionError('unchecked bytecode executed')\n")
             py_compile.compile(str(adapter), invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH)
-            adapter.write_bytes((ROOT / "src/sapi_config_lab/evaluate/autowfbench.py").read_bytes())
+            adapter.write_bytes(captured_scorer())
             manifest = root / "sources.json"
             manifest.write_text(json.dumps({str(adapter.relative_to(root)): sha256(adapter)}))
             (root / "provenance").mkdir()
@@ -192,7 +203,7 @@ for row in json.loads((root / "historical-files.json").read_text()):
             snapshot = root / "snapshot"
             adapter = snapshot / "src/sapi_config_lab/evaluate/autowfbench.py"
             adapter.parent.mkdir(parents=True)
-            shutil.copyfile(ROOT / "src/sapi_config_lab/evaluate/autowfbench.py", adapter)
+            adapter.write_bytes(captured_scorer())
             (snapshot / "provenance").mkdir()
             shutil.copyfile(SOURCE.manifest, snapshot / "provenance/autowfbench-source.json")
             shutil.copytree(SOURCE.root, snapshot / ".cache/autowfbench" / SOURCE.root.name)
