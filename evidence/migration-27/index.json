@@ -1,0 +1,20 @@
+{
+  "ticket": "27",
+  "status": "passed",
+  "AC12": "passed",
+  "integrated_commit": "2902b2da60d70924075f85d64b82d95f9c7d7b1c",
+  "source_check": "All 237 frozen source/doc hashes match after merging ticket 26 evidence.",
+  "documentation_files": [
+    "AGENTS.md",
+    "README.md",
+    "docs/ARCHITECTURE.md",
+    "docs/DEVELOPMENT.md",
+    "verification/README.md"
+  ],
+  "proofs": {
+    "check-result.json": "3fb41d8bb4ec7f1cbf1102ba988f3d26944ea092a27f52881c04c35895d03be8",
+    "source-before-check.json": "12cb389b4e19e51c320d16a873fd80a1459a287e1edccee52443332c33e206a2"
+  },
+  "paid_calls": 0,
+  "push": false
+}
