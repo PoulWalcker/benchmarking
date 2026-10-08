@@ -174,5 +174,60 @@ Use `load_benchmark(root, directory)`, then `freeze_identity(descriptor, options
 and `load_entrypoints(descriptor, identity)` only in a trusted context. Listing is
 separate from selection and never calls these hooks. The manifest suite models
 both invoice-style plan/evaluate and checkout-style prepare/snapshot needs without
-changing existing benchmark files. Positive container packaging and actual Harbor
-configuration validation remain the next migration step.
+changing existing benchmark files. The versioned packaging path below adds
+positive container contexts and pinned native Harbor configuration validation.
+
+### Versioned task packaging
+
+Versioned manifests can be staged with
+`harbor_integration.tasks.stage_benchmark(descriptor, destination, options)`.
+The destination must not exist. Declare `instruction.md` as public, `verifier.sh`
+as trusted, and the native task configuration as trusted. The shell entrypoint
+runs from `/tests/payload` with recorded output under `/logs/verifier`; its verdict
+and reward remain benchmark-owned. Local evaluator imports are checked under the
+`payload` namespace while building the verifier. Declared shared modules are at
+`payload.dependencies.<alias>`. External Python dependencies currently consist of
+the clean pinned runtime's standard library and PyYAML; additional local modules
+must be declared in the manifest closure.
+
+The current YAML transfer profile requires these native Harbor settings (resource
+limits and timeouts otherwise remain native configuration):
+
+```toml
+artifacts = [
+  {source="/logs/artifacts", destination="discarded-convention", exclude=["*"]},
+  {source="/submission/config.yaml", destination="submission/config.yaml"}
+]
+[agent]
+user = "1000"
+[verifier]
+environment_mode = "separate"
+[[verifier.collect]]
+command = "python3 /opt/sapi-submission.py collect"
+user = "root"
+timeout_sec = 10
+[verifier.environment]
+cpus = 1
+memory_mb = 512
+```
+
+Author submissions remain at `/app/submission/config.yaml`; verification reads
+the admitted snapshot at `/submission/config.yaml`. Only a regular non-executable
+YAML mapping of at most 1 MiB is admitted, with no other files in the submission
+directory. This does not replace workflow-schema validation. The separate verifier
+must be declared explicitly without `docker_image`, otherwise Harbor may inherit
+a public prebuilt image and bypass the trusted Dockerfile. Packaging rejects that
+configuration. Do not add runtime job overrides that weaken the validated user,
+artifact, mount, environment or collection settings.
+
+The real packaging controls are opt-in and unpaid:
+
+```bash
+SAPI_RUN_DOCKER_TESTS=1 uv run --locked --extra harbor --extra benchmark \
+  python -m unittest tests.test_benchmark_packages -v
+```
+
+They retain inspection results and raw image/filesystem archives under
+`reports/migration-03/docker-*`, inspect every public image layer and native mounts,
+and remove only their own retained containers and networks. Normal unit tests skip
+this Docker proof. Neither suite migrates an existing benchmark.

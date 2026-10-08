@@ -25,6 +25,7 @@ ALLOWED = {
     "evaluate": {SHARED, "evaluate"},
     "author": {SHARED, "author"},
     "verification": {"verification"},
+    "harbor_integration": {SHARED, "harbor_integration"},
     "coordinate": {SHARED, "compile", "execute", "evaluate", "author", "verification", "coordinate"},
 }
 
@@ -45,6 +46,7 @@ STAGES = {
     "evaluate": "evaluate",
     "author": "author",
     "coordinate": "coordinate",
+    "harbor_integration": "harbor_integration",
 }
 
 KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
@@ -155,7 +157,7 @@ class StageBoundaryTests(unittest.TestCase):
 
     def test_every_module_has_a_stage(self):
         # A module outside the stage directories would silently be "coordinate".
-        stages = ("compile", "execute", "evaluate", "author", "coordinate")
+        stages = ("compile", "execute", "evaluate", "author", "coordinate", "harbor_integration")
         loose = {module for module, _, verifier in modules() if not verifier and "." not in module}
         shared = {name for name, stage in STAGES.items() if stage == SHARED}
         self.assertEqual(loose - shared - set(stages) - {"__main__", ""}, set())
@@ -165,7 +167,7 @@ class StageBoundaryTests(unittest.TestCase):
     def test_only_authoring_and_coordination_import_harbor(self):
         # Harbor is an optional extra; compile, execute and evaluate must work without it.
         for module, path, _ in modules():
-            if module == "author.agent" or stage_of(module) == "coordinate":
+            if module == "author.agent" or stage_of(module) in {"coordinate", "harbor_integration"}:
                 continue
             for node in ast.walk(ast.parse(path.read_text())):
                 if isinstance(node, ast.ImportFrom) and not node.level:

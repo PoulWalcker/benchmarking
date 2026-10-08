@@ -174,3 +174,43 @@ legacy execution globals for unmigrated commands and skips versioned manifests;
 new consumers must use the explicit descriptor boundary. All eleven existing
 benchmarks still use the legacy execution path. Verifier independence and the
 frozen migration ownership edges are unchanged.
+
+## Positive Harbor packages
+
+`harbor_integration/tasks.py` adds a separate packaging path for versioned
+benchmarks. It validates native `task.toml` against pinned Harbor 0.21.0. Integration
+modules may import neutral contracts and each other; stage logic stays outside.
+Legacy task packaging and all eleven existing benchmarks retain their current path.
+
+`stage_benchmark` copies declared public files into `environment/payload`, public
+and trusted files into `tests/payload`, and the reference into `solution/`. Public
+`instruction.md` is copied verbatim to the task root. Shared dependencies retain
+`dependencies/<alias>/` paths in each payload. Generated build recipes start from
+`harbor_integration/runtime/Dockerfile`: only pinned upstream Alpine/n8n runtime
+bytes enter its ancestors. No legacy image, checkout or private file enters the
+public image and is later scrubbed. `inputs.json` hashes the source/options identity
+and every staged file.
+
+The initial profile is single-step Linux/Docker with an unprivileged author (UID
+1000) and explicit separate verifier environment. The existing author submission
+path is `/app/submission/config.yaml`. A native root collection hook opens this
+file without following links, rejects executable/extra/non-YAML inputs and copies
+bounded bytes to protected `/submission/config.yaml`. Harbor transfers that
+snapshot after stopping the author. The verifier checks it again before trusted
+`verifier.sh` runs. Missing submission remains missing; the benchmark owns its
+acceptance decision. These are admission rules, not workflow evaluation or a new
+trial lifecycle.
+
+Harbor implicitly collects `/logs/artifacts`. This profile explicitly replaces
+that entry with an all-excluded collection into a distinct host destination; the
+author-writable mount is never the uploaded tree. The verifier rejects unexpected
+conventional artifacts. Native settings must match this transfer profile. Prebuilt
+images, injected credentials, external agent inputs and custom collection hooks
+are unsupported in this initial path. This does not change the legacy runner or
+claim other providers' isolation/resource behavior.
+
+Harbor builds the verifier from `tests/` and skips subsequent test upload. The image
+includes `/tests/test.sh`, its declared payload and dependencies. Build-time isolated
+imports reject unresolved entrypoint imports before verification starts. No reference
+enters the verifier image. Packaging does not invoke jobs or implement the benchmark's
+compile/execute/evaluate pipeline.

@@ -73,6 +73,8 @@ def main() -> int:
             "sapi_config_lab/execute/agency-prompt.md",
             "sapi_config_lab/compile/operations.js",
             "sapi_config_lab/compile/runtime-fragment.js",
+            "sapi_config_lab/harbor_integration/runtime/Dockerfile",
+            "sapi_config_lab/harbor_integration/submission.py",
         ):
             if required not in wheel_members:
                 raise RuntimeError(f"Missing installed runtime resource: {required}")
