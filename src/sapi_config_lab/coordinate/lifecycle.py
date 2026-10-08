@@ -21,7 +21,6 @@ from zoneinfo import ZoneInfo
 from sapi_config_lab import profile
 from sapi_config_lab.contracts import Document, ExecutionRecord, LlmMode, WorkflowBackend
 from sapi_config_lab.coordinate.cases import run_case
-from sapi_config_lab.evaluate.operational import digest_acceptance
 from sapi_config_lab.evidence import canonical, digest, durable_json
 from sapi_config_lab.execute.agency import WRAPPER_TIMEOUT_SECONDS
 from sapi_config_lab.execute.host import HostConfig
@@ -207,10 +206,7 @@ class LifecycleController:
     ) -> Document:
         config = copy.deepcopy(config)
         validate_lifecycle(config, self.bindings)
-        if self.verifier is None:
-            profile.check(
-                config["lifecycle"]["test"]["verifier"] == "digest.acceptance_v1", "Unregistered operational verifier"
-            )
+        profile.check(callable(self.verifier), "Lifecycle requires an explicit acceptance callable")
         ref = config["activation"]["workflow_ref"]
         key, family_id = ref_key(ref), ref["id"]
         schedule = {"schedule": config["activation"]["schedule"], "timezone": config["activation"]["timezone"]}
@@ -398,9 +394,14 @@ class LifecycleController:
         state = self.snapshot()
         event = state["events"][event_key]
         config = state["definitions"][event["definition"]]["config"]
-        decision = (self.verifier or digest_acceptance)(config, event["record"])
+        profile.check(callable(self.verifier), "Lifecycle requires an explicit acceptance callable")
+        assert self.verifier is not None
+        decision = self.verifier(config, event["record"])
         profile.check(
-            type(decision.get("passed")) is bool and isinstance(decision.get("findings"), list),
+            decision.get("verifier") == config["lifecycle"]["test"]["verifier"]
+            and type(decision.get("passed")) is bool
+            and isinstance(decision.get("findings"), list)
+            and bool(decision["findings"]) != decision["passed"],
             "Invalid operational verifier result",
         )
         with self._transaction() as state:
@@ -639,6 +640,7 @@ class LifecycleController:
                     self._suspend(state, rebuild["target"]["id"], "Uncertain rebuild after restart", rebuild_key)
 
     def drain(self) -> None:
+        profile.check(callable(self.verifier), "Lifecycle requires an explicit acceptance callable")
         with (self.directory / "runner.lock").open("a") as lock:
             try:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -666,7 +668,7 @@ class LifecycleController:
                 return
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, *, verifier: Verifier | None = None) -> int:
     host = HostConfig.from_environment()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--registry", type=Path, required=True)
@@ -702,6 +704,7 @@ def main(argv: list[str] | None = None) -> int:
     bindings = profile.read_bindings(args.bindings)
     controller = LifecycleController(
         args.registry,
+        verifier=verifier,
         bindings=bindings,
         llm_mode=args.llm_mode,
         bridge_url=args.bridge_url,

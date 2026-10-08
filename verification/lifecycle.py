@@ -1,5 +1,6 @@
 """Independent lifecycle audit; controller records never substitute for native runs."""
 
+from collections.abc import Callable
 from datetime import UTC, datetime
 import hashlib
 from itertools import pairwise
@@ -11,6 +12,7 @@ if TYPE_CHECKING or __package__:
     from .contracts import WorkflowObservation, equal, require
     from .n8n_provenance import check_graph_evidence, check_provenance, live_operations, one_run
     from .roles import resolve, whole_results
+
 else:  # Standalone Harbor distribution.
     from contracts import WorkflowObservation, equal, require
     from n8n_provenance import check_graph_evidence, check_provenance, live_operations, one_run
@@ -109,8 +111,56 @@ def digest_native(config: dict, run: dict, admission: dict, *, mode: str) -> dic
     }
 
 
-def verify_lifecycle(snapshot: dict, *, mode: str = "live", require_wall_clock: bool = True) -> dict:
-    """Audit a completed digest lifecycle snapshot; callers still compare native files and reconcile calls."""
+def native_lifecycle(config: dict, run: dict, admission: dict, *, mode: str) -> dict:
+    """Check admitted native workflow identity, deadline and graph evidence without business rules."""
+    check_provenance(run)
+    require(run.get("status") == "success" and run.get("persisted_status") == "success", "Native run did not succeed")
+    equal(run.get("execute_exit_code"), 0, "Native process failed")
+    _, final = one_run(run, "Result")
+    equal(run.get("result"), final, "Adapter Result changed")
+    equal(run.get("output"), final.get("output"), "Adapter output changed")
+    equal(final.get("admission"), admission, "Native admission changed")
+    equal(final.get("input_source"), "event", "Lifecycle run was only a fixture simulation")
+    equal(final.get("simulation"), False, "Lifecycle run was not admitted")
+    equal(final.get("llm_mode"), mode, "Wrong lifecycle LLM mode")
+    equal(final.get("spec_revision"), config["spec_revision"], "Wrong pinned specification")
+    equal(run.get("input", {}).get("activation"), admission, "Adapter event identity changed")
+    workflow = config["workflow"]
+    steps = workflow["steps"]
+    events = {event["step_id"]: event for event in final.get("trace", [])}
+    equal(len(final.get("trace", [])), len(steps), "Incomplete workflow trace")
+    equal(set(events), {step["id"] for step in steps}, "Workflow trace occurrences changed")
+    equal(set(run.get("mapping", {})), set(events), "Wrong native mapping")
+    _, fixture = one_run(run, "Fixture")
+    equal(fixture.get("admission"), admission, "Fixture event identity changed")
+    equal(fixture.get("inputs"), workflow["inputs"], "Fixture input changed")
+    require(type(fixture.get("deadline_at_ms")) in (float, int), "Missing lifecycle deadline")
+    states = {}
+    for step in steps:
+        sid = step["id"]
+        _, state = one_run(run, run["mapping"][sid])
+        equal(events[sid].get("operation"), step["uses"], "Wrong native operation")
+        equal(events[sid].get("status"), "completed", "Operation incomplete")
+        equal(events[sid].get("implementation"), mode if step["kind"] == "LLM" else "script", "Wrong implementation")
+        equal(state.get("inputs"), workflow["inputs"], "Workflow input loss")
+        equal(state.get("admission"), admission, "Operation event identity changed")
+        equal(state.get("deadline_at_ms"), fixture["deadline_at_ms"], "Operation reset deadline")
+        states[sid] = state
+    observation = WorkflowObservation(final, events, states, {})
+    check_graph_evidence(config, workflow["inputs"], run, observation, mode)
+    equal(final.get("statuses"), dict.fromkeys(events, "completed"), "Final status changed")
+    equal(final.get("steps"), {sid: states[sid]["steps"][sid] for sid in events}, "Final step data changed")
+    return {
+        "observation": (observation, final),
+        "calls": live_operations(run) if mode == "live" else [],
+        "deadline_at_ms": fixture["deadline_at_ms"],
+    }
+
+
+def verify_lifecycle(
+    snapshot: dict, *, acceptance: Callable[..., dict], mode: str = "live", require_wall_clock: bool = True
+) -> dict:
+    """Audit lifecycle facts with an explicitly supplied independent native decision."""
     equal(snapshot.get("schema"), "sapi-lab-lifecycle/v1", "Unsupported lifecycle evidence")
     definitions, events = snapshot["definitions"], snapshot["events"]
     transitions = snapshot["transitions"]
@@ -213,7 +263,8 @@ def verify_lifecycle(snapshot: dict, *, mode: str = "live", require_wall_clock: 
         identity = (run.get("workflow_id"), run.get("execution_id"))
         require(identity not in native_ids, "One native execution was reused for multiple events")
         native_ids.add(identity)
-        checked = digest_native(config, run, admission, mode=mode)
+        native = native_lifecycle(config, run, admission, mode=mode)
+        checked = {**native, "passed": acceptance(config, run, admission, mode=mode)["passed"]}
         equal(checked["deadline_at_ms"], event["deadline_at"] * 1000, "Native deadline differs from admission")
         completed = matching("native_complete", "event", key) + matching("native_recovered", "event", key)
         require(len(completed) == 1, "Missing or repeated native completion")

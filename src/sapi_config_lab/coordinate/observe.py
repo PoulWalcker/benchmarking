@@ -45,10 +45,10 @@ def _case(
     runner(entry["config"], directory, bindings=bindings, **options)
 
 
-def _lifecycle(entry: Document, directory: Path, backend, bindings: Document) -> None:
+def _lifecycle(entry: Document, directory: Path, backend, bindings: Document, acceptance) -> None:
     from sapi_config_lab.coordinate.lifecycle import LifecycleController
 
-    controller = LifecycleController(directory, backend=backend, bindings=bindings)
+    controller = LifecycleController(directory, backend=backend, bindings=bindings, verifier=acceptance)
     event = controller.callback(controller.register(entry["config"]), entry["callback"])
     durable_json(directory / "event.json", event)
     if entry["tick"]:
@@ -72,6 +72,7 @@ def observe(
     runner: Runner = run_case,
     backend=None,
     bindings: Document | None = None,
+    acceptance: Callable[[Document, ExecutionRecord], Document] | None = None,
 ) -> Document:
     """Execute every plan entry in order and write observation.json last."""
     evidence.mkdir(parents=True, exist_ok=True)
@@ -87,7 +88,7 @@ def observe(
         row: Document = {"name": entry["name"], "files": {}}
         try:
             if entry["procedure"] == "lifecycle":
-                _lifecycle(entry, directory, backend, bindings)
+                _lifecycle(entry, directory, backend, bindings, acceptance)
             else:
                 _case(entry, directory, plan["mode"], bridge_url, runner, bindings)
         except Exception as error:  # A failed entry is evidence too; acceptance decides
@@ -99,6 +100,8 @@ def observe(
 
 
 def main(argv: list[str] | None = None) -> int:
+    from sapi_config_lab.coordinate.legacy_lifecycle import digest_acceptance
+
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--plan", type=Path, required=True)
     parser.add_argument("--submission", type=Path, required=True)
@@ -112,6 +115,7 @@ def main(argv: list[str] | None = None) -> int:
         args.evidence,
         bridge_url=args.bridge_url,
         bindings=read_bindings(args.bindings),
+        acceptance=digest_acceptance,
     )
     print(json.dumps({"observed": len(manifest["entries"]), "errors": sum("error" in r for r in manifest["entries"])}))
     return 0

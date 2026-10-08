@@ -1,0 +1,70 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: lifecycle-fixture
+  revision: 1
+  kind: Gantt
+  inputs:
+    text: '{"count": 7}'
+  steps:
+  - id: decode
+    kind: Script
+    uses: fixture.decode
+    with:
+      text:
+        ref: inputs.text
+  dependencies: []
+  acceptance: Decode the supplied JSON text unchanged.
+  output:
+    ref: steps.decode
+activation:
+  kind: Cron
+  rule_id: fixture-scheduled
+  schedule: 0 9 * * *
+  timezone: Asia/Dubai
+  enabled: false
+  workflow_ref:
+    id: lifecycle-fixture
+    revision: 1
+execution:
+  concurrency: independent
+  deadline_seconds: 120
+  on_step_error: fail
+lifecycle:
+  initial_state: draft
+  test:
+    initiator: Callback
+    rule_id: fixture-test-requested
+    hook: fixture.test_requested
+    condition: test_environment_ready
+    reaction: Trigger
+    verifier: fixture.acceptance_v1
+    output_mode: preview
+  on_test_pass:
+    action: release_candidate
+    enable_cron: fixture-scheduled
+    retarget: exact_tested_revision
+  on_test_fail:
+    action: wbs_rebuild
+    objective: Repair the candidate using verifier findings.
+    source_work: current_candidate
+    output: new_workflow_fork
+    max_rebuilds: 2
+    archive_original: after_fork_persisted
+    next: request_test_via_callback
+    exhausted: suspend_and_create_adhoc
+  persistence:
+    store: workflow_registry
+    immutable_definitions: true
+    record_test_results: true
+    deduplicate_by:
+    - rule_id
+    - event_id
+  scheduling:
+    overlap: skip_if_running
+    missed_run: skip
+    suspended: do_not_start
+  replacement:
+    in_flight: finish_pinned_revision
+    activate_new_revision: after_previous_run_finishes
+    restore_archive: restore_definition_without_replay

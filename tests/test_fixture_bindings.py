@@ -14,7 +14,10 @@ from sapi_config_lab.coordinate.packages import generation_prompt, scenario_cata
 from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import Invalid, read, read_bindings
-from tests.test_lifecycle import DigestBackend
+from tests.support.lifecycle import acceptance
+from tests.support.lifecycle import bindings as fixture_bindings
+from tests.support.lifecycle import config as fixture_config
+from tests.test_lifecycle import LifecycleBackend
 
 
 class FixtureBindingsTests(unittest.TestCase):
@@ -47,16 +50,15 @@ class FixtureBindingsTests(unittest.TestCase):
             self.assertEqual(seen, [selected])
 
     def test_lifecycle_admission_and_backend_use_selected_catalog_without_default_fallback(self):
-        scenario = SCENARIOS["daily-digest"]
-        config = read(scenario.config)
-        selected = {key: value for key, value in read_bindings(scenario.bindings).items() if key.startswith("digest.")}
-        backend = DigestBackend()
+        config = fixture_config()
+        selected = fixture_bindings()
+        backend = LifecycleBackend()
         with tempfile.TemporaryDirectory() as directory:
-            controller = LifecycleController(Path(directory), backend=backend, bindings=selected)
+            controller = LifecycleController(Path(directory), verifier=acceptance, backend=backend, bindings=selected)
             with patch.object(backend, "compile", wraps=backend.compile) as compile_call:
                 controller.callback(controller.register(config), "selected-catalog")
             self.assertEqual(compile_call.call_args.args[1], selected)
         with tempfile.TemporaryDirectory() as directory:
-            controller = LifecycleController(Path(directory), bindings={})
+            controller = LifecycleController(Path(directory), verifier=acceptance, bindings={})
             with self.assertRaisesRegex(Invalid, "unknown operation|Unknown operation"):
                 controller.register(config)

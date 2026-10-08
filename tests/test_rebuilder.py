@@ -12,15 +12,16 @@ import yaml
 
 from sapi_config_lab import profile
 from sapi_config_lab.author.rebuilder import WrapperRebuilder
-from sapi_config_lab.paths import workspace_root
+from tests.support.lifecycle import bindings as fixture_bindings
+from tests.support.lifecycle import config as fixture_config
 
 URL = "http://127.0.0.1:8765/run"
 
 
 class RebuilderTests(unittest.TestCase):
     def test_actual_response_is_preserved_and_same_reservation_cannot_repeat(self):
-        source = profile.read(workspace_root() / "benchmarks/05-daily-digest/config.yaml")
-        target = {"id": "daily-digest", "revision": 2}
+        source = fixture_config()
+        target = {"id": "lifecycle-fixture", "revision": 2}
         candidate = copy.deepcopy(source)
         candidate["workflow"]["revision"] = 2
         candidate["activation"]["workflow_ref"] = target
@@ -48,7 +49,9 @@ class RebuilderTests(unittest.TestCase):
                 self.assertIn("wrong IDs", json.loads(request.data)["prompt"])
                 return Response()
 
-            builder = WrapperRebuilder(URL, timeout_seconds=185, expected_model="gpt-6-astra")
+            builder = WrapperRebuilder(
+                URL, timeout_seconds=185, expected_model="gpt-6-astra", bindings=fixture_bindings()
+            )
             with patch("sapi_config_lab.author.rebuilder.urlopen", side_effect=dispatch) as outgoing:
                 result = builder(source, {"passed": False, "findings": ["wrong IDs"]}, target, artifacts)
                 self.assertEqual(result, candidate)
@@ -65,20 +68,22 @@ class RebuilderTests(unittest.TestCase):
             self.assertIsNone(audit["provider_call_count"])
 
     def test_unknown_wrapper_outcome_is_saved_and_not_retried(self):
-        source = profile.read(workspace_root() / "benchmarks/05-daily-digest/config.yaml")
+        source = fixture_config()
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
-            builder = WrapperRebuilder(URL, timeout_seconds=185, expected_model="gpt-6-astra")
+            builder = WrapperRebuilder(
+                URL, timeout_seconds=185, expected_model="gpt-6-astra", bindings=fixture_bindings()
+            )
             with patch("sapi_config_lab.author.rebuilder.urlopen", side_effect=TimeoutError) as outgoing:
                 with self.assertRaises(TimeoutError):
-                    builder(source, {}, {"id": "daily-digest", "revision": 2}, path)
+                    builder(source, {}, {"id": "lifecycle-fixture", "revision": 2}, path)
                 with self.assertRaises(FileExistsError):
-                    builder(source, {}, {"id": "daily-digest", "revision": 2}, path)
+                    builder(source, {}, {"id": "lifecycle-fixture", "revision": 2}, path)
                 self.assertEqual(outgoing.call_count, 1)
             self.assertEqual(json.loads((path / "dispatch.json").read_text())["status"], "failed_or_unknown")
 
     def test_missing_or_wrong_model_and_boolean_exit_code_fail_closed(self):
-        source = profile.read(workspace_root() / "benchmarks/05-daily-digest/config.yaml")
+        source = fixture_config()
         for exit_code, stderr in [(False, "model: gpt-6-astra\n"), (0, ""), (0, "model: other-model\n")]:
             with self.subTest(exit_code=exit_code, stderr=stderr), tempfile.TemporaryDirectory() as directory:
                 response = {"ok": True, "exit_code": exit_code, "stderr": stderr, "output": yaml.safe_dump(source)}
@@ -89,8 +94,8 @@ class RebuilderTests(unittest.TestCase):
                     ) as outgoing,
                     self.assertRaises(profile.Invalid),
                 ):
-                    WrapperRebuilder(URL, timeout_seconds=185, expected_model="gpt-6-astra")(
-                        source, {}, {"id": "daily-digest", "revision": 2}, Path(directory)
-                    )
+                    WrapperRebuilder(
+                        URL, timeout_seconds=185, expected_model="gpt-6-astra", bindings=fixture_bindings()
+                    )(source, {}, {"id": "lifecycle-fixture", "revision": 2}, Path(directory))
                 self.assertEqual(outgoing.call_count, 1)
                 self.assertFalse((Path(directory) / "candidate.yaml").exists())

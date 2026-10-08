@@ -1,7 +1,4 @@
-"""Operational acceptance the lifecycle controller applies to its own test events.
-
-The experiment verifier stays independent of this decision.
-"""
+"""Legacy digest decision for explicit compatibility callers; lifecycle has no default decision."""
 
 from __future__ import annotations
 

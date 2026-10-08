@@ -279,3 +279,18 @@ Versioned checkout generation performs compile-only admission without invoking
 world hooks or scoring. New versioned records support offline saved-judgement
 re-evaluation; `--dispatch-judge`/`--calibration` for those records are refused until
 the experiment caller integration. Historical records keep their existing path.
+
+
+Generic lifecycle native proof is opt-in and unpaid:
+
+```bash
+SAPI_RUN_DOCKER_TESTS=1 uv run --locked --extra harbor --extra benchmark \
+  python -m unittest tests.test_lifecycle_verification -v
+```
+
+It uses the existing pinned n8n lab image and records native executions, registry
+snapshots and independent decisions under `reports/migration-12/native-*`.
+The controller and observation API require an explicitly injected trusted decision.
+Existing lifecycle and legacy observation commands inject their compatibility
+decision in `coordinate/legacy_lifecycle.py` until retirement; there is no CLI or
+YAML option for selecting executable acceptance code.
