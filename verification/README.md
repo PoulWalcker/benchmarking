@@ -10,6 +10,12 @@ those definitions and immutable native evidence. `verify.evaluate(..., fixture=.
 checks that evidence matches the plan, then writes separate decisions beside it.
 Benchmark entrypoints compose these calls; the native trusted worker runs them.
 
+The verifier's input is the recorded plan/evidence plus explicitly supplied independent
+contracts and callbacks. Its process checks native provenance and those obligations;
+its output is acceptance and separate optional quality. Benchmark-owned evaluators
+provide business rules and expected values. These files provide reusable independent verifier mechanisms.
+
+
 | Module | Role |
 | --- | --- |
 | `verify.py` | observation plans, evidence integrity and case judging |

@@ -1,6 +1,9 @@
 # Architecture
 
-## One flow
+## Owners and flow
+
+A selected benchmark follows `benchmark -> compile -> execute -> evidence -> evaluate -> result`.
+The workflow stages receive a definition, optionally produced by authoring:
 
 ```text
 definition -> COMPILE -> artifact -> EXECUTE -> evidence -> EVALUATE -> verdicts
@@ -9,7 +12,23 @@ definition -> COMPILE -> artifact -> EXECUTE -> evidence -> EVALUATE -> verdicts
   AUTHOR (optional)
 ```
 
-`coordinate/` selects scenarios and cases, binds fixtures, enforces budgets, stages Harbor task packages and sequences the stages. Harbor isolates each trial; it is orchestration around the flow, not part of it. The boundary that matters is **definition -> artifact -> evidence -> verdict**.
+The ownership direction is `BENCHMARKS -> CORE -> external Harbor 0.21.0`.
+Benchmarks declare operations, worlds and independent business evaluation. Core
+supplies workflow mechanisms and experiment policy; its integration adapts tasks
+to Harbor. Harbor manages infrastructure around the flow, without owning workflow
+semantics or acceptance. `coordinate/` selects descriptors and sequences the stages.
+
+Each component has an explicit `INPUT -> PROCESS -> OUTPUT` contract:
+
+| Owner | Input | Process | Output |
+| --- | --- | --- | --- |
+| Benchmark | public task material, fixtures or world observations | declare operations/hooks; independently plan and score | descriptor, observation plan and normalized verdict |
+| Compiler | definition, explicit bindings and trusted operation source | validate and lower generic workflow semantics | backend artifact and step map |
+| Execute | artifact and explicit run binding | run n8n and record native observations | immutable engine evidence |
+| Verifier mechanisms | recorded plan/evidence and independent callbacks | check provenance, obligations and optional rubric | acceptance and separate quality facts |
+| Coordinate | selected descriptors, budgets and identities | sequence stages and reserve model calls | durable report and trial references |
+| Harbor integration | positive task packages and native settings | invoke pinned external Harbor | authoritative trial directories and phase outcomes |
+
 
 ## Stages
 
@@ -21,6 +40,7 @@ definition -> COMPILE -> artifact -> EXECUTE -> evidence -> EVALUATE -> verdicts
 | Execute | `execute/` | n8n runs, Agency bridge, Harbor/Docker host tools and host configuration | turn engine success into acceptance |
 | Evaluate | `evaluate/` | recorded result reading and review export | rerun a workflow |
 | Coordinate | `coordinate/` | CLI descriptor selection, runs, ledger, packaging, live gates, lifecycle controller | hold stage logic another stage owns |
+| Integration | `harbor_integration/` | native task translation, agent/wrapper adaptation and Harbor invocation | own benchmark worlds or scoring |
 | Verifier | `verification/` | independent acceptance and rubric | import compiler, runtime or coordinator code |
 
 `tests/test_boundaries.py` enforces these import edges. Nothing imports `coordinate/`.
@@ -50,7 +70,7 @@ Every Harbor experiment (`harbor`, `generate`, `live`) runs through `coordinate/
 
 - a new report directory, a source manifest, a pinned base image identity and staged task packages;
 - each phase re-checks sources, image and pinned inputs;
-- `Run.harbor` submits versioned packages through `harbor_integration/runner.py` directly into the report's `jobs/` tree. Harbor owns phase limits and resources; partial trial references remain in the report on failure. selected descriptors supply the trusted entrypoints and budgets;
+- `Run.harbor` submits versioned packages through `harbor_integration/runner.py` directly into the report's `jobs/` tree. Harbor owns phase limits and resources; partial trial references remain in the report on failure. Selected descriptors supply the trusted entrypoints and budgets;
 - `Run.transport` uses the same integration argv builder for its shared-verifier control; Harbor writes directly into durable output and owns its phase limits. Task input snapshots remain separate from the authoritative trial tree;
 - `Run.bridge` runs the budgeted Agency bridge;
 - the report is always written, cleanup errors included.
@@ -62,11 +82,9 @@ Paid work is reserved in `coordinate/ledger.py` before it starts; an unknown out
 The selected benchmark owns world startup, seeding, tool receipts, completion rules
 and independent scoring. Harbor starts its declared verifier services; a trusted
 `prepare` hook supplies a `RunBinding` and `snapshot` records the world observations.
-The generic trial host, begin/finish RPC, host tokens and trial timers have been
-deleted along with `Run.hosted`, provider dispatch and the hosted worker. Harbor
-owns trial environments and phase limits. The benchmark retains its semantic
+Harbor owns trial environments and phase limits. The benchmark retains its semantic
 workflow deadline and evidence finalization. Checkout's simulator, scorer and
-calibration modules live only in its declared benchmark package.
+calibration modules live in its declared benchmark package.
 
 `coordinate/evaluation.py` validates one result shape: execution, acceptance and
 optional quality (`null` is not zero). Controls use explicit descriptor controls
@@ -92,7 +110,11 @@ with no final worker record. Snapshot recovery preserves that absence as unknown
 never constructs missing environment evidence. These observations do not implement
 container cleanup or automatic retries; those remain Harbor responsibilities.
 
-Pinned inputs are explicit and fail closed: the upstream source manifest under `provenance/`, the Harbor and n8n versions in `execute/`, the image identity, the source manifest of a run, prompt hashes in `tests/test_packaging.py`, and the inspected model-wrapper identity before live dispatch.
+Pinned inputs are explicit and fail closed: benchmark-declared upstream source
+manifests, profile/specification pins under `provenance/`, engine and Harbor versions,
+the image identity, the complete run source manifest, prompt hashes and the inspected
+model-wrapper identity. Source guards include documentation; sources stay frozen
+through controls, while progress and derived observations go under `reports/`.
 
 ## Backend boundary
 
@@ -115,20 +137,11 @@ Detached candidates never inherit an invoice catalog or operation bundle.
 | scenario / case | one benchmark directory / one fixture input of it |
 | hosted | historical terminology for world-backed trials; current worlds are declared by benchmark hooks and native Harbor configuration |
 
-## Migration ownership constraints
+## Ownership boundaries
 
-The approved migration targets `BENCHMARKS -> CORE -> HARBOR`, with the conceptual
-flow `benchmark -> compile -> execute -> evidence -> evaluate -> result`.
-Benchmarks own operations, world semantics and independent business scoring;
-core owns generic workflow semantics, immutable evidence and experiment policy;
-the Harbor integration owns task translation and invocation of pinned Harbor
-0.21.0. Evaluation must continue to read evidence without rerunning workflows, and
-independent expected-value checks must not import the implementation under test.
-
-The global catalog/operation copies, provider and fixture-evaluator tables, legacy
-digest acceptance wrappers, shared business implementations and legacy coordination
-adapters have been removed. Historical scorer bytes survive only as verified fixture
-data, outside installed runtime packages.
+Selected descriptors and explicit callbacks supply benchmark behavior; there is
+no shared business catalog or provider/evaluator dispatch table. Independent
+checks receive recorded evidence and never import the implementation under test.
 
 `tests/test_boundaries.py` enforces structural ownership without migration allowlists.
 Every generic Python module and package initializer has a stage. Core and independent
@@ -139,12 +152,6 @@ The selected `benchmark_loading` seam loads declared trusted modules; resource a
 does not authorize dynamic code imports. These checks do not detect arbitrary computed
 imports, business logic embedded in JavaScript, file reads or name-based dispatch.
 The sealed baseline remains evidence, never an exemption from current ownership.
-
-The [ticket 01 baseline index](../evidence/migration-01-baseline/INDEX.md) records
-source/prompt identities, control observations, deadline and historical-format
-inventories, permitted comparison normalization and the limits of the evidence.
-Use fresh controls after changing source/package/image identity. Preserve the
-snapshot; it is not an allowlist to expand when a later ticket needs a new edge.
 
 ## Versioned benchmark loading
 
@@ -182,17 +189,21 @@ current re-evaluation enforces the recorded identity.
 `coordinate/benchmark_discovery.py` resolves selections from an explicit search
 root without global tables or caches. Only invoice-total (default) and
 checkout-recovery remain production-discoverable, both through positive packaging.
-Nine retired packages remain readable in sealed historical evidence; test-only
-graph specimens have no manifests or runtime selection. Verifier independence and
-the final structural ownership boundary remain enforced.
+Test-only graph specimens have no production manifests or runtime selection.
+Historical reads do not require retired benchmark directories.
 
 ## Positive Harbor packages
 
-`harbor_integration/tasks.py` adds a separate packaging path for versioned
-benchmarks. It validates native `task.toml` against pinned Harbor 0.21.0. Integration
+`harbor_integration/tasks.py` positively packages selected versioned benchmarks. It validates native `task.toml` against pinned Harbor 0.21.0. Integration
 modules may import neutral contracts, generic execution mechanisms and each other;
 benchmark planning and scoring stay outside.
 All active benchmark task packaging uses the versioned path.
+
+Repository `tests/` contains project unit and regression tests. A benchmark's
+source `evaluation/` and `verifier.sh` supply its task-specific verifier. Staging
+emits Harbor's standard task layout: `tests/test.sh` runs that verifier with its
+private `tests/payload` and generic `tests/core`, while `solution/solve.sh` runs
+the reference solution.
 
 `stage_benchmark` copies declared public files into `environment/payload`, public
 and trusted files into `tests/payload`, and the reference into `solution/`. Public
@@ -203,7 +214,7 @@ bytes enter its ancestors. No legacy image, checkout or private file enters the
 public image and is later scrubbed. `inputs.json` hashes the source/options identity
 and every staged file.
 
-The initial profile is single-step Linux/Docker with an unprivileged author (UID
+The supported profile is single-step Linux/Docker with an unprivileged author (UID
 1000) and explicit separate verifier environment. The existing author submission
 path is `/app/submission/config.yaml`. A native root collection hook opens this
 file without following links, rejects executable/extra/non-YAML inputs and copies
@@ -218,7 +229,7 @@ that entry with an all-excluded collection into a distinct host destination; the
 author-writable mount is never the uploaded tree. The verifier rejects unexpected
 conventional artifacts. Native settings must match this transfer profile. Prebuilt
 images, injected credentials, external agent inputs and custom collection hooks
-are unsupported in this initial path. This profile does not claim isolation/resource behavior for undeclared environments.
+are outside this profile. Its Docker limits are described under [Timeouts and resources](#timeouts-and-resources).
 
 Harbor builds the verifier from `tests/` and skips subsequent test upload. The image
 includes `/tests/test.sh`, its declared payload and dependencies. Build-time isolated
@@ -232,9 +243,7 @@ compile/execute/evaluate pipeline.
 operation bundle as explicit compatibility material, case/probe planning,
 independent totals, role contract/output schemas,
 and deterministic rubric. Its explicit fixture object supplies these to verifier
-mechanisms. The task includes its own byte-identical operation bundle; the global
-bundle and evaluator table have been deleted. Keeping the full
-bundle preserves execution of every operation the unchanged full catalog exposes,
+mechanisms. Keeping the full bundle preserves execution of every operation its unchanged catalog exposes,
 including incorrect candidate graphs which independent invoice acceptance rejects. Ordinary and recursive refinement compilation accept trusted operation
 source supplied by coordination, never an executable path selected in candidate YAML.
 
@@ -256,7 +265,7 @@ Active callers receive explicit selected descriptors. Benchmark-owned `config`
 is interpreted only by its declared hooks or by command composition for public
 prompt material; it does not recreate a provider/evaluator registry.
 
-Generation/selection temporarily retain the host-side `tests/cases.json` record and
+Generation/selection retain the host-side `tests/cases.json` record and
 its historical hash format. This compatibility record is outside both image COPY
 closures. Before live dispatch, versioned package validation reconstructs the
 positive package from current declared sources and the selected immutable YAML/
@@ -286,7 +295,7 @@ teardown and private volume.
 The separate network has no published ports; author containers share neither it
 nor its credentials volume.
 
-The new checkout trial retains the legacy evidence filenames and hosted acceptance
+Checkout retains the recorded evidence filenames and hosted acceptance
 report schema inside the native verifier output. Explicit `harbor_reward` in the
 benchmark verdict projects quality (0.732 for its reference, absent when unscored);
 other verdicts retain the acceptance projection. The generic worker knows neither
@@ -337,6 +346,8 @@ offline saved judgement re-evaluation never dispatches. Original evidence and na
 Harbor exceptions remain recorded alongside derived paid results.
 
 
+## Bounded refinement
+
 Generic bounded refinement is compiled with explicit trusted operation source,
 including every recursively lowered attempt. `verification/refinement.py`
 independently verifies sequential native attempt edges, unchanged deadlines,
@@ -347,6 +358,26 @@ contains no benchmark rules. Numeric test-only fixtures under
 directories absent and with an unpaid local bridge in a Harbor-managed native
 n8n control. Infrastructure retries are zero and do not implement refinement.
 
+## Timeouts and resources
+
+| Owner | Limit | Meaning |
+| --- | --- | --- |
+| Native `task.toml` / Harbor | build, author, collection and verifier phases; CPU and memory | trial infrastructure limits, with zero automatic retries |
+| Core admission | planned execution ceilings against the resolved verifier phase | reject oversized plans before dispatch |
+| Core n8n executor | import/process ceilings and remaining absolute run deadline | bound engine processes without adding a whole-job watchdog |
+| Benchmark world | semantic window established by `prepare`; one terminal snapshot | finalizer latency does not extend workflow time |
+| Agency / ledger | grant expiry, occurrence budgets and reservations | bound and account for model work; a grant duration is not an infrastructure watchdog |
+| Benchmark evaluator | pinned worker/judge limits | bound evaluation of recorded evidence |
+
+Trial infrastructure supports the pinned single-step Linux/Docker profile. Docker
+enforces CPU and memory;
+packaging rejects requested storage, GPU and TPU requirements. Separate author/verifier
+placement, private Compose networks, sidecar credentials and durable observations
+have Docker-specific controls. This does not establish storage/network enforcement
+or log-retention equivalence on other Harbor providers.
+Interrupted runs retain only observations actually written and available; missing
+native or terminal facts stay unknown.
+
 ## Explicit lifecycle acceptance
 
 `LifecycleController` requires a trusted acceptance callable before registering or
@@ -354,8 +385,7 @@ finalizing a candidate. Its verifier label is recorded data, never a dispatch ke
 `observe(..., acceptance=...)` and `LifecycleController(..., verifier=...)` receive
 that callable explicitly along with trusted bindings/backend composition. There is
 no CLI-selected business decision or default acceptance callback; lifecycle callers
-must inject the trusted callable through Python. The legacy lifecycle adapter and
-digest-specific verification wrappers have been deleted.
+must inject the trusted callable through Python.
 
 `verification/lifecycle.py` independently checks admitted native event identity,
 revision, graph lineage and unchanged deadline. `verify_lifecycle` receives an
@@ -377,8 +407,12 @@ explicit relocated run root without rewriting recorded paths or rewards.
 Historical re-evaluation uses `coordinate/historical_evaluation.py` with an explicit
 trusted source checkout and its frozen source manifest. It checks independent
 evaluator bytes and recorded source/contract identity before loading snapshot code.
-The known hosted contract layout names its scorer as historical data, never as an
-active provider registry. Fixture snapshots additionally match the recorded aggregate
+The historical hosted contract layout names its original scorer as snapshot data. Fixture snapshots additionally match the recorded aggregate
 verifier identity. Re-evaluation is offline and writes a separate derived output;
 missing snapshots refuse precisely while ordinary reads remain available. Versioned
 records continue to use their declared evaluator and complete frozen identity.
+
+The [sealed baseline index](../evidence/migration-01-baseline/INDEX.md) records original
+source/prompt identities and historical formats. Archived scorer fixtures retain their
+verified original path and hash; a current benchmark scorer cannot substitute for
+that original evaluator.

@@ -4,12 +4,17 @@
 
 ```bash
 uv sync --locked --extra harbor --extra benchmark
-uv run --locked sapi-lab fetch-source autowfbench   # hosted scenarios only
+uv run --locked sapi-lab fetch-source autowfbench   # host cache for offline scoring/source-backed tests
 ```
 
 Python is pinned to `3.14.8` by `.python-version`; `--locked` keeps `uv.lock` authoritative. Docker is needed for the n8n/Harbor controls; a local n8n container only for `sapi-lab ui`.
 
-`fetch-source` downloads the files pinned by `provenance/autowfbench-source.json` into `.cache/autowfbench/<revision>/` and verifies every byte. Nothing else fetches it, and a cache that differs from the manifest is refused, never repaired.
+`fetch-source` resolves the trusted pin declared by a benchmark (checkout declares
+`benchmarks/10-checkout-recovery/provenance/autowfbench-source.json`) and verifies
+every byte under `.cache/<source>/<revision>/`. A changed cache is refused rather
+than repaired. Native checkout verifier builds independently fetch their declared
+private source/wheel dependencies; the host cache supports offline scoring and
+source-backed tests.
 
 ## Checks
 
@@ -17,11 +22,12 @@ Python is pinned to `3.14.8` by `.python-version`; `--locked` keeps `uv.lock` au
 uv run --locked sapi-lab check
 ```
 
-It runs the unit tests, `ruff check`, `ruff format --check`, `mypy` and `infra/check_distribution.py`, prints each stage to stderr and exits 1 naming every stage that failed. The checks are fast and deterministic and prove nothing about real n8n. For that run the unpaid control suite:
+It runs the unit tests, `ruff check`, `ruff format --check`, `mypy` and `infra/check_distribution.py`, prints each stage to stderr and exits 1 naming every stage that failed. These deterministic checks include clean distribution builds/installations but
+do not execute real n8n. For engine evidence run the unpaid control suite:
 
 ```bash
-./run.sh                          # default scenarios
-./run.sh --scenario <name> ...    # any scenarios, hosted ones included
+./run.sh                          # invoice-total, the sole default
+./run.sh --scenario invoice-total --scenario checkout-recovery
 ```
 
 A control is valid only when `oracle` passes and `nop` fails. Fix the instrument before spending model calls. Hosted nop permits only Harbor’s expected `RewardFileNotFoundError` when quality is unscored and no reward exists; a deterministic evaluator with null quality must record reward zero without an exception. Every control job must exit successfully.
@@ -43,7 +49,11 @@ A control is valid only when `oracle` passes and `nop` fails. Fix the instrument
 | `review-export` | write derived `analysis.md` in Harbor trials, discovering authoritative hosted reports from the run report; hosted rewards remain recorded facts | no |
 | `fetch-source` | fetch and verify a pinned upstream source | no |
 
-Internal commands (`execute`, `package-tasks`, `transport`, `bridge`) run inside containers or under another command.
+`package-tasks <destination> --scenario <name>` stages a new task directory without
+running it, including from a clean supported installation. Internal execution,
+transport and bridge commands need their runtime environment. `lifecycle` inspects
+state; execution uses the explicit Python acceptance/backend composition described
+in [ARCHITECTURE.md](ARCHITECTURE.md#explicit-lifecycle-acceptance).
 
 ## Machine configuration
 
@@ -94,6 +104,47 @@ retries; workflow deadlines remain separate.
 Cover profile validity, packaging, independent positive acceptance and rejection of
 a plausible corrupted result, then run `./run.sh --scenario <name>`. Do not add a
 shared business registry or a docs file per scenario.
+
+### Directory-only extension
+
+Use `tests/support/extensibility/` as the complete example of an unrelated
+operation/world/evaluator contract. Its beacon operations, private world seal,
+completion rules and independent expectations live in that directory. A new
+benchmark follows the same procedure:
+
+1. Add its directory and explicit v1 manifest, including public material, trusted
+   operations/helpers, a separate reference and any declared `_shared` dependency.
+2. Add bindings and operation implementation locally. Pass both explicitly into
+   generic compilation; the candidate cannot choose an executable source path.
+3. Implement independent `plan`/`evaluate` hooks. A world-backed task also declares
+   its own `prepare`/`snapshot`, private environment recipe and native task settings.
+4. Cover positive acceptance, nop rejection, a plausible corrupted result and
+   immutable offline re-evaluation, then stage and run the named benchmark:
+
+```bash
+uv run --locked sapi-lab benchmarks
+uv run --locked --extra harbor --extra benchmark sapi-lab package-tasks /tmp/new-task --scenario <name>
+./run.sh --scenario <name>
+```
+
+Use a destination that does not exist. Only the new directory and its declared
+dependencies are needed; core modules, shared business tables and existing benchmark
+bytes stay unchanged. Expected values are recomputed from fixtures/world evidence,
+not imported from the operation implementation.
+
+The existing opt-in proof performs the whole temporary extension automatically:
+
+```bash
+SAPI_RUN_DOCKER_TESTS=1 uv run --locked --extra harbor --extra benchmark \
+  python -m unittest tests.test_benchmark_extensibility -v
+```
+
+It temporarily copies the fixture to `benchmarks/99-beacon-calibration`, discovers
+and stages it through the public CLI, then runs fresh Harbor oracle/nop worlds.
+It rejects corrupted completion, re-evaluates without changing original evidence,
+checks unchanged existing source hashes and removes the temporary directory.
+Do not pre-create that directory when invoking the proof. Its native artifacts are
+written under `reports/migration-20/extension-*`.
 
 ## Model-authored definitions
 
@@ -204,9 +255,9 @@ as trusted, and the native task configuration as trusted. The shell entrypoint
 runs from `/tests/payload` with recorded output under `/logs/verifier`; its verdict
 and reward remain benchmark-owned. Local evaluator imports are checked under the
 `payload` namespace while building the verifier. Declared shared modules are at
-`payload.dependencies.<alias>`. External Python dependencies currently consist of
-the clean pinned runtime's standard library and PyYAML; additional local modules
-must be declared in the manifest closure.
+`payload.dependencies.<alias>`. The base runtime supplies Python and PyYAML. Benchmark-specific external
+dependencies belong to its trusted native build recipe and source/wheel pins; local
+Python helpers belong to the declared manifest closure.
 
 The current YAML transfer profile requires these native Harbor settings (resource
 limits and timeouts otherwise remain native configuration):
@@ -259,7 +310,8 @@ probes). `tests/benchmark.json` records the deadline admission budget, source cl
 and frozen staging options; evidence and derived evaluation keep their old layout.
 
 
-Checkout's normal-flow native Compose proof is opt-in:
+Checkout's native suite covers normal oracle/nop, private placement and the failure/
+isolation matrix. It is opt-in and unpaid:
 
 ```bash
 SAPI_RUN_DOCKER_TESTS=1 uv run --locked --extra harbor --extra benchmark \
@@ -286,10 +338,10 @@ Versioned control and authoring jobs write directly into `reports/<run>/jobs/`.
 `harbor_jobs` records each job's relative path and available trial/evidence paths,
 including interrupted trials without a final native result. `review-export` can
 discover native verifier reports directly after partial failure or moving a run.
-Native task configuration sets build, author and verifier phase limits; admission
-checks the planned executions against that resolved verifier phase. There is no
-aggregate job watchdog on this path. Docker enforces CPU and memory limits; the
-integration rejects disk, GPU and TPU requirements that this profile cannot enforce.
+[Architecture timeout ownership](ARCHITECTURE.md#timeouts-and-resources) separates
+native Harbor phases, semantic workflow windows, engine ceilings and model grants.
+Admission checks plans against resolved verifier limits before dispatch. The
+supported resource/privacy controls apply to the pinned Docker profile.
 
 Generation, replay and live use the selected versioned package. Native live staging
 freezes `--judge-model` in its source/options identity. The verifier records evidence
