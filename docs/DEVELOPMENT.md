@@ -40,11 +40,10 @@ A control is valid only when `oracle` passes and `nop` fails. Fix the instrument
 | `live` | replay submissions with live model operations | yes |
 | `evaluate` | re-evaluate one recorded trial; a judge only with `--dispatch-judge` | only if dispatched |
 | `ui` | import graphs into local n8n; a `--live` session may call models | sometimes |
-| `lifecycle` | the durable candidate lifecycle controller | with `--rebuilder-url` or live mode |
 | `review-export` | write derived `analysis.md` in Harbor trials, discovering authoritative hosted reports from the run report; hosted rewards remain recorded facts | no |
 | `fetch-source` | fetch and verify a pinned upstream source | no |
 
-Internal commands (`execute`, `package-tasks`, `transport`, `bridge`, `hosted-worker`) run inside containers or under another command.
+Internal commands (`execute`, `package-tasks`, `transport`, `bridge`) run inside containers or under another command.
 
 ## Machine configuration
 
@@ -56,7 +55,7 @@ Defaults describe one Docker Desktop host. Override them through the environment
 | `SAPI_WRAPPER_URL` | `http://127.0.0.1:8765/run` | local model wrapper (`--upstream`) |
 | `SAPI_WRAPPER_MODEL` | `gpt-6-astra` | model the wrapper must report; a mismatch fails closed |
 | `SAPI_CONTAINER_HOST` | `host.docker.internal` | how a task container reaches those services (e.g. `172.17.0.1` on Linux) |
-| `SAPI_LISTEN_HOST` | `127.0.0.1` | bind address of host services containers reach: Agency bridges and hosted trial hosts (`ui --host`); e.g. `0.0.0.0` on Linux |
+| `SAPI_LISTEN_HOST` | `127.0.0.1` | bind address of host services containers reach: Agency bridges (`ui --host`); e.g. `0.0.0.0` on Linux |
 | `SAPI_BRIDGE_PORT` | `18765` | live Agency bridge (`live --bridge-port`) |
 | `SAPI_UI_BRIDGE_PORT` | `18766` | UI Agency bridge (`ui --port`) |
 | `SAPI_N8N_URL` | `http://localhost:5678` | local n8n editor |
@@ -69,41 +68,38 @@ The coordinator sets the container protocol variables itself: `SAPI_LLM_MODE`, `
 
 Add `benchmarks/NN-<name>/` with a `scenario.json` (fields in [ARCHITECTURE.md](ARCHITECTURE.md#one-scenario-registry)), a reference `config.yaml` that obeys [PROFILE.md](PROFILE.md) and `generation/FORMAT.md`, and an `instruction.md`.
 
-A **fixture** scenario adds the public `task.md` and evaluator-only `cases.json`, then extends the verifier:
+Declare its public/trusted files, bindings, operation JavaScript, native `task.toml`,
+reference and trusted `plan`/`evaluate` entrypoints as described under
+[Versioned manifest development](#versioned-manifest-development). A fixture
+benchmark owns evaluator-only cases, contract/output schemas, independent business
+checks and optional rubric. Its evaluator passes an explicit `FixtureEvaluator` to
+generic verification; no shared registration or benchmark-name dispatch is needed.
+Checks recompute expected values from fixtures without importing runtime operations.
 
-`task.md` may show a public sample input. `cases.json` holds separate evaluator-only cases: `positive` means the observed outcome must match the case's expectation, even when that expectation is refinement exhaustion; `negative` means invalid input must be rejected. Case contents vary with the behavior being tested. Hosted scenarios use their provider's world instead of `cases.json`.
+A world-backed benchmark owns its world and declares `prepare`/`snapshot` hooks,
+trusted native environment files and its independent evaluator inside the directory.
+Completion/output rules are benchmark-specific. There is no provider/evaluator table
+to extend. Public material enters the author payload; evaluator sources and private
+fixtures enter only the separate verifier payload. The reference enters only the
+oracle solution.
 
-- `evaluation/contract.json`: the role contract (operations, input lineage, edges, output) that `verification/roles.py` binds any unambiguous step IDs to;
-- independent business checks in `verification/`, registered in the evaluator-owned `fixture_evaluators.py` table; ordinary cases use the existing plan/evidence machinery. The entry also selects guarded-call expectations, optional rubric obligations/prose and optional freshness. Checks recompute from fixtures, never import runtime operations;
-- `evaluation/rubric.json` only for a quality question binary acceptance does not answer, plus its evaluator-owned prose function in `verification/fixture_prose.py`.
+The declared bindings and trusted operation source are passed explicitly through
+compilation and execution. Native `task.toml` owns phase limits and resources;
+admission checks the planned execution budget against the resolved verifier phase.
+Fixture planning rejects a deadline above its admitted budget. World-backed model
+admission compiles without starting a world, checks runtime model calls and keeps
+the benchmark's declared deadline. Harbor owns infrastructure startup, teardown and
+retries; workflow deadlines remain separate.
 
-`evaluation/` is evaluator data: packaging copies it into the task's trusted `tests/` and `.dockerignore` keeps it out of the image.
-
-A scenario-specific `bindings` catalog is used by the author prompt, staged as `tests/bindings.yaml`, passed through fixture execution (including lifecycle), and used for live graph and prompt-hash reconciliation. The default catalog is unchanged.
-
-Legacy `harbor` settings in `scenario.json` (`agent_timeout_sec`, `verifier_timeout_sec`, `build_timeout_sec`, `cpus`, `memory_mb`, `storage_mb`; bounded integers, defaults in `coordinate/scenarios.py`) are rendered into `task.toml`. Versioned packages use their benchmark-owned native task configuration. Staging refuses a verifier phase smaller than the verifier's worst case: every planned execution in sequence at the executor's own import and execution ceilings, plus a fixed overhead. Add cases, then raise the timeout the error names. Legacy jobs retain an aggregate estimate: every trial at its build and agent limits plus its verifier estimate. For legacy hosted execution, the worker allows the environment RPC budget plus the evaluator's aggregate duration for `/finish`; Harbor includes both RPCs and the environment window. Live grants allow Harbor setup before the fixture/environment execution window. Model-call and backend subprocess ceilings remain with their stage owners.
-
-A fixture package records the deadline it was sized for in `tests/budget.json`, and the verifier refuses to plan a definition with a longer one (`deadline_exceeds_budget`); hosted admission already requires the provider's trial limit.
-
-The hosted completion envelope requires a string `final_answer` and any declared string artifact, copied verbatim as Markdown. Native success, valid timely terminal completion, and evaluator acceptance are separate recorded facts.
-
-A **hosted** scenario names an existing provider in `environment` and `evaluator`, plus that provider's own config (AutoWFBench: `provenance`), and adds `authoring-notes.md` and its own `bindings.yaml`.
-
-Cover profile validity, packaging, a positive case and a plausible bad result the verifier rejects, then run `./run.sh --scenario <name>`. Do not add a docs file per scenario.
-
-### Adding a hosted provider
-
-1. `execute/<name>.py`: a `start` that returns an `EnvironmentSession` serving `POST /tools` receipts and `finalize()` evidence. When this second real provider needs the candidate listener, lift it from `execute/autowfbench.py` into `execute/hosting.py`.
-2. `evaluate/<name>.py`: turns a recorded trial directory into `{execution, acceptance, quality}` and declares its aggregate `timeout_seconds`.
-3. One entry each in `ENVIRONMENTS` and `EVALUATORS` (`coordinate/providers.py`), listing their host-only `modules`.
-4. A `benchmarks/NN-<name>/` hosted scenario that names them.
-5. Tests (prior art: `tests/test_hosted_provider.py`), then `sapi-lab check` and `./run.sh --scenario <name>`.
+Cover profile validity, packaging, independent positive acceptance and rejection of
+a plausible corrupted result, then run `./run.sh --scenario <name>`. Do not add a
+shared business registry or a docs file per scenario.
 
 ## Model-authored definitions
 
 `./run-generation.sh` gives a model the task, `generation/FORMAT.md`, `generation/PROFILE.md` and the operation catalog, once per attempt, with no repair. `--catalog scenario` is an experiment arm, not the default: the catalog shows only the operations the scenario's reference uses, the report records the variant, the operations shown and their hashes, and its prompts are pinned separately. `sapi-lab package-tasks --mode generation --catalog scenario` stages those prompts without a model call. The answer is a candidate like any other: compiled, executed and independently verified. Runtime model steps are stubs during generation. The wrapper does not disable its CLI tools: the prompt forbids them and recognized tool markers in its stderr reject the attempt, which is an audit, not a sandbox. `tests/test_packaging.py` pins every generation prompt's hash; a prompt change is an experiment change.
 
-For a hosted scenario the gate after authoring and before live dispatch is admission: the YAML compiles in live mode, stays within `runtime_model_calls` and keeps the provider's trial limit. It proves materialization capability and declared limits, not candidate execution or acceptance. Hosted model operations need no fabricated stub answer. Fresh oracle/nop reference executions still gate the instrument before paid dispatch.
+For a hosted scenario the gate after authoring and before live dispatch is admission: the YAML compiles in live mode, stays within `runtime_model_calls` and keeps the benchmark's declared deadline. It proves materialization capability and declared limits, not candidate execution or acceptance. Hosted model operations need no fabricated stub answer. Fresh oracle/nop reference executions still gate the instrument before paid dispatch.
 
 ## Live model execution
 
@@ -114,7 +110,9 @@ uv run --locked --extra harbor --extra benchmark sapi-lab live --stub-report <co
 
 Before any dispatch, `live` requires a passing control report for the same sources and image, unpaid fixture stub replay or hosted compilation/admission, a ledger reservation per case and an inspected wrapper identity. The identity records each wrapper file's hash; files are read at their recorded path unless `--wrapper-file NAME=PATH` names the local copy (NAME is the file's basename). Hashes are always checked. A hosted evaluator that calls a judge also needs `--judge-model`; its `judge_calls` are reserved per trial.
 
-`sapi-lab evaluate --record reports/<run>/environments/<job>/<scenario>` re-evaluates a hosted trial through its scenario's evaluator; for AutoWFBench, `--judgement <reply.json>` re-scores from a saved judgement without a model call.
+`sapi-lab evaluate --record <trial>/verifier --output <new-derived-directory>`
+re-evaluates a native trial through its recorded benchmark evaluator. For checkout,
+`--judgement <reply.json>` re-scores a saved judgement without a model call.
 
 ## Local n8n UI
 
@@ -125,18 +123,23 @@ uv run --locked sapi-lab ui open benchmarks/01-invoice-total/config.yaml --live
 
 Imports are inactive copies and never execute. A `--live` session arms one fresh copy with a budgeted bridge; execution stays a manual click. UI runs are for inspection, not benchmark evidence.
 
-Compile and UI commands resolve a versioned benchmark's declared bindings and trusted
-operation bundle when given its reference path. For a detached candidate, pass
-`--scenario invoice-total` (or another selected benchmark); `--bindings PATH` still
-provides an explicit catalog override. Historical detached forms without a selection
-use the isolated `coordinate/legacy_compilation.py` compatibility facade: its fixed
-installed catalog and operation bundle, never executable paths from candidate YAML.
-That historical detached compile form remains usable without an experiment checkout;
-explicit benchmark selection requires the editable workspace.
-UI imports require local operations; workflows with remote tools need a Harbor trial.
-Native `package-tasks --scenario ...` and versioned re-evaluation select descriptors
-without loading the legacy execution registry. Legacy package and lifecycle forms
-remain explicit compatibility entrypoints until retirement.
+Compile and UI commands resolve a benchmark's declared bindings and trusted
+operation source when given its reference path. For a detached candidate, select
+`--scenario invoice-total` (or another benchmark). With no benchmark context,
+detached compilation requires both trusted files explicitly:
+
+```bash
+uv run --locked sapi-lab compile candidate.yaml --output compiled.json \
+  --bindings /trusted/bindings.yaml --operations /trusted/operations.js
+```
+
+There is no installed global catalog, fixed operation bundle or detached fallback.
+Explicit file composition works without an experiment checkout; descriptor selection
+requires the editable workspace. Candidate YAML never selects executable paths.
+UI imports require local operations; remote tools require a Harbor trial.
+`package-tasks`, controls, generation and live execution receive selected descriptors
+explicitly. Generic lifecycle APIs require an injected trusted acceptance callable,
+bindings and backend; the CLI does not supply a default business decision.
 
 ## Reading a run
 
@@ -160,7 +163,7 @@ Only invoice-total and checkout-recovery are production benchmarks, both version
 Invoice-total is the sole default; retired names are unknown selections.
 Existing command names and default selection are preserved. `package-tasks` and
 the unpaid `harbor` controls materialize both through their declared entrypoints
-and separate verifiers. Remaining experiment caller migration is still in progress.
+and separate verifiers. Experiment consumers receive explicit descriptor selections.
 
 The `sapi-lab-benchmark/v1` manifest has these required keys. Unknown keys fail;
 benchmark-specific declarations belong inside `config`.
@@ -326,15 +329,17 @@ SAPI_RUN_DOCKER_TESTS=1 uv run --locked --extra harbor --extra benchmark \
 It uses the existing pinned n8n lab image and records native executions, registry
 snapshots and independent decisions under `reports/migration-12/native-*`.
 The controller and observation API require an explicitly injected trusted decision.
-Existing lifecycle and legacy observation commands inject their compatibility
-decision in `coordinate/legacy_lifecycle.py` until retirement; there is no CLI or
-YAML option for selecting executable acceptance code.
+The legacy lifecycle adapter has been removed; callers inject their trusted
+acceptance callable through Python. There is no CLI or YAML option for selecting
+executable acceptance code.
 
 The source distribution verifies every selected descriptor's declared file/dependency
 closure, including its private source pins. Root pins still used by explicit legacy
 readers remain in the source manifest through those benchmark declarations. The wheel
-contains the generic runtime; experiment commands retain their existing requirement
-for an editable checkout, as enforced by `workspace_root()`.
+contains the generic runtime and independent verification mechanisms as importable
+packages. Benchmark-owned business rules and evaluator data enter only their
+declared trusted task payloads. Experiment commands retain their existing
+requirement for an editable checkout, as enforced by `workspace_root()`.
 
 
 Historical reports can be read through `evaluate.records.read_report(path, root=run_root)`

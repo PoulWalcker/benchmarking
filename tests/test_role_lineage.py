@@ -9,13 +9,14 @@ import unittest
 import yaml
 
 from sapi_config_lab import profile
-from sapi_config_lab.paths import CATALOG, workspace_root
+from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import read, read_bindings, validate
+from tests.support.invoice import CATALOG
+from tests.support.invoice import fixture as invoice_fixture
 from verification import roles
 from verification.contracts import Rejected
-from verification.extensions import reply_roles
-from verification.roles import OUTPUTS, resolve
 from verification.roles import bind_roles as bind_selected_roles
+from verification.roles import resolve, whole_results
 
 ROOT = workspace_root()
 # Generated attempt 2 of reports/20261006T185618Z-generation, rejected before this fix although the
@@ -38,16 +39,17 @@ def reference(name: str) -> dict:
 
 def bind_roles(scenario, config):
     if scenario == "invoice-total":
-        return bind_selected_roles(scenario, config)
+        return bind_selected_roles(scenario, config, invoice_fixture().contract)
     filename = {"competitor-report": "branch", "dual-ledger-closeout": "repeated", "priority-support-brief": "guarded"}[
         scenario
     ]
     contract = json.loads((ROOT / "tests/support/graphs" / (filename + "-contract.json")).read_text())
+    contract["outputs"] = {name: binding["outputs"] for name, binding in read_bindings(CATALOG).items()}
     return bind_selected_roles(scenario, config, contract)
 
 
 def fields(step: str, operation: str, ref: str = "ref") -> dict:
-    return {field: {ref: f"steps.{step}.{field}"} for field in OUTPUTS[operation]}
+    return {field: {ref: f"steps.{step}.{field}"} for field in read_bindings(CATALOG)[operation]["outputs"]}
 
 
 def step(config: dict, operation: str) -> dict:
@@ -96,7 +98,10 @@ class EquivalentFormsTests(unittest.TestCase):
         draft = step(config, "reply.generate")["id"]
         config["workflow"]["output"] = fields(draft, "reply.generate")
         step(config, "reply.check")["with"]["draft"] = fields(draft, "reply.generate")
-        self.assertEqual(reply_roles(config)[0], draft)
+        outputs = {name: binding["outputs"] for name, binding in read_bindings(CATALOG).items()}
+        self.assertEqual(
+            whole_results(config["workflow"]["output"], {draft: "reply.generate"}, outputs), {"ref": "steps." + draft}
+        )
 
 
 class NonEquivalentFormsTests(unittest.TestCase):
@@ -170,7 +175,7 @@ class DiagnosticTests(unittest.TestCase):
 
     def test_the_operation_table_matches_the_catalog(self):
         catalog = read_bindings(CATALOG)
-        for operation, declared in OUTPUTS.items():
+        for operation, declared in invoice_fixture().contract["outputs"].items():
             self.assertEqual(list(declared), catalog[operation]["outputs"], operation)
 
 

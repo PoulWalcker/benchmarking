@@ -12,7 +12,7 @@ import unittest
 
 from sapi_config_lab.benchmark import MANIFEST_VERSION, discover_benchmarks, load_benchmark
 from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
-from sapi_config_lab.coordinate.benchmark_discovery import list_benchmarks
+from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.paths import workspace_root
 
 ROOT = workspace_root()
@@ -312,7 +312,7 @@ class ManifestTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Duplicate manifest key"):
             load_benchmark(self.root, self.directory)
 
-    def test_listing_cli_and_legacy_bridge_import_no_evaluators(self):
+    def test_listing_cli_imports_no_evaluators(self):
         script = (
             "import sys\nfrom sapi_config_lab.coordinate.cli import main\n"
             f"main(['benchmarks', '--root', {str(ROOT / 'benchmarks')!r}])\n"
@@ -326,15 +326,19 @@ class ManifestTests(unittest.TestCase):
         self.assertEqual({row["id"] for row in rows}, {"invoice-total", "checkout-recovery"})
         self.assertEqual({row["id"] for row in rows if row["default"]}, {"invoice-total"})
 
-    def test_versioned_listing_coexists_with_legacy_without_adapting_execution(self):
-        legacy = self.root / "02-old-task"
-        legacy.mkdir()
-        (legacy / "scenario.json").write_text('{"environment":"fixtures","evaluator":"verifier","default":false}')
-        self.assertEqual({item.name for item in list_benchmarks(self.root)}, {"invoice-total", "old-task"})
-        self.meta["id"] = "old-task"
-        self.load()
-        with self.assertRaisesRegex(ValueError, "Duplicate benchmark id"):
-            list_benchmarks(self.root)
+    def test_explicit_selection_preserves_order_and_rejects_bad_names_without_loading(self):
+        other, meta = self.package("checkout-recovery")
+        meta["default"] = False
+        (other / "scenario.json").write_text(json.dumps(meta))
+        self.assertEqual([item.name for item in select_benchmarks(self.root)], ["invoice-total"])
+        self.assertEqual(
+            [item.name for item in select_benchmarks(self.root, ("checkout-recovery", "invoice-total"))],
+            ["checkout-recovery", "invoice-total"],
+        )
+        for names in ((), ("unknown",), ("invoice-total", "invoice-total")):
+            with self.subTest(names=names), self.assertRaisesRegex(ValueError, "Unknown, duplicate, or empty"):
+                select_benchmarks(self.root, names)
+        self.assertFalse(list(self.root.glob("*/evaluation/imported")))
 
     def test_identity_accepts_frozen_config_and_rejects_non_json_options(self):
         descriptor = self.load()

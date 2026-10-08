@@ -21,7 +21,7 @@ from urllib.error import HTTPError, URLError
 from sapi_config_lab.evidence import digest
 from sapi_config_lab.execute.host import local_address
 from sapi_config_lab.net import urlopen
-from sapi_config_lab.paths import CATALOG, workspace_root
+from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.wrapper_audit import reported_model, reported_tokens, stderr_sha256, tool_markers
 
 MAX_BODY = 1_048_576
@@ -422,7 +422,7 @@ def start_bridge(
     audit: Path,
     budget: Path,
     log: Path,
-    bindings: Path = CATALOG,
+    bindings: Path,
     reject_tool_use: bool = False,
 ) -> subprocess.Popen:
     """Start the bridge on `host:port` as a child process and wait for /health; fails if the port is taken."""

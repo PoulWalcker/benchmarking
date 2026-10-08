@@ -1,33 +1,25 @@
 # Independent verifier
 
-These modules are copied flat into every fixture task's `tests/`, with that scenario's `evaluation/` data under `tests/evaluation/<scenario>/`, and judge a submission without importing the compiler, operations, runtime or coordinator. Duplicating business rules here is deliberate: reusing the implementation under test would make a shared bug look like correctness.
+These generic mechanisms judge recorded evidence without importing the compiler,
+operation implementations, runtime or coordinator. A selected benchmark supplies
+its independent behavior, role contract, result fields, rubric and identity through
+`FixtureEvaluator`; there is no benchmark lookup or default business catalog here.
 
-## Flow
-
-1. `verify.py plan` writes every definition the trusted step must run: the submission with each fixture's inputs, negative inputs, a corrupted-artifact probe and deliberately invalid definitions.
-2. `sapi_config_lab.coordinate.observe` runs exactly that plan in real n8n and records evidence plus `observation.json`.
-3. `verify.py evaluate` checks the record is complete, unaltered and of exactly that plan, then judges it. Decisions go to `evaluation/` (`report.json`, per-case `acceptance.json`, optional `evaluation.json`); `evidence/` is never modified.
-
-`tests/test.sh` writes reward `1` only when evaluation passes. Oracle copies the reference config; nop submits nothing and must score zero.
-
-## Modules
+`verify.plan(..., fixture=...)` states the definitions to observe. Execution records
+those definitions and immutable native evidence. `verify.evaluate(..., fixture=...)`
+checks that evidence matches the plan, then writes separate decisions beside it.
+Benchmark entrypoints compose these calls; the native trusted worker runs them.
 
 | Module | Role |
 | --- | --- |
-| `verify.py` | plan, evidence integrity, case judging, CLI |
-| `business.py` | invoice-total, ticket-routing, competitor-report obligations |
-| `roles.py` | bind any unambiguous submitted step IDs to the scenario's `evaluation/contract.json`; rejections carry a stable `code` |
-| `scenario_business.py` | obligations of the composed scenarios (06-09) |
-| `extensions.py` | bounded refinement (revise-answer) |
-| `lifecycle.py`, `lifecycle_submission.py` | daily-digest lifecycle snapshots |
-| `n8n_provenance.py` | ties observations to native n8n records |
-| `rubric.py`, `rubric_cards.py`, `rubric_facts.py` | optional quality score beside acceptance; cards are the scenario's `evaluation/rubric.json` |
+| `verify.py` | observation plans, evidence integrity and case judging |
+| `fixture.py` | explicit independent behavior and evaluation data |
+| `roles.py` | bind submitted occurrences to an explicit role contract and output fields |
+| `n8n_provenance.py` | tie observations and graph lineage to native n8n records |
+| `refinement.py`, `lifecycle.py` | generic native history checks with independent callbacks |
+| `rubric.py`, `rubric_facts.py` | optional quality beside acceptance, using an explicit card |
 
-## Rules
-
-- Acceptance needs both business obligations and native n8n provenance.
-- Expected answers are recomputed from fixture inputs; the source fixtures are visible test inputs, not a held-out benchmark.
-- A named rubric check calls an existing obligation, so it cannot drift from acceptance. The rubric reads the verdict and never sets it; `reward.txt` comes from acceptance alone.
-- A card with judged criteria has no judge in the container: it records `not_evaluated` with a reason and a null score.
-- `check_runtime_sources` detects edits to the packaged runtime inside the container; it is not a sandbox.
-- Live mode (`SAPI_LLM_MODE=live`, `SAPI_CASE_NAME`, `SAPI_BRIDGE_URL`) runs one declared live case per grant with a 600-second deadline.
+Acceptance requires independent obligations and native provenance. Evaluation never
+reruns a workflow or rewrites evidence. Quality remains separate; unavailable scores
+stay null. Current occurrence acceptance requires the submitted graph. Historical
+records use their matching archived evaluator snapshot, including its old formats.

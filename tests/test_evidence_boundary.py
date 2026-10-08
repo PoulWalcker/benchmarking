@@ -14,9 +14,10 @@ import tempfile
 import unittest
 
 from sapi_config_lab.coordinate.cases import run_case
-from sapi_config_lab.coordinate.packages import runtime_sources
-from sapi_config_lab.coordinate.scenarios import all_cases
 from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.profile import read_bindings
+from tests.support.invoice import CATALOG, OPERATION_SOURCE, cases
+from tests.support.invoice import fixture as invoice_fixture
 from tests.support.native import SimulatedN8n
 from tests.support.verifying import verify_with_runner
 from verification import verify as verifier
@@ -24,7 +25,7 @@ from verification.contracts import Rejected
 
 ROOT = workspace_root()
 CONFIG = ROOT / "benchmarks/01-invoice-total/config.yaml"
-CASES = all_cases()["invoice-total"]
+CASES = cases()
 
 
 def engine_success(config, artifacts, **options):
@@ -41,6 +42,18 @@ def recorded(directory: Path) -> dict[str, str]:
     }
 
 
+def runtime_sources(root):
+    suffixes = {".py", ".js", ".yaml"}
+    return {
+        "suffixes": sorted(suffixes),
+        "files": {
+            path.relative_to(root / "src").as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in (root / "src").rglob("*")
+            if path.is_file() and "__pycache__" not in path.parts and path.suffix in suffixes
+        },
+    }
+
+
 class EvidenceBoundaryTests(unittest.TestCase):
     """A run that claims success without native records never reaches judgement."""
 
@@ -49,11 +62,18 @@ class EvidenceBoundaryTests(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.directory)
         self.evidence = self.directory / "evidence"
         self.report = verify_with_runner(
-            verifier, "invoice-total", CONFIG, self.directory, runner=engine_success, cases=CASES
+            verifier,
+            "invoice-total",
+            CONFIG,
+            self.directory,
+            runner=engine_success,
+            cases=CASES,
+            fixture=invoice_fixture(),
+            bindings=read_bindings(CATALOG),
         )
 
     def evaluate(self):
-        return verifier.evaluate("invoice-total", CONFIG, self.evidence, CASES)
+        return verifier.evaluate("invoice-total", CONFIG, self.evidence, CASES, fixture=invoice_fixture())
 
     def manifest(self) -> dict:
         return json.loads((self.evidence / "observation.json").read_text())
@@ -125,7 +145,7 @@ class EvidenceBoundaryTests(unittest.TestCase):
         self.assertIn("not the plan this verifier issued", self.evaluate()["error"])
         submitted = self.directory / "other.yaml"
         submitted.write_text(CONFIG.read_text() + "\n# different bytes\n")
-        report = verifier.evaluate("invoice-total", submitted, self.evidence, CASES)
+        report = verifier.evaluate("invoice-total", submitted, self.evidence, CASES, fixture=invoice_fixture())
         self.assertFalse(report["passed"])
 
     def test_a_changed_runtime_is_rejected_before_any_judgement(self):
@@ -138,7 +158,13 @@ class EvidenceBoundaryTests(unittest.TestCase):
         with self.assertRaisesRegex(Rejected, "Runtime sources differ"):
             verifier.check_runtime_sources(ROOT / "src", manifest)
         report = verifier.evaluate(
-            "invoice-total", CONFIG, self.evidence, CASES, runtime_src=ROOT / "src", runtime_manifest=manifest
+            "invoice-total",
+            CONFIG,
+            self.evidence,
+            CASES,
+            runtime_src=ROOT / "src",
+            runtime_manifest=manifest,
+            fixture=invoice_fixture(),
         )
         self.assertIn("Runtime sources differ", report["error"])
 
@@ -152,8 +178,17 @@ class RecordedRunTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.source = Path(tempfile.mkdtemp())
-        runner = functools.partial(run_case, backend=SimulatedN8n())
-        cls.report = verify_with_runner(verifier, "invoice-total", CONFIG, cls.source, runner=runner, cases=CASES)
+        runner = functools.partial(run_case, backend=SimulatedN8n(operation_source=OPERATION_SOURCE))
+        cls.report = verify_with_runner(
+            verifier,
+            "invoice-total",
+            CONFIG,
+            cls.source,
+            runner=runner,
+            cases=CASES,
+            fixture=invoice_fixture(),
+            bindings=read_bindings(CATALOG),
+        )
 
     @classmethod
     def tearDownClass(cls):
@@ -168,7 +203,7 @@ class RecordedRunTests(unittest.TestCase):
         self.case = self.evidence / "cases" / CASES["positive"][0]["name"]
 
     def evaluate(self):
-        return verifier.evaluate("invoice-total", CONFIG, self.evidence, CASES)
+        return verifier.evaluate("invoice-total", CONFIG, self.evidence, CASES, fixture=invoice_fixture())
 
     def rehash(self, name: str) -> None:
         """Rewrite the manifest so it agrees with an edited or removed file."""

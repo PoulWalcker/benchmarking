@@ -7,8 +7,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+from sapi_config_lab.benchmark import discover_benchmarks
 from sapi_config_lab.contracts import CompileOptions, WorkflowBackend
-from sapi_config_lab.coordinate.benchmark_discovery import list_benchmarks
 from sapi_config_lab.coordinate.compilation import compose_compilation
 from sapi_config_lab.evidence import write_json
 from sapi_config_lab.execute.host import LAB_IMAGE
@@ -25,8 +25,7 @@ MODULES = {
     "transport": "coordinate.transport",
     "ui": "coordinate.ui",
     "review-export": "evaluate.review_export",
-    "lifecycle": "coordinate.legacy_lifecycle",
-    "hosted-worker": "coordinate.hosted_worker",
+    "lifecycle": "coordinate.lifecycle",
 }
 
 PUBLIC = {
@@ -40,7 +39,7 @@ PUBLIC = {
     "live": "Replay saved or reference submissions against live operations. Costs model calls.",
     "evaluate": "Evaluate one recorded trial again; a judge is called only with --dispatch-judge.",
     "ui": "Import graphs into local n8n and prepare one bounded manual session.",
-    "lifecycle": "The durable lifecycle controller against a registry directory.",
+    "lifecycle": "Inspect lifecycle state; execution requires explicit Python acceptance/backend composition.",
     "review-export": "Write a derived analysis.md beside recorded evaluations; adds files only.",
     "fetch-source": "Fetch a pinned upstream source into .cache/ and verify every byte against provenance/.",
 }
@@ -51,7 +50,6 @@ INTERNAL = {
     "package-tasks": "Assemble Harbor task packages into a new directory; runs nothing.",
     "transport": "HTTP transport probes. Runs inside the lab image; run.sh invokes it there.",
     "bridge": "Foreground Agency HTTP adapter. live and ui start it themselves.",
-    "hosted-worker": "Trusted verifier step inside a hosted task container; needs /tests and /logs.",
 }
 
 
@@ -90,7 +88,7 @@ def check_command(argv: list[str]) -> int:
 
 
 def benchmarks_command(argv: list[str]) -> int:
-    from sapi_config_lab.coordinate.benchmark_discovery import list_benchmarks
+    from sapi_config_lab.benchmark import discover_benchmarks
 
     parser = argparse.ArgumentParser(description="List benchmark metadata without loading trusted code.")
     parser.add_argument(
@@ -101,7 +99,7 @@ def benchmarks_command(argv: list[str]) -> int:
     root = args.root if args.root is not None else workspace_root() / "benchmarks"
     rows = [
         {"id": item.name, "default": item.default, "version": item.version, "directory": str(item.directory)}
-        for item in list_benchmarks(root)
+        for item in discover_benchmarks(root)
         if not args.defaults or item.default
     ]
     print(json.dumps(rows, indent=2))
@@ -113,12 +111,15 @@ def compile_command(argv: list[str], *, backend: WorkflowBackend | None = None) 
     parser.add_argument("config", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--bindings", type=Path)
+    parser.add_argument("--operations", type=Path)
     parser.add_argument("--scenario", help="Trusted benchmark context for detached YAML")
     parser.add_argument("--llm-mode", choices=["stub", "live"], default="stub")
     parser.add_argument("--bridge-url")
     parser.add_argument("--request-timeout-seconds", type=int, default=190)
     args = parser.parse_args(argv)
-    context = compose_compilation(args.config, scenario=args.scenario, bindings=args.bindings)
+    context = compose_compilation(
+        args.config, scenario=args.scenario, bindings=args.bindings, operations=args.operations
+    )
     selected = backend if backend is not None else context.backend()
     compiled = selected.compile(
         read(args.config),
@@ -142,8 +143,8 @@ def build_command(argv: list[str], *, backend: WorkflowBackend | None = None) ->
     rows = []
     args.output_dir.mkdir(parents=True, exist_ok=True)
     root = workspace_root() / "benchmarks"
-    for scenario in list_benchmarks(root):
-        path = scenario.directory / "config.yaml"
+    for scenario in discover_benchmarks(root):
+        path = scenario.reference.source
         context = compose_compilation(path, root, scenario=scenario.name)
         bindings = read_bindings(context.bindings)
         selected = backend if backend is not None else context.backend()
@@ -190,38 +191,12 @@ def package_tasks_command(argv: list[str]) -> int:
     selected = options.parse_args(argv)
     if selected.catalog != "full" and selected.mode != "generation":
         raise ValueError("A catalog variant changes generation prompts only")
-    from sapi_config_lab.benchmark import Benchmark
+    from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
+    from sapi_config_lab.coordinate.packages import stage_tasks
 
     root = workspace_root()
-    available = list_benchmarks(root / "benchmarks")
-    names = selected.scenarios
-    items = (
-        [item for item in available if item.name in names]
-        if names is not None
-        else [item for item in available if item.default]
-    )
-    if not items or (names is not None and (len(set(names)) != len(names) or len(items) != len(names))):
-        options.error("Unknown, duplicate, or empty scenario selection")
-    if all(isinstance(item, Benchmark) for item in items):
-        from sapi_config_lab.coordinate.benchmark_packages import stage_cli
-
-        stage_cli(
-            tuple(item for item in items if isinstance(item, Benchmark)),
-            selected.destination,
-            root,
-            selected.mode,
-            selected.catalog,
-        )
-    else:
-        from sapi_config_lab.coordinate.packages import stage_tasks
-
-        stage_tasks(
-            selected.destination,
-            mode=selected.mode,
-            image=selected.image,
-            scenarios=tuple(item.name for item in items),
-            catalog=selected.catalog,
-        )
+    items = select_benchmarks(root / "benchmarks", selected.scenarios)
+    stage_tasks(selected.destination, root=root, benchmarks=items, mode=selected.mode, catalog=selected.catalog)
     print(selected.destination)
     return 0
 

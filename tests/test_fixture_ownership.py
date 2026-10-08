@@ -1,27 +1,25 @@
-"""A new ordinary fixture needs independent evaluator code, not new generic dispatch branches."""
+"""A selected fixture supplies independent behavior without a shared dispatch table."""
 
+from dataclasses import replace
 from functools import partial
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
 
 import yaml
 
 from sapi_config_lab.coordinate.cases import run_case
-from sapi_config_lab.coordinate.scenarios import SCENARIOS
-from sapi_config_lab.profile import read
+from sapi_config_lab.profile import read, read_bindings
+from tests.support.invoice import CATALOG, DIRECTORY, OPERATION_SOURCE, cases, fixture
 from tests.support.native import SimulatedN8n
 from tests.support.verifying import verify_with_runner
-from verification import roles, verify
-from verification.contracts import Rejected, equal
-from verification.fixture_evaluators import EVALUATORS, FixtureEvaluator, fresh_cases
+from verification import verify
+from verification.contracts import equal
 
 
 class FixtureOwnershipTests(unittest.TestCase):
     def test_a_new_fixture_uses_standard_plan_evidence_and_corruption_checks(self):
-        source = SCENARIOS["invoice-total"]
-        config = read(source.config)
+        config = read(DIRECTORY / "config.yaml")
         config["workflow"]["id"] = config["activation"]["workflow_ref"]["id"] = "new-invoice-task"
         calls = []
 
@@ -38,30 +36,25 @@ class FixtureOwnershipTests(unittest.TestCase):
                 "Wrong new-task result",
             )
 
-        contract_file = source.directory / "evaluation/contract.json"
+        selected = replace(fixture(), business=independent_check)
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             submission = root / "config.yaml"
             submission.write_text(yaml.safe_dump(config))
-            with (
-                patch.dict(EVALUATORS, {"new-invoice-task": FixtureEvaluator(independent_check)}),
-                patch.object(roles, "scenario_file", return_value=contract_file),
-            ):
-                report = verify_with_runner(
-                    verify,
-                    "new-invoice-task",
-                    submission,
-                    root / "run",
-                    runner=partial(run_case, backend=SimulatedN8n()),
-                    cases=source.cases(),
-                )
-                self.assertTrue(report["passed"], report)
-                self.assertEqual(
-                    verify.expected_model_calls("new-invoice-task", config, config["workflow"]["inputs"]), {}
-                )
+            report = verify_with_runner(
+                verify,
+                "new-invoice-task",
+                submission,
+                root / "run",
+                runner=partial(run_case, backend=SimulatedN8n(OPERATION_SOURCE)),
+                cases=cases(),
+                fixture=selected,
+                bindings=read_bindings(CATALOG),
+            )
+            self.assertTrue(report["passed"], report)
+            self.assertEqual(
+                verify.expected_model_calls("new-invoice-task", config, config["workflow"]["inputs"], fixture=selected),
+                {},
+            )
             self.assertTrue(calls)
             self.assertTrue(any(row["kind"] == "mutated-generated-workflow" for row in report["cases"]))
-
-    def test_freshness_requires_an_explicit_evaluator_contract(self):
-        with self.assertRaisesRegex(Rejected, "no freshness contract"):
-            fresh_cases("invoice-total", SCENARIOS["invoice-total"].cases())

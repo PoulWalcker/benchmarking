@@ -2,10 +2,10 @@
 
 import unittest
 
-from sapi_config_lab.coordinate.scenarios import SCENARIOS
+from sapi_config_lab.contracts import OutputArtifact
 from sapi_config_lab.execute.hosting import terminal_submission as admitted
 
-CHECKOUT = SCENARIOS["checkout-recovery"].artifact
+CHECKOUT = OutputArtifact("incident_summary", "incident-summary.md")
 NO_ARTIFACT = None
 
 

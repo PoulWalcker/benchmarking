@@ -1,21 +1,18 @@
 """Hosted terminal evidence survives worker loss; stage-owned time limits compose before dispatch."""
 
-from dataclasses import replace
-from io import BytesIO
 import json
 from pathlib import Path
 import tempfile
 import threading
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
-from sapi_config_lab.coordinate import hosted_worker
+from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.packages import runtime_grant_seconds, verifier_bounds
-from sapi_config_lab.coordinate.providers import ENVIRONMENTS, EVALUATORS
 from sapi_config_lab.coordinate.runs import Run, fingerprint
-from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.execute.host import HostConfig
 from sapi_config_lab.execute.hosting import TrialHost
+from sapi_config_lab.paths import workspace_root
 
 
 class World:
@@ -140,46 +137,19 @@ class HostedLifetimeTests(unittest.TestCase):
         self.assertEqual(self.trial()["evidence_errors"], [])
 
 
-class ComposedBudgetTests(unittest.TestCase):
-    def test_longer_environment_and_evaluator_limits_reach_grant_and_harbor_budget(self):
-        scenario = replace(SCENARIOS["checkout-recovery"], benchmark=None)
-        provider = replace(ENVIRONMENTS[scenario.environment], limit_seconds=lambda scenario: 1200)
-        evaluator = replace(EVALUATORS[scenario.evaluator], timeout_seconds=900)
-        with (
-            patch.dict(SCENARIOS, {scenario.name: scenario}),
-            patch.dict(ENVIRONMENTS, {scenario.environment: provider}),
-            patch.dict(EVALUATORS, {scenario.evaluator: evaluator}),
-        ):
-            self.assertEqual(verifier_bounds((scenario.name,))[scenario.name], 1200 + 900 + 480 + 120)
-            self.assertGreaterEqual(
-                runtime_grant_seconds(scenario),
-                1200 + scenario.harbor["build_timeout_sec"] + scenario.harbor["agent_timeout_sec"],
-            )
-
-    def test_finish_rpc_includes_declared_evaluation_duration(self):
+class NativeBudgetTests(unittest.TestCase):
+    def test_multiple_attempts_cannot_reuse_one_native_world(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "connection.json").write_text(
-                json.dumps({"url": "http://unused", "token": "secret", "evaluation_seconds": 900})
-            )
-            responses = [BytesIO(b"{}"), BytesIO(b'{"result":{}}')]
-            with (
-                patch.object(hosted_worker, "TESTS", root),
-                patch.object(hosted_worker, "LOGS", root),
-                patch.object(hosted_worker, "SUBMISSION", root / "missing"),
-                patch.object(hosted_worker, "urlopen", side_effect=responses) as post,
-            ):
-                hosted_worker.run()
-            self.assertEqual([call.kwargs["timeout"] for call in post.call_args_list], [240, 1140])
-
-    def test_multiple_attempts_cannot_reuse_one_hosted_environment(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            run = Run(root / "run", {}, {}, "test", staging=root / "stage")
-            task = run.tasks / "checkout-recovery"
+            selected = select_benchmarks(workspace_root() / "benchmarks", ("checkout-recovery",))
+            run = Run(root / "run", {}, {}, "test", staging=root / "stage", benchmarks=selected)
+            task = run.tasks / selected[0].name
             task.mkdir(parents=True)
             (task / "task.toml").write_text("")
-            scenario = replace(SCENARIOS["checkout-recovery"], benchmark=None)
-            with patch.dict(SCENARIOS, {scenario.name: scenario}):
-                with self.assertRaisesRegex(ValueError, "exactly one attempt"):
-                    run.harbor("job", run.tasks, "oracle", attempts=2)
+            with self.assertRaisesRegex(ValueError, "exactly one attempt"):
+                run.harbor("job", run.tasks, "oracle", attempts=2)
+
+    def test_bridge_grant_uses_declared_native_phases(self):
+        selected = select_benchmarks(workspace_root() / "benchmarks", ("checkout-recovery",))[0]
+        self.assertGreaterEqual(runtime_grant_seconds(selected), selected.config["deadline_seconds"])
+        self.assertGreaterEqual(verifier_bounds((selected,))[selected.name], selected.config["deadline_seconds"])

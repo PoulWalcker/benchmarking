@@ -16,12 +16,12 @@ import uuid
 import yaml
 
 from sapi_config_lab.benchmark import load_benchmark
+from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.evaluation import main as evaluate_main
 from sapi_config_lab.coordinate.evaluation import reevaluate_benchmark
 from sapi_config_lab.coordinate.live import validate_packages
 from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.coordinate.runs import Run, load_trials
-from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.harbor_integration.tasks import validate_config
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.pinned_source import PinnedSource
@@ -66,7 +66,7 @@ class CheckoutHarborPackageTests(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
         self.tasks = self.root / "tasks"
-        stage_tasks(self.tasks, scenarios=("checkout-recovery",))
+        stage_tasks(self.tasks, root=ROOT, benchmarks=select_benchmarks(ROOT / "benchmarks", ("checkout-recovery",)))
         self.task = self.tasks / "checkout-recovery"
 
     def test_manifest_and_native_contexts_keep_the_full_pin_private(self):
@@ -125,29 +125,30 @@ class CheckoutHarborPackageTests(unittest.TestCase):
 
     def test_versioned_task_bypasses_trialhost_and_legacy_connection_material(self):
         run = Run(self.root, {}, {}, "checkout-native-test", staging=self.root)
-        with patch("sapi_config_lab.coordinate.runs.TrialHost", side_effect=AssertionError("legacy TrialHost")):
-            with run.hosted("oracle", self.tasks, self.root / "records", None) as (tasks, hosted):
-                self.assertEqual(tasks, self.tasks)
-                self.assertEqual(hosted, {})
+        self.assertFalse(hasattr(run, "hosted"))
+        self.assertFalse((self.task / "tests/connection.json").exists())
         self.assertFalse((self.root / "records").exists())
         self.assertFalse((self.root / "hosted").exists())
 
     def test_native_live_staging_pins_the_judge_and_refuses_missing_metadata(self):
-        scenario = SCENARIOS["checkout-recovery"]
+        scenario = load_benchmark(ROOT / "benchmarks", DIRECTORY)
         selection = {
-            scenario.name: {"path": scenario.config, "sha256": hashlib.sha256(scenario.config.read_bytes()).hexdigest()}
+            scenario.name: {
+                "path": scenario.reference.source,
+                "sha256": hashlib.sha256(scenario.reference.source.read_bytes()).hexdigest(),
+            }
         }
         native = self.root / "native-live"
-        stage_tasks(native, scenarios=(scenario.name,), judge_model="judge-pinned")
+        stage_tasks(native, root=ROOT, benchmarks=(scenario,), judge_model="judge-pinned")
         task = native / scenario.name
         metadata = read(task / "tests/benchmark.json")
         self.assertEqual(metadata["options"]["judge_mode"], "codex")
         self.assertEqual(metadata["options"]["judge_model"], "judge-pinned")
         self.assertFalse((task / "tests/environment.json").exists())
-        validate_packages(native, selection, "frozen:live")
+        validate_packages(native, selection, {scenario.name: scenario})
         (task / "tests/benchmark.json").unlink()
         with self.assertRaises(OSError):
-            validate_packages(native, selection, "frozen:live")
+            validate_packages(native, selection, {scenario.name: scenario})
 
     def test_offline_evaluation_requires_recorded_identity_and_never_dispatches_implicitly(self):
         record = self.root / "record"
@@ -197,7 +198,7 @@ class CheckoutHarborPackageTests(unittest.TestCase):
                     target.write_bytes(archive.extractfile(entry).read())
         metadata = read(self.task / "tests/benchmark.json")
         (record / "benchmark.json").write_text(json.dumps(metadata))
-        benchmark = SCENARIOS["checkout-recovery"].benchmark
+        benchmark = load_benchmark(ROOT / "benchmarks", DIRECTORY)
         identity = freeze_identity(benchmark, metadata["options"])
         evaluator = load_entrypoints(benchmark, identity).evaluate
         scoring = importlib.import_module(evaluator.__module__.rsplit(".", 1)[0] + ".scoring")
@@ -366,7 +367,7 @@ class DockerCheckoutHarborTests(unittest.TestCase):
     def test_oracle_and_nop_use_fresh_private_worlds_and_preserve_reference_reward(self):
         run = ROOT / "reports/migration-05" / ("docker-" + uuid.uuid4().hex[:10])
         run.mkdir(parents=True)
-        stage_tasks(run / "tasks", scenarios=("checkout-recovery",))
+        stage_tasks(run / "tasks", root=ROOT, benchmarks=select_benchmarks(ROOT / "benchmarks", ("checkout-recovery",)))
         task = run / "tasks/checkout-recovery"
         before = {
             p.relative_to(task).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
@@ -489,7 +490,9 @@ class DockerCheckoutFaultTests(DockerCheckoutHarborTests):
 
         run = ROOT / "reports/migration-06" / ("faults-" + uuid.uuid4().hex[:10])
         run.mkdir(parents=True)
-        stage_tasks(run / "template", scenarios=("checkout-recovery",))
+        stage_tasks(
+            run / "template", root=ROOT, benchmarks=select_benchmarks(ROOT / "benchmarks", ("checkout-recovery",))
+        )
         template = run / "template/checkout-recovery"
         from tests.test_checkout_isolation import DOCKER_CANDIDATE_PROBE, DOCKER_REDIRECT_PROBE
 

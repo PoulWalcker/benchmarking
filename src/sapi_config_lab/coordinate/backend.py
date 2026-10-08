@@ -9,7 +9,6 @@ from sapi_config_lab.contracts import (
     Document,
     ExecutionRecord,
     RunBinding,
-    WorkflowBackend,
 )
 from sapi_config_lab.execute.n8n import execute_compiled
 
@@ -17,7 +16,7 @@ from sapi_config_lab.execute.n8n import execute_compiled
 class N8nBackend:
     name = "n8n"
 
-    def __init__(self, operation_source: str | None = None) -> None:
+    def __init__(self, operation_source: str) -> None:
         self.operation_source = operation_source
 
     def compile(self, config: Document, bindings: Document, options: CompileOptions) -> CompiledWorkflow:
@@ -38,8 +37,3 @@ class N8nBackend:
         if compiled.engine != self.name:
             raise ValueError(f"Cannot execute a {compiled.engine} artifact with {self.name}")
         return execute_compiled(compiled, artifact_dir, binding)
-
-
-def default_backend() -> WorkflowBackend:
-    """The application's single composition point for the implemented backend."""
-    return N8nBackend()

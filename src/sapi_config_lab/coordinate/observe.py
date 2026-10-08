@@ -13,7 +13,6 @@ import shutil
 from sapi_config_lab.contracts import ArtifactTransform, Document, ExecutionRecord
 from sapi_config_lab.coordinate.cases import run_case
 from sapi_config_lab.evidence import digest, durable_json, sha256, write_json
-from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.profile import read_bindings
 
 Runner = Callable[..., ExecutionRecord]
@@ -71,12 +70,11 @@ def observe(
     bridge_url: str | None = None,
     runner: Runner = run_case,
     backend=None,
-    bindings: Document | None = None,
+    bindings: Document,
     acceptance: Callable[[Document, ExecutionRecord], Document] | None = None,
 ) -> Document:
     """Execute every plan entry in order and write observation.json last."""
     evidence.mkdir(parents=True, exist_ok=True)
-    bindings = read_bindings(CATALOG) if bindings is None else bindings
     shutil.copyfile(submission, evidence / "submission.yaml")
     manifest: Document = {
         "schema": "sapi-lab-observation/v1",
@@ -100,22 +98,29 @@ def observe(
 
 
 def main(argv: list[str] | None = None) -> int:
-    from sapi_config_lab.coordinate.legacy_lifecycle import digest_acceptance
+    from functools import partial
+
+    from sapi_config_lab.coordinate.compilation import compose_compilation
 
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--plan", type=Path, required=True)
     parser.add_argument("--submission", type=Path, required=True)
     parser.add_argument("--evidence", type=Path, required=True)
     parser.add_argument("--bridge-url", default=os.environ.get("SAPI_BRIDGE_URL"))
-    parser.add_argument("--bindings", type=Path, default=CATALOG)
+    parser.add_argument("--bindings", type=Path)
+    parser.add_argument("--operations", type=Path)
+    parser.add_argument("--scenario")
     args = parser.parse_args(argv)
+    context = compose_compilation(
+        args.submission, scenario=args.scenario, bindings=args.bindings, operations=args.operations
+    )
     manifest = observe(
         json.loads(args.plan.read_text()),
         args.submission,
         args.evidence,
         bridge_url=args.bridge_url,
-        bindings=read_bindings(args.bindings),
-        acceptance=digest_acceptance,
+        bindings=read_bindings(context.bindings),
+        runner=partial(run_case, backend=context.backend()),
     )
     print(json.dumps({"observed": len(manifest["entries"]), "errors": sum("error" in r for r in manifest["entries"])}))
     return 0

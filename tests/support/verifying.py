@@ -12,7 +12,18 @@ from sapi_config_lab.evidence import write_record_json
 
 
 def verify_with_runner(
-    verifier, scenario, config_path, run, mode="stub", selected_case=None, *, runner, cases, judge=None
+    verifier,
+    scenario,
+    config_path,
+    run,
+    mode="stub",
+    selected_case=None,
+    *,
+    runner,
+    cases,
+    fixture,
+    bindings,
+    judge=None,
 ):
     """Observe into <run>/evidence, then evaluate it into <run>/evaluation."""
     evidence = Path(run) / "evidence"
@@ -28,9 +39,11 @@ def verify_with_runner(
         return record
 
     try:
-        issued = verifier.plan(scenario, Path(config_path), cases, mode, selected_case)
+        issued = verifier.plan(scenario, Path(config_path), cases, mode, selected_case, fixture=fixture)
     except Exception:  # Mirrors the verifier CLI, where a failed plan runs nothing
         issued = None
     if issued is not None:
-        observe(issued, Path(config_path), evidence, runner=recording)
-    return verifier.evaluate(scenario, Path(config_path), evidence, cases, mode, selected_case, judge=judge)
+        observe(issued, Path(config_path), evidence, runner=recording, bindings=bindings)
+    return verifier.evaluate(
+        scenario, Path(config_path), evidence, cases, mode, selected_case, judge=judge, fixture=fixture
+    )

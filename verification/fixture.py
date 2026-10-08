@@ -3,7 +3,7 @@
 from collections.abc import Callable
 import copy
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING or __package__:
     from .n8n_provenance import rows
@@ -20,14 +20,12 @@ def wrong_output(candidate: dict) -> None:
 
 @dataclass(frozen=True)
 class FixtureEvaluator:
-    """Existing independent business callbacks and the procedure needed to observe them."""
+    """Independent behavior and data explicitly supplied by the selected benchmark."""
 
     business: Callable | None = None
-    procedure: Literal["case", "refinement", "lifecycle"] = "case"
     guard: Callable[[dict, dict], bool] | None = None
     obligations: Callable | None = None
     prose: Callable | None = None
-    fresh: Callable[[dict], dict] | None = None
     corrupt_output: Callable[[dict], None] = wrong_output
     extra_corruptions: tuple[tuple[str, Callable[[dict], None]], ...] = ()
 

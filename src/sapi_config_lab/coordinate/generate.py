@@ -15,13 +15,11 @@ from typing import Any
 
 import yaml
 
-from sapi_config_lab.coordinate.controls import suite_seconds
+from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.evaluation import trial_accepted
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
-from sapi_config_lab.coordinate.live_evidence import load_verifier
 from sapi_config_lab.coordinate.packages import AUTHOR_AGENT, CATALOG_VARIANTS, scenario_catalog, selected_cases
 from sapi_config_lab.coordinate.runs import Run, load_trials, progress, run_experiment, trial_seconds
-from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
 from sapi_config_lab.evidence import sha256
 from sapi_config_lab.execute.host import LAB_IMAGE, HostConfig, run_logged
 from sapi_config_lab.paths import workspace_root
@@ -76,12 +74,6 @@ def summarize_trials(*jobs: Path) -> list[dict]:
     return rows
 
 
-def fresh_case_overlay(scenario: str) -> dict:
-    """Ask the independent fixture owner for a fresh overlay; staging records the exact returned bytes."""
-    verification, _ = load_verifier()
-    return verification.fresh_cases(scenario, SCENARIOS[scenario].cases())
-
-
 def write_summary(report: dict, output: Path) -> None:
     lines = [
         "# YAML generation experiment",
@@ -121,25 +113,21 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     try:
-        scenarios = tuple(select_scenarios(tuple(args.scenario) if args.scenario else None))
+        benchmarks = select_benchmarks(ROOT / "benchmarks", args.scenario)
+        scenarios = tuple(item.name for item in benchmarks)
+        by_name = {item.name: item for item in benchmarks}
         series_ceilings = parse_ceilings(args.series_ceiling)
     except ValueError as error:
         parser.error(str(error))
     if not 1 <= args.attempts <= MAX_ATTEMPTS:
         parser.error(f"--attempts must be between 1 and {MAX_ATTEMPTS}")
-    budgets = {}
-    for name in scenarios:
-        scenario = SCENARIOS[name]
-        benchmark = scenario.benchmark
-        budgets[name] = benchmark.budgets.authoring_attempts if benchmark is not None else scenario.authoring_attempts
+    budgets = {item.name: item.budgets.authoring_attempts for item in benchmarks}
     capped = [s for s, budget in budgets.items() if budget is not None and args.attempts > budget]
     if capped:
         parser.error("--attempts exceeds the authoring budget of " + ", ".join(capped))
     for name in scenarios:
-        benchmark = SCENARIOS[name].benchmark
-        if benchmark is not None and args.catalog not in benchmark.config.get("authoring", {}).get(
-            "catalogs", ("full",)
-        ):
+        benchmark = by_name[name]
+        if args.catalog not in benchmark.config.get("authoring", {}).get("catalogs", ("full",)):
             parser.error("--catalog scenario applies to fixture scenarios only")
     output = args.report_dir or ROOT / "reports" / (datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-generation")
     ceiling = len(scenarios) * args.attempts
@@ -169,7 +157,7 @@ def main(argv: list[str] | None = None) -> int:
             [sys.executable, "-m", "sapi_config_lab.coordinate.controls", "--report-dir", str(run.output / "control")]
             + [arg for scenario in scenarios for arg in ("--scenario", scenario)],
             run.output / "control.log",
-            timeout=suite_seconds(scenarios),
+            timeout=None,
         )
         if control or json.loads((run.output / "control/report.json").read_text()).get("status") != "passed":
             raise RuntimeError("Control suite failed; model generation was not started")
@@ -180,18 +168,18 @@ def main(argv: list[str] | None = None) -> int:
         )
         report["ledger"] = str(ledger.path)
         run.use_image(LAB_IMAGE)
-        overlays = {s: fresh_case_overlay(s) for s in scenarios if SCENARIOS[s].fresh_fixtures}
+        overlays: dict[str, dict] = {}
         progress(f"staging: {len(scenarios)} generation task packages")
-        report["prompt_sha256"] = run.stage("generation", scenarios, cases=overlays, catalog=args.catalog)
+        report["prompt_sha256"] = run.stage("generation", benchmarks, cases=overlays, catalog=args.catalog)
         if args.catalog == "scenario":
-            shown = {s: scenario_catalog(SCENARIOS[s]) for s in scenarios}
+            shown = {s: scenario_catalog(by_name[s]) for s in scenarios}
             report["catalog"]["operations"] = {
                 s: sorted(yaml.safe_load(text)["operations"]) for s, text in shown.items()
             }
             report["catalog"]["sha256"] = {s: hashlib.sha256(text.encode()).hexdigest() for s, text in shown.items()}
         report["fixture_overlay"] = sorted(overlays)
         report["private_cases_sha256"] = {
-            s: sha256(run.tasks / s / "tests/cases.json") for s in scenarios if selected_cases(SCENARIOS[s]) is not None
+            s: sha256(run.tasks / s / "tests/cases.json") for s in scenarios if selected_cases(by_name[s]) is not None
         }
         report_path = run.output / "report.json"
         jobs = []

@@ -12,7 +12,6 @@ from sapi_config_lab.evidence import sha256
 from sapi_config_lab.execute.agency import WRAPPER_TIMEOUT_SECONDS, make_handler, strict_json
 from sapi_config_lab.execute.host import HostConfig
 from sapi_config_lab.net import urlopen
-from sapi_config_lab.paths import CATALOG
 
 
 def require(condition, message):
@@ -88,7 +87,7 @@ def main():
     parser.add_argument("--port", type=int, default=host.bridge_port)
     parser.add_argument("--upstream", default=host.wrapper_url)
     parser.add_argument("--timeout", type=int, default=WRAPPER_TIMEOUT_SECONDS)
-    parser.add_argument("--bindings", type=Path, default=CATALOG)
+    parser.add_argument("--bindings", type=Path, required=True)
     parser.add_argument("--audit", type=Path, required=True)
     parser.add_argument("--budget", type=Path)
     parser.add_argument("--reject-tool-use", action="store_true", help="Fail a call whose wrapper reports tool use")

@@ -52,5 +52,8 @@ def native_acceptance(config, record, admission, *, mode):
 
 
 class FixtureN8n(SimulatedN8n):
+    def __init__(self):
+        super().__init__((ROOT / "operations.js").read_text())
+
     def compile(self, config, bindings, options):
         return N8nBackend((ROOT / "operations.js").read_text()).compile(config, bindings, options)

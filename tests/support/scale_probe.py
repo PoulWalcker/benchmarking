@@ -7,7 +7,8 @@ import time
 
 from sapi_config_lab import profile
 from sapi_config_lab.compile import n8n as compiler
-from sapi_config_lab.paths import CATALOG, workspace_root
+from sapi_config_lab.paths import workspace_root
+from tests.support.invoice import CATALOG, OPERATION_SOURCE
 
 ROOT = workspace_root()
 
@@ -62,7 +63,7 @@ def main():
     cfg = make_config()
     bindings = profile.read(CATALOG)["operations"]
     start = time.perf_counter()
-    artifact, _ = compiler.compile_n8n(cfg, bindings)
+    artifact, _ = compiler.compile_n8n(cfg, bindings, operation_source=OPERATION_SOURCE)
     elapsed = time.perf_counter() - start
     path = ROOT / "validation/static-scale-probe.n8n.json"
     raw = json.dumps(artifact, ensure_ascii=False, indent=2) + "\n"

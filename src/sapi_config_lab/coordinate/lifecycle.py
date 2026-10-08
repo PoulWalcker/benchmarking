@@ -24,7 +24,6 @@ from sapi_config_lab.coordinate.cases import run_case
 from sapi_config_lab.evidence import canonical, digest, durable_json
 from sapi_config_lab.execute.agency import WRAPPER_TIMEOUT_SECONDS
 from sapi_config_lab.execute.host import HostConfig
-from sapi_config_lab.paths import CATALOG
 
 Verifier = Callable[[Document, ExecutionRecord], Document]
 Rebuilder = Callable[[Document, Document, Document, Path], Document]
@@ -53,8 +52,8 @@ def daily_schedule(schedule: str, zone: str) -> tuple[int, int, ZoneInfo]:
     return minute, hour, timezone_value
 
 
-def validate_lifecycle(config: Document, bindings: Document | None = None) -> None:
-    profile.validate(config, profile.read_bindings(CATALOG) if bindings is None else bindings)
+def validate_lifecycle(config: Document, bindings: Document) -> None:
+    profile.validate(config, bindings)
     policy = config.get("lifecycle")
     profile.check(isinstance(policy, dict), "Lifecycle policy is required")
     assert isinstance(policy, dict)
@@ -119,14 +118,14 @@ class LifecycleController:
         rebuilder: Rebuilder | None = None,
         llm_mode: LlmMode = "stub",
         bridge_url: str | None = None,
-        bindings: Document | None = None,
+        bindings: Document,
     ):
         self.directory = Path(registry_dir).resolve()
         self.directory.mkdir(parents=True, exist_ok=True)
         self.database = self.directory / "registry.sqlite3"
         self.backend, self.verifier, self.rebuilder = backend, verifier, rebuilder
         self.llm_mode, self.bridge_url = llm_mode, bridge_url
-        self.bindings = profile.read_bindings(CATALOG) if bindings is None else bindings
+        self.bindings = bindings
         initial = {
             "schema": "sapi-lab-lifecycle/v1",
             "definitions": {},
@@ -338,6 +337,8 @@ class LifecycleController:
         return self.snapshot()["events"][event_key]
 
     def _execute_event(self, event_key):
+        if self.backend is None:
+            raise ValueError("Lifecycle execution requires an explicit trusted backend")
         with self._transaction() as state:
             event = state["events"][event_key]
             if event["state"] != "queued":
@@ -674,7 +675,7 @@ def main(argv: list[str] | None = None, *, verifier: Verifier | None = None) -> 
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--llm-mode", choices=("stub", "live"), default="stub")
     parser.add_argument("--bridge-url")
-    parser.add_argument("--bindings", type=Path, default=CATALOG)
+    parser.add_argument("--bindings", type=Path, required=True)
     parser.add_argument("--rebuilder-url", help="Explicit real wrapper URL for bounded candidate repair")
     parser.add_argument(
         "--rebuild-model",

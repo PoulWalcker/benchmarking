@@ -7,7 +7,7 @@ quality score (null is never zero); they share no scoring semantics.
 from __future__ import annotations
 
 import argparse
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from dataclasses import asdict
 import json
 from pathlib import Path
@@ -42,13 +42,6 @@ from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.paths import workspace_root
 
 
-def legacy_scenarios():
-    """Historical execution/evaluation compatibility only; native records select descriptors directly."""
-    from sapi_config_lab.coordinate.scenarios import SCENARIOS
-
-    return SCENARIOS
-
-
 def recorded_benchmark(name: str) -> Benchmark:
     """Select trusted local metadata; recorded names never nominate executable paths."""
     matches = [item for item in discover_benchmarks(workspace_root() / "benchmarks") if item.name == name]
@@ -57,69 +50,34 @@ def recorded_benchmark(name: str) -> Benchmark:
     return matches[0]
 
 
-def control_passed(agent: str, trial: dict) -> bool:
-    """oracle: the reference is accepted; nop: an absent submission is not, and earns nothing."""
-    scenario = legacy_scenarios()[trial["task_name"]]
-    if scenario.hosted:
-        result = trial["result"]
-        if agent == "nop":
-            if result["acceptance"] is not False:
-                return False
-            quality = result["quality"]
-            if quality is None:
-                return not trial["exception"] and trial["rewards"] == {"reward": 0.0}
-            # Pinned Harbor reports this exact exception when an unscored nop writes no reward.
-            exception = trial["exception"] or {}
-            return (
-                quality.get("status") != "complete"
-                and quality.get("score_0_10") is None
-                and quality.get("normalized_reward") is None
-                and trial["rewards"] is None
-                and (not exception or exception.get("exception_type") == "RewardFileNotFoundError")
-            )
-        expected = scenario.reference_reward
-        # Only a declared reference reward makes the benchmark scored; otherwise acceptance alone gates the oracle.
-        return trial_accepted(trial) and (
-            expected is None
-            or ((result["quality"] or {}).get("status") == "complete" and trial["rewards"] == {"reward": expected})
+def control_passed(agent: str, trial: dict, benchmark: Benchmark) -> bool:
+    """Gate controls using independent acceptance and the declared reference reward."""
+    result = trial["result"]
+    quality = result["quality"]
+    if agent == "oracle":
+        expected = benchmark.controls.reference_reward
+        if expected is not None and (quality or {}).get("status") != "complete":
+            return False
+        if expected is None:
+            expected = (quality or {}).get("normalized_reward") if quality is not None else 1.0
+        return (
+            not trial["exception"]
+            and result["acceptance"] is True
+            and (trial["rewards"] == {"reward": expected} and (quality is None or quality.get("status") == "complete"))
         )
-    reward = {"oracle": 1.0, "nop": 0.0}[agent]
+    if agent != "nop" or result["acceptance"] is not False:
+        return False
+    if quality is None or quality.get("status") == "complete":
+        return not trial["exception"] and trial["rewards"] == {"reward": 0.0}
+    if benchmark.controls.reference_reward is None and trial["rewards"] == {"reward": 0.0}:
+        return not trial["exception"] and quality.get("score_0_10") is None and quality.get("normalized_reward") is None
+    exception = trial["exception"] or {}
     return (
-        not trial["exception"]
-        and trial["rewards"] == {"reward": reward}
-        and (agent == "nop" or (trial["acceptance"] or {}).get("passed") is True)
+        quality.get("score_0_10") is None
+        and quality.get("normalized_reward") is None
+        and trial["rewards"] is None
+        and (not exception or exception.get("exception_type") == "RewardFileNotFoundError")
     )
-
-
-def hosted_evaluation(scenarios: Iterable[str], judge_model: str | None = None) -> Callable[[str, Path], dict]:
-    """Freeze each hosted scenario's evaluator now; a named judge is a paid call the caller reserved."""
-    from sapi_config_lab.coordinate.providers import EVALUATORS
-
-    prepared = {
-        name: EVALUATORS[legacy_scenarios()[name].evaluator].prepare(legacy_scenarios()[name], judge_model)
-        for name in scenarios
-        if legacy_scenarios()[name].hosted and legacy_scenarios()[name].benchmark is None
-    }
-
-    def evaluate(scenario: str, record: Path) -> dict:
-        trial = json.loads((record / "evidence/trial.json").read_text())
-        result = validate_result(prepared[scenario](record))
-        report = {
-            "schema": HOSTED_REPORT,
-            "scenario": scenario,
-            "mode": trial["llm_mode"],
-            "submission_sha256": trial["submission_sha256"],
-            "passed": result["acceptance"],
-            "result": result,
-            "native_execution": trial.get("native_execution"),
-            "terminal_completion": trial.get("terminal_completion"),
-        }
-        # The report's place is the core's; an evaluator need not have written beside it.
-        (record / "evaluation").mkdir(exist_ok=True)
-        write_json(record / "evaluation/report.json", report)
-        return report
-
-    return evaluate
 
 
 def reevaluate_benchmark(
@@ -162,7 +120,7 @@ def reevaluate_benchmark(
         if benchmark.budgets.judge_calls == 0 or reserved is None:
             raise ValueError("Judge dispatch requires a declared cost and host reservation")
         options["reserved_judge"] = reserved
-    return validate_result(dict(load_entrypoints(benchmark, identity).evaluate(record / "evidence", options)))
+    return validate_result(load_entrypoints(benchmark, identity).evaluate(record / "evidence", options))
 
 
 def main(argv: list[str] | None = None) -> int:

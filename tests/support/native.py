@@ -19,8 +19,11 @@ SIMULATOR = workspace_root() / "tests/support/n8n-sim.mjs"
 class SimulatedN8n:
     name = "n8n"
 
+    def __init__(self, operation_source: str):
+        self.operation_source = operation_source
+
     def compile(self, config: Document, bindings: Document, options: CompileOptions) -> CompiledWorkflow:
-        return N8nBackend().compile(config, bindings, options)
+        return N8nBackend(self.operation_source).compile(config, bindings, options)
 
     def execute(self, compiled: CompiledWorkflow, artifact_dir: Path, binding: RunBinding) -> ExecutionRecord:
         environment = {**os.environ, **binding_environment(compiled, binding)}

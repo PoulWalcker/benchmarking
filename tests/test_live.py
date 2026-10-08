@@ -15,19 +15,20 @@ from unittest.mock import patch
 
 import yaml
 
+from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.live import audit_records, check_trials, main, validate_control
 from sapi_config_lab.coordinate.live_evidence import reconcile_dispatches
 from sapi_config_lab.coordinate.replay import load_selection, read_json
 from sapi_config_lab.coordinate.runs import Run
-from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
 from sapi_config_lab.evidence import digest, sha256
 from sapi_config_lab.execute.agency import DispatchAudit, start_bridge
 from sapi_config_lab.execute.agency import execute as agency_execute
 from sapi_config_lab.execute.host import HostConfig
 from sapi_config_lab.harbor_integration.model_wrapper import request_wrapper
-from sapi_config_lab.paths import CATALOG
+from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import read_bindings
+from tests.support.invoice import CATALOG
 
 execute = partial(agency_execute, transport=request_wrapper)
 
@@ -69,7 +70,7 @@ class LiveEvidenceTests(unittest.TestCase):
                 }
             )
             records = audit.records()
-            self.assertEqual(len(reconcile_dispatches(native, records, "gpt-6-astra")), 1)
+            self.assertEqual(len(reconcile_dispatches(native, records, "gpt-6-astra", bindings=CATALOG)), 1)
             catalog = read_bindings(CATALOG)
             catalog["ticket.classify"]["prompt"] += "\nScenario-specific instruction."
             selected = Path(directory) / "bindings.yaml"
@@ -83,7 +84,7 @@ class LiveEvidenceTests(unittest.TestCase):
                 ).hexdigest()
             self.assertEqual(len(reconcile_dispatches(native, changed, "gpt-6-astra", bindings=selected)), 1)
             with self.assertRaisesRegex(ValueError, "prompt identity"):
-                reconcile_dispatches(native, changed, "gpt-6-astra")
+                reconcile_dispatches(native, changed, "gpt-6-astra", bindings=CATALOG)
 
             for corrupt in (
                 "orphan_completion",
@@ -111,7 +112,7 @@ class LiveEvidenceTests(unittest.TestCase):
                 else:
                     bad[1]["response_sha256" if corrupt == "response_hash" else "inputs_sha256"] = "0" * 64
                 with self.subTest(corrupt=corrupt), self.assertRaises(ValueError):
-                    reconcile_dispatches(native, bad, "gpt-6-astra")
+                    reconcile_dispatches(native, bad, "gpt-6-astra", bindings=CATALOG)
 
     def test_source_and_image_gate_rejects_success_from_other_sources(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -188,7 +189,13 @@ class HostedTrialCheckTests(unittest.TestCase):
     """A hosted live trial must be evaluated; it must be scored only where a reference reward is declared."""
 
     def check(self, result: dict, reference_reward: float | None) -> None:
-        scenario = replace(SCENARIOS["checkout-recovery"], reference_reward=reference_reward)
+        scenario = replace(
+            select_benchmarks(workspace_root() / "benchmarks", ("checkout-recovery",))[0],
+            controls=replace(
+                select_benchmarks(workspace_root() / "benchmarks", ("checkout-recovery",))[0].controls,
+                reference_reward=reference_reward,
+            ),
+        )
         acceptance = {
             "schema": "sapi-lab-upstream-acceptance/v1",
             "mode": "live",
@@ -197,8 +204,9 @@ class HostedTrialCheckTests(unittest.TestCase):
             "result": result,
         }
         trial = {"task_name": "checkout-recovery", "exception": None, "acceptance": acceptance, "result": result}
-        with patch.dict(SCENARIOS, {"checkout-recovery": scenario}):
-            check_trials([trial], {"checkout-recovery": {"sha256": "abc"}}, mode="live")
+        check_trials(
+            [trial], {"checkout-recovery": {"sha256": "abc"}}, benchmarks={scenario.name: scenario}, mode="live"
+        )
 
     def test_an_unscored_trial_is_complete_only_without_a_reference_reward(self):
         scored = {"status": "complete", "score_0_10": 0.0, "normalized_reward": 0.0}
@@ -279,7 +287,7 @@ class BridgeBindingTests(unittest.TestCase):
         with (
             patch("sapi_config_lab.coordinate.runs.start_bridge") as start,
             patch("sapi_config_lab.coordinate.runs.stop_bridge"),
-            run.bridge({"max_attempts": 0}, "case"),
+            run.bridge({"max_attempts": 0}, "case", bindings=CATALOG),
         ):
             pass
         self.assertEqual(start.call_args.args[:3], ("0.0.0.0", 18765, host.wrapper_url))
@@ -296,7 +304,7 @@ class BridgeBindingTests(unittest.TestCase):
                 popen.return_value.poll.return_value = None
                 urlopen.return_value.__enter__.return_value = BytesIO(b'{"service": "sapi-lab-agency-adapter"}')
                 root = Path(directory)
-                start_bridge(listen, 18765, "http://wrapper", root / "a", root / "b", root / "log")
+                start_bridge(listen, 18765, "http://wrapper", root / "a", root / "b", root / "log", bindings=CATALOG)
                 argv = popen.call_args.args[0]
                 self.assertEqual(argv[argv.index("--host") + 1], listen)
                 self.assertEqual(urlopen.call_args.args[0], f"http://{probed}:18765/health")
@@ -312,8 +320,8 @@ class NativeLiveReservationTests(unittest.TestCase):
         from sapi_config_lab.coordinate.packages import stage_tasks
         from sapi_config_lab.evidence import write_json
 
-        scenario = SCENARIOS["checkout-recovery"]
-        submission_hash = sha256(scenario.config)
+        scenario = select_benchmarks(workspace_root() / "benchmarks", ("checkout-recovery",))[0]
+        submission_hash = sha256(scenario.reference.source)
         for fault in (None, "duplicate", "submission"):
             with self.subTest(fault=fault), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
@@ -347,7 +355,7 @@ class NativeLiveReservationTests(unittest.TestCase):
                 run.output, run.sources, run.tasks, run.image = output, {}, output / "tasks", "frozen:image"
                 run.use_image.return_value = "sha256:stub"
                 run.stage.side_effect = lambda mode, names, run=run, **options: stage_tasks(
-                    run.tasks, mode=mode, scenarios=names, **options
+                    run.tasks, root=workspace_root(), mode=mode, benchmarks=names, **options
                 )
                 run.bridge.return_value = contextlib.nullcontext(output / "audit.jsonl")
                 live_trial = trial("live")

@@ -75,16 +75,21 @@ def main() -> int:
                 if required not in source_members:
                     raise RuntimeError(f"Missing declared benchmark dependency: {required}")
         for required in (
-            "sapi_config_lab/bindings.yaml",
             "sapi_config_lab/execute/agency-prompt.md",
-            "sapi_config_lab/compile/operations.js",
             "sapi_config_lab/compile/runtime-fragment.js",
             "sapi_config_lab/harbor_integration/runtime/Dockerfile",
             "sapi_config_lab/harbor_integration/submission.py",
+            "verification/__init__.py",
+            "verification/fixture.py",
+            "verification/verify.py",
         ):
             if required not in wheel_members:
                 raise RuntimeError(f"Missing installed runtime resource: {required}")
-        unexpected = [name for name in wheel_members if not name.startswith(("sapi_config_lab/", "sapi_config_lab-"))]
+        unexpected = [
+            name
+            for name in wheel_members
+            if not name.startswith(("sapi_config_lab/", "sapi_config_lab-", "verification/"))
+        ]
         if unexpected:
             raise RuntimeError(f"Unexpected wheel entries: {unexpected}")
         print(

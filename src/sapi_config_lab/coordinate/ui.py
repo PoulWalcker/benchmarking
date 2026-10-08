@@ -25,8 +25,8 @@ import webbrowser
 
 import yaml
 
+from sapi_config_lab.benchmark import discover_benchmarks
 from sapi_config_lab.contracts import CompileOptions
-from sapi_config_lab.coordinate.benchmark_discovery import list_benchmarks
 from sapi_config_lab.coordinate.compilation import CompilationContext, compose_compilation
 from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
 from sapi_config_lab.evidence import json_text, sha256, write_json
@@ -384,9 +384,12 @@ def open_command(parser: argparse.ArgumentParser, args: argparse.Namespace, host
         parser.error("--seconds must be between one second and one hour")
     state = args.state_dir or workspace_root() / "var/ui"
     root = workspace_root() / "benchmarks"
-    configs = [s.directory / "config.yaml" for s in list_benchmarks(root)] if args.all else [args.config]
+    configs = [s.reference.source for s in discover_benchmarks(root)] if args.all else [args.config]
     contexts = {
-        config: compose_compilation(config, root, scenario=args.scenario, bindings=args.bindings) for config in configs
+        config: compose_compilation(
+            config, root, scenario=args.scenario, bindings=args.bindings, operations=args.operations
+        )
+        for config in configs
     }
     if args.all:
         configs = [config for config in configs if contexts[config].operation_url() is None]
@@ -458,6 +461,7 @@ def main(argv=None) -> int:
     selection.add_argument("--all", action="store_true")
     view.add_argument("--scenario", help="Trusted benchmark context for detached YAML")
     view.add_argument("--bindings", type=Path)
+    view.add_argument("--operations", type=Path)
     view.add_argument("--live", action="store_true", help="Arm one fresh copy for manual execution; never auto-run")
     view.add_argument("--new-copy", action="store_true", help="Preserve a changed owned graph and import a new copy")
     view.add_argument("--no-browser", action="store_true")
@@ -472,6 +476,7 @@ def main(argv=None) -> int:
     prep.add_argument("config", type=Path)
     prep.add_argument("--scenario", help="Trusted benchmark context for detached YAML")
     prep.add_argument("--bindings", type=Path)
+    prep.add_argument("--operations", type=Path)
     prep.add_argument("--output-dir", type=Path, required=True)
     prep.add_argument("--port", type=int, default=host.ui_bridge_port)
     run = commands.add_parser(
@@ -491,7 +496,11 @@ def main(argv=None) -> int:
     try:
         if args.command == "prepare":
             context = compose_compilation(
-                args.config, workspace_root() / "benchmarks", scenario=args.scenario, bindings=args.bindings
+                args.config,
+                workspace_root() / "benchmarks",
+                scenario=args.scenario,
+                bindings=args.bindings,
+                operations=args.operations,
             )
             print(json.dumps(prepare(args.config, args.output_dir, host=host, context=context)))
         elif args.command == "serve":

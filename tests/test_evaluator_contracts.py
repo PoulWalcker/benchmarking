@@ -1,16 +1,17 @@
-"""Hosted evaluator boundaries distinguish metadata, normalized verdicts and explicit re-scoring options."""
+"""Descriptor metadata stays separate from normalized evaluator verdicts."""
 
-from dataclasses import replace
+from dataclasses import asdict
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
-from sapi_config_lab.coordinate.evaluation import hosted_evaluation, validate_result
-from sapi_config_lab.coordinate.providers import ENVIRONMENTS, EVALUATORS, HostedEvaluator, ReevaluationOptions
-from sapi_config_lab.coordinate.scenarios import SCENARIOS
-from tests.support.pinned import AVAILABLE
+from sapi_config_lab.benchmark import discover_benchmarks, load_benchmark
+from sapi_config_lab.benchmark_loading import freeze_identity
+from sapi_config_lab.coordinate.evaluation import reevaluate_benchmark, validate_result
+from sapi_config_lab.paths import workspace_root
 
 
 class EvaluatorContractTests(unittest.TestCase):
@@ -26,44 +27,44 @@ class EvaluatorContractTests(unittest.TestCase):
             {**valid, "quality": {"status": "complete", "score_0_10": 11, "normalized_reward": 1}},
             {**valid, "quality": {"status": "not_evaluated", "score_0_10": 0, "normalized_reward": 0}},
         ]
+        root = workspace_root() / "benchmarks"
+        benchmark = load_benchmark(root, root / "10-checkout-recovery")
+        identity = freeze_identity(benchmark, {})
         for result in bad:
             with self.subTest(result=result), tempfile.TemporaryDirectory() as directory:
                 record = Path(directory)
-                (record / "evidence").mkdir()
-                (record / "evidence/trial.json").write_text(json.dumps({"llm_mode": "stub", "submission_sha256": "a"}))
-                evaluator = HostedEvaluator(
-                    0,
-                    lambda scenario, judge, value=result: lambda path: value,
-                    lambda scenario, path, output, options, value=result: value,
-                    (),
-                    30,
+                evidence = record / "evidence"
+                evidence.mkdir()
+                raw = b'{"llm_mode":"stub","submission_sha256":"a"}'
+                (evidence / "trial.json").write_bytes(raw)
+                (record / "benchmark.json").write_text(
+                    json.dumps({"name": benchmark.name, "options": {}, "identity": asdict(identity), "core_files": {}})
                 )
-                with (
-                    patch.dict(EVALUATORS, {"autowfbench": evaluator}),
-                    patch.dict(
-                        SCENARIOS, {"checkout-recovery": replace(SCENARIOS["checkout-recovery"], benchmark=None)}
-                    ),
+                evaluate = Mock(return_value=result)
+                with patch(
+                    "sapi_config_lab.coordinate.evaluation.load_entrypoints",
+                    return_value=SimpleNamespace(evaluate=evaluate),
                 ):
                     with self.assertRaisesRegex(ValueError, "Evaluator|evaluator|Unscored|Complete"):
-                        hosted_evaluation(("checkout-recovery",))("checkout-recovery", record)
+                        reevaluate_benchmark(record, record / "derived", None)
+                evaluate.assert_called_once()
                 self.assertFalse((record / "evaluation/report.json").exists())
+                self.assertEqual((evidence / "trial.json").read_bytes(), raw)
         self.assertEqual(validate_result(valid), valid)
-        self.assertEqual(validate_result({**valid, "execution": None})["execution"], None)
+        self.assertIsNone(validate_result({**valid, "execution": None})["execution"])
+        self.assertEqual(
+            validate_result({"execution": None, "acceptance": None, "quality": None}),
+            {"execution": None, "acceptance": None, "quality": None},
+        )
 
-    def test_options_are_small_and_immutable(self):
-        from dataclasses import FrozenInstanceError
-
-        options = ReevaluationOptions(judgement=Path("saved.json"))
-        self.assertFalse(hasattr(options, "record"))
-        self.assertFalse(hasattr(options, "cases"))
-        with self.assertRaises(FrozenInstanceError):
-            options.dispatch_judge = True
-
-    @unittest.skipUnless(AVAILABLE, "Requires pinned upstream source")
     def test_environment_metadata_never_loads_or_validates_a_scoring_contract(self):
-        with patch("sapi_config_lab.coordinate.providers.freeze_contract", side_effect=AssertionError("scorer loaded")):
-            provider = ENVIRONMENTS["autowfbench"]
-            for name in ("checkout-recovery",):
-                scenario = SCENARIOS[name]
-                self.assertEqual(provider.limit_seconds(scenario), 120)
-                self.assertTrue(provider.task(scenario))
+        with (
+            patch("sapi_config_lab.benchmark_loading.freeze_identity", side_effect=AssertionError("scorer loaded")),
+            patch("importlib.import_module", side_effect=AssertionError("benchmark code imported")),
+        ):
+            benchmarks = discover_benchmarks(workspace_root() / "benchmarks")
+            benchmark = next(item for item in benchmarks if item.name == "checkout-recovery")
+            self.assertEqual(benchmark.config["deadline_seconds"], 120)
+            instruction = next(item.source for item in benchmark.public if item.destination == "instruction.md")
+            self.assertTrue(instruction.read_text())
+            self.assertIn("prepare", benchmark.entrypoints)

@@ -1,9 +1,7 @@
 """Durable lifecycle decisions through its public interface; no Docker or models."""
 
-import contextlib
 import copy
 from datetime import UTC, datetime
-import io
 import json
 from pathlib import Path
 import shutil
@@ -11,16 +9,12 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-import yaml
-
 from sapi_config_lab import profile
 from sapi_config_lab.contracts import CompiledWorkflow, CompileOptions, RunBinding
-from sapi_config_lab.coordinate.cli import dispatch
 from sapi_config_lab.coordinate.lifecycle import LifecycleController
-from sapi_config_lab.coordinate.observe import main as observe_main
-from sapi_config_lab.evaluate.operational import digest_acceptance
 from sapi_config_lab.evidence import durable_json
-from sapi_config_lab.paths import CATALOG, workspace_root
+from sapi_config_lab.paths import workspace_root
+from tests.support.invoice import CATALOG, OPERATION_SOURCE
 from tests.support.lifecycle import FixtureN8n, acceptance
 from tests.support.lifecycle import bindings as fixture_bindings
 from tests.support.lifecycle import config as fixture_config
@@ -58,94 +52,20 @@ class LifecycleBackend:
         }
 
 
-class LegacyLifecycleCompositionTests(unittest.TestCase):
-    def test_legacy_cli_register_callback_and_restart_keep_digest_acceptance(self):
-        config = fixture_config()
-        config["lifecycle"]["test"]["verifier"] = "digest.acceptance_v1"
-        config["workflow"].update(
-            inputs={"articles": [{"id": "one", "title": "Fixture", "text": "Synthetic input."}]},
-            steps=[
-                {
-                    "id": "prepare",
-                    "kind": "Script",
-                    "uses": "digest.prepare",
-                    "with": {"articles": {"ref": "inputs.articles"}},
-                },
-                {
-                    "id": "summarize",
-                    "kind": "LLM",
-                    "uses": "digest.summarize",
-                    "with": {"articles": {"ref": "steps.prepare.articles"}},
-                },
-                {
-                    "id": "preview",
-                    "kind": "Script",
-                    "uses": "digest.preview",
-                    "with": {"summary": {"ref": "steps.summarize"}},
-                },
-            ],
-            dependencies=[["prepare", "summarize"], ["summarize", "preview"]],
-            output={"ref": "steps.preview"},
-        )
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            submission = root / "config.yaml"
-            submission.write_text(yaml.safe_dump(config))
-            prefix = ["lifecycle", "--registry", str(root / "registry")]
-            with (
-                contextlib.redirect_stdout(io.StringIO()),
-                patch("sapi_config_lab.coordinate.cases.default_backend", return_value=SimulatedN8n()),
-            ):
-                self.assertEqual(dispatch([*prefix, "register", "--config", str(submission)]), 0)
-                callback = [
-                    *prefix,
-                    "callback",
-                    "--workflow-id",
-                    "lifecycle-fixture",
-                    "--revision",
-                    "1",
-                    "--event-id",
-                    "legacy-test",
-                ]
-                self.assertEqual(dispatch(callback), 0)
-                before = json.loads((root / "registry/snapshot.json").read_text())
-                self.assertEqual(dispatch(callback), 0)
-            after = json.loads((root / "registry/snapshot.json").read_text())
-            self.assertEqual(before, after)
-            event = next(iter(after["events"].values()))
-            self.assertEqual(event["state"], "passed")
-            self.assertEqual(event["decision"]["verifier"], "digest.acceptance_v1")
-            self.assertEqual(after["families"]["lifecycle-fixture"]["active"], "lifecycle-fixture@1")
-
-    def test_legacy_observe_entrypoint_explicitly_injects_compatibility_callable(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            plan = root / "plan.json"
-            plan.write_text("{}")
-            with (
-                patch("sapi_config_lab.coordinate.observe.observe", return_value={"entries": []}) as observation,
-                contextlib.redirect_stdout(io.StringIO()),
-            ):
-                self.assertEqual(
-                    observe_main(
-                        [
-                            "--plan",
-                            str(plan),
-                            "--submission",
-                            str(root / "submission.yaml"),
-                            "--evidence",
-                            str(root / "evidence"),
-                        ]
-                    ),
-                    0,
-                )
-            self.assertIs(observation.call_args.kwargs["acceptance"], digest_acceptance)
-
-
 class LifecycleTests(unittest.TestCase):
     def setUp(self):
         self.config = fixture_config()
         self.backend = LifecycleBackend()
+
+    def test_missing_trusted_backend_refuses_before_execution_reservation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            controller = LifecycleController(Path(directory), verifier=acceptance, bindings=fixture_bindings())
+            reference = controller.register(fixture_config())
+            with self.assertRaisesRegex(ValueError, "explicit trusted backend"):
+                controller.callback(reference, "no-backend")
+            snapshot = controller.snapshot()
+            self.assertTrue(all(event["state"] == "queued" for event in snapshot["events"].values()))
+            self.assertFalse(any(row["kind"] == "execution_reserved" for row in snapshot["transitions"]))
 
     def test_no_acceptance_default_or_name_dispatch(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -404,7 +324,7 @@ class LifecycleTests(unittest.TestCase):
 
     def test_an_ordinary_case_needs_no_binding_and_ignores_a_supplied_event(self):
         config = profile.read(workspace_root() / "benchmarks/01-invoice-total/config.yaml")
-        backend = SimulatedN8n()
+        backend = SimulatedN8n(OPERATION_SOURCE)
         compiled = backend.compile(config, profile.read_bindings(CATALOG), CompileOptions())
         self.assertNotIn("SAPI_RUN_BINDING", json.dumps(compiled.document))
         with tempfile.TemporaryDirectory() as directory:

@@ -12,8 +12,9 @@ from sapi_config_lab.compile.n8n import RESOURCES, compile_n8n
 from sapi_config_lab.compile.refinement import compile_refinement
 from sapi_config_lab.contracts import CompileOptions
 from sapi_config_lab.coordinate.backend import N8nBackend
-from sapi_config_lab.paths import CATALOG, workspace_root
+from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import Invalid, Unsupported, read, read_bindings
+from tests.support.invoice import CATALOG, OPERATION_SOURCE
 
 ROOT = workspace_root()
 BUNDLE = """function need(condition, message) { if (!condition) throw new Error(message); }
@@ -81,7 +82,7 @@ class OperationBundleTests(unittest.TestCase):
 
     def test_new_operation_executes_from_explicit_source_without_global_registration(self):
         with self.assertRaisesRegex(Unsupported, "No local implementation for example.increment"):
-            compile_n8n(self.config, self.bindings)
+            compile_n8n(self.config, self.bindings, operation_source=OPERATION_SOURCE)
         document, _ = compile_n8n(self.config, self.bindings, operation_source=BUNDLE)
         self.assertEqual(self.run_export(document)["result"]["output"], {"value": 6})
         compiled = N8nBackend(operation_source=BUNDLE).compile(self.config, self.bindings, CompileOptions())
@@ -138,13 +139,13 @@ class OperationBundleTests(unittest.TestCase):
         with self.assertRaises(Invalid):
             compile_n8n(self.config, self.bindings, operation_source=BUNDLE)
 
-    def test_legacy_default_preserves_exact_artifacts_for_both_compiler_paths(self):
-        source = (RESOURCES / "operations.js").read_text()
-        bindings = read_bindings(CATALOG)
+    def test_compiler_requires_explicit_source_for_both_paths(self):
         for scenario in ("benchmarks/01-invoice-total/config.yaml", "tests/support/graphs/refinement.yaml"):
             config = read(ROOT / scenario)
-            with self.subTest(scenario=scenario):
-                self.assertEqual(
-                    compile_n8n(config, bindings),
-                    compile_n8n(config, bindings, operation_source=source),
-                )
+            bindings = read_bindings(CATALOG)
+            with self.subTest(scenario=scenario), self.assertRaises(TypeError):
+                compile_n8n(config, bindings)
+            with self.assertRaises(TypeError):
+                N8nBackend()
+        with self.assertRaises(TypeError):
+            compile_refinement(self.refinement(), self.bindings, "stub", None, 190)

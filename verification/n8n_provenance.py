@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING or __package__:
     from .contracts import Rejected, WorkflowObservation, equal, require
-    from .roles import GRAPHLESS_RECORD_SCENARIOS, bind_roles, contract_for, resolve
+    from .roles import RoleContract, bind_roles, resolve
 else:  # Standalone Harbor distribution.
     from contracts import Rejected, WorkflowObservation, equal, require
-    from roles import GRAPHLESS_RECORD_SCENARIOS, bind_roles, contract_for, resolve
+    from roles import RoleContract, bind_roles, resolve
 
 
 def rows(record: dict) -> list[dict]:
@@ -51,7 +51,7 @@ def check_provenance(run: dict) -> None:
 
 
 def observe_execution(
-    scenario: str, inputs: dict, run: dict, mode: str = "stub", *, config: dict | None = None, contract=None
+    scenario: str, inputs: dict, run: dict, mode: str = "stub", *, config: dict | None = None, contract: RoleContract
 ) -> tuple[WorkflowObservation, dict[str, dict]]:
     check_provenance(run)
     require(run.get("status") == "success", "n8n runtime did not succeed")
@@ -73,7 +73,6 @@ def observe_execution(
         "Missing logical definition revision",
     )
     trace = final["trace"]
-    contract = contract_for(scenario) if contract is None else contract
     require(len(trace) == len(contract["roles"]), "Wrong number of logical operation events")
     events = {}
     for event in trace:
@@ -81,15 +80,9 @@ def observe_execution(
         sid = event.get("step_id")
         require(isinstance(sid, str) and sid not in events, "Repeated or missing logical occurrence")
         events[sid] = event
-    if config is not None:
-        roles = bind_roles(scenario, config, contract)
-    else:
-        require(scenario in GRAPHLESS_RECORD_SCENARIOS, "Submitted graph required for occurrence acceptance")
-        roles = {}
-        for role, obligation in contract["roles"].items():
-            matching = [sid for sid, event in events.items() if event.get("operation") == obligation["operation"]]
-            require(len(matching) == 1, "Missing or duplicate logical occurrence")
-            roles[role] = matching[0]
+    require(config is not None, "Submitted graph required for occurrence acceptance")
+    assert config is not None
+    roles = bind_roles(scenario, config, contract)
     equal(set(events), set(roles.values()), "Missing or extra logical occurrence")
     obligations = {roles[role]: value for role, value in contract["roles"].items()}
     for sid, event in events.items():
@@ -140,10 +133,10 @@ def observe_execution(
 
 
 def check_operation_order(
-    scenario: str, inputs: dict, records: dict[str, dict], roles: dict[str, str], contract=None
+    scenario: str, inputs: dict, records: dict[str, dict], roles: dict[str, str], contract: RoleContract
 ) -> None:
     """Check every independent role edge using native execution timing."""
-    for first, second in (contract_for(scenario) if contract is None else contract)["edges"]:
+    for first, second in contract["edges"]:
         ordered(records[roles[first]], records[roles[second]], roles[first], roles[second])
 
 
@@ -263,7 +256,7 @@ def check_graph_evidence(config: dict, inputs: dict, run: dict, observation: Wor
     )
 
 
-def check_rejection(run: dict, case: dict, config: dict, contract=None) -> None:
+def check_rejection(run: dict, case: dict, config: dict, contract: RoleContract) -> None:
     check_provenance(run)
     require(run.get("status") == "error", "Invalid input was accepted or failed before execution")
     require(not run.get("result_node_present"), "Invalid input produced a successful Result")

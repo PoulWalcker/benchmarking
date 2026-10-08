@@ -7,34 +7,32 @@ import tempfile
 import unittest
 
 from sapi_config_lab.author.agent import audit_stderr
+from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.generate import summarize_trials
 from sapi_config_lab.coordinate.packages import stage_tasks
-from sapi_config_lab.coordinate.scenarios import DEFAULT_SCENARIOS as SCENARIOS
 from sapi_config_lab.paths import workspace_root
 
 
 class GenerationTests(unittest.TestCase):
+    def setUp(self):
+        self.root = workspace_root()
+        self.benchmarks = select_benchmarks(self.root / "benchmarks")
+
     def test_replay_packages_preserve_exact_selected_bytes_and_reject_bad_selection(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             submissions = {}
-            for scenario in SCENARIOS:
+            for benchmark in self.benchmarks:
+                scenario = benchmark.name
                 path = root / (scenario + ".yaml")
                 path.write_bytes(b"# authored bytes\r\nworkflow: {}\r\n")
                 submissions[scenario] = {"path": path, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
-            stage_tasks(root / "tasks", mode="replay", submissions=submissions)
+            stage_tasks(
+                root / "tasks", root=self.root, benchmarks=self.benchmarks, mode="replay", submissions=submissions
+            )
             for scenario, item in submissions.items():
                 self.assertEqual(
-                    (
-                        root
-                        / "tasks"
-                        / scenario
-                        / (
-                            "solution/config.yaml"
-                            if SCENARIOS[scenario].benchmark is not None
-                            else "environment/base.yaml"
-                        )
-                    ).read_bytes(),
+                    (root / "tasks" / scenario / "solution/config.yaml").read_bytes(),
                     item["path"].read_bytes(),
                 )
             for selected in (
@@ -43,35 +41,30 @@ class GenerationTests(unittest.TestCase):
                 {**submissions, "invoice-total": {"path": submissions["invoice-total"]["path"], "sha256": "0" * 64}},
             ):
                 with self.assertRaises(ValueError):
-                    stage_tasks(root / "invalid", mode="replay", submissions=selected)
+                    stage_tasks(
+                        root / "invalid",
+                        root=self.root,
+                        benchmarks=self.benchmarks,
+                        mode="replay",
+                        submissions=selected,
+                    )
                 self.assertFalse((root / "invalid").exists())
 
     def test_packages_have_no_solutions_or_reference_configs(self):
         with tempfile.TemporaryDirectory() as directory:
             tasks = Path(directory) / "tasks"
-            hashes = stage_tasks(tasks, mode="generation", image="test-n8n:fixed")
+            hashes = stage_tasks(tasks, root=self.root, benchmarks=self.benchmarks, mode="generation")
             self.assertEqual(set(hashes), {"invoice-total"})
             for task in tasks.iterdir():
                 self.assertFalse((task / "solution").exists())
-                expected_catalogs = (
-                    [task / "environment/payload/bindings.yaml", task / "tests/payload/bindings.yaml"]
-                    if (task / "tests/benchmark.json").exists()
-                    else [task / "tests/bindings.yaml"]
-                )
+                expected_catalogs = [task / "environment/payload/bindings.yaml", task / "tests/payload/bindings.yaml"]
                 self.assertEqual(sorted(task.rglob("*.yaml")), sorted(expected_catalogs))
                 prompt = (task / "instruction.md").read_text()
                 for config in (workspace_root() / "benchmarks").glob("*/config.yaml"):
                     self.assertNotIn(config.read_text().strip(), prompt)
                 self.assertNotIn((workspace_root() / "verification/verify.py").read_text(), prompt)
                 self.assertEqual(
-                    (
-                        task
-                        / (
-                            "tests/core/verification/verify.py"
-                            if (task / "tests/benchmark.json").exists()
-                            else "tests/verify.py"
-                        )
-                    ).read_bytes(),
+                    (task / "tests/core/verification/verify.py").read_bytes(),
                     (workspace_root() / "verification/verify.py").read_bytes(),
                 )
 

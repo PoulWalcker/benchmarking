@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 from sapi_config_lab.contracts import RunBinding
 from sapi_config_lab.coordinate import benchmark_worker as worker
+from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.paths import workspace_root
 
@@ -21,7 +22,9 @@ class BenchmarkWorkerTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
-        stage_tasks(self.root / "tasks", scenarios=("checkout-recovery",))
+        stage_tasks(
+            self.root / "tasks", root=ROOT, benchmarks=select_benchmarks(ROOT / "benchmarks", ("checkout-recovery",))
+        )
         shutil.copytree(self.root / "tasks/checkout-recovery/tests", self.root / "tests")
         (self.root / "submission").mkdir()
         self.submission = self.root / "submission/config.yaml"
@@ -50,7 +53,7 @@ class BenchmarkWorkerTests(unittest.TestCase):
             self.assertEqual(kwargs["runner"].keywords["deadline_at"], 1234)
             self.assertEqual(kwargs["runner"].keywords["operation_url"], "http://world/tools")
             directory = evidence / "cases/workflow"
-            directory.mkdir(parents=True)
+            directory.mkdir(parents=True, exist_ok=True)
             (directory / "case.json").write_text(json.dumps({"status": "success", "output": {}}))
 
         def snapshot(context):
@@ -101,3 +104,10 @@ class BenchmarkWorkerTests(unittest.TestCase):
         self.assertFalse(worker.admit(self.metadata, root, self.submission, options)["passed"])
         self.submission.unlink()
         self.assertFalse(worker.admit(self.metadata, root, self.submission, self.metadata["options"])["passed"])
+
+    def test_declared_reward_is_projected_without_inventing_a_zero(self):
+        self.invoke(reward=0.732)
+        self.assertEqual((self.output / "reward.txt").read_text(), "0.732\n")
+        (self.output / "reward.txt").unlink()
+        self.invoke(reward=None)
+        self.assertFalse((self.output / "reward.txt").exists())

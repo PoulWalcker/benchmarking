@@ -9,8 +9,9 @@ import unittest
 
 from sapi_config_lab.evaluate import autowfbench
 from sapi_config_lab.paths import workspace_root
+from tests.support.invoice import card as invoice_card
 from tests.support.rubric import CARD as SAMPLE_CARD
-from verification import rubric, rubric_cards
+from verification import rubric
 from verification.rubric import (
     Criterion,
     JudgeReply,
@@ -20,7 +21,6 @@ from verification.rubric import (
     RunFacts,
     score,
 )
-from verification.rubric_cards import card_for
 
 ANCHORS = {"yes": "a", "maybe": "b", "no": "c"}
 
@@ -218,7 +218,6 @@ class SurfaceTests(unittest.TestCase):
                     "typing",
                 },
             ),
-            (rubric_cards, {"__future__", "json", "typing", ".contracts", "contracts", ".rubric", "rubric"}),
         ):
             with self.subTest(module=module.__name__):
                 self.assertEqual(_imported_modules(module), allowed)
@@ -259,8 +258,8 @@ class RewardInvariantTests(unittest.TestCase):
             score(SAMPLE_CARD, sample_facts(), sample_judge(actionability="maybe")),
             score(SAMPLE_CARD, sample_facts(), RecordedJudge({})),
             score(SAMPLE_CARD, sample_facts(execution_pass=False), sample_judge()),
-            score(card_for("invoice-total"), RunFacts(True, {"accepted": True})),
-            score(card_for("invoice-total"), RunFacts(True, {"accepted": False})),
+            score(invoice_card(), RunFacts(True, {"accepted": True})),
+            score(invoice_card(), RunFacts(True, {"accepted": False})),
         ]
         # Matching "reward" and "rewards" by exact name let `harbor_reward` or
         # `reward_0_1` walk past, so every key naming a reward at all is listed.
@@ -276,7 +275,7 @@ class RewardInvariantTests(unittest.TestCase):
 
     def test_binary_cards_keep_the_existing_pass_fail_behaviour(self):
         for scenario in ("invoice-total",):
-            card = card_for(scenario)
+            card = invoice_card()
             self.assertFalse(card.needs_judge)
             accepted = score(card, RunFacts(execution_pass=True, checks={"accepted": True}))
             rejected = score(card, RunFacts(execution_pass=True, checks={"accepted": False}))
@@ -305,7 +304,7 @@ class EveryKeyTests(unittest.TestCase):
 class DispatchTests(unittest.TestCase):
     def test_a_deterministic_card_never_touches_a_judge_that_was_passed(self):
         judge = RecordedJudge({"usefulness": "yes"})
-        document = score(card_for("invoice-total"), RunFacts(True, {"accepted": True}), judge)
+        document = score(invoice_card(), RunFacts(True, {"accepted": True}), judge)
         self.assertEqual(judge.requests, [])
         self.assertIsNone(document["judge"])
         self.assertIsNone(document["judge_error"])
@@ -459,7 +458,7 @@ class ImmutabilityTests(unittest.TestCase):
         prose["verification"] = "leaked"
         refs["judged"].append("extra")
         refs["routing"] = ("extra",)
-        self.assertEqual(score(card_for("invoice-total"), facts)["score_0_10"], 10.0)
+        self.assertEqual(score(invoice_card(), facts)["score_0_10"], 10.0)
         self.assertEqual(dict(facts.prose), {"candidate": "draft"})
         self.assertEqual(dict(facts.refs), {"judged": ("candidate-final",)})
 
@@ -494,12 +493,12 @@ class ImmutabilityTests(unittest.TestCase):
     def test_a_card_is_read_from_scenario_data_and_cannot_be_altered_in_process(self):
         # A card held in a mutable registry could be swapped for every later run; one read from
         # the scenario's rubric.json into a frozen dataclass cannot.
-        card = card_for("invoice-total")
+        card = invoice_card()
         with self.assertRaises(AttributeError):
             card.id = "evil"  # type: ignore[misc]
         with self.assertRaises(TypeError):
             card.answer_values["yes"] = 0.0  # type: ignore[index]
-        self.assertEqual(card_for("invoice-total").digest(), card.digest())
+        self.assertEqual(invoice_card().digest(), card.digest())
         self.assertEqual(CARDS, CARDED)
 
 
@@ -594,13 +593,13 @@ class AnswerValueTests(unittest.TestCase):
             {"yes": True, "maybe": 0.33, "no": 0.0},
             {"yes": "1", "maybe": 0.33, "no": 0.0},
         ):
-            card = RubricCard("t", "1.0.0", "local", card_for("invoice-total").criteria, answer_values=values)
+            card = RubricCard("t", "1.0.0", "local", invoice_card().criteria, answer_values=values)
             with self.subTest(values=values), self.assertRaisesRegex(RubricError, "canonical answer values"):
                 score(card, RunFacts(True, {"accepted": True}))
 
     def test_a_card_stating_the_canonical_values_as_integers_is_accepted(self):
         card = RubricCard(
-            "t", "1.0.0", "local", card_for("invoice-total").criteria, answer_values={"yes": 1, "maybe": 0.33, "no": 0}
+            "t", "1.0.0", "local", invoice_card().criteria, answer_values={"yes": 1, "maybe": 0.33, "no": 0}
         )
         self.assertEqual(score(card, RunFacts(True, {"accepted": True}))["score_0_10"], 10.0)
 
@@ -624,7 +623,7 @@ class ValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(RubricError, "Missing deterministic check: second_check"):
             score(SAMPLE_CARD, sample_facts(checks={"first_check": True, "third_check": True}))
         with self.assertRaisesRegex(RubricError, "Non-boolean deterministic check"):
-            score(card_for("invoice-total"), RunFacts(True, {"accepted": "yes"}))
+            score(invoice_card(), RunFacts(True, {"accepted": "yes"}))
 
     def test_unusable_cards_and_facts_are_rejected_before_scoring(self):
         anchors = {"yes": "a", "maybe": "b", "no": "c"}
@@ -651,7 +650,7 @@ class ValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(RubricError, "sum above zero"):
             score(RubricCard("t", "1.0.0", "local", ()), RunFacts(True, {}))
         with self.assertRaisesRegex(RubricError, "execution_pass must be a boolean"):
-            score(card_for("invoice-total"), RunFacts(1, {"accepted": True}))
+            score(invoice_card(), RunFacts(1, {"accepted": True}))
 
     def test_a_weight_of_the_wrong_type_is_a_rubric_error_not_a_type_error(self):
         # Summing the weights before type-checking them raised TypeError out of
@@ -670,12 +669,6 @@ class ValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(RubricError, "honesty lacks: environment"):
             score(SAMPLE_CARD, sample_facts(prose={"candidate": "d"}), judge)
         self.assertEqual(judge.requests, [])
-
-    def test_an_unknown_scenario_has_no_card(self):
-        # An unknown name has no fallback card.
-        for scenario in ("not-a-scenario",):
-            with self.subTest(scenario=scenario), self.assertRaisesRegex(RubricError, "No rubric card"):
-                card_for(scenario)
 
 
 def _every_reason(document):
@@ -953,7 +946,7 @@ class ArithmeticTests(unittest.TestCase):
             "signed",
             "1.0.0",
             "local",
-            card_for("invoice-total").criteria,
+            invoice_card().criteria,
             answer_values={"yes": 1.0, "maybe": 0.33, "no": -0.0},
         )
         document = score(card, RunFacts(True, {"accepted": False}))
@@ -1012,7 +1005,7 @@ class ArithmeticTests(unittest.TestCase):
     def test_every_card_weighs_ten_with_a_deterministic_majority(self):
         """Ten points per card, and no card leaves the majority to a judge."""
         for scenario in sorted(CARDS):
-            card = card_for(scenario)
+            card = invoice_card()
             with self.subTest(scenario=scenario):
                 self.assertEqual(card.id, scenario)
                 total = sum(criterion.weight for criterion in card.criteria)

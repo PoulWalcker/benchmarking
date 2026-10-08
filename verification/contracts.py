@@ -18,16 +18,6 @@ class WorkflowObservation:
     roles: dict[str, str]
 
 
-def scenario_file(scenario: str, name: str) -> Path | None:
-    """A scenario-owned evaluation file: packaged beside this verifier, else in its checkout's benchmark directory."""
-    here = Path(__file__).resolve().parent
-    packaged = here / "evaluation" / scenario / name
-    if packaged.is_file():
-        return packaged
-    found = list((here.parent / "benchmarks").glob(f"[0-9][0-9]-{scenario}/evaluation/{name}"))
-    return found[0] if len(found) == 1 else None
-
-
 class Rejected(AssertionError):
     """A runtime result does not satisfy the independently stated contract; `code` is stable where one is known."""
 

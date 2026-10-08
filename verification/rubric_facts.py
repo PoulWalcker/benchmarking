@@ -1,7 +1,6 @@
 """Run facts for the rubric: the seam between acceptance and `rubric.py`; never decides acceptance.
 
-A named check calls an obligation `business.py` or `scenario_business.py` already
-states and records whether it held, so a check cannot drift from acceptance. The
+A named check calls the explicitly supplied independent obligation and records whether it held. The
 protected narrative goes under "verification", which `rubric._judge_view` never forwards.
 """
 
@@ -11,12 +10,10 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING or __package__:
     from .contracts import Rejected, WorkflowObservation
-    from .rubric import SCHEMA, Judge, RubricCard, RubricError, RunFacts, digest, score
-    from .rubric_cards import card_for
+    from .rubric import SCHEMA, Judge, RubricCard, RunFacts, digest, score
 else:
     from contracts import Rejected, WorkflowObservation
-    from rubric import SCHEMA, Judge, RubricCard, RubricError, RunFacts, digest, score
-    from rubric_cards import card_for
+    from rubric import SCHEMA, Judge, RubricCard, RunFacts, digest, score
 
 Document = dict[str, Any]
 
@@ -28,21 +25,11 @@ _NO_RUN = "Not scored: no executed case produced the named checks"
 _REJECTIONS = (Rejected, KeyError, TypeError, IndexError)
 
 
-def evaluator_for(scenario: str):
-    if TYPE_CHECKING or __package__:
-        from .fixture_evaluators import evaluator_for as legacy
-    else:
-        from fixture_evaluators import evaluator_for as legacy
-    return legacy(scenario)
-
-
 def observe(
-    scenario: str, inputs: dict[str, Any], observation: WorkflowObservation, *, case: dict | None = None, evaluator=None
+    scenario: str, inputs: dict[str, Any], observation: WorkflowObservation, *, case: dict | None = None, evaluator
 ) -> Document:
     """Facts for one executed case; never raises, and reports no facts rather than scoring a card short."""
     try:
-        if evaluator is None:
-            evaluator = evaluator_for(scenario)
         obligations = evaluator.obligations(inputs, observation, case=case) if evaluator.obligations else {}
         checks = {name: _held(obligation) for name, obligation in obligations.items()}
         prose = evaluator.prose(inputs, observation, checks) if evaluator.prose else {}
@@ -58,12 +45,10 @@ def evaluate(
     accepted: bool,
     execution_pass: bool,
     judge: Judge | None = None,
-    card: RubricCard | None = None,
+    card: RubricCard | None,
 ) -> Document | None:
     """This submission's card scored, or why not; None for a scenario with no card. Never raises."""
-    try:
-        card = card_for(scenario) if card is None else card
-    except RubricError:
+    if card is None:
         return None
     checks: dict[str, bool] = {"accepted": bool(accepted)}
     try:

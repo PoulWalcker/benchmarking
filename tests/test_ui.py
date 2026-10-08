@@ -14,6 +14,13 @@ from sapi_config_lab.execute.host import HostConfig
 from sapi_config_lab.paths import workspace_root
 
 
+def trusted_context():
+    from sapi_config_lab.coordinate.compilation import CompilationContext
+
+    root = workspace_root() / "benchmarks/01-invoice-total"
+    return CompilationContext(root / "bindings.yaml", (root / "operations.js").read_text())
+
+
 class FakeN8n:
     identity = "existing-container"
 
@@ -76,6 +83,8 @@ class UiTests(unittest.TestCase):
                         "open",
                         str(workspace_root() / "tests/support/graphs/refinement.yaml"),
                         "--live",
+                        "--scenario",
+                        "invoice-total",
                         "--state-dir",
                         temporary,
                     ]
@@ -88,8 +97,8 @@ class UiTests(unittest.TestCase):
         source = workspace_root() / "tests/support/graphs/guarded.yaml"
         with tempfile.TemporaryDirectory() as temporary:
             state = Path(temporary)
-            first = open_workflow(source, state, adapter=adapter)
-            again = open_workflow(source, state, adapter=adapter)
+            first = open_workflow(source, state, adapter=adapter, context=trusted_context())
+            again = open_workflow(source, state, adapter=adapter, context=trusted_context())
             self.assertEqual(first["workflow_id"], again["workflow_id"])
             self.assertEqual(again["status"], "reused")
             self.assertEqual(adapter.imports, 1)
@@ -98,19 +107,19 @@ class UiTests(unittest.TestCase):
             self.assertFalse(list(state.rglob("bridge-audit.jsonl")))
             adapter.rows[first["workflow_id"]]["nodes"][0]["position"] = [999, 999]
             changed = copy.deepcopy(adapter.rows)
-            edited = open_workflow(source, state, adapter=adapter)
+            edited = open_workflow(source, state, adapter=adapter, context=trusted_context())
             self.assertEqual(edited["status"], "reused_edited")
             self.assertEqual(edited["workflow_url"], first["workflow_url"])
             self.assertFalse(edited["matches_prepared"])
             self.assertEqual(adapter.imports, 1)
             self.assertEqual(adapter.rows, changed)
-            fresh = open_workflow(source, state, adapter=adapter, new_copy=True)
+            fresh = open_workflow(source, state, adapter=adapter, new_copy=True, context=trusted_context())
             self.assertNotEqual(first["workflow_id"], fresh["workflow_id"])
             self.assertEqual(adapter.rows[first["workflow_id"]], changed[first["workflow_id"]])
             self.assertEqual(adapter.rows["protected"], original["protected"])
             del adapter.rows[fresh["workflow_id"]]
             with self.assertRaisesRegex(ValueError, "was removed"):
-                open_workflow(source, state, adapter=adapter)
+                open_workflow(source, state, adapter=adapter, context=trusted_context())
             self.assertEqual(adapter.imports, 2)
 
     def test_failed_import_cannot_be_silently_retried(self):
@@ -120,9 +129,9 @@ class UiTests(unittest.TestCase):
             source = workspace_root() / "benchmarks/01-invoice-total/config.yaml"
             with patch.object(adapter, "import_new", side_effect=ValueError("unknown import outcome")):
                 with self.assertRaisesRegex(ValueError, "unknown import"):
-                    open_workflow(source, state, adapter=adapter)
+                    open_workflow(source, state, adapter=adapter, context=trusted_context())
             with self.assertRaisesRegex(ValueError, "Previous import outcome is unknown"):
-                open_workflow(source, state, adapter=adapter)
+                open_workflow(source, state, adapter=adapter, context=trusted_context())
             self.assertEqual(adapter.imports, 0)
 
     def test_imports_retained_local_graph_inactive_and_skips_remote_world(self):
@@ -155,7 +164,18 @@ class UiTests(unittest.TestCase):
                 contextlib.redirect_stdout(io.StringIO()),
             ):
                 for _ in range(2):
-                    main(["open", str(source), "--live", "--no-browser", "--state-dir", str(state)])
+                    main(
+                        [
+                            "open",
+                            str(source),
+                            "--scenario",
+                            "invoice-total",
+                            "--live",
+                            "--no-browser",
+                            "--state-dir",
+                            str(state),
+                        ]
+                    )
             self.assertEqual(adapter.imports, 2)
             self.assertEqual(bridge.call_count, 2)
             self.assertEqual(bridge.call_args.kwargs["max_attempts"], 3)
@@ -205,7 +225,7 @@ class UiTests(unittest.TestCase):
         source = workspace_root() / "tests/support/graphs/guarded.yaml"
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "run"
-            prepared = prepare(source, output, host=HostConfig())
+            prepared = prepare(source, output, host=HostConfig(), context=trusted_context())
             self.assertEqual(prepared["max_attempts"], 4)
             self.assertEqual(
                 prepared["operations"],
@@ -225,7 +245,7 @@ class UiTests(unittest.TestCase):
             self.assertEqual(urls, {"http://host.docker.internal:18766/v1/agency/execute"})
             self.assertFalse((output / "bridge-audit.jsonl").exists())
             with self.assertRaises(FileExistsError):
-                prepare(source, output, host=HostConfig())
+                prepare(source, output, host=HostConfig(), context=trusted_context())
 
     def test_hosted_scenarios_are_refused_before_compilation(self):
         source = workspace_root() / "benchmarks/10-checkout-recovery/config.yaml"
@@ -241,7 +261,7 @@ class UiTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "run"
-            prepare(workspace_root() / "tests/support/graphs/guarded.yaml", output)
+            prepare(workspace_root() / "tests/support/graphs/guarded.yaml", output, context=trusted_context())
             with self.assertRaisesRegex(ValueError, "cap"):
                 admit(output, max_attempts=5, seconds=600, model="gpt-6-astra")
             self.assertFalse((output / "budget.json").exists())

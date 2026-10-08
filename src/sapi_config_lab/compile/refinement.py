@@ -19,13 +19,14 @@ def compile_refinement(
     timeout: int,
     activation: str = "fixture",
     bound_deadline: bool = False,
-    operation_source: str | None = None,
+    *,
+    operation_source: str,
 ) -> tuple[Document, dict[str, str]]:
     """Unroll attempts with native early exit: no later copy runs after an accepted checkpoint."""
     workflow = config["workflow"]
     policy = config["execution"]["refinement"]
     maximum = policy["max_attempts"]
-    ops = (RESOURCES / "operations.js").read_text() if operation_source is None else operation_source
+    ops = operation_source
     check(isinstance(ops, str), "Trusted operation_source must be JavaScript text")
     helpers = ops + "\n" + (RESOURCES / "runtime-fragment.js").read_text()
     artifact: Document = {"nodes": [], "connections": {}}

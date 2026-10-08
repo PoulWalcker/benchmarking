@@ -3,8 +3,6 @@
 import os
 from pathlib import Path
 
-CATALOG = Path(__file__).resolve().parent / "bindings.yaml"
-
 
 def workspace_root() -> Path:
     """The checkout experiments read fixtures from: SAPI_LAB_ROOT, else the working directory or this source tree."""

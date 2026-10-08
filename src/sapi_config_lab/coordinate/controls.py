@@ -12,29 +12,17 @@ import subprocess
 import sys
 from typing import Any
 
-from sapi_config_lab.coordinate.evaluation import control_passed, hosted_evaluation
-from sapi_config_lab.coordinate.packages import job_seconds, verifier_bounds
+from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
+from sapi_config_lab.coordinate.evaluation import control_passed
 from sapi_config_lab.coordinate.provenance import host_environment
-from sapi_config_lab.coordinate.runs import Hosting, Run, progress, run_experiment
-from sapi_config_lab.coordinate.scenarios import SCENARIOS, select_scenarios
-from sapi_config_lab.execute.host import BUILD_TIMEOUT_SECONDS, LAB_IMAGE, run_logged
+from sapi_config_lab.coordinate.runs import Run, progress, run_experiment
+from sapi_config_lab.execute.host import LAB_IMAGE, run_logged
 from sapi_config_lab.execute.n8n import PINNED_N8N_VERSION
 from sapi_config_lab.paths import workspace_root
 
 ROOT = workspace_root()
 LOCAL_TESTS_SECONDS = 300
 TRANSPORT_SECONDS = 1800
-
-
-def suite_seconds(scenarios: tuple[str, ...]) -> int:
-    """Outer limit of the whole suite: its fixed steps plus the oracle and nop jobs."""
-    jobs = 2 * job_seconds(verifier_bounds(scenarios))
-    return LOCAL_TESTS_SECONDS + BUILD_TIMEOUT_SECONDS + TRANSPORT_SECONDS + jobs
-
-
-def simulated_hosting(scenarios: tuple[str, ...]) -> Hosting:
-    """Stub runtime calls and the simulated judge: a hosted control costs nothing."""
-    return Hosting("stub", hosted_evaluation(scenarios))
 
 
 def transport_probe(run: Run, *, skip_build: bool = False) -> dict:
@@ -79,10 +67,12 @@ def transport_probe(run: Run, *, skip_build: bool = False) -> dict:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report-dir", type=Path)
-    parser.add_argument("--scenario", action="append", dest="scenarios", choices=sorted(SCENARIOS))
+    parser.add_argument("--scenario", action="append", dest="scenarios")
     parser.add_argument("--skip-build", action="store_true", help="Reuse already built lab image (development only)")
     args = parser.parse_args(argv)
-    selected = tuple(select_scenarios(args.scenarios))
+    benchmarks = select_benchmarks(ROOT / "benchmarks", args.scenarios)
+    selected = tuple(item.name for item in benchmarks)
+    by_name = {item.name: item for item in benchmarks}
     output = args.report_dir or ROOT / "reports" / datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     report: dict[str, Any] = {
         "schema": "sapi-lab-harbor/v1",
@@ -118,15 +108,14 @@ def main(argv: list[str] | None = None) -> int:
         if not args.skip_build:
             run.use_image(LAB_IMAGE)
         progress(f"staging: {len(selected)} oracle task packages")
-        run.stage("oracle", selected)
-        hosting = simulated_hosting(selected)
+        run.stage("oracle", benchmarks)
         for agent in ("oracle", "nop"):
             progress(f"{agent}: {len(selected)} Harbor tasks through real n8n")
-            exit_code, trials = run.harbor(agent, run.tasks, agent, hosting=hosting)
+            exit_code, trials = run.harbor(agent, run.tasks, agent)
             passed = (
                 exit_code == 0
                 and sorted(t["task_name"] for t in trials) == sorted(selected)
-                and all(control_passed(agent, trial) for trial in trials)
+                and all(control_passed(agent, trial, by_name[trial["task_name"]]) for trial in trials)
             )
             report[agent] = {"passed": passed, "harbor_exit_code": exit_code, "trials": trials}
             progress(f"{agent}: {'passed' if passed else 'failed'}")

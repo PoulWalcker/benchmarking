@@ -9,8 +9,8 @@ import unittest
 from sapi_config_lab.contracts import CompileOptions, RunBinding
 from sapi_config_lab.coordinate.backend import N8nBackend
 from sapi_config_lab.execute.n8n import binding_environment
-from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.profile import Invalid, read, read_bindings
+from tests.support.invoice import CATALOG, OPERATION_SOURCE
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -75,9 +75,9 @@ class OperationTransportTests(unittest.TestCase):
         options = CompileOptions(operation_url="http://tools:123/tools")
         return cfg, {"inventory.inspect": binding}, options
 
-    def probe(self, responses, *, enabled=True):
+    def probe(self, responses, *, enabled=True, operation_source=OPERATION_SOURCE):
         cfg, catalog, options = self.generic_tool(enabled=enabled)
-        built = N8nBackend().compile(cfg, catalog, options)
+        built = N8nBackend(operation_source=operation_source).compile(cfg, catalog, options)
         process = subprocess.run(
             ["node", "-e", DRIVER],
             input=json.dumps({"document": built.document, "responses": responses}),
@@ -88,6 +88,32 @@ class OperationTransportTests(unittest.TestCase):
         self.assertEqual(process.returncode, 0, process.stderr)
         return json.loads(process.stdout)
 
+    def test_empty_operation_source_preserves_generic_envelope_schema_and_guard_checks(self):
+        response = {"ok": True, "value": {"status": "observed"}}
+        result = self.probe([response, {"ok": "true"}], operation_source="")
+        self.assertTrue(result["prepared"]["should_run"])
+        self.assertEqual(result["prepared"]["request"]["arguments"], {"query": "runtime fixture"})
+        self.assertIsNone(result["rows"][0]["error"])
+        self.assertEqual(result["rows"][0]["result"]["inputs"], {"query": "runtime fixture", "enabled": True})
+        self.assertIn("Invalid tool response", result["rows"][1]["error"])
+        skipped = self.probe([response], enabled=False, operation_source="")
+        self.assertFalse(skipped["prepared"]["should_run"])
+        self.assertIsNone(skipped["prepared"]["request"])
+        self.assertEqual(skipped["rows"][0]["result"]["statuses"], {"read": "skipped"})
+        cfg, catalog, options = self.generic_tool()
+        graph = N8nBackend(operation_source="").compile(cfg, catalog, options).document
+        invalid = DRIVER.replace("const prepared =", "initial.inputs.query = 42;\nconst prepared =", 1)
+        process = subprocess.run(
+            ["node", "-e", invalid],
+            input=json.dumps({"document": graph, "responses": []}),
+            text=True,
+            capture_output=True,
+            timeout=10,
+        )
+        self.assertNotEqual(process.returncode, 0)
+        self.assertIn("Schema violation at inputs.query", process.stderr)
+        self.assertNotIn("ReferenceError", process.stderr)
+
     def test_generic_script_tool_is_native_http_and_needs_explicit_connection(self):
         cfg = read(ROOT / "benchmarks/01-invoice-total/config.yaml")
         cfg["workflow"]["steps"] = [{"id": "read", "kind": "Script", "uses": "source.read", "with": {}}]
@@ -95,8 +121,10 @@ class OperationTransportTests(unittest.TestCase):
         cfg["workflow"]["output"] = {"ref": "steps.read"}
         bindings = read_bindings(ROOT / "benchmarks/10-checkout-recovery/bindings.yaml")
         with self.assertRaises(Invalid):
-            N8nBackend().compile(cfg, bindings, CompileOptions())
-        built = N8nBackend().compile(cfg, bindings, CompileOptions(operation_url="http://tools:123/tools"))
+            N8nBackend(operation_source=OPERATION_SOURCE).compile(cfg, bindings, CompileOptions())
+        built = N8nBackend(operation_source=OPERATION_SOURCE).compile(
+            cfg, bindings, CompileOptions(operation_url="http://tools:123/tools")
+        )
         http = [n for n in built.document["nodes"] if n["type"] == "n8n-nodes-base.httpRequest"]
         self.assertEqual(len(http), 1)
         self.assertEqual(http[0]["parameters"]["url"], "http://tools:123/tools")
@@ -110,8 +138,8 @@ class OperationTransportTests(unittest.TestCase):
         for name in ("benchmarks/01-invoice-total/config.yaml", "tests/support/graphs/refinement.yaml"):
             with self.subTest(config=name):
                 cfg = read(ROOT / name)
-                before = N8nBackend().compile(cfg, original, CompileOptions())
-                after = N8nBackend().compile(cfg, extended, CompileOptions())
+                before = N8nBackend(operation_source=OPERATION_SOURCE).compile(cfg, original, CompileOptions())
+                after = N8nBackend(operation_source=OPERATION_SOURCE).compile(cfg, extended, CompileOptions())
                 self.assertEqual(before.document, after.document)
                 self.assertEqual(before.mapping, after.mapping)
 
@@ -156,14 +184,14 @@ class OperationTransportTests(unittest.TestCase):
         self.assertEqual(result["rows"][0]["result"]["statuses"], {"read": "skipped"})
         self.assertEqual(result["rows"][0]["result"]["steps"], {})
         cfg, catalog, options = self.generic_tool(enabled=False)
-        graph = N8nBackend().compile(cfg, catalog, options).document
+        graph = N8nBackend(operation_source=OPERATION_SOURCE).compile(cfg, catalog, options).document
         guard = graph["connections"]["Guard read"]["main"]
         self.assertEqual([edge["node"] for edge in guard[0]], ["Tool read"])
         self.assertEqual([edge["node"] for edge in guard[1]], ["read [HTTP]"])
 
     def test_secrets_are_deployment_data_and_untrusted_urls_are_rejected(self):
         cfg, catalog, options = self.generic_tool()
-        compiled = N8nBackend().compile(cfg, catalog, options)
+        compiled = N8nBackend(operation_source=OPERATION_SOURCE).compile(cfg, catalog, options)
         graph = compiled.document
         http = next(node for node in graph["nodes"] if node["name"] == "Tool read")
         self.assertIn("$env.SAPI_OPERATION_TOKEN", json.dumps(http["parameters"]["headerParameters"]))
@@ -180,13 +208,17 @@ class OperationTransportTests(unittest.TestCase):
             "http://tools/#fragment",
         ):
             with self.subTest(url=url), self.assertRaises(Invalid):
-                N8nBackend().compile(cfg, catalog, CompileOptions(operation_url=url))
+                N8nBackend(operation_source=OPERATION_SOURCE).compile(cfg, catalog, CompileOptions(operation_url=url))
 
     def test_tools_do_not_acquire_scenario_specific_compiler_rules(self):
         cfg, catalog, options = self.generic_tool()
         alternate = copy.deepcopy(cfg)
         alternate["workflow"]["steps"][0]["uses"] = "arbitrary.read"
-        graph = N8nBackend().compile(alternate, {"arbitrary.read": catalog["inventory.inspect"]}, options).document
+        graph = (
+            N8nBackend(operation_source=OPERATION_SOURCE)
+            .compile(alternate, {"arbitrary.read": catalog["inventory.inspect"]}, options)
+            .document
+        )
         self.assertEqual(
             next(n for n in graph["nodes"] if n["name"] == "Tool read")["parameters"]["url"], options.operation_url
         )

@@ -13,15 +13,17 @@ from unittest.mock import patch
 from sapi_config_lab.benchmark import load_benchmark
 from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
 from sapi_config_lab.coordinate.backend import N8nBackend
+from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.cases import run_case
 from sapi_config_lab.coordinate.live import validate_packages
 from sapi_config_lab.coordinate.observe import observe
 from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.coordinate.replay import load_selection, select_submission
-from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.evidence import sha256
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import read_bindings
+from tests.support.invoice import cases as invoice_cases
+from tests.support.invoice import fixture
 from tests.support.native import SimulatedN8n
 from tests.test_selection import SOURCES, generation_run
 from verification import verify
@@ -38,24 +40,19 @@ class InvoicePackageTests(unittest.TestCase):
         self.hooks = load_entrypoints(self.benchmark, self.identity)
 
     def test_plan_is_exactly_the_frozen_fixture_and_probe_plan(self):
-        cases = json.loads((DIRECTORY / "cases.json").read_text())
-        legacy = verify.plan("invoice-total", DIRECTORY / "config.yaml", cases, deadline_budget=30)
-        with patch.object(verify, "evaluator_for", side_effect=AssertionError("legacy dispatch")):
+        case_data = json.loads((DIRECTORY / "cases.json").read_text())
+        legacy = verify.plan(
+            "invoice-total", DIRECTORY / "config.yaml", case_data, deadline_budget=30, fixture=fixture()
+        )
+        with patch.dict(sys.modules, {"verification.fixture_evaluators": None}):
             self.assertEqual(self.hooks.plan(DIRECTORY / "config.yaml", self.options), legacy)
         self.assertEqual(len(legacy["entries"]), 14)
-        self.assertEqual(
-            (DIRECTORY / "bindings.yaml").read_bytes(), (ROOT / "src/sapi_config_lab/bindings.yaml").read_bytes()
-        )
-
-    def test_full_catalog_keeps_its_existing_implementation_capabilities(self):
-        self.assertEqual(
-            (DIRECTORY / "operations.js").read_bytes(),
-            (ROOT / "src/sapi_config_lab/compile/operations.js").read_bytes(),
-        )
+        self.assertFalse((ROOT / "src/sapi_config_lab/bindings.yaml").exists())
+        self.assertFalse((ROOT / "src/sapi_config_lab/compile/operations.js").exists())
 
     def observed(self, root):
         backend = N8nBackend(operation_source=(DIRECTORY / "operations.js").read_text())
-        backend.execute = SimulatedN8n().execute
+        backend.execute = SimulatedN8n((DIRECTORY / "operations.js").read_text()).execute
         plan = self.hooks.plan(DIRECTORY / "config.yaml", self.options)
         observe(
             plan,
@@ -80,7 +77,7 @@ class InvoicePackageTests(unittest.TestCase):
     def test_full_flow_needs_no_provider_or_fixture_table_entry(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            with patch.object(verify, "evaluator_for", side_effect=AssertionError("legacy dispatch")):
+            with patch.dict(sys.modules, {"verification.fixture_evaluators": None}):
                 self.observed(root)
                 result = self.evaluate(root)
             self.assertIs(result["acceptance"], True)
@@ -128,7 +125,7 @@ class InvoicePackageTests(unittest.TestCase):
     def test_staged_runtime_imports_without_any_legacy_dispatch_or_host_modules(self):
         with tempfile.TemporaryDirectory() as directory:
             task = Path(directory) / "tasks/invoice-total"
-            stage_tasks(task.parent, scenarios=("invoice-total",))
+            stage_tasks(task.parent, root=ROOT, benchmarks=select_benchmarks(ROOT / "benchmarks", ("invoice-total",)))
             metadata = json.loads((task / "tests/benchmark.json").read_text())
             self.assertEqual(metadata["options"]["deadline_seconds"], 30)
             script = (
@@ -147,29 +144,36 @@ class InvoicePackageTests(unittest.TestCase):
             self.assertEqual((task / "solution/config.yaml").read_bytes(), (DIRECTORY / "config.yaml").read_bytes())
 
     def test_live_package_gate_accepts_native_layout_and_rejects_tampering(self):
-        scenario = SCENARIOS["invoice-total"]
+        scenario = self.benchmark
         selected = {
-            scenario.name: {"path": scenario.config, "sha256": sha256(scenario.config), "cases": scenario.cases()}
+            scenario.name: {
+                "path": scenario.reference.source,
+                "sha256": sha256(scenario.reference.source),
+                "cases": invoice_cases(),
+            }
         }
         for mode in ("oracle", "replay"):
             with tempfile.TemporaryDirectory() as directory:
                 tasks = Path(directory) / "tasks"
                 stage_tasks(
                     tasks,
-                    scenarios=(scenario.name,),
+                    root=ROOT,
+                    benchmarks=(scenario,),
                     mode=mode,
-                    submissions={scenario.name: {"path": scenario.config, "sha256": sha256(scenario.config)}}
+                    submissions={
+                        scenario.name: {"path": scenario.reference.source, "sha256": sha256(scenario.reference.source)}
+                    }
                     if mode == "replay"
                     else None,
-                    cases={scenario.name: scenario.cases()},
+                    cases={scenario.name: invoice_cases()},
                 )
-                validate_packages(tasks, selected, "legacy-image-does-not-enter-native-package")
+                validate_packages(tasks, selected, {scenario.name: scenario})
                 task = tasks / scenario.name
-                self.assertEqual(json.loads((task / "tests/cases.json").read_text()), {scenario.name: scenario.cases()})
+                self.assertEqual(json.loads((task / "tests/cases.json").read_text()), {scenario.name: invoice_cases()})
                 changed = task / "environment/Dockerfile"
                 changed.write_text(changed.read_text() + "\nRUN echo tampered\n")
                 with self.assertRaisesRegex(ValueError, "differs from current sources"):
-                    validate_packages(tasks, selected, "legacy-image-does-not-enter-native-package")
+                    validate_packages(tasks, selected, {scenario.name: scenario})
 
     def test_evaluator_identity_covers_generic_verifier_sources(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -197,10 +201,14 @@ class InvoicePackageTests(unittest.TestCase):
             root = Path(directory)
             report_path = generation_run(root, {"invoice-total": [("only", "2026-10-04T10:00:00Z", True)]})
             (root / "task-packages").rename(root / "synthetic-packages")
-            cases = SCENARIOS["invoice-total"].cases()
+            cases = invoice_cases()
             cases["positive"][0]["inputs"]["invoices"][0]["id"] = "PRIVATE-FRESH-INVOICE"
             prompts = stage_tasks(
-                root / "task-packages", mode="generation", scenarios=("invoice-total",), cases={"invoice-total": cases}
+                root / "task-packages",
+                mode="generation",
+                root=ROOT,
+                benchmarks=select_benchmarks(ROOT / "benchmarks", ("invoice-total",)),
+                cases={"invoice-total": cases},
             )
             task = root / "task-packages/invoice-total"
             trial = root / "jobs/generated-1/only"
@@ -227,11 +235,12 @@ class InvoicePackageTests(unittest.TestCase):
                 stage_tasks(
                     replay,
                     mode="replay",
-                    scenarios=("invoice-total",),
+                    root=ROOT,
+                    benchmarks=select_benchmarks(ROOT / "benchmarks", ("invoice-total",)),
                     submissions=loaded,
                     cases={"invoice-total": loaded["invoice-total"]["cases"]},
                 )
-                validate_packages(replay, loaded, "legacy-image-not-used")
+                validate_packages(replay, loaded, {self.benchmark.name: self.benchmark})
                 case_file = task / "tests/cases.json"
                 case_file.write_bytes(case_file.read_bytes() + b"\n")
                 with self.assertRaisesRegex(ValueError, "Private fixture hash mismatch"):

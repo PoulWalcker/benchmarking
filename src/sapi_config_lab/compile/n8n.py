@@ -64,7 +64,7 @@ def compile_n8n(
     operation_url: str | None = None,
     activation: str = "fixture",
     bound_deadline: bool = False,
-    operation_source: str | None = None,
+    operation_source: str,
 ) -> tuple[Document, dict[str, str]]:
     """Compile the closed DAG profile to n8n without executing it; HTTP timeouts are capped at the deadline."""
     check(llm_mode in ("stub", "live"), "llm_mode must be stub or live")
@@ -88,7 +88,7 @@ def compile_n8n(
         if not parsed.path.rstrip("/"):
             endpoint += "/v1/agency/execute"
     order, deps = validate(cfg, bindings)
-    ops = (RESOURCES / "operations.js").read_text() if operation_source is None else operation_source
+    ops = operation_source
     check(isinstance(ops, str), "Trusted operation_source must be JavaScript text")
     # The trusted table is the local capability set; a catalog declaration supplies no executable code.
     local_operations = set(re.findall(r"^  '([^']+)':", ops, re.MULTILINE))

@@ -12,7 +12,7 @@ import tempfile
 import unittest
 import unittest.mock
 
-from sapi_config_lab.coordinate.scenarios import SCENARIOS
+from sapi_config_lab.contracts import OutputArtifact
 from sapi_config_lab.evaluate.autowfbench import (
     build_run_log,
     digest,
@@ -78,7 +78,7 @@ class PinnedEvaluationTests(unittest.TestCase):
             SOURCE,
             "production-checkout-recovery",
             judge_model="calibration-only-model",
-            artifact=SCENARIOS["checkout-recovery"].artifact,
+            artifact=OutputArtifact("incident_summary", "incident-summary.md"),
         )
 
     def run_log(self, patch="correct", *, narrative="Observed checkout results", artifact=True):

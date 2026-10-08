@@ -7,10 +7,15 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from sapi_config_lab.profile import read
+from tests.support.invoice import DIRECTORY
+from tests.support.invoice import fixture as invoice_fixture
 from verification.contracts import Recorded, Rejected
-from verification.fixture_evaluators import check_business_result
-from verification.n8n_provenance import check_rejection, observe_execution
-from verification.verify import check_execution, corruption_checks, evaluator_identity
+from verification.n8n_provenance import check_rejection as selected_rejection
+from verification.n8n_provenance import observe_execution as selected_observation
+from verification.verify import check_execution as selected_execution
+from verification.verify import corruption_checks as selected_corruption
+from verification.verify import evaluator_identity
 
 SPEC = "06ddd3333109cea8a2cb3071609070d7a3c0d3ff"
 
@@ -24,7 +29,11 @@ def invoice_record():
         ("report", "invoices.report", output),
     ]
     envelope = {"inputs": inputs, "steps": {}, "statuses": {}, "events": {}}
-    runs, mapping = {}, {}
+    runs = {
+        "Demo start": [{"startTime": -20, "executionTime": 1, "data": {"main": [[{"json": {}}]]}}],
+        "Fixture": [{"startTime": -10, "executionTime": 1, "data": {"main": [[{"json": copy.deepcopy(envelope)}]]}}],
+    }
+    mapping = {}
     for index, (sid, operation, value) in enumerate(operations):
         envelope["steps"][sid] = value
         envelope["statuses"][sid] = "completed"
@@ -36,7 +45,18 @@ def invoice_record():
         }
         mapping[sid] = sid
         runs[sid] = [
-            {"startTime": index * 10, "executionTime": 1, "data": {"main": [[{"json": copy.deepcopy(envelope)}]]}}
+            {
+                "startTime": index * 10,
+                "executionTime": 1,
+                "source": [
+                    {
+                        "previousNode": "Fixture" if index == 0 else operations[index - 1][0],
+                        "previousNodeOutput": 0,
+                        "previousNodeRun": 0,
+                    }
+                ],
+                "data": {"main": [[{"json": copy.deepcopy(envelope)}]]},
+            }
         ]
     final = {
         "output": output,
@@ -47,7 +67,14 @@ def invoice_record():
         "spec_revision": SPEC,
         "llm_mode": "live",
     }
-    runs["Result"] = [{"startTime": 40, "executionTime": 1, "data": {"main": [[{"json": copy.deepcopy(final)}]]}}]
+    runs["Result"] = [
+        {
+            "startTime": 40,
+            "executionTime": 1,
+            "source": [{"previousNode": "report", "previousNodeOutput": 0, "previousNodeRun": 0}],
+            "data": {"main": [[{"json": copy.deepcopy(final)}]]},
+        }
+    ]
     run = {
         "report_schema": "sapi-lab-execution/v1",
         "status": "success",
@@ -73,6 +100,35 @@ def invoice_record():
     return inputs, run
 
 
+def submitted(inputs):
+    config = read(DIRECTORY / "config.yaml")
+    config["workflow"]["inputs"] = inputs
+    return config
+
+
+def observe_execution(scenario, inputs, run, mode):
+    return selected_observation(
+        scenario, inputs, run, mode, config=submitted(inputs), contract=invoice_fixture().contract
+    )
+
+
+def check_execution(scenario, inputs, run, mode):
+    return selected_execution(scenario, inputs, run, mode, config=submitted(inputs), fixture=invoice_fixture())
+
+
+def corruption_checks(scenario, inputs, run, mode):
+    return selected_corruption(scenario, inputs, run, mode, config=submitted(inputs), fixture=invoice_fixture())
+
+
+def check_business_result(scenario, inputs, observation, mode):
+    invoice_fixture().business(inputs, observation, mode)
+    return {"output_verified": True}
+
+
+def check_rejection(run, case, config):
+    return selected_rejection(run, case, config, invoice_fixture().contract)
+
+
 class VerificationContractTests(unittest.TestCase):
     def test_business_result_does_not_require_an_engine(self):
         inputs, run = invoice_record()
@@ -89,14 +145,14 @@ class VerificationContractTests(unittest.TestCase):
         run["result"]["output"] = copy.deepcopy(wrong)
         run["output"] = copy.deepcopy(wrong)
         run["run_data"]["Result"][0]["data"]["main"][0][0]["json"]["output"] = copy.deepcopy(wrong)
-        with self.assertRaisesRegex(Rejected, "Wrong invoice result") as rejected:
+        with self.assertRaisesRegex(Rejected, "Wrong invoice result|Result differs") as rejected:
             check_execution("invoice-total", inputs, run, "live")
         with tempfile.TemporaryDirectory() as directory:
             evidence = Path(directory) / "evidence/cases/original/case.json"
             evidence.parent.mkdir(parents=True)
             evidence.write_text(json.dumps(run))
             before = evidence.read_bytes()
-            identity = evaluator_identity("invoice-total")
+            identity = evaluator_identity(invoice_fixture())
             files = {"original": {"case.json": hashlib.sha256(before).hexdigest()}}
             recorded = Recorded(Path(directory) / "evidence", Path(directory) / "evaluation", files, identity)
             recorded.accept("original", False, str(rejected.exception))

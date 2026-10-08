@@ -6,6 +6,8 @@ import unittest
 
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import Invalid, read, read_bindings, validate
+from tests.support.invoice import CATALOG
+from tests.support.invoice import fixture as invoice_fixture
 from verification.contracts import Rejected, equal
 from verification.fixture import FixtureEvaluator
 from verification.verify import invalid_configs
@@ -19,7 +21,7 @@ class OccurrenceTests(unittest.TestCase):
         config["workflow"]["steps"].reverse()
         bad = dict(invalid_configs(config))["cycle"]
         with self.assertRaisesRegex(Invalid, "Cyclic|cycle|Cycle"):
-            validate(bad, read_bindings(ROOT / "src/sapi_config_lab/bindings.yaml"))
+            validate(bad, read_bindings(CATALOG))
 
     def test_role_binding_accepts_renamed_ids_but_rejects_wrong_input_origin(self):
         from verification.roles import bind_roles
@@ -27,10 +29,13 @@ class OccurrenceTests(unittest.TestCase):
         config = read(ROOT / "benchmarks/01-invoice-total/config.yaml")
         config["workflow"]["steps"].reverse()
         config = _rename(config, {"validate": "alpha", "total": "beta", "report": "gamma"})
-        self.assertEqual(bind_roles("invoice-total", config), {"validate": "alpha", "total": "beta", "report": "gamma"})
+        self.assertEqual(
+            bind_roles("invoice-total", config, invoice_fixture().contract),
+            {"validate": "alpha", "total": "beta", "report": "gamma"},
+        )
         config["workflow"]["steps"][1]["with"] = {"invoices": {"ref": "inputs.invoices"}}
         with self.assertRaises(Rejected):
-            bind_roles("invoice-total", config)
+            bind_roles("invoice-total", config, invoice_fixture().contract)
 
 
 def _rename(value, names):
@@ -50,8 +55,7 @@ def _rename(value, names):
 
 class OccurrenceObservationTests(unittest.TestCase):
     def test_observation_keeps_step_identity_and_requires_each_native_occurrence(self):
-        from tests.test_verification_contract import invoice_record
-        from verification.n8n_provenance import observe_execution
+        from tests.test_verification_contract import invoice_record, observe_execution
 
         inputs, run = invoice_record()
         observation, records = observe_execution("invoice-total", inputs, run, "live")
@@ -60,8 +64,7 @@ class OccurrenceObservationTests(unittest.TestCase):
         self.assertEqual(set(records), {"validate", "total", "report"})
 
     def test_stub_record_with_unexpected_agency_call_is_rejected(self):
-        from tests.test_verification_contract import invoice_record
-        from verification.verify import check_execution
+        from tests.test_verification_contract import check_execution, invoice_record
 
         inputs, run = invoice_record()
         for final in (run["result"], run["run_data"]["Result"][0]["data"]["main"][0][0]["json"]):
@@ -149,6 +152,7 @@ def ledger_record():
 
 def repeated_fixture():
     contract = json.loads((ROOT / "tests/support/graphs/repeated-contract.json").read_text())
+    contract["outputs"] = invoice_fixture().contract["outputs"]
 
     def check(inputs, observation, mode, *, case=None):
         for side in ("domestic", "export"):

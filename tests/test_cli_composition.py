@@ -11,6 +11,7 @@ import unittest
 from unittest.mock import patch
 
 from sapi_config_lab.coordinate import cli
+from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.paths import workspace_root
 
@@ -28,7 +29,13 @@ class CliCompositionTests(unittest.TestCase):
             ):
                 suffix = f"{scenario}-{mode}-{catalog}"
                 existing, composed = base / (suffix + "-old"), base / suffix
-                stage_tasks(existing, mode=mode, scenarios=(scenario,), catalog=catalog)
+                stage_tasks(
+                    existing,
+                    mode=mode,
+                    root=workspace_root(),
+                    benchmarks=select_benchmarks(workspace_root() / "benchmarks", (scenario,)),
+                    catalog=catalog,
+                )
                 cli.main(["package-tasks", str(composed), "--scenario", scenario, "--mode", mode, "--catalog", catalog])
 
                 def inventory(directory):
@@ -39,6 +46,24 @@ class CliCompositionTests(unittest.TestCase):
                     }
 
                 self.assertEqual(inventory(composed), inventory(existing), suffix)
+
+    def test_installed_console_can_plan_and_stage_independent_verification(self):
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run(
+                [
+                    str(Path(sys.executable).parent / "sapi-lab"),
+                    "package-tasks",
+                    directory + "/tasks",
+                    "--scenario",
+                    "invoice-total",
+                ],
+                cwd=workspace_root(),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue((Path(directory) / "tasks/invoice-total/tests/benchmark.json").is_file())
 
     def test_selected_commands_do_not_import_legacy_scenario_registry(self):
         script = """
@@ -82,7 +107,21 @@ assert "sapi_config_lab.coordinate.scenarios" not in sys.modules
             with patch(
                 "sapi_config_lab.coordinate.compilation.workspace_root", side_effect=RuntimeError("no workspace")
             ):
-                self.assertEqual(cli.main(["compile", str(source), "--output", temporary + "/out.json"]), 0)
+                self.assertEqual(
+                    cli.main(
+                        [
+                            "compile",
+                            str(source),
+                            "--bindings",
+                            str(workspace_root() / "benchmarks/01-invoice-total/bindings.yaml"),
+                            "--operations",
+                            str(workspace_root() / "benchmarks/01-invoice-total/operations.js"),
+                            "--output",
+                            temporary + "/out.json",
+                        ]
+                    ),
+                    0,
+                )
                 with contextlib.redirect_stderr(io.StringIO()):
                     self.assertEqual(
                         cli.main(
@@ -99,8 +138,8 @@ assert "sapi_config_lab.coordinate.scenarios" not in sys.modules
             source = base / "candidate.yaml"
             source.write_bytes((workspace_root() / "benchmarks/01-invoice-total/config.yaml").read_bytes())
             with patch(
-                "sapi_config_lab.coordinate.compilation.compilation_files",
-                side_effect=AssertionError("legacy context"),
+                "sapi_config_lab.coordinate.compilation.discover_benchmarks",
+                wraps=__import__("sapi_config_lab.benchmark", fromlist=["discover_benchmarks"]).discover_benchmarks,
             ):
                 self.assertEqual(
                     cli.main(

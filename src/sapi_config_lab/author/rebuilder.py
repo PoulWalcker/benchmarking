@@ -15,7 +15,6 @@ from sapi_config_lab import profile
 from sapi_config_lab.contracts import Document
 from sapi_config_lab.evidence import digest, durable_json
 from sapi_config_lab.net import urlopen
-from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.wrapper_audit import reported_model, reported_tokens, stderr_sha256, tool_markers
 
 
@@ -25,7 +24,7 @@ class WrapperRebuilder:
     The lifecycle controller reserves its rebuild limit before calling this.
     """
 
-    def __init__(self, url: str, *, timeout_seconds: int, expected_model: str, bindings: Document | None = None):
+    def __init__(self, url: str, *, timeout_seconds: int, expected_model: str, bindings: Document):
         parsed = urlparse(url)
         profile.check(
             parsed.scheme in ("http", "https")
@@ -40,7 +39,7 @@ class WrapperRebuilder:
         profile.check(re.fullmatch(r"[A-Za-z0-9_.-]+", expected_model) is not None, "Invalid expected model")
         self.url, self.timeout = url, timeout_seconds
         self.expected_model = expected_model
-        self.bindings = profile.read_bindings(CATALOG) if bindings is None else bindings
+        self.bindings = bindings
 
     def __call__(self, source: Document, findings: Document, target: Document, artifacts: Path) -> Document:
         artifacts.mkdir(parents=True, exist_ok=True)

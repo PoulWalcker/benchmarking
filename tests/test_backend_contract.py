@@ -15,6 +15,7 @@ from sapi_config_lab.coordinate import cli
 from sapi_config_lab.coordinate.backend import N8nBackend
 from sapi_config_lab.coordinate.cases import run_case
 from sapi_config_lab.paths import workspace_root
+from tests.support.invoice import CATALOG
 
 
 class RecordingBackend:
@@ -51,7 +52,9 @@ class BackendContractTests(unittest.TestCase):
         backend = RecordingBackend()
         original = copy.deepcopy(self.config)
         with tempfile.TemporaryDirectory() as directory, patch("subprocess.run", side_effect=AssertionError("No n8n")):
-            record = run_case(self.config, Path(directory), backend=backend, llm_mode="live")
+            record = run_case(
+                self.config, Path(directory), backend=backend, llm_mode="live", bindings=profile.read_bindings(CATALOG)
+            )
             persisted = json.loads((Path(directory) / "case.json").read_text())
         self.assertEqual(len(backend.compiled), 1)
         self.assertEqual(len(backend.executed), 1)
@@ -68,7 +71,7 @@ class BackendContractTests(unittest.TestCase):
         self.config["activation"] = None
         backend = RecordingBackend()
         with tempfile.TemporaryDirectory() as directory:
-            record = run_case(self.config, Path(directory), backend=backend)
+            record = run_case(self.config, Path(directory), backend=backend, bindings=profile.read_bindings(CATALOG))
         self.assertEqual(record["status"], "compile_error")
         self.assertIn("activation", record["error"]["message"])
         self.assertEqual(record["error"]["type"], "Invalid")
@@ -80,7 +83,9 @@ class BackendContractTests(unittest.TestCase):
         recursive.append(recursive)
         self.config["workflow"]["inputs"]["recursive"] = recursive
         with tempfile.TemporaryDirectory() as directory:
-            record = run_case(self.config, Path(directory), backend=RecordingBackend())
+            record = run_case(
+                self.config, Path(directory), backend=RecordingBackend(), bindings=profile.read_bindings(CATALOG)
+            )
             self.assertTrue((Path(directory) / "case.json").exists())
             self.assertFalse((Path(directory) / "config.json").exists())
         self.assertEqual(record["status"], "compile_error")
@@ -120,22 +125,32 @@ class BackendContractTests(unittest.TestCase):
             config.write_text("schema: sapi-lab/v0\nworkflow: null\n")
             stderr = io.StringIO()
             with contextlib.redirect_stderr(stderr):
-                result = cli.main(["compile", str(config), "--output", str(Path(directory) / "out.json")])
+                result = cli.main(
+                    [
+                        "compile",
+                        str(config),
+                        "--scenario",
+                        "invoice-total",
+                        "--output",
+                        str(Path(directory) / "out.json"),
+                    ]
+                )
         self.assertEqual(result, 2)
         self.assertEqual(json.loads(stderr.getvalue())["error"]["type"], "Invalid")
         self.assertNotIn("Traceback", stderr.getvalue())
 
     def test_n8n_adapter_preserves_supported_and_unsupported_profile(self):
-        from sapi_config_lab.coordinate.scenarios import SCENARIOS
+        from sapi_config_lab.benchmark import discover_benchmarks
 
-        backend = N8nBackend()
-        for scenario in SCENARIOS.values():
-            path, bindings = scenario.config, profile.read_bindings(scenario.bindings)
+        for scenario in discover_benchmarks(workspace_root() / "benchmarks"):
+            path, bindings = scenario.reference.source, profile.read_bindings(scenario.directory / scenario.bindings)
             config = profile.read(path)
             # Both environments compile through the same backend; a simulator's tools are bound at run time.
-            options = CompileOptions(operation_url="http://tools/tools" if scenario.hosted else None)
+            options = CompileOptions(operation_url="http://tools/tools" if "prepare" in scenario.entrypoints else None)
             with self.subTest(config=path.parent.name):
-                compiled = backend.compile(config, bindings, options)
+                compiled = N8nBackend((scenario.directory / scenario.operations).read_text()).compile(
+                    config, bindings, options
+                )
                 self.assertNotIn("not-persisted", str(compiled.document))
                 self.assertEqual(compiled.engine, "n8n")
                 attempts = config["execution"].get("refinement", {}).get("max_attempts", 1)

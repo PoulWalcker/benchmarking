@@ -12,6 +12,7 @@ import time
 from typing import Any
 
 from sapi_config_lab import profile
+from sapi_config_lab.coordinate.backend import N8nBackend
 from sapi_config_lab.coordinate.cases import run_case
 from sapi_config_lab.evidence import write_record_json
 from sapi_config_lab.paths import workspace_root
@@ -146,6 +147,9 @@ def run_probes(artifacts: Path, *, fixtures: Path | None = None):
                 bridge_url=f"http://127.0.0.1:{server.server_port}",
                 artifact_transform=short_http_timeout if name == "timeout" else None,
                 bindings=bindings,
+                backend=N8nBackend(
+                    ((fixtures or ROOT / "tests/support/native-transport/tests") / "operations.js").read_text()
+                ),
             )
             calls = copy.deepcopy(server.calls[offset:])
             checks = {
@@ -231,6 +235,9 @@ def run_probes(artifacts: Path, *, fixtures: Path | None = None):
                 config,
                 artifacts / name,
                 bindings={"transport.inspect": tool_binding},
+                backend=N8nBackend(
+                    ((fixtures or ROOT / "tests/support/native-transport/tests") / "operations.js").read_text()
+                ),
                 operation_url=f"http://127.0.0.1:{server.server_port}/tools",
                 operation_token="deterministic-probe-token",
             )

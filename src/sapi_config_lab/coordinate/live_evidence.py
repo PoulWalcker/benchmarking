@@ -2,24 +2,17 @@
 
 from __future__ import annotations
 
-from collections import Counter
 import hashlib
-import importlib
-import importlib.util
 from pathlib import Path
-import sys
 
 from sapi_config_lab.contracts import CompileOptions
-from sapi_config_lab.coordinate.backend import default_backend
 from sapi_config_lab.coordinate.replay import read_json, require
-from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.evidence import digest, sha256
 from sapi_config_lab.execute.agency import MAX_BODY, build_prompt
-from sapi_config_lab.paths import CATALOG, workspace_root
 from sapi_config_lab.profile import read_bindings
 
 
-def reconcile_dispatches(native: list[dict], audit: list[dict], model: str, *, bindings: Path = CATALOG) -> list[dict]:
+def reconcile_dispatches(native: list[dict], audit: list[dict], model: str, *, bindings: Path) -> list[dict]:
     """Require ordered, one-to-one native request/dispatch/completion/response proof."""
     attempts = [row for row in audit if row.get("event") == "dispatch_attempt"]
     completions = [row for row in audit if row.get("event") == "completion"]
@@ -118,153 +111,61 @@ def reconcile_dispatches(native: list[dict], audit: list[dict], model: str, *, b
     return table
 
 
-def load_verifier():
-    """Load this checkout's verifier as a private package without changing sys.path."""
-    root = workspace_root() / "verification"
-    name = "_sapi_live_verification"
-    if name not in sys.modules:
-        spec = importlib.util.spec_from_file_location(
-            name, root / "__init__.py", submodule_search_locations=[str(root)]
-        )
-        if spec is None or spec.loader is None:
-            raise RuntimeError("Independent verifier could not be loaded")
-        package = importlib.util.module_from_spec(spec)
-        sys.modules[name] = package
-        spec.loader.exec_module(package)
-    require(
-        Path(sys.modules[name].__file__ or "").resolve() == (root / "__init__.py").resolve(),
-        "Verifier checkout identity mismatch",
-    )
-    return importlib.import_module(name + ".verify"), importlib.import_module(name + ".n8n_provenance")
-
-
-def collect_native(trials: list[dict], submissions: dict, cohorts: dict[str, set[str]], bridge_url: str) -> list[dict]:
+def collect_native(
+    trials: list[dict], submissions: dict, cohorts: dict[str, set[str]], bridge_url: str, benchmarks: dict
+) -> list[dict]:
     """Re-check native artifacts of live trials and return each observed model call."""
-    verification, provenance = load_verifier()
+    from verification import n8n_provenance as provenance
+    from verification import verify as verification
+
     native: list[dict] = []
     observed = set()
     for trial in trials:
         scenario = trial["task_name"]
         verifier = Path(trial["result_path"]).parent / "verifier"
         directory = verifier / "evidence"
-        acceptance = trial["acceptance"]
         submission = submissions[scenario]
-        benchmark = SCENARIOS[scenario].benchmark
-        if benchmark is not None:
-            from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
-            from sapi_config_lab.coordinate.backend import N8nBackend
+        benchmark = benchmarks[scenario]
+        from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
+        from sapi_config_lab.coordinate.backend import N8nBackend
 
-            options = {"mode": "live", "deadline_seconds": 600, "selected_case": next(iter(cohorts[scenario]))}
-            if "cases" in submission:
-                options["cases"] = submission["cases"]
-            frozen = freeze_identity(benchmark, options)
-            planned = load_entrypoints(benchmark, frozen).plan(Path(submission["path"]), options)
-            manifest = read_json(directory / "observation.json")
-            require(manifest.get("plan_sha256") == digest(planned), "Recorded observation plan differs")
-            require(sha256(directory / "submission.yaml") == submission["sha256"], "Recorded submission differs")
-            require(
-                [row["name"] for row in manifest["entries"]] == [entry["name"] for entry in planned["entries"]],
-                "Recorded observations differ",
-            )
-            for row in manifest["entries"]:
-                artifact = directory / "cases" / row["name"]
-                require(row["files"] == verification.inventory(artifact), "Recorded native files changed")
-                verification.check_case_record(directory / "cases" / row["name"], row["files"], row["name"])
-            files = {item.destination: item.source for item in benchmark.files}
-            backend = N8nBackend(operation_source=files[benchmark.operations].read_text())
-            for entry in planned["entries"]:
-                name = entry["name"]
-                require(
-                    name in cohorts[scenario] and (scenario, name) not in observed, "Unexpected or duplicate live case"
-                )
-                observed.add((scenario, name))
-                artifact = directory / "cases" / name
-                run = read_json(artifact / "case.json")
-                graph = read_json(artifact / "workflow.json")
-                compiled = backend.compile(
-                    entry["config"],
-                    read_bindings(files[benchmark.bindings]),
-                    CompileOptions("live", bridge_url, **planned.get("compile_options", {})),
-                )
-                require(
-                    {**compiled.document, "id": run["workflow_id"], "active": False} == graph
-                    and compiled.mapping == run["mapping"],
-                    "Saved graph differs from selected compiler sources",
-                )
-                calls = provenance.live_operations(run, graph)
-                native.extend({"scenario": scenario, "case": name, **call} for call in calls)
-            continue
+        options = {"mode": "live", "deadline_seconds": 600, "selected_case": next(iter(cohorts[scenario]))}
+        if "cases" in submission:
+            options["cases"] = submission["cases"]
+        frozen = freeze_identity(benchmark, options)
+        planned = load_entrypoints(benchmark, frozen).plan(Path(submission["path"]), options)
+        manifest = read_json(directory / "observation.json")
+        require(manifest.get("plan_sha256") == digest(planned), "Recorded observation plan differs")
+        require(sha256(directory / "submission.yaml") == submission["sha256"], "Recorded submission differs")
         require(
-            sha256(directory / "submission.yaml") == submission["sha256"] == acceptance.get("submission_sha256"),
-            "Container/source submission mismatch",
+            [row["name"] for row in manifest["entries"]] == [entry["name"] for entry in planned["entries"]],
+            "Recorded observations differ",
         )
-        for row in acceptance.get("cases", []):
-            name = row["name"]
+        for row in manifest["entries"]:
+            artifact = directory / "cases" / row["name"]
+            require(row["files"] == verification.inventory(artifact), "Recorded native files changed")
+            verification.check_case_record(directory / "cases" / row["name"], row["files"], row["name"])
+        files = {item.destination: item.source for item in benchmark.files}
+        backend = N8nBackend(operation_source=files[benchmark.operations].read_text())
+        for entry in planned["entries"]:
+            name = entry["name"]
             require(name in cohorts[scenario] and (scenario, name) not in observed, "Unexpected or duplicate live case")
             observed.add((scenario, name))
             artifact = directory / "cases" / name
             run = read_json(artifact / "case.json")
-            config = read_json(artifact / "config.json")
-            case = next(case for case in submission["cases"]["positive"] if case["name"] == name)
-            planned = verification.plan(scenario, Path(submission["path"]), submission["cases"], "live", name)
-            verification.read_evidence(directory, planned)
-            require(
-                row.get("config_sha256") == sha256(artifact / "config.json"), "Executed fixture configuration mismatch"
-            )
-            succeeded = case.get("expected") != "exhausted"
-            require(
-                row.get("passed") is True
-                and row.get("acceptance", {}).get("passed") is succeeded
-                and read_json(verifier / "evaluation/cases" / name / "acceptance.json").get("passed") is succeeded
-                and run.get("execution", {}).get("succeeded") is succeeded,
-                "Execution and independent acceptance differ from expected case outcome",
-            )
-            verification.check_execution(scenario, case["inputs"], run, "live", config=config, case=case)
             graph = read_json(artifact / "workflow.json")
-            endpoints = {
-                node["parameters"]["url"] for node in graph["nodes"] if node["type"] == "n8n-nodes-base.httpRequest"
-            }
-            require(len(endpoints) <= 1, "Multiple Agency endpoints")
-            bridge = next(iter(endpoints), bridge_url)
-            compiled = default_backend().compile(
-                config, read_bindings(SCENARIOS[scenario].bindings), CompileOptions("live", bridge)
+            compiled = backend.compile(
+                entry["config"],
+                read_bindings(files[benchmark.bindings]),
+                CompileOptions("live", bridge_url, **planned.get("compile_options", {})),
             )
             require(
                 {**compiled.document, "id": run["workflow_id"], "active": False} == graph
                 and compiled.mapping == run["mapping"],
-                "Saved graph differs from current compiler",
+                "Saved graph differs from selected compiler sources",
             )
-            calls = (
-                importlib.import_module(verification.__package__ + ".extensions").verify_refinement(config, run)[
-                    "calls"
-                ]
-                if "refinement" in config["execution"]
-                else provenance.live_operations(run, graph)
-            )
-            identity = {
-                "scenario": scenario,
-                "case": name,
-                "submission_sha256": submission["sha256"],
-                "workflow_id": run["workflow_id"],
-                "execution_id": run["execution_id"],
-            }
-            native.extend({**identity, **call} for call in calls)
+            calls = provenance.live_operations(run, graph)
+            native.extend({"scenario": scenario, "case": name, **call} for call in calls)
     expected = {(scenario, name) for scenario in {t["task_name"] for t in trials} for name in cohorts[scenario]}
     require(observed == expected, "Missing required live case")
     return native
-
-
-def live_cohort(scenario: str, submission: dict) -> list[str]:
-    """The cases the verifier plans for a live run of this submission."""
-    verification, _ = load_verifier()
-    planned = verification.plan(scenario, Path(submission["path"]), submission["cases"], "live")
-    return [entry["name"] for entry in planned["entries"]]
-
-
-def case_budget(scenario: str, case_name: str, config: dict, cases: dict) -> dict:
-    """A grant for exactly the model calls the verifier expects for this case."""
-    fixture = next(case["inputs"] for case in cases["positive"] if case["name"] == case_name)
-    require(config["workflow"]["inputs"] == fixture, "Case grant fixture mismatch")
-    verification, _ = load_verifier()
-    calls = verification.expected_model_calls(scenario, config, fixture)
-    return {"max_attempts": len(calls), "operations": dict(Counter(calls.values())), "occurrences": calls}

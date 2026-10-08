@@ -1,5 +1,6 @@
 // One JSON envelope per logical execution. All branches return an envelope,
 // including skipped branches. Transport is handled by n8n HTTP Request nodes.
+function need(condition, message) { if (!condition) throw new Error(message); }
 const clone = value => JSON.parse(JSON.stringify(value));
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 function mergeEnvelopes(items) {

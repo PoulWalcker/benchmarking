@@ -9,15 +9,17 @@ from types import SimpleNamespace
 import unittest
 import unittest.mock
 
-from sapi_config_lab.coordinate.scenarios import all_cases
+from sapi_config_lab.profile import read_bindings
+from tests.support.invoice import CATALOG, cases
+from tests.support.invoice import card as invoice_card
+from tests.support.invoice import fixture as invoice_fixture
 from tests.support.rubric import CARD
 from tests.support.verifying import verify_with_runner
 from verification import rubric_facts
 from verification import verify as verifier
 from verification.contracts import require
 from verification.fixture import FixtureEvaluator
-from verification.fixture_evaluators import evaluator_for
-from verification.rubric import RecordedJudge, RubricError, RunFacts, _judge_view
+from verification.rubric import RecordedJudge, RunFacts, _judge_view
 
 ROOT = Path(__file__).parents[1]
 CARDS = {"invoice-total"}
@@ -219,13 +221,15 @@ class EvaluationTests(unittest.TestCase):
         # Unknown names carry no implicit rubric.
         for scenario in ("no-card", "another-no-card"):
             with self.subTest(scenario=scenario):
-                self.assertIsNone(rubric_facts.evaluate(scenario, [], accepted=True, execution_pass=True, judge=None))
+                self.assertIsNone(
+                    rubric_facts.evaluate(scenario, [], accepted=True, execution_pass=True, judge=None, card=None)
+                )
 
     def test_a_binary_card_needs_no_judge_and_reads_acceptance(self):
         for accepted, total in ((True, 10.0), (False, 0.0)):
             with self.subTest(accepted=accepted):
                 document = rubric_facts.evaluate(
-                    "invoice-total", [], accepted=accepted, execution_pass=True, judge=None
+                    "invoice-total", [], accepted=accepted, execution_pass=True, judge=None, card=invoice_card()
                 )
                 self.assertEqual(document["status"], "complete")
                 self.assertEqual(document["score_0_10"], total)
@@ -245,7 +249,7 @@ class VerifierSeamTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         directory = Path(temporary.name)
-        fixture = replace(evaluator_for("invoice-total"), rubric=card)
+        fixture = replace(invoice_fixture(), rubric=card)
         adapter = SimpleNamespace(
             plan=partial(verifier.plan, fixture=fixture), evaluate=partial(verifier.evaluate, fixture=fixture)
         )
@@ -254,10 +258,12 @@ class VerifierSeamTests(unittest.TestCase):
             "invoice-total",
             ROOT / "benchmarks/01-invoice-total/config.yaml",
             directory,
-            selected_case=all_cases()["invoice-total"]["positive"][0]["name"],
+            selected_case=cases()["positive"][0]["name"],
             runner=stub_runner,
             judge=judge,
-            cases=all_cases()["invoice-total"],
+            cases=cases(),
+            fixture=fixture,
+            bindings=read_bindings(CATALOG),
         )
         return directory, report
 
@@ -272,8 +278,7 @@ class VerifierSeamTests(unittest.TestCase):
         self.assertEqual(json.loads((directory / "evaluation/report.json").read_text()), report)
 
     def test_a_scenario_without_a_card_writes_no_evaluation(self):
-        with unittest.mock.patch.object(rubric_facts, "card_for", side_effect=RubricError("No card")):
-            directory, _ = self.verify(card=None)
+        directory, _ = self.verify(card=None)
         self.assertFalse((directory / "evaluation/evaluation.json").exists())
 
     def test_the_rubric_cannot_change_the_verdict_or_the_reward(self):
@@ -345,18 +350,21 @@ class VerifierSeamTests(unittest.TestCase):
             self.assertNotIn(forbidden, script)
 
     def test_every_control_run_reads_the_reward_gate_from_one_place(self):
+        from sapi_config_lab.benchmark import load_benchmark
         from sapi_config_lab.coordinate.evaluation import control_passed
 
-        def trial(reward, exception=None):
-            row = {"task_name": "invoice-total", "rewards": {"reward": reward}, "exception": exception}
-            return {**row, "acceptance": {"passed": True}}
+        benchmark = load_benchmark(ROOT / "benchmarks", ROOT / "benchmarks/01-invoice-total")
 
-        for agent, reward in (("oracle", 1.0), ("nop", 0.0)):
-            self.assertTrue(control_passed(agent, trial(reward)))
+        def trial(agent, reward, exception=None):
+            row = {"task_name": "invoice-total", "rewards": {"reward": reward}, "exception": exception}
+            return {**row, "result": {"execution": agent == "oracle", "acceptance": agent == "oracle", "quality": None}}
+
+        for agent, expected in (("oracle", 1.0), ("nop", 0.0)):
+            self.assertTrue(control_passed(agent, trial(agent, expected), benchmark))
             # A rubric score is a separate document; it must never read as a reward.
-            for intruder in (0.732, 1.0 - reward, None, "1.0"):
-                self.assertFalse(control_passed(agent, trial(intruder)))
-            self.assertFalse(control_passed(agent, trial(reward, "boom")))
+            for intruder in (0.732, 1.0 - expected, None, "1.0"):
+                self.assertFalse(control_passed(agent, trial(agent, intruder), benchmark))
+            self.assertFalse(control_passed(agent, trial(agent, expected, "boom"), benchmark))
 
 
 class StandaloneDistributionTests(unittest.TestCase):
@@ -364,21 +372,14 @@ class StandaloneDistributionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             for source in (ROOT / "verification").glob("*.py"):
                 (Path(directory) / source.name).write_text(source.read_text())
-            # As packaged: each scenario's evaluation data under evaluation/<scenario>/.
-            for card in ROOT.glob("benchmarks/*/evaluation/rubric.json"):
-                target = Path(directory) / "evaluation" / card.parent.parent.name.split("-", 1)[1] / card.name
-                target.parent.mkdir(parents=True)
-                target.write_text(card.read_text())
             probe = (
                 "import sys;"
-                "import rubric_facts, rubric_cards, rubric, business, scenario_business;"
+                "import rubric_facts, rubric;"
                 "assert rubric_facts.__package__ == '', 'imported as a package';"
-                # The copied files reach no third party and no installed project.
                 "assert not {'yaml', 'sapi_config_lab'} & set(sys.modules), sorted(sys.modules);"
-                "assert rubric_facts.evaluate('no-card', [], accepted=True, execution_pass=True) is None;"
-                # The retained card resolves in the standalone package.
-                "assert all(rubric_cards.card_for(s).id == s for s in " + repr(sorted(CARDS)) + ");"
-                "print(rubric_facts.evaluate('invoice-total', [], accepted=True, execution_pass=True)['score_0_10'])"
+                "assert rubric_facts.evaluate('no-card', [], accepted=True, execution_pass=True, card=None) is None;"
+                "card = rubric.RubricCard('explicit', '1', 'test', (rubric.Criterion(id='accepted', evaluator='deterministic', weight=10, question='Was it accepted?', check_id='accepted'),));"
+                "print(rubric_facts.evaluate('explicit', [], accepted=True, execution_pass=True, card=card)['score_0_10'])"
             )
             import subprocess
             import sys

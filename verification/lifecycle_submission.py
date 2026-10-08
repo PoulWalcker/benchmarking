@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING or __package__:
     from .contracts import Recorded, require
-    from .lifecycle import digest_native, native_lifecycle, verify_lifecycle
+    from .lifecycle import native_lifecycle, verify_lifecycle
 else:
     from contracts import Recorded, require
-    from lifecycle import digest_native, native_lifecycle, verify_lifecycle
+    from lifecycle import native_lifecycle, verify_lifecycle
 
 MUTATION = "intentional-output-mutation"
 
@@ -85,43 +85,3 @@ def evaluate_lifecycle(
         finally:
             recorded.accept(entry["name"], passed, reason)
         row["passed"] = True
-
-
-def validate_task(config: dict) -> None:
-    """The task's fixed identity and policy; the controller validates the profile."""
-    workflow = config["workflow"]
-    require(workflow["id"] == "daily-digest" and workflow["revision"] == 1, "Wrong lifecycle task identity")
-    require(config["lifecycle"]["on_test_fail"]["max_rebuilds"] == 2, "Lifecycle task requires two rebuilds maximum")
-    require(config["execution"]["deadline_seconds"] == 120, "Lifecycle task deadline changed")
-    require(config["activation"]["schedule"] == "0 9 * * *", "Original daily schedule changed")
-    require(config["activation"]["timezone"] == "Asia/Dubai", "Original daily timezone changed")
-    require(config["activation"]["rule_id"] == "daily-digest-0900", "Cron rule identity changed")
-    require(config["lifecycle"]["test"]["rule_id"] == "digest-test-requested", "Callback rule identity changed")
-    require(
-        workflow["inputs"]
-        == {
-            "articles": [
-                {"id": "a1", "title": "Warehouse opens", "text": "A new warehouse opened in Dubai."},
-                {"id": "a2", "title": "New payment option", "text": "The shop added a payment option."},
-            ]
-        },
-        "Submission changed the public articles",
-    )
-    require(
-        sorted(step["uses"] for step in workflow["steps"]) == ["digest.prepare", "digest.preview", "digest.summarize"],
-        "Lifecycle task requires the three registered digest operations",
-    )
-
-
-def plan_digest_lifecycle(config: dict, cases: dict) -> list[dict]:
-    validate_task(config)
-    return plan_lifecycle(
-        config,
-        cases,
-        tick="2026-10-04T05:00:00+00:00",
-        wrong_output={"mode": "preview", "text": "Unrelated fixed digest", "article_ids": ["wrong"]},
-    )
-
-
-def evaluate_digest_lifecycle(entries, recorded, rows):
-    evaluate_lifecycle(entries, recorded, rows, acceptance=digest_native)

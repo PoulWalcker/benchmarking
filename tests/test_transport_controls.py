@@ -12,11 +12,19 @@ import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError
 
-from sapi_config_lab.coordinate import controls, hosted_worker, transport
-from sapi_config_lab.coordinate.evaluation import control_passed
+from sapi_config_lab.coordinate import controls, transport
+from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
+from sapi_config_lab.coordinate.evaluation import control_passed as selected_control_passed
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.runs import Run
 from sapi_config_lab.execute.host import checked_harbor, running_containers
+from sapi_config_lab.paths import workspace_root
+
+
+def control_passed(agent, trial):
+    return selected_control_passed(
+        agent, trial, select_benchmarks(workspace_root() / "benchmarks", (trial["task_name"],))[0]
+    )
 
 
 class NativeTransportTaskTests(unittest.TestCase):
@@ -27,7 +35,7 @@ class NativeTransportTaskTests(unittest.TestCase):
 
         fixture = controls.ROOT / "tests/support/native-transport/tests"
         with patch.object(transport.profile, "read_bindings", wraps=read_bindings):
-            compiled = N8nBackend().compile(
+            compiled = N8nBackend((fixture / "operations.js").read_text()).compile(
                 transport.probe_config(),
                 read_bindings(fixture / "bindings.yaml"),
                 CompileOptions("live", "http://localhost:123"),
@@ -111,9 +119,6 @@ class NativeTransportDockerTests(unittest.TestCase):
 
 
 class RedirectTests(unittest.TestCase):
-    def test_hosted_worker_does_not_forward_its_bearer_to_a_redirect(self):
-        self.redirect_client("worker")
-
     def test_author_does_not_follow_a_redirect(self):
         self.redirect_client("author")
 
@@ -153,15 +158,11 @@ class RedirectTests(unittest.TestCase):
                     )
                 )
                 with self.assertRaises(HTTPError) as error:
-                    if client == "worker":
-                        with patch.object(hosted_worker, "TESTS", root):
-                            hosted_worker.run()
-                    else:
-                        from sapi_config_lab.author.agent import WrapperYamlAgent
+                    from sapi_config_lab.author.agent import WrapperYamlAgent
 
-                        agent = object.__new__(WrapperYamlAgent)
-                        agent.upstream = url + "/author"
-                        agent.request("public task")
+                    agent = object.__new__(WrapperYamlAgent)
+                    agent.upstream = url + "/author"
+                    agent.request("public task")
                 self.assertEqual(error.exception.code, 302)
                 self.assertEqual(len(seen), 1)
                 self.assertNotEqual(seen[0][0], "/target")

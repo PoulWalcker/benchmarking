@@ -9,7 +9,8 @@ import unittest
 
 from sapi_config_lab import profile
 from sapi_config_lab.compile import n8n as compiler
-from sapi_config_lab.paths import CATALOG, workspace_root
+from sapi_config_lab.paths import workspace_root
+from tests.support.invoice import CATALOG, OPERATION_SOURCE
 
 ROOT = workspace_root()
 
@@ -36,7 +37,9 @@ class LabTests(unittest.TestCase):
         }
 
     def run_config(self, name, inputs=None, mutate_export=None):
-        artifact, _ = compiler.compile_n8n(copy.deepcopy(self.configs[name]), self.bindings)
+        artifact, _ = compiler.compile_n8n(
+            copy.deepcopy(self.configs[name]), self.bindings, operation_source=OPERATION_SOURCE
+        )
         if mutate_export:
             mutate_export(artifact)
         with tempfile.TemporaryDirectory() as tmp:
@@ -224,17 +227,11 @@ class LabTests(unittest.TestCase):
         cfg = copy.deepcopy(self.configs["join"])
         cfg["execution"]["concurrency"] = "required_parallel"
         with self.assertRaisesRegex(profile.Unsupported, "E_PARALLEL"):
-            compiler.compile_n8n(cfg, self.bindings)
+            compiler.compile_n8n(cfg, self.bindings, operation_source=OPERATION_SOURCE)
 
     def runtime_js(self, body):
         """Exercise envelope contracts locally, without claiming n8n execution."""
-        source = (
-            (compiler.RESOURCES / "operations.js").read_text()
-            + "\n"
-            + (compiler.RESOURCES / "runtime-fragment.js").read_text()
-            + "\n"
-            + body
-        )
+        source = OPERATION_SOURCE + "\n" + (compiler.RESOURCES / "runtime-fragment.js").read_text() + "\n" + body
         run = subprocess.run(["node", "-e", source], capture_output=True, text=True, timeout=10)
         if run.returncode:
             raise RuntimeError(run.stderr)
@@ -308,7 +305,9 @@ class LabTests(unittest.TestCase):
         cfg["workflow"]["inputs"]["enabled"] = False
         cfg["workflow"]["steps"][0]["when"] = {"ref": "inputs.enabled", "eq": True}
         cfg["workflow"]["steps"][2]["with"]["product"] = {"optional_ref": "steps.product"}
-        artifact, mapping = compiler.compile_n8n(cfg, self.bindings, llm_mode="live", bridge_url="http://bridge:18765")
+        artifact, mapping = compiler.compile_n8n(
+            cfg, self.bindings, llm_mode="live", bridge_url="http://bridge:18765", operation_source=OPERATION_SOURCE
+        )
         nodes = {n["name"]: n for n in artifact["nodes"]}
         self.assertEqual(mapping["product"], "product [LLM LIVE]")
         self.assertEqual(artifact["connections"]["Guard product"]["main"][1][0]["node"], mapping["product"])
@@ -325,15 +324,21 @@ class LabTests(unittest.TestCase):
     def test_live_requires_explicit_deployment_and_supported_catalog_schema(self):
         for bridge_url in (None, "file:///tmp/bridge", "http://user:secret@bridge", "http://bridge?token=secret"):
             with self.subTest(url=bridge_url), self.assertRaises(profile.Invalid):
-                compiler.compile_n8n(self.configs["conditional"], self.bindings, llm_mode="live", bridge_url=bridge_url)
+                compiler.compile_n8n(
+                    self.configs["conditional"],
+                    self.bindings,
+                    llm_mode="live",
+                    bridge_url=bridge_url,
+                    operation_source=OPERATION_SOURCE,
+                )
         bindings = copy.deepcopy(self.bindings)
         bindings["ticket.classify"]["output_schema"]["patternProperties"] = {}
         with self.assertRaisesRegex(profile.Invalid, "unsupported schema keywords"):
-            compiler.compile_n8n(self.configs["conditional"], bindings)
+            compiler.compile_n8n(self.configs["conditional"], bindings, operation_source=OPERATION_SOURCE)
         bindings = copy.deepcopy(self.bindings)
         bindings["ticket.classify"].pop("output_schema")
         with self.assertRaisesRegex(profile.Invalid, "output_schema required"):
-            compiler.compile_n8n(self.configs["conditional"], bindings)
+            compiler.compile_n8n(self.configs["conditional"], bindings, operation_source=OPERATION_SOURCE)
 
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@ requires = ["hatchling>=1.27,<2"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/sapi_config_lab"]
+packages = ["src/sapi_config_lab", "verification"]
 
 [tool.hatch.build.targets.sdist]
 include = ["/src", "/tests", "/verification", "/benchmarks", "/docs", "/evidence", "/generation", "/harbor", "/infra", "/.github", "/README.md", "/AGENTS.md", "/pyproject.toml", "/uv.lock", "/.python-version", "/.gitignore", "/.dockerignore", "/provenance/SapiensSpecNotation.hs", "/provenance/spec-comparison.json", "/provenance/spec-source.json", "/provenance/autowfbench-source.json", "/run.sh", "/run-generation.sh"]
@@ -70,7 +70,6 @@ force-sort-within-sections = true
 "src/sapi_config_lab/harbor_integration/yaml_agent.py" = ["BLE001"]
 "src/sapi_config_lab/coordinate/observe.py" = ["BLE001"]
 "src/sapi_config_lab/coordinate/runs.py" = ["BLE001"]
-"src/sapi_config_lab/coordinate/hosted_worker.py" = ["BLE001"]
 # An unknown model-rebuild outcome must suspend the lifecycle family: fail closed.
 "src/sapi_config_lab/coordinate/lifecycle.py" = ["BLE001"]
 # Candidate evidence can fail any way; each way is a rejection or a stated non-score, never a crash.

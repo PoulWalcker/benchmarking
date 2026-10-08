@@ -288,11 +288,6 @@ class MigrationOwnershipTests(unittest.TestCase):
     def test_no_additional_benchmark_or_harbor_imports(self):
         baseline = ROOT / "evidence/migration-01-baseline/legacy-imports.json"
         frozen = {tuple(edge) for edge in json.loads(baseline.read_text())["edges"]}
-        # The legacy command adapter now owns the old default's single business import.
-        relocated = ("sapi_config_lab.coordinate.lifecycle", "sapi_config_lab.evaluate.operational")
-        self.assertIn(relocated, frozen)
-        frozen.remove(relocated)
-        frozen.add(("sapi_config_lab.coordinate.legacy_lifecycle", relocated[1]))
         found = set()
         for module, path, verifier in modules():
             qualified = module if verifier else PACKAGE + ("." + module if module else "")

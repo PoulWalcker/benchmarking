@@ -7,8 +7,9 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from sapi_config_lab.benchmark import discover_benchmarks
+from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.cli import main
-from sapi_config_lab.coordinate.scenarios import DEFAULT_SCENARIOS, SCENARIOS, select_scenarios
 from sapi_config_lab.paths import workspace_root
 
 RETIRED = (
@@ -26,8 +27,9 @@ RETIRED = (
 
 class RetirementTests(unittest.TestCase):
     def test_production_selection_is_exactly_two_and_default_is_invoice_only(self):
-        self.assertEqual(set(SCENARIOS), {"invoice-total", "checkout-recovery"})
-        self.assertEqual(set(DEFAULT_SCENARIOS), {"invoice-total"})
+        root = workspace_root() / "benchmarks"
+        self.assertEqual({item.name for item in discover_benchmarks(root)}, {"invoice-total", "checkout-recovery"})
+        self.assertEqual({item.name for item in select_benchmarks(root)}, {"invoice-total"})
         for options, expected in (([], {"invoice-total", "checkout-recovery"}), (["--defaults"], {"invoice-total"})):
             output = io.StringIO()
             with contextlib.redirect_stdout(output):
@@ -41,12 +43,10 @@ class RetirementTests(unittest.TestCase):
             for name in RETIRED:
                 with self.subTest(name=name), contextlib.redirect_stderr(io.StringIO()) as errors:
                     with self.assertRaisesRegex(ValueError, "Unknown"):
-                        select_scenarios((name,))
+                        select_benchmarks(root / "benchmarks", (name,))
                     output = Path(temporary) / name
                     self.assertEqual(main(["compile", str(config), "--scenario", name, "--output", str(output)]), 2)
-                    with self.assertRaises(SystemExit) as caught:
-                        main(["package-tasks", str(output), "--scenario", name])
-                    self.assertEqual(caught.exception.code, 2)
+                    self.assertEqual(main(["package-tasks", str(output), "--scenario", name]), 2)
                     self.assertIn("Unknown", errors.getvalue())
                     self.assertFalse(output.exists())
                 self.assertFalse(list((root / "benchmarks").glob("[0-9][0-9]-" + name)))

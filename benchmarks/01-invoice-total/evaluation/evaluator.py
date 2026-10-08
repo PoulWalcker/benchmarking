@@ -92,7 +92,7 @@ def plan(submission: Path, options: dict) -> dict:
         options.get("mode", "stub"),
         options.get("selected_case"),
         options.get("deadline_seconds", 30),
-        _fixture(options),
+        fixture=_fixture(options),
     )
 
 

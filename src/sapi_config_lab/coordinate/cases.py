@@ -19,9 +19,7 @@ from sapi_config_lab.contracts import (
     RunBinding,
     WorkflowBackend,
 )
-from sapi_config_lab.coordinate.backend import default_backend
 from sapi_config_lab.evidence import write_record_json
-from sapi_config_lab.paths import CATALOG
 
 
 def run_case(
@@ -31,10 +29,10 @@ def run_case(
     llm_mode: LlmMode = "stub",
     bridge_url: str | None = None,
     artifact_transform: ArtifactTransform | None = None,
-    backend: WorkflowBackend | None = None,
+    backend: WorkflowBackend,
     admission: Document | None = None,
     deadline_at: float | None = None,
-    bindings: Document | None = None,
+    bindings: Document,
     operation_url: str | None = None,
     operation_token: str | None = None,
 ) -> ExecutionRecord:
@@ -42,7 +40,7 @@ def run_case(
 
     artifact_transform deliberately corrupts the artifact for verifier probes.
     """
-    selected = backend if backend is not None else default_backend()
+    selected = backend
     artifact_dir = Path(artifact_dir).resolve()
     artifact_dir.mkdir(parents=True, exist_ok=True)
     config = copy.deepcopy(config)
@@ -62,7 +60,7 @@ def run_case(
         write_record_json(artifact_dir / "config.json", config)
         compiled = selected.compile(
             config,
-            bindings if bindings is not None else profile.read_bindings(CATALOG),
+            bindings,
             CompileOptions(
                 llm_mode,
                 bridge_url,
@@ -124,9 +122,22 @@ def main(argv: list[str] | None = None, *, backend: WorkflowBackend | None = Non
     parser.add_argument("--artifacts", type=Path, required=True)
     parser.add_argument("--llm-mode", choices=["stub", "live"], default="stub")
     parser.add_argument("--bridge-url")
+    parser.add_argument("--scenario")
+    parser.add_argument("--bindings", type=Path)
+    parser.add_argument("--operations", type=Path)
     args = parser.parse_args(argv)
+    from sapi_config_lab.coordinate.compilation import compose_compilation
+
+    context = compose_compilation(
+        args.config, scenario=args.scenario, bindings=args.bindings, operations=args.operations
+    )
     record = run_case(
-        profile.read(args.config), args.artifacts, llm_mode=args.llm_mode, bridge_url=args.bridge_url, backend=backend
+        profile.read(args.config),
+        args.artifacts,
+        llm_mode=args.llm_mode,
+        bridge_url=args.bridge_url,
+        backend=backend or context.backend(),
+        bindings=profile.read_bindings(context.bindings),
     )
     print(
         json.dumps(

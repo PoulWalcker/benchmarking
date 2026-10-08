@@ -72,7 +72,7 @@ def checked_harbor() -> tuple[list[str], str]:
     return harbor, reported
 
 
-def run_logged(command: Sequence[str], log: Path, *, timeout: float) -> int:
+def run_logged(command: Sequence[str], log: Path, *, timeout: float | None) -> int:
     """Run from the checkout with stdout and stderr in one log; return the exit code."""
     with log.open("w") as stream:
         completed = subprocess.run(

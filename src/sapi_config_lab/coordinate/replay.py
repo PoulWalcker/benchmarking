@@ -7,9 +7,7 @@ import json
 from pathlib import Path
 import shutil
 
-from sapi_config_lab.coordinate.packages import selected_cases
 from sapi_config_lab.coordinate.provenance import source_manifest
-from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.evidence import json_text, sha256
 from sapi_config_lab.execute.agency import strict_json
 
@@ -98,7 +96,7 @@ def select_submission(source_report: Path, scenarios: tuple[str, ...]) -> dict:
             "source_yaml_sha256": sha256(submission),
         }
         cases = root / "task-packages" / scenario / "tests/cases.json"
-        if selected_cases(SCENARIOS[scenario]) is not None:
+        if scenario in report.get("private_cases_sha256", {}):
             require(set(read_json(cases)) == {scenario}, "Private fixture set mismatch")
             require(
                 report.get("private_cases_sha256", {}).get(scenario) == sha256(cases), "Private fixture hash mismatch"

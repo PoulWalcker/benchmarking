@@ -10,9 +10,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.ledger import Ledger
 from sapi_config_lab.coordinate.live import main as live
 from sapi_config_lab.coordinate.runs import run_experiment
+from sapi_config_lab.paths import workspace_root
 
 
 class FakeHost:
@@ -26,7 +28,6 @@ class FakeHost:
             "checked_harbor": lambda: (["harbor"], "0.21.0"),
             "image_id": lambda tag: "sha256:fixed",
             "pin_base_image": lambda identity, prefix: prefix + "-base:fixed",
-            "run_logged": lambda argv, log, **kw: self.ran.append(argv) or 0,
             "run_job": lambda harbor, tasks, jobs, job, agent, log, **kw: self.ran.append([*harbor, job]) or 0,
         }
         for name, fake in patches.items():
@@ -45,6 +46,20 @@ class RunTests(unittest.TestCase):
 
     def saved(self):
         return json.loads((self.output / "report.json").read_text())
+
+    def test_failed_staging_keeps_original_error_without_unowned_package_checks(self):
+        FakeHost(self)
+
+        def body(run):
+            run.use_image("lab")
+            run.stage("oracle", select_benchmarks(workspace_root() / "benchmarks", ("invoice-total",)))
+
+        with patch("sapi_config_lab.coordinate.runs.stage_tasks", side_effect=ValueError("invalid declared package")):
+            run_experiment(self.output, {}, body, prefix="t")
+        report = self.saved()
+        self.assertIn("invalid declared package", report["error"])
+        self.assertNotIn("cleanup_errors", report)
+        self.assertTrue(report["source_unchanged"])
 
     def test_a_setup_failure_still_writes_a_failed_report(self):
         FakeHost(self)
@@ -65,28 +80,30 @@ class RunTests(unittest.TestCase):
         self.assertEqual([e["stage"] for e in report["cleanup_errors"]], ["containers"])
         self.assertFalse(report["existing_container_identities_preserved"])
 
-    def test_staging_is_retained_when_jobs_cannot_be_collected(self):
+    def test_staging_is_retained_when_package_cleanup_fails(self):
         FakeHost(self)
-        staging = self.root / "staging"
 
         def body(run):
-            (staging / "jobs").mkdir(parents=True)
-            run.staging = staging
+            run.use_image("lab")
+            run.stage("oracle", select_benchmarks(workspace_root() / "benchmarks", ("invoice-total",)))
+            body.staging = run.staging
             run.report["status"] = "passed"
+            cleanup = patch("sapi_config_lab.coordinate.runs.shutil.rmtree", side_effect=OSError("disk full"))
+            cleanup.start()
+            self.addCleanup(cleanup.stop)
 
-        with patch("sapi_config_lab.coordinate.runs.collect_jobs", side_effect=OSError("disk full")):
-            run_experiment(self.output, {}, body, prefix="t")
+        run_experiment(self.output, {}, body, prefix="t")
         report = self.saved()
         self.assertEqual(report["status"], "failed")
-        self.assertEqual(report["retained_staging"], str(staging))
-        self.assertTrue(staging.exists())
+        self.assertEqual(report["retained_staging"], str(body.staging))
+        self.assertTrue(body.staging.exists())
 
     def test_a_staged_run_passes_its_final_check_before_staging_is_removed(self):
         host = FakeHost(self)
 
         def body(run):
             run.use_image("lab")
-            run.stage("oracle", ("invoice-total",))
+            run.stage("oracle", select_benchmarks(workspace_root() / "benchmarks", ("invoice-total",)))
             run.harbor("oracle", run.tasks, "oracle")
             run.report["status"] = "passed"
             body.staging = run.staging
@@ -127,7 +144,7 @@ class RunTests(unittest.TestCase):
 
         def body(run):
             run.use_image("lab")
-            run.stage("oracle", ("invoice-total",))
+            run.stage("oracle", select_benchmarks(workspace_root() / "benchmarks", ("invoice-total",)))
             with self.assertRaisesRegex(RuntimeError, "interrupted"):
                 run.harbor("oracle", run.tasks, "oracle")
             with self.assertRaisesRegex(ValueError, "twice"):
@@ -135,10 +152,8 @@ class RunTests(unittest.TestCase):
             raise RuntimeError("job failed")
 
         with patch("sapi_config_lab.coordinate.runs.run_job", side_effect=interrupted) as dispatch:
-            with patch("sapi_config_lab.coordinate.runs.collect_jobs") as collect:
-                run_experiment(self.output, {}, body, prefix="t")
+            run_experiment(self.output, {}, body, prefix="t")
         self.assertEqual(dispatch.call_count, 1)
-        collect.assert_not_called()
         saved = self.saved()
         row = saved["harbor_jobs"]["oracle"]["trials"][0]
         self.assertTrue(row["partial"])
@@ -153,7 +168,7 @@ class RunTests(unittest.TestCase):
 
         def body(run):
             run.use_image("lab")
-            run.stage("oracle", ("invoice-total",))
+            run.stage("oracle", select_benchmarks(workspace_root() / "benchmarks", ("invoice-total",)))
             run.sources = {"changed": "source"}
             run.harbor("oracle", run.tasks, "oracle")
 
@@ -166,7 +181,7 @@ class RunTests(unittest.TestCase):
 
         def body(run):
             run.use_image("lab")
-            run.stage("generation", ("checkout-recovery",))
+            run.stage("generation", select_benchmarks(workspace_root() / "benchmarks", ("checkout-recovery",)))
             run.harbor("admission", run.tasks, "oracle", admission=True, verifier_env=["SAPI_CASE_NAME=chosen"])
             run.report["status"] = "passed"
 

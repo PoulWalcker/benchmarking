@@ -11,104 +11,15 @@ from zoneinfo import ZoneInfo
 if TYPE_CHECKING or __package__:
     from .contracts import WorkflowObservation, equal, require
     from .n8n_provenance import check_graph_evidence, check_provenance, live_operations, one_run
-    from .roles import resolve, whole_results
 
 else:  # Standalone Harbor distribution.
     from contracts import WorkflowObservation, equal, require
     from n8n_provenance import check_graph_evidence, check_provenance, live_operations, one_run
-    from roles import resolve, whole_results
 
 
 def _hash(value: Any) -> str:
     payload = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
     return hashlib.sha256(payload.encode()).hexdigest()
-
-
-def digest_native(config: dict, run: dict, admission: dict, *, mode: str) -> dict:
-    """Verify native lineage, then independently assess the digest business output."""
-    check_provenance(run)
-    require(
-        run.get("status") == "success" and run.get("persisted_status") == "success", "Digest did not succeed natively"
-    )
-    equal(run.get("execute_exit_code"), 0, "Native digest process failed")
-    _, final = one_run(run, "Result")
-    equal(run.get("result"), final, "Adapter digest Result changed")
-    equal(run.get("output"), final.get("output"), "Adapter digest output changed")
-    equal(final.get("admission"), admission, "Native digest admission changed")
-    equal(final.get("input_source"), "event", "Lifecycle run was only a fixture simulation")
-    equal(final.get("simulation"), False, "Lifecycle run was not admitted")
-    equal(final.get("llm_mode"), mode, "Wrong lifecycle LLM mode")
-    equal(final.get("spec_revision"), "06ddd3333109cea8a2cb3071609070d7a3c0d3ff", "Wrong pinned specification")
-    equal(run.get("input", {}).get("activation"), admission, "Adapter event identity changed")
-    workflow = config["workflow"]
-    steps = workflow["steps"]
-    require(len(steps) == 3, "Digest task requires three operation occurrences")
-    roles = {step["uses"]: step["id"] for step in steps}
-    equal(set(roles), {"digest.prepare", "digest.summarize", "digest.preview"}, "Wrong digest operations")
-    prepare, summarize, preview = (roles[name] for name in ("digest.prepare", "digest.summarize", "digest.preview"))
-    expected_bindings = {
-        prepare: {"articles": {"ref": "inputs.articles"}},
-        summarize: {"articles": {"ref": f"steps.{prepare}.articles"}},
-        preview: {"summary": {"ref": "steps." + summarize}},
-    }
-    uses = {sid: operation for operation, sid in roles.items()}
-    source_bindings_valid = True
-    for step in steps:
-        submitted = {key: whole_results(value, uses) for key, value in (step.get("with") or {}).items()}
-        source_bindings_valid = source_bindings_valid and submitted == expected_bindings[step["id"]]
-        require(not step.get("when"), "Digest task cannot silently skip an operation")
-    events = {event["step_id"]: event for event in final.get("trace", [])}
-    require(len(final.get("trace", [])) == 3, "Incomplete digest trace")
-    equal(set(events), set(expected_bindings), "Digest trace roles changed")
-    equal(set(run.get("mapping", {})), set(events), "Wrong digest native mapping")
-    states = {}
-    _, fixture = one_run(run, "Fixture")
-    equal(fixture.get("admission"), admission, "Fixture event identity changed")
-    equal(fixture.get("inputs"), workflow["inputs"], "Fixture business input changed")
-    require(type(fixture.get("deadline_at_ms")) in (float, int), "Missing lifecycle deadline")
-    for step in steps:
-        sid = step["id"]
-        _, state = one_run(run, run["mapping"][sid])
-        equal(events[sid].get("operation"), step["uses"], "Wrong native digest operation")
-        equal(events[sid].get("status"), "completed", "Digest operation incomplete")
-        equal(events[sid].get("implementation"), mode if sid == summarize else "script", "Wrong digest implementation")
-        equal(state.get("inputs"), workflow["inputs"], "Digest input loss")
-        equal(state.get("admission"), admission, "Operation event identity changed")
-        equal(state.get("deadline_at_ms"), fixture["deadline_at_ms"], "Lifecycle operation reset deadline")
-        states[sid] = state
-    observation = WorkflowObservation(final, events, states, {})
-    check_graph_evidence(config, workflow["inputs"], run, observation, mode)
-    equal(final.get("statuses"), dict.fromkeys(events, "completed"), "Final digest status changed")
-    equal(final.get("steps"), {sid: states[sid]["steps"][sid] for sid in events}, "Final digest step data changed")
-    articles = workflow["inputs"]["articles"]
-    arguments = {
-        step["id"]: resolve(step["with"], workflow["inputs"], final["steps"], final["statuses"]) for step in steps
-    }
-    equal(
-        final["steps"][prepare],
-        {"articles": arguments[prepare]["articles"]},
-        "Digest prepare differs from actual input",
-    )
-    summary = final["steps"][summarize]
-    preview_value = {"mode": "preview", **arguments[preview]["summary"]}
-    equal(final["steps"][preview], preview_value, "Preview changed its actual supplied summary")
-    output = final["output"]
-    passed = (
-        source_bindings_valid
-        and whole_results(workflow["output"], uses) == {"ref": "steps." + preview}
-        and isinstance(summary.get("text"), str)
-        and bool(summary["text"].strip())
-        and summary.get("article_ids") == [article["id"] for article in arguments[summarize]["articles"]]
-        and isinstance(output, dict)
-        and output == preview_value
-        and output.get("article_ids") == [article["id"] for article in articles]
-        and output.get("text") == summary["text"]
-    )
-    return {
-        "passed": passed,
-        "calls": live_operations(run) if mode == "live" else [],
-        "deadline_at_ms": fixture["deadline_at_ms"],
-    }
 
 
 def native_lifecycle(config: dict, run: dict, admission: dict, *, mode: str) -> dict:
