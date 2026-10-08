@@ -143,9 +143,10 @@ One fact, one owner: boundaries in `ARCHITECTURE.md`, workflow here, YAML semant
 
 `uv run --locked sapi-lab benchmarks [--root <benchmark-directory>] [--defaults]`
 lists metadata without importing evaluators. It reports legacy versions as `null`;
-all eleven current benchmarks remain legacy and keep their existing execution
-commands and default selection. Versioned manifests are an explicit loading seam
-for the migration, not yet accepted by legacy `harbor`/`generate`/`live` execution.
+Invoice-total uses a versioned manifest; the other ten benchmarks remain legacy.
+Existing command names and default selection are preserved. `package-tasks` and
+the unpaid `harbor` controls materialize invoice through its declared entrypoints
+and separate verifier. Remaining experiment caller migration is still in progress.
 
 The `sapi-lab-benchmark/v1` manifest has these required keys. Unknown keys fail;
 benchmark-specific declarations belong inside `config`.
@@ -230,4 +231,12 @@ SAPI_RUN_DOCKER_TESTS=1 uv run --locked --extra harbor --extra benchmark \
 They retain inspection results and raw image/filesystem archives under
 `reports/migration-03/docker-*`, inspect every public image layer and native mounts,
 and remove only their own retained containers and networks. Normal unit tests skip
-this Docker proof. Neither suite migrates an existing benchmark.
+this Docker proof. Invoice-total additionally exercises this path through `./run.sh --scenario invoice-total`.
+
+Invoice task packages retain the original `instruction.md` bytes for controls. Its
+historical reference-path wording is unchanged; the reference now enters only via
+Harbor's oracle solution. Model authoring uses the separately pinned generation
+prompt, with both full and scenario catalog bytes unchanged. The verifier runs the
+same 14 observations (three positive, seven invalid-input, four corruption/schema
+probes). `tests/benchmark.json` records the deadline admission budget, source closure
+and frozen staging options; evidence and derived evaluation keep their old layout.

@@ -28,6 +28,7 @@ class RoleContract(TypedDict):
     edges: list[list[str]]
     output: dict[str, Any]
     exclusive_actors: NotRequired[list[str]]
+    outputs: NotRequired[dict[str, list[str]]]
 
 
 # Scenarios whose historical records carry no submitted graph; only they may bind by unique operation.
@@ -76,18 +77,18 @@ def contract_for(scenario: str) -> RoleContract:
     return cast(RoleContract, json.loads(path.read_text()))
 
 
-def whole_results(value: Any, uses: dict[str, str]) -> Any:
+def whole_results(value: Any, uses: dict[str, str], outputs: dict | None = None) -> Any:
     """Read an object that copies every declared field of one step's result as `{ref: steps.ID}`.
 
     Equivalent only for `ref`: a skipped `optional_ref` producer yields null, not an object of nulls.
     """
     if isinstance(value, list):
-        return [whole_results(item, uses) for item in value]
+        return [whole_results(item, uses, outputs) for item in value]
     if not isinstance(value, dict) or "ref" in value or "optional_ref" in value:
         return value
-    value = {key: whole_results(item, uses) for key, item in value.items()}
+    value = {key: whole_results(item, uses, outputs) for key, item in value.items()}
     for sid, operation in uses.items():
-        fields = OUTPUTS.get(operation, ())
+        fields = (OUTPUTS if outputs is None else outputs).get(operation, ())
         if fields and value == {field: {"ref": f"steps.{sid}.{field}"} for field in fields}:
             return {"ref": "steps." + sid}
     return value
@@ -132,7 +133,7 @@ def check_assignment(contract: RoleContract, config: dict, binding: dict[str, st
     reverse = {sid: role for role, sid in binding.items()}
 
     def in_roles(value: Any) -> Any:
-        return role_references(whole_results(value, uses), reverse)
+        return role_references(whole_results(value, uses, contract.get("outputs")), reverse)
 
     def arguments(step: dict) -> Any:
         # `with` is keyed by input names; only its values are workflow values.
@@ -187,9 +188,9 @@ def check_assignment(contract: RoleContract, config: dict, binding: dict[str, st
     _same(in_roles(workflow["output"]), contract["output"], "wrong_role_output_lineage", "workflow output")
 
 
-def bind_roles(scenario: str, config: dict) -> dict[str, str]:
+def bind_roles(scenario: str, config: dict, contract: RoleContract | None = None) -> dict[str, str]:
     """Fail closed unless exactly one graph/input-origin assignment satisfies the task."""
-    contract = contract_for(scenario)
+    contract = contract_for(scenario) if contract is None else contract
     workflow = config["workflow"]
     require(workflow.get("id") == scenario, "Wrong submitted workflow identity", "wrong_workflow_identity")
     steps = workflow["steps"]

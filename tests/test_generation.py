@@ -25,7 +25,17 @@ class GenerationTests(unittest.TestCase):
             stage_tasks(root / "tasks", mode="replay", submissions=submissions)
             for scenario, item in submissions.items():
                 self.assertEqual(
-                    (root / "tasks" / scenario / "environment/base.yaml").read_bytes(), item["path"].read_bytes()
+                    (
+                        root
+                        / "tasks"
+                        / scenario
+                        / (
+                            "solution/config.yaml"
+                            if SCENARIOS[scenario].benchmark is not None
+                            else "environment/base.yaml"
+                        )
+                    ).read_bytes(),
+                    item["path"].read_bytes(),
                 )
             for selected in (
                 {},
@@ -43,13 +53,26 @@ class GenerationTests(unittest.TestCase):
             self.assertEqual(len(hashes), 3)
             for task in tasks.iterdir():
                 self.assertFalse((task / "solution").exists())
-                self.assertEqual(list(task.rglob("*.yaml")), [task / "tests/bindings.yaml"])
+                expected_catalogs = (
+                    [task / "environment/payload/bindings.yaml", task / "tests/payload/bindings.yaml"]
+                    if (task / "tests/benchmark.json").exists()
+                    else [task / "tests/bindings.yaml"]
+                )
+                self.assertEqual(sorted(task.rglob("*.yaml")), sorted(expected_catalogs))
                 prompt = (task / "instruction.md").read_text()
                 for config in (workspace_root() / "benchmarks").glob("*/config.yaml"):
                     self.assertNotIn(config.read_text().strip(), prompt)
                 self.assertNotIn((workspace_root() / "verification/verify.py").read_text(), prompt)
                 self.assertEqual(
-                    (task / "tests/verify.py").read_bytes(), (workspace_root() / "verification/verify.py").read_bytes()
+                    (
+                        task
+                        / (
+                            "tests/core/verification/verify.py"
+                            if (task / "tests/benchmark.json").exists()
+                            else "tests/verify.py"
+                        )
+                    ).read_bytes(),
+                    (workspace_root() / "verification/verify.py").read_bytes(),
                 )
 
     def test_observed_tools_cannot_be_called_clean(self):

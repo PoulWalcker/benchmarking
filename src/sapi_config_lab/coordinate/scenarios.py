@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 from typing import Any
 
+from sapi_config_lab.benchmark import Benchmark, load_benchmark
 from sapi_config_lab.contracts import OutputArtifact
 from sapi_config_lab.coordinate.providers import ENVIRONMENTS
 from sapi_config_lab.paths import CATALOG, workspace_root
@@ -65,6 +66,7 @@ class Scenario:
     prompt_extension: str | None = None
     fresh_fixtures: bool = False
     human_review: bool = False
+    benchmark: Benchmark | None = None
     harbor: dict[str, int] = field(default_factory=lambda: dict(HARBOR_DEFAULTS))
 
     @property
@@ -103,6 +105,9 @@ def harbor_resources(section: Any, name: str) -> dict[str, int]:
 
 def load_scenario(directory: Path) -> Scenario:
     meta: dict[str, Any] = json.loads((directory / "scenario.json").read_text())
+    benchmark = load_benchmark(directory.parent, directory) if "version" in meta else None
+    if benchmark is not None:
+        meta = {**benchmark.config["legacy"], "default": benchmark.default, "bindings": benchmark.bindings}
     environment = str(meta.get("environment"))
     budgets, output, controls = meta.get("budgets", {}), meta.get("output"), meta.get("controls", {})
     provenance = meta.get("provenance")
@@ -122,6 +127,7 @@ def load_scenario(directory: Path) -> Scenario:
         raise ValueError(f"Invalid benchmark definition: {directory.name}")
     return Scenario(
         name=directory.name.split("-", 1)[1],
+        benchmark=benchmark,
         directory=directory,
         environment=environment,
         evaluator=meta["evaluator"],
@@ -136,7 +142,9 @@ def load_scenario(directory: Path) -> Scenario:
         prompt_extension=meta.get("prompt_extension"),
         fresh_fixtures=meta.get("fresh_fixtures", False),
         human_review=meta.get("human_review", False),
-        harbor=harbor_resources(meta.get("harbor", {}), directory.name),
+        harbor=harbor_resources(
+            dict(meta.get("harbor", {})) if benchmark is not None else meta.get("harbor", {}), directory.name
+        ),
     )
 
 
@@ -144,8 +152,6 @@ def _discover() -> dict[str, Scenario]:
     found: dict[str, Scenario] = {}
     for directory in sorted((workspace_root() / "benchmarks").iterdir()):
         if (directory / "scenario.json").is_file():
-            if "version" in json.loads((directory / "scenario.json").read_text()):
-                continue
             scenario = load_scenario(directory)
             if scenario.name in found:
                 raise ValueError(f"Duplicate benchmark name: {scenario.name}")

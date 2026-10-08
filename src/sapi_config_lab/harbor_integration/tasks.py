@@ -54,7 +54,17 @@ def validate_config(text: str) -> TaskConfig:
     return config
 
 
-def stage_benchmark(benchmark: Benchmark, destination: Path, options: Mapping[str, Any]) -> BenchmarkIdentity:
+def stage_benchmark(
+    benchmark: Benchmark,
+    destination: Path,
+    options: Mapping[str, Any],
+    *,
+    core_files: Mapping[str, Path] | None = None,
+    instruction: bytes | None = None,
+    submission: bytes | None = None,
+    oracle: bool = True,
+    host_records: Mapping[str, bytes] | None = None,
+) -> BenchmarkIdentity:
     """Stage disjoint contexts atomically; no existing task or source bytes are overwritten."""
     identity = freeze_identity(benchmark, options)
     files = {item.destination: item for item in benchmark.files}
@@ -88,16 +98,63 @@ def stage_benchmark(benchmark: Benchmark, destination: Path, options: Mapping[st
             path.write_bytes(data)
             path.chmod(0o644)
 
-        write("instruction.md", content("instruction.md"))
+        write("instruction.md", content("instruction.md") if instruction is None else instruction)
         write("task.toml", config_bytes)
         for item in benchmark.public:
             write("environment/payload/" + item.destination, content(item.destination))
         for item in (*benchmark.public, *benchmark.trusted):
             write("tests/payload/" + item.destination, content(item.destination))
-        write("solution/config.yaml", content(benchmark.reference.destination))
+        if oracle:
+            write(
+                "solution/config.yaml", content(benchmark.reference.destination) if submission is None else submission
+            )
+            write(
+                "solution/solve.sh",
+                b"#!/bin/sh\nset -eu\ncp /solution/config.yaml /app/submission/config.yaml\nchmod 644 /app/submission/config.yaml\n",
+            )
+        core = {}
+        for relative, source in (core_files or {}).items():
+            parts = relative.split("/")
+            if (
+                not parts
+                or parts[0] not in {"sapi_config_lab", "verification"}
+                or any(part in {"", ".", ".."} for part in parts)
+            ):
+                raise ValueError("Invalid trusted core destination: " + relative)
+            if source.is_symlink() or not source.is_file():
+                raise ValueError("Trusted core source must be a regular file")
+            data = source.read_bytes()
+            core[relative] = hashlib.sha256(data).hexdigest()
+            write("tests/core/" + relative, data)
+        write("tests/core/.keep", b"")
+        for name, data in (host_records or {}).items():
+            if "/" in name or "\\" in name or not name.endswith(".json") or name == "benchmark.json":
+                raise ValueError("Host records must be distinct JSON basenames")
+            write("tests/" + name, data)
         write(
-            "solution/solve.sh",
-            b"#!/bin/sh\nset -eu\ncp /solution/config.yaml /app/submission/config.yaml\nchmod 644 /app/submission/config.yaml\n",
+            "tests/benchmark.json",
+            json.dumps(
+                {
+                    "name": benchmark.name,
+                    "bindings": benchmark.bindings,
+                    "operations": benchmark.operations,
+                    "entrypoints": {
+                        role: {
+                            **asdict(entry),
+                            "module": "payload" + ("." + module if (module := python_module(entry.path)) else ""),
+                        }
+                        for role, entry in benchmark.entrypoints.items()
+                    },
+                    "identity": asdict(identity),
+                    "options": json.loads(identity.options_json),
+                    "core_files": core,
+                    "payload_files": {
+                        item.destination: expected[item.destination] for item in (*benchmark.public, *benchmark.trusted)
+                    },
+                },
+                indent=2,
+                sort_keys=True,
+            ).encode(),
         )
         runtime = (RESOURCES / "runtime/Dockerfile").read_bytes()
         admission = (RESOURCES / "submission.py").read_bytes()
@@ -113,6 +170,7 @@ def stage_benchmark(benchmark: Benchmark, destination: Path, options: Mapping[st
             "tests/Dockerfile",
             runtime + b"\nCOPY payload /tests/payload/\nCOPY submission.py /opt/sapi-submission.py\n"
             b"COPY test.sh /tests/test.sh\nCOPY check_imports.py /tests/check_imports.py\n"
+            b"COPY core /tests/core/\nCOPY benchmark.json /tests/benchmark.json\nENV PYTHONPATH=/tests/core:/tests\n"
             b"RUN mkdir -p /submission /logs/artifacts && python3 /tests/check_imports.py\n",
         )
         modules = sorted(

@@ -182,7 +182,14 @@ class DeadlineBudgetTests(unittest.TestCase):
     def budget(self, mode: str, name: str) -> object:
         with tempfile.TemporaryDirectory() as directory:
             stage_tasks(Path(directory) / "tasks", mode=mode, scenarios=(name,))
-            return json.loads((Path(directory) / "tasks" / name / "tests/budget.json").read_text())
+            tests = Path(directory) / "tasks" / name / "tests"
+            if (tests / "benchmark.json").exists():
+                return {
+                    "deadline_seconds": json.loads((tests / "benchmark.json").read_text())["options"][
+                        "deadline_seconds"
+                    ]
+                }
+            return json.loads((tests / "budget.json").read_text())
 
     def test_each_package_states_the_deadline_it_was_sized_for(self):
         self.assertEqual(self.budget("oracle", "invoice-total"), {"deadline_seconds": 30})

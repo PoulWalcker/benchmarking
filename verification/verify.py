@@ -20,8 +20,7 @@ import yaml
 if TYPE_CHECKING or __package__:
     from .contracts import Recorded, Rejected, require, scenario_file
     from .extensions import refinement_corruptions, refinement_model_calls, verify_refinement_task
-    from .fixture_evaluators import check_business_result, evaluator_for
-    from .fixture_evaluators import fresh_cases as fresh_cases
+    from .fixture import FixtureEvaluator
     from .n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
     from .roles import bind_roles, contract_for
     from .rubric import SCHEMA, Judge
@@ -33,8 +32,7 @@ else:  # Harbor executes its copied verifier directly.
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from contracts import Recorded, Rejected, require, scenario_file
     from extensions import refinement_corruptions, refinement_model_calls, verify_refinement_task
-    from fixture_evaluators import check_business_result, evaluator_for
-    from fixture_evaluators import fresh_cases as fresh_cases
+    from fixture import FixtureEvaluator
     from n8n_provenance import check_operation_order, check_provenance, check_rejection, observe_execution, rows
     from roles import bind_roles, contract_for
     from rubric import SCHEMA, Judge
@@ -49,6 +47,21 @@ OBSERVATION_SCHEMA = "sapi-lab-observation/v1"
 WRONG_RESULT = "wrong-result"
 
 
+def evaluator_for(scenario: str) -> FixtureEvaluator:
+    if TYPE_CHECKING or __package__:
+        from .fixture_evaluators import evaluator_for as legacy
+    else:
+        from fixture_evaluators import evaluator_for as legacy
+    return legacy(scenario)
+
+
+def fresh_cases(scenario: str, cases: dict) -> dict:
+    fresh = evaluator_for(scenario).fresh
+    require(fresh is not None, "This fixture evaluator declares no freshness contract")
+    assert fresh is not None
+    return fresh(cases)
+
+
 def check_execution(
     scenario: str,
     inputs: dict,
@@ -58,15 +71,20 @@ def check_execution(
     config: dict | None = None,
     case: dict | None = None,
     rubric_runs: list | None = None,
+    fixture: FixtureEvaluator | None = None,
 ) -> dict:
     """Business acceptance and engine provenance must both pass; `rubric_runs` collects facts before acceptance."""
-    if evaluator_for(scenario).procedure == "refinement":
+    fixture = evaluator_for(scenario) if fixture is None else fixture
+    if fixture.procedure == "refinement":
         return verify_refinement_task(config, run, mode=mode, case=case)
-    observation, records = observe_execution(scenario, inputs, run, mode, config=config)
+    observation, records = observe_execution(scenario, inputs, run, mode, config=config, contract=fixture.contract)
     if rubric_runs is not None:
-        rubric_runs.append(observe(scenario, inputs, observation, case=case))
-    result = check_business_result(scenario, inputs, observation, mode, case=case)
-    check_operation_order(scenario, inputs, records, observation.roles)
+        rubric_runs.append(observe(scenario, inputs, observation, case=case, evaluator=fixture))
+    require(fixture.business is not None, "This fixture uses a dedicated evaluation procedure")
+    assert fixture.business is not None
+    fixture.business(inputs, observation, mode, case=case)
+    result = {"output_verified": True, "operation_count": len(observation.events), "llm_mode": mode}
+    check_operation_order(scenario, inputs, records, observation.roles, fixture.contract)
     return {**result, "n8n_node_count": len(run["run_data"]), "engine_provenance_verified": True}
 
 
@@ -100,10 +118,18 @@ def execution_summary(run: dict) -> dict:
 
 
 def corruption_checks(
-    scenario: str, inputs: dict, run: dict, mode: str, *, config: dict | None = None, case: dict | None = None
+    scenario: str,
+    inputs: dict,
+    run: dict,
+    mode: str,
+    *,
+    config: dict | None = None,
+    case: dict | None = None,
+    fixture: FixtureEvaluator | None = None,
 ) -> list[str]:
     """Deliberately corrupt results to test that acceptance cannot be vacuous."""
-    evaluator = evaluator_for(scenario)
+    evaluator = evaluator_for(scenario) if fixture is None else fixture
+
     mutations = [("wrong-final-output", evaluator.corrupt_output)]
 
     def absent_execution(candidate: dict) -> None:
@@ -122,7 +148,7 @@ def corruption_checks(
         candidate = copy.deepcopy(run)
         mutate(candidate)
         try:
-            check_execution(scenario, inputs, candidate, mode, config=config, case=case)
+            check_execution(scenario, inputs, candidate, mode, config=config, case=case, fixture=evaluator)
         except Rejected, KeyError, TypeError, IndexError:
             accepted.append(name)
         else:
@@ -207,6 +233,7 @@ def plan(
     mode: str = "stub",
     selected_case: str | None = None,
     deadline_budget: int | None = None,
+    fixture: FixtureEvaluator | None = None,
 ) -> dict:
     """Every definition the trusted step must run: fixture-applied submissions, corruptions and invalid definitions."""
     require(isinstance(cases, dict), "Unknown acceptance scenario")
@@ -221,7 +248,8 @@ def plan(
             f"Workflow deadline {deadline!r} exceeds the {deadline_budget}s this task was sized for",
             "deadline_exceeds_budget",
         )
-    if evaluator_for(scenario).procedure == "lifecycle":
+    fixture = evaluator_for(scenario) if fixture is None else fixture
+    if fixture.procedure == "lifecycle":
         if TYPE_CHECKING or __package__:
             from .lifecycle_submission import plan_lifecycle
         else:
@@ -405,8 +433,10 @@ def judge_entries(
     mode: str,
     report: dict,
     rubric_runs: list[dict],
+    fixture: FixtureEvaluator | None = None,
 ) -> None:
     """Judge each recorded entry; rows are appended first, so a rejection still shows how far the engine got."""
+    fixture = evaluator_for(scenario) if fixture is None else fixture
     fixtures = {case["name"]: case for kind in ("positive", "negative") for case in cases[kind]}
     for entry in entries:
         artifact_dir = recorded.case(entry["name"])
@@ -431,7 +461,14 @@ def judge_entries(
                 case = fixtures[entry["name"]]
                 row.update(
                     check_execution(
-                        scenario, case["inputs"], run, mode, config=candidate, case=case, rubric_runs=rubric_runs
+                        scenario,
+                        case["inputs"],
+                        run,
+                        mode,
+                        config=candidate,
+                        case=case,
+                        rubric_runs=rubric_runs,
+                        fixture=fixture,
                     )
                 )
                 row["acceptance"] = recorded.accept(
@@ -441,13 +478,15 @@ def judge_entries(
                 )
                 row["verifier_corruptions_rejected"] = (
                     refinement_corruptions(candidate, run, mode=mode)
-                    if evaluator_for(scenario).procedure == "refinement"
-                    else corruption_checks(scenario, case["inputs"], run, mode, config=candidate, case=case)
+                    if fixture.procedure == "refinement"
+                    else corruption_checks(
+                        scenario, case["inputs"], run, mode, config=candidate, case=case, fixture=fixture
+                    )
                 )
                 row["output"] = run["output"]
             elif entry["kind"] == "negative":
                 case = fixtures[entry["name"]]
-                check_rejection(run, case, candidate)
+                check_rejection(run, case, candidate, fixture.contract)
                 row["acceptance"] = recorded.accept(entry["name"], False, "Expected invalid input rejection")
                 row["expected_error"] = case["error"]
             elif entry["kind"] == "mutated-generated-workflow":
@@ -462,6 +501,7 @@ def judge_entries(
                         mode,
                         config=candidate,
                         case=cases["positive"][0],
+                        fixture=fixture,
                     )
                 except Rejected as error:
                     row["rejection"] = str(error)
@@ -499,11 +539,13 @@ def evaluate(
     judge: Judge | None = None,
     evaluation: Path | None = None,
     deadline_budget: int | None = None,
+    fixture: FixtureEvaluator | None = None,
 ) -> dict:
     """Judge the recorded observation of one submission; decisions go beside it unless `evaluation` is given."""
     evaluation = evaluation or evidence.parent / "evaluation"
     evaluation.mkdir(parents=True, exist_ok=True)
-    identity = evaluator_identity(scenario)
+    fixture = evaluator_for(scenario) if fixture is None else fixture
+    identity = fixture.identity or evaluator_identity(scenario)
     rubric_runs: list[dict] = []
     procedure = "case"
     report: dict[str, Any] = {
@@ -524,7 +566,7 @@ def evaluate(
             require(runtime_manifest is not None and runtime_manifest.is_file(), "Missing packaged runtime manifest")
             assert runtime_manifest is not None
             check_runtime_sources(runtime_src, runtime_manifest)
-        expected = plan(scenario, config_path, cases, mode, selected_case, deadline_budget)
+        expected = plan(scenario, config_path, cases, mode, selected_case, deadline_budget, fixture)
         assert cases is not None
         report["submission_sha256"] = expected["submission_sha256"]
         report["fixture_sha256"] = expected["fixture_sha256"]
@@ -532,16 +574,16 @@ def evaluate(
             ["execution.deadline_seconds set to 600"] if mode == "live" else []
         )
         recorded = Recorded(evidence, evaluation, read_evidence(evidence, expected), identity)
-        procedure = evaluator_for(scenario).procedure
+        procedure = fixture.procedure
         report["observation"] = {"manifest": "evidence/observation.json", "plan_sha256": digest(expected)}
-        if evaluator_for(scenario).procedure == "lifecycle":
+        if fixture.procedure == "lifecycle":
             if TYPE_CHECKING or __package__:
                 from .lifecycle_submission import evaluate_lifecycle
             else:
                 from lifecycle_submission import evaluate_lifecycle
             evaluate_lifecycle(expected["entries"], recorded, report["cases"])
         else:
-            judge_entries(scenario, expected["entries"], recorded, cases, mode, report, rubric_runs)
+            judge_entries(scenario, expected["entries"], recorded, cases, mode, report, rubric_runs, fixture)
         report["passed"] = all(row["passed"] for row in report["cases"])
     except Exception as error:  # Candidate evidence can fail any way; each way is a rejection
         report["error"] = str(error)
@@ -555,7 +597,12 @@ def evaluate(
         executed = bool(rubric_runs) and len(rubric_runs) == executions
         try:
             scored = score_rubric(
-                scenario, rubric_runs, accepted=report["passed"], execution_pass=executed, judge=judge
+                scenario,
+                rubric_runs,
+                accepted=report["passed"],
+                execution_pass=executed,
+                judge=judge,
+                card=fixture.rubric,
             )
         except Exception as error:  # A rubric must never cost a correct submission its report
             scored = {

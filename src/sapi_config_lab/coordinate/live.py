@@ -60,6 +60,14 @@ def validate_packages(path: Path, submissions: dict, image: str):
     templates = ROOT / "harbor/templates"
     for scenario, selected in submissions.items():
         task = path / scenario
+        benchmark = SCENARIOS[scenario].benchmark
+        if benchmark is not None:
+            from sapi_config_lab.coordinate.benchmark_packages import validate_selected
+
+            validate_selected(
+                benchmark, task, ROOT, {**selected, "cases": selected.get("cases", SCENARIOS[scenario].cases())}
+            )
+            continue
         require(sha256(task / "environment/base.yaml") == selected["sha256"], "Staged submission hash mismatch")
         if "cases_sha256" in selected:
             require(sha256(task / "tests/cases.json") == selected["cases_sha256"], "Staged fixture hash mismatch")

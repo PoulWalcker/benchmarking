@@ -244,6 +244,36 @@ def stage_tasks(
     runtime = runtime_sources(root)
     for scenario, definition in selected.items():
         task = destination / scenario
+        if definition.benchmark is not None:
+            from sapi_config_lab.coordinate.benchmark_packages import stage_selected
+
+            public_instruction = (
+                generation_prompt(root, definition, catalog).encode()
+                if mode == "generation"
+                else (definition.directory / "instruction.md").read_bytes()
+            )
+            chosen_cases = (cases or {}).get(scenario)
+            options: dict[str, Any] = {
+                "mode": "stub",
+                "deadline_seconds": declared_deadline(planned_config(definition, mode, submissions)),
+            }
+            if chosen_cases is not None:
+                options["cases"] = chosen_cases
+            replayed = Path(submissions[scenario]["path"]).read_bytes() if submissions else None
+            if replayed is not None:
+                options["submission_sha256"] = hashlib.sha256(replayed).hexdigest()
+            stage_selected(
+                definition.benchmark,
+                task,
+                root,
+                options,
+                instruction=public_instruction,
+                submission=replayed,
+                oracle=mode != "generation",
+                cases=chosen_cases if chosen_cases is not None else definition.cases(),
+            )
+            hashes[scenario] = hashlib.sha256(public_instruction).hexdigest()
+            continue
         (task / "environment").mkdir(parents=True)
         (task / "tests").mkdir()
         hosted = definition.hosted

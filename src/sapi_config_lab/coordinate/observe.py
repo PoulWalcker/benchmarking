@@ -12,7 +12,6 @@ import shutil
 
 from sapi_config_lab.contracts import ArtifactTransform, Document, ExecutionRecord
 from sapi_config_lab.coordinate.cases import run_case
-from sapi_config_lab.coordinate.lifecycle import LifecycleController
 from sapi_config_lab.evidence import digest, durable_json, sha256, write_json
 from sapi_config_lab.paths import CATALOG
 from sapi_config_lab.profile import read_bindings
@@ -47,6 +46,8 @@ def _case(
 
 
 def _lifecycle(entry: Document, directory: Path, backend, bindings: Document) -> None:
+    from sapi_config_lab.coordinate.lifecycle import LifecycleController
+
     controller = LifecycleController(directory, backend=backend, bindings=bindings)
     event = controller.callback(controller.register(entry["config"]), entry["callback"])
     durable_json(directory / "event.json", event)

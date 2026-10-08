@@ -11,12 +11,10 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING or __package__:
     from .contracts import Rejected, WorkflowObservation
-    from .fixture_evaluators import evaluator_for
     from .rubric import SCHEMA, Judge, RubricCard, RubricError, RunFacts, digest, score
     from .rubric_cards import card_for
 else:
     from contracts import Rejected, WorkflowObservation
-    from fixture_evaluators import evaluator_for
     from rubric import SCHEMA, Judge, RubricCard, RubricError, RunFacts, digest, score
     from rubric_cards import card_for
 
@@ -30,12 +28,21 @@ _NO_RUN = "Not scored: no executed case produced the named checks"
 _REJECTIONS = (Rejected, KeyError, TypeError, IndexError)
 
 
+def evaluator_for(scenario: str):
+    if TYPE_CHECKING or __package__:
+        from .fixture_evaluators import evaluator_for as legacy
+    else:
+        from fixture_evaluators import evaluator_for as legacy
+    return legacy(scenario)
+
+
 def observe(
-    scenario: str, inputs: dict[str, Any], observation: WorkflowObservation, *, case: dict | None = None
+    scenario: str, inputs: dict[str, Any], observation: WorkflowObservation, *, case: dict | None = None, evaluator=None
 ) -> Document:
     """Facts for one executed case; never raises, and reports no facts rather than scoring a card short."""
     try:
-        evaluator = evaluator_for(scenario)
+        if evaluator is None:
+            evaluator = evaluator_for(scenario)
         obligations = evaluator.obligations(inputs, observation, case=case) if evaluator.obligations else {}
         checks = {name: _held(obligation) for name, obligation in obligations.items()}
         prose = evaluator.prose(inputs, observation, checks) if evaluator.prose else {}
@@ -51,10 +58,11 @@ def evaluate(
     accepted: bool,
     execution_pass: bool,
     judge: Judge | None = None,
+    card: RubricCard | None = None,
 ) -> Document | None:
     """This submission's card scored, or why not; None for a scenario with no card. Never raises."""
     try:
-        card = card_for(scenario)
+        card = card_for(scenario) if card is None else card
     except RubricError:
         return None
     checks: dict[str, bool] = {"accepted": bool(accepted)}

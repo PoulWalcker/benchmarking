@@ -26,7 +26,16 @@ ALLOWED = {
     "author": {SHARED, "author"},
     "verification": {"verification"},
     "harbor_integration": {SHARED, "harbor_integration"},
-    "coordinate": {SHARED, "compile", "execute", "evaluate", "author", "verification", "coordinate"},
+    "coordinate": {
+        SHARED,
+        "compile",
+        "execute",
+        "evaluate",
+        "author",
+        "verification",
+        "coordinate",
+        "harbor_integration",
+    },
 }
 
 # Module (dotted, relative to the package or "verification.") -> stage. The

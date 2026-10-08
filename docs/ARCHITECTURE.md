@@ -170,17 +170,17 @@ this ticket does not migrate existing re-evaluation consumers.
 `coordinate/benchmark_discovery.py` supplies metadata-only legacy headers for
 `sapi-lab benchmarks`. It neither translates a legacy header into an executable
 versioned descriptor nor imports `coordinate/scenarios.py`. The latter retains
-legacy execution globals for unmigrated commands and skips versioned manifests;
-new consumers must use the explicit descriptor boundary. All eleven existing
-benchmarks still use the legacy execution path. Verifier independence and the
-frozen migration ownership edges are unchanged.
+legacy execution globals and a temporary metadata view for migrated invoice
+callers; new consumers use the explicit descriptor boundary. Invoice-total uses
+positive packaging, while ten existing benchmarks retain legacy execution.
+Verifier independence and the frozen migration ownership edges are unchanged.
 
 ## Positive Harbor packages
 
 `harbor_integration/tasks.py` adds a separate packaging path for versioned
 benchmarks. It validates native `task.toml` against pinned Harbor 0.21.0. Integration
 modules may import neutral contracts and each other; stage logic stays outside.
-Legacy task packaging and all eleven existing benchmarks retain their current path.
+Legacy task packaging remains for unmigrated benchmarks. Invoice-total uses the versioned path.
 
 `stage_benchmark` copies declared public files into `environment/payload`, public
 and trusted files into `tests/payload`, and the reference into `solution/`. Public
@@ -214,3 +214,42 @@ includes `/tests/test.sh`, its declared payload and dependencies. Build-time iso
 imports reject unresolved entrypoint imports before verification starts. No reference
 enters the verifier image. Packaging does not invoke jobs or implement the benchmark's
 compile/execute/evaluate pipeline.
+
+### Invoice package execution
+
+`benchmarks/01-invoice-total` owns its unchanged public catalog, trusted JavaScript
+operation bundle as explicit compatibility material, case/probe planning,
+independent totals, role contract/output schemas,
+and deterministic rubric. Its explicit fixture object supplies these to verifier
+mechanisms without consulting the legacy evaluator table. The old table and bundle
+remain compatibility inputs for unmigrated callers. The versioned task includes
+its own byte-identical operation bundle and no evaluator table. Keeping the full
+bundle preserves execution of every operation the unchanged full catalog exposes,
+including incorrect candidate graphs which independent invoice acceptance rejects. Ordinary and recursive refinement compilation accept trusted operation
+source supplied by coordination, never an executable path selected in candidate YAML.
+
+`coordinate/benchmark_packages.py` supplies a positive list of generic workflow and
+verification sources to the separate verifier image. Integration copies and hashes
+that list; it does not discover a checkout or copy host services. The declared
+entrypoints and complete import closure are checked while building. The public
+image still contains only declared public files and pinned upstream runtime bytes.
+
+`coordinate/benchmark_worker.py` reads the trusted staged metadata, verifies source
+hashes, binds both benchmark and generic verifier sources into evaluator identity,
+calls the local planner, executes the observation plan with the supplied
+bundle, and calls the local evaluator on frozen evidence. It writes the normalized
+result beside the existing independent verification report. Harbor keeps ownership
+of the two environments, collection, transfer and phase limits. Missing YAML yields
+rejected acceptance, null execution/quality and deterministic reward zero.
+
+Existing scenario callers temporarily receive a compatibility view from the
+manifest's `config.legacy` section. This preserves selection and prompt arms while
+`stage_tasks` chooses versioned materialization by descriptor presence. There is no
+benchmark-name branch or new provider/evaluator registration.
+
+Generation/selection temporarily retain the host-side `tests/cases.json` record and
+its historical hash format. This compatibility record is outside both image COPY
+closures. Before live dispatch, versioned package validation reconstructs the
+positive package from current declared sources and the selected immutable YAML/
+fixtures, then compares every staged file. It does not require the old broad image
+or put the reference back in the public environment.

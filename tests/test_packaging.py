@@ -118,6 +118,20 @@ class PackagingTests(unittest.TestCase):
             stage_tasks(destination)
             for name, definition in SCENARIOS.items():
                 task = destination / name
+                if definition.benchmark is not None:
+                    self.assertEqual((task / "solution/config.yaml").read_bytes(), definition.config.read_bytes())
+                    self.assertEqual(json.loads((task / "tests/payload/cases.json").read_text()), source_cases[name])
+                    self.assertFalse((task / "environment/base.yaml").exists())
+                    for item in definition.benchmark.public:
+                        self.assertEqual(
+                            (task / "environment/payload" / item.destination).read_bytes(), item.source.read_bytes()
+                        )
+                    for item in definition.benchmark.trusted:
+                        self.assertEqual(
+                            (task / "tests/payload" / item.destination).read_bytes(), item.source.read_bytes()
+                        )
+                        self.assertFalse((task / "environment/payload" / item.destination).exists())
+                    continue
                 self.assertEqual((task / "environment/base.yaml").read_bytes(), definition.config.read_bytes())
                 self.assertEqual(
                     (task / "tests/verify.py").read_bytes(), (ROOT / "verification/verify.py").read_bytes()
@@ -147,6 +161,14 @@ class PackagingTests(unittest.TestCase):
             stage_tasks(destination, mode="generation")
             for task in destination.iterdir():
                 dockerfile = (task / "environment/Dockerfile").read_text()
+                if (task / "tests/benchmark.json").exists():
+                    self.assertNotIn("rm -rf", dockerfile)
+                    self.assertFalse((task / "solution").exists())
+                    self.assertEqual(list((task / "environment").rglob("*.json")), [])
+                    self.assertEqual(
+                        json.loads((task / "tests/payload/cases.json").read_text()), all_cases()[task.name]
+                    )
+                    continue
                 self.assertIn("rm -rf /app/lab/benchmarks /app/scenario /app/submission", dockerfile)
                 self.assertEqual(set(json.loads((task / "tests/cases.json").read_text())), {task.name})
                 self.assertFalse((task / "solution").exists())

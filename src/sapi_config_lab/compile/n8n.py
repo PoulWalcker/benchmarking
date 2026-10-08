@@ -64,6 +64,7 @@ def compile_n8n(
     operation_url: str | None = None,
     activation: str = "fixture",
     bound_deadline: bool = False,
+    operation_source: str | None = None,
 ) -> tuple[Document, dict[str, str]]:
     """Compile the closed DAG profile to n8n without executing it; HTTP timeouts are capped at the deadline."""
     check(llm_mode in ("stub", "live"), "llm_mode must be stub or live")
@@ -87,8 +88,9 @@ def compile_n8n(
         if not parsed.path.rstrip("/"):
             endpoint += "/v1/agency/execute"
     order, deps = validate(cfg, bindings)
-    ops = (RESOURCES / "operations.js").read_text()
-    # This bundled table is the local capability set; a catalog declaration supplies no executable code.
+    ops = (RESOURCES / "operations.js").read_text() if operation_source is None else operation_source
+    check(isinstance(ops, str), "Trusted operation_source must be JavaScript text")
+    # The trusted table is the local capability set; a catalog declaration supplies no executable code.
     local_operations = set(re.findall(r"^  '([^']+)':", ops, re.MULTILINE))
     for step in cfg["workflow"]["steps"]:
         if bindings[step["uses"]].get("transport") == "http" or (step["kind"] == "LLM" and llm_mode == "live"):
@@ -109,7 +111,14 @@ def compile_n8n(
         from sapi_config_lab.compile.refinement import compile_refinement
 
         return compile_refinement(
-            cfg, bindings, llm_mode, bridge_url, request_timeout_seconds, activation, bound_deadline
+            cfg,
+            bindings,
+            llm_mode,
+            bridge_url,
+            request_timeout_seconds,
+            activation,
+            bound_deadline,
+            operation_source=ops,
         )
     uses_tools = any(binding.get("transport") == "http" for binding in used_bindings)
     if uses_tools:

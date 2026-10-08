@@ -26,7 +26,7 @@ class FixtureBindingsTests(unittest.TestCase):
             selected = {key: value for key, value in catalog.items() if key.startswith("invoices.")}
             path = root / "catalog.yaml"
             path.write_text(yaml.safe_dump({"operations": selected}))
-            scenario = replace(scenario, bindings=path)
+            scenario = replace(scenario, bindings=path, benchmark=None)
             prompt = generation_prompt(workspace_root(), scenario)
             self.assertTrue(prompt.endswith(path.read_text()))
             self.assertEqual(yaml.safe_load(scenario_catalog(scenario))["operations"], selected)

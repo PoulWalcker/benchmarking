@@ -1,18 +1,18 @@
 """Composition of independent fixture evaluators; benchmark semantics never come from runtime operations."""
 
-from collections.abc import Callable
 import copy
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING or __package__:
     from . import business, fixture_prose, scenario_business
     from .contracts import WorkflowObservation, require
+    from .fixture import FixtureEvaluator
     from .fixture_freshness import composed_fixtures
     from .n8n_provenance import rows
 else:
     import business
     from contracts import WorkflowObservation, require
+    from fixture import FixtureEvaluator
     from fixture_freshness import composed_fixtures
     import fixture_prose
     from n8n_provenance import rows
@@ -24,13 +24,6 @@ def ticket_guard(inputs: dict, when: dict) -> bool:
     field = when["ref"].removeprefix("steps.classify.")
     require(field != when["ref"], "No stated expectation decides this model call")
     return business.expected_classification(inputs)[field] == when["eq"]
-
-
-def wrong_output(candidate: dict) -> None:
-    final = rows(candidate["run_data"]["Result"][0])[0]
-    final["output"] = {"deliberately_wrong": True}
-    candidate["output"] = copy.deepcopy(final["output"])
-    candidate["result"] = copy.deepcopy(final)
 
 
 def invoice_output(candidate: dict) -> None:
@@ -72,20 +65,6 @@ def contentless_report(candidate: dict) -> None:
     final["steps"][writer["step_id"]]["report"] = final["output"]["report"]
     candidate["output"] = copy.deepcopy(final["output"])
     candidate["result"] = copy.deepcopy(final)
-
-
-@dataclass(frozen=True)
-class FixtureEvaluator:
-    """Existing independent business callbacks and the procedure needed to observe them."""
-
-    business: Callable | None = None
-    procedure: Literal["case", "refinement", "lifecycle"] = "case"
-    guard: Callable[[dict, dict], bool] | None = None
-    obligations: Callable | None = None
-    prose: Callable | None = None
-    fresh: Callable[[dict], dict] | None = None
-    corrupt_output: Callable[[dict], None] = wrong_output
-    extra_corruptions: tuple[tuple[str, Callable[[dict], None]], ...] = ()
 
 
 EVALUATORS = {

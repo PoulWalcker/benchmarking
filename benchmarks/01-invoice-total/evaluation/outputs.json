@@ -1,0 +1,15 @@
+{
+  "invoices.validate": [
+    "invoices"
+  ],
+  "invoices.sum": [
+    "amount_minor",
+    "currency",
+    "count"
+  ],
+  "invoices.report": [
+    "total_minor",
+    "currency",
+    "invoice_count"
+  ]
+}

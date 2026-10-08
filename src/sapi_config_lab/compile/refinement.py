@@ -8,7 +8,7 @@ import uuid
 
 from sapi_config_lab.compile.n8n import RESOURCES, bind_run, compile_n8n
 from sapi_config_lab.contracts import Document, LlmMode
-from sapi_config_lab.profile import SPEC
+from sapi_config_lab.profile import SPEC, check
 
 
 def compile_refinement(
@@ -19,12 +19,15 @@ def compile_refinement(
     timeout: int,
     activation: str = "fixture",
     bound_deadline: bool = False,
+    operation_source: str | None = None,
 ) -> tuple[Document, dict[str, str]]:
     """Unroll attempts with native early exit: no later copy runs after an accepted checkpoint."""
     workflow = config["workflow"]
     policy = config["execution"]["refinement"]
     maximum = policy["max_attempts"]
-    helpers = (RESOURCES / "operations.js").read_text() + "\n" + (RESOURCES / "runtime-fragment.js").read_text()
+    ops = (RESOURCES / "operations.js").read_text() if operation_source is None else operation_source
+    check(isinstance(ops, str), "Trusted operation_source must be JavaScript text")
+    helpers = ops + "\n" + (RESOURCES / "runtime-fragment.js").read_text()
     artifact: Document = {"nodes": [], "connections": {}}
     mapping: dict[str, str] = {}
 
@@ -54,6 +57,7 @@ def compile_refinement(
             _refinement_attempt=number,
             activation=activation,
             bound_deadline=bound_deadline,
+            operation_source=ops,
         )
         names = {n["name"]: f"Attempt {number} / {n['name']}" for n in graph["nodes"]}
         names["Result"] = f"Checkpoint {number}"

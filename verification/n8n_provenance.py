@@ -51,7 +51,7 @@ def check_provenance(run: dict) -> None:
 
 
 def observe_execution(
-    scenario: str, inputs: dict, run: dict, mode: str = "stub", *, config: dict | None = None
+    scenario: str, inputs: dict, run: dict, mode: str = "stub", *, config: dict | None = None, contract=None
 ) -> tuple[WorkflowObservation, dict[str, dict]]:
     check_provenance(run)
     require(run.get("status") == "success", "n8n runtime did not succeed")
@@ -73,7 +73,7 @@ def observe_execution(
         "Missing logical definition revision",
     )
     trace = final["trace"]
-    contract = contract_for(scenario)
+    contract = contract_for(scenario) if contract is None else contract
     require(len(trace) == len(contract["roles"]), "Wrong number of logical operation events")
     events = {}
     for event in trace:
@@ -82,7 +82,7 @@ def observe_execution(
         require(isinstance(sid, str) and sid not in events, "Repeated or missing logical occurrence")
         events[sid] = event
     if config is not None:
-        roles = bind_roles(scenario, config)
+        roles = bind_roles(scenario, config, contract)
     else:
         require(scenario in GRAPHLESS_RECORD_SCENARIOS, "Submitted graph required for occurrence acceptance")
         roles = {}
@@ -139,9 +139,11 @@ def observe_execution(
     return observation, records
 
 
-def check_operation_order(scenario: str, inputs: dict, records: dict[str, dict], roles: dict[str, str]) -> None:
+def check_operation_order(
+    scenario: str, inputs: dict, records: dict[str, dict], roles: dict[str, str], contract=None
+) -> None:
     """Check every independent role edge using native execution timing."""
-    for first, second in contract_for(scenario)["edges"]:
+    for first, second in (contract_for(scenario) if contract is None else contract)["edges"]:
         ordered(records[roles[first]], records[roles[second]], roles[first], roles[second])
 
 
@@ -261,7 +263,7 @@ def check_graph_evidence(config: dict, inputs: dict, run: dict, observation: Wor
     )
 
 
-def check_rejection(run: dict, case: dict, config: dict) -> None:
+def check_rejection(run: dict, case: dict, config: dict, contract=None) -> None:
     check_provenance(run)
     require(run.get("status") == "error", "Invalid input was accepted or failed before execution")
     require(not run.get("result_node_present"), "Invalid input produced a successful Result")
@@ -273,7 +275,7 @@ def check_rejection(run: dict, case: dict, config: dict) -> None:
         "Failure was not the expected domain/schema validation error",
     )
     if case.get("role"):
-        binding = bind_roles(config["workflow"]["id"], config)
+        binding = bind_roles(config["workflow"]["id"], config, contract)
         require(case["role"] in binding, "Unknown rejecting role")
         step_ids = [binding[case["role"]]]
         step = next(step for step in config["workflow"]["steps"] if step["id"] == step_ids[0])
