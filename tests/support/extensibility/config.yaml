@@ -1,0 +1,30 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: beacon-calibration
+  revision: 1
+  kind: Pipeline
+  inputs: {station: north}
+  steps:
+    - id: sample
+      kind: Script
+      uses: beacon.sample
+      with: {station: {ref: inputs.station}}
+    - id: complete
+      kind: Script
+      uses: beacon.complete
+      with: {sample: {ref: steps.sample.result_json}}
+  dependencies: [[sample, complete]]
+  acceptance: Calibrate the observed bearing using the world offset and preserve its station and seal.
+  output: {ref: steps.complete}
+activation:
+  kind: Callback
+  rule_id: beacon-requested
+  hook: benchmark.beacon_requested
+  condition: valid_input
+  reaction: Trigger
+  workflow_ref: {id: beacon-calibration, revision: 1}
+execution:
+  concurrency: independent
+  deadline_seconds: 30
+  on_step_error: fail

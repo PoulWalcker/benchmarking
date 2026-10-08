@@ -1,0 +1,32 @@
+operations:
+  beacon.sample:
+    kind: Script
+    inputs: [station]
+    outputs: [result_json]
+    implementation: environment_tool
+    transport: http
+    input_schema:
+      type: object
+      required: [station]
+      additionalProperties: false
+      properties:
+        station: {type: string, enum: [north]}
+    output_schema:
+      type: object
+      required: [result_json]
+      additionalProperties: false
+      properties:
+        result_json: {type: string}
+  beacon.complete:
+    kind: Script
+    inputs: [sample]
+    outputs: [calibration, station, seal]
+    implementation: local_js
+    output_schema:
+      type: object
+      required: [calibration, station, seal]
+      additionalProperties: false
+      properties:
+        calibration: {type: integer, minimum: 0}
+        station: {type: string, enum: [north]}
+        seal: {type: string, minLength: 1}
