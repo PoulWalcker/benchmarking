@@ -142,10 +142,11 @@ class HostedLifetimeTests(unittest.TestCase):
 
 class ComposedBudgetTests(unittest.TestCase):
     def test_longer_environment_and_evaluator_limits_reach_grant_and_harbor_budget(self):
-        scenario = SCENARIOS["crm-lead-qualification"]
+        scenario = replace(SCENARIOS["checkout-recovery"], benchmark=None)
         provider = replace(ENVIRONMENTS[scenario.environment], limit_seconds=lambda scenario: 1200)
         evaluator = replace(EVALUATORS[scenario.evaluator], timeout_seconds=900)
         with (
+            patch.dict(SCENARIOS, {scenario.name: scenario}),
             patch.dict(ENVIRONMENTS, {scenario.environment: provider}),
             patch.dict(EVALUATORS, {scenario.evaluator: evaluator}),
         ):
@@ -175,8 +176,10 @@ class ComposedBudgetTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             run = Run(root / "run", {}, {}, "test", staging=root / "stage")
-            task = run.tasks / "crm-lead-qualification"
+            task = run.tasks / "checkout-recovery"
             task.mkdir(parents=True)
             (task / "task.toml").write_text("")
-            with self.assertRaisesRegex(ValueError, "exactly one attempt"):
-                run.harbor("job", run.tasks, "oracle", attempts=2)
+            scenario = replace(SCENARIOS["checkout-recovery"], benchmark=None)
+            with patch.dict(SCENARIOS, {scenario.name: scenario}):
+                with self.assertRaisesRegex(ValueError, "exactly one attempt"):
+                    run.harbor("job", run.tasks, "oracle", attempts=2)

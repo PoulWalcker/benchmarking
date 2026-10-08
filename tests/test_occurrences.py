@@ -1,11 +1,13 @@
 """Occurrence and topology controls; fabricated evidence does not execute n8n."""
 
 import copy
+import json
 import unittest
 
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import Invalid, read, read_bindings, validate
-from verification.contracts import Rejected
+from verification.contracts import Rejected, equal
+from verification.fixture import FixtureEvaluator
 from verification.verify import invalid_configs
 
 ROOT = workspace_root()
@@ -13,7 +15,7 @@ ROOT = workspace_root()
 
 class OccurrenceTests(unittest.TestCase):
     def test_cycle_control_uses_graph_edges_when_steps_are_reordered(self):
-        config = read(ROOT / "benchmarks/03-competitor-report/config.yaml")
+        config = read(ROOT / "tests/support/graphs/branch.yaml")
         config["workflow"]["steps"].reverse()
         bad = dict(invalid_configs(config))["cycle"]
         with self.assertRaisesRegex(Invalid, "Cyclic|cycle|Cycle"):
@@ -73,7 +75,7 @@ def ledger_record():
     """Small worked ledger example encoded as fabricated native envelopes."""
     from tests.test_verification_contract import invoice_record
 
-    config = read(ROOT / "benchmarks/06-dual-ledger-closeout/config.yaml")
+    config = read(ROOT / "tests/support/graphs/repeated.yaml")
     inputs = {
         "domestic_invoices": [{"id": "D", "amount_minor": 7, "currency": "AED"}],
         "export_invoices": [{"id": "X", "amount_minor": 13, "currency": "EUR"}],
@@ -145,17 +147,36 @@ def ledger_record():
     return config, run
 
 
+def repeated_fixture():
+    contract = json.loads((ROOT / "tests/support/graphs/repeated-contract.json").read_text())
+
+    def check(inputs, observation, mode, *, case=None):
+        for side in ("domestic", "export"):
+            invoices = inputs[side + "_invoices"]
+            equal(
+                observation.final["output"][side],
+                {
+                    "total_minor": sum(row["amount_minor"] for row in invoices),
+                    "currency": invoices[0]["currency"],
+                    "invoice_count": len(invoices),
+                },
+                "Repeated branch output differs",
+            )
+
+    return FixtureEvaluator(check, contract=contract)
+
+
 class RepeatedOperationTests(unittest.TestCase):
     def test_both_chains_are_observed_and_both_terminal_envelopes_required(self):
         from verification.verify import check_execution
 
         config, run = ledger_record()
         inputs = config["workflow"]["inputs"]
-        result = check_execution("dual-ledger-closeout", inputs, run, config=config)
+        result = check_execution("dual-ledger-closeout", inputs, run, config=config, fixture=repeated_fixture())
         self.assertEqual(result["operation_count"], 6)
         run["run_data"]["Join final"][0]["data"]["main"][0].pop()
         with self.assertRaisesRegex(Rejected, "input envelope"):
-            check_execution("dual-ledger-closeout", inputs, run, config=config)
+            check_execution("dual-ledger-closeout", inputs, run, config=config, fixture=repeated_fixture())
 
     def test_wrong_origin_swapped_outputs_and_duplicate_trace_fail_closed(self):
         from verification.verify import check_execution
@@ -180,7 +201,9 @@ class RepeatedOperationTests(unittest.TestCase):
             else:
                 run["run_data"].pop("export_validate")
             with self.subTest(change=change), self.assertRaises(Rejected):
-                check_execution("dual-ledger-closeout", config["workflow"]["inputs"], run, config=config)
+                check_execution(
+                    "dual-ledger-closeout", config["workflow"]["inputs"], run, config=config, fixture=repeated_fixture()
+                )
 
     def test_input_rejection_identifies_the_intended_repeated_operation(self):
         from verification.n8n_provenance import check_rejection
@@ -191,6 +214,6 @@ class RepeatedOperationTests(unittest.TestCase):
         case = {"role": "export_validate", "operation": "invoices.validate", "error": "duplicate invoice IDs"}
         run["run_data"]["domestic_validate"][0]["error"] = {"message": case["error"]}
         with self.assertRaisesRegex(Rejected, "Expected operation"):
-            check_rejection(run, case, config)
+            check_rejection(run, case, config, repeated_fixture().contract)
         run["run_data"]["export_validate"][0]["error"] = run["run_data"]["domestic_validate"][0].pop("error")
-        check_rejection(run, case, config)
+        check_rejection(run, case, config, repeated_fixture().contract)

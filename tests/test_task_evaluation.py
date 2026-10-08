@@ -177,8 +177,8 @@ json.dump(env.finalize(), sys.stdout)
         self.assertFalse(report["project_acceptance"]["passed"])
         self.assertFalse(report["project_acceptance"]["affects_upstream_score"])
 
-    def test_both_original_tasks_have_same_supported_contract_and_reject_invented_metrics(self):
-        for name in ("production-checkout-recovery", "crm-lead-qualification"):
+    def test_retained_task_has_supported_contract_and_rejects_invented_metrics(self):
+        for name in ("production-checkout-recovery",):
             contract = freeze_contract(SOURCE, name, judge_model="calibration-only-model")
             package = contract.package
             self.assertEqual(

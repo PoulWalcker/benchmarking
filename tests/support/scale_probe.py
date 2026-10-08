@@ -15,7 +15,7 @@ ROOT = workspace_root()
 def make_config(leaves=64):
     if leaves < 2 or leaves & (leaves - 1):
         raise ValueError("Use a power of two >= 2")
-    cfg = copy.deepcopy(profile.read(ROOT / "benchmarks/03-competitor-report/config.yaml"))
+    cfg = copy.deepcopy(profile.read(ROOT / "tests/support/graphs/branch.yaml"))
     cfg.pop("actors")
     w = cfg["workflow"]
     w["id"] = "static-scale-probe"

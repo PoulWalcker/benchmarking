@@ -27,8 +27,9 @@ def generation_run(root: Path, attempts: dict[str, list[tuple[str, str, bool]]])
         prompt = "Frozen prompt for " + scenario
         prompts[scenario] = hashlib.sha256(prompt.encode()).hexdigest()
         case_path = root / "task-packages" / scenario / "tests/cases.json"
-        save(case_path, {scenario: {"positive": [], "negative": []}})
-        cases[scenario] = hashlib.sha256(case_path.read_bytes()).hexdigest()
+        if scenario == "invoice-total":
+            save(case_path, {scenario: {"positive": [], "negative": []}})
+            cases[scenario] = hashlib.sha256(case_path.read_bytes()).hexdigest()
         for number, (name, started, passed) in enumerate(rows, 1):
             trial = root / f"jobs/generated-{number}" / name
             submission = f"schema: sapi-lab/v0\n# {name}\n".encode()
@@ -83,17 +84,17 @@ class SelectionTests(unittest.TestCase):
         report = generation_run(
             self.root,
             {
-                "ticket-routing": [
+                "invoice-total": [
                     ("z-first", "2026-10-04T10:00:00Z", True),
                     ("a-second", "2026-10-04T10:01:00Z", True),
                 ],
-                "dual-ledger-closeout": [
+                "checkout-recovery": [
                     ("b-later", "2026-10-04T11:05:00Z", False),
                     ("c-first", "2026-10-04T11:00:00Z", True),
                 ],
             },
         )
-        manifest = select_submission(report, ("ticket-routing", "dual-ledger-closeout"))
+        manifest = select_submission(report, ("invoice-total", "checkout-recovery"))
         self.assertEqual(manifest["rule"], "first-started-attempt")
         self.assertEqual([e["source_trial"] for e in manifest["entries"]], ["z-first", "c-first"])
         # Unselected and failed attempts stay visible.
@@ -103,21 +104,21 @@ class SelectionTests(unittest.TestCase):
         )
         save(self.root / "selection.json", manifest)
         loaded = load_selection(self.root / "selection.json", copy_to=self.root / "copied")
-        self.assertEqual(set(loaded), {"ticket-routing", "dual-ledger-closeout"})
-        self.assertTrue((self.root / "copied/ticket-routing/submission.yaml").is_file())
+        self.assertEqual(set(loaded), {"invoice-total", "checkout-recovery"})
+        self.assertTrue((self.root / "copied/invoice-total/submission.yaml").is_file())
 
     def test_a_failed_first_attempt_is_never_replaced_by_a_later_one(self):
         report = generation_run(
             self.root,
-            {"ticket-routing": [("first", "2026-10-04T10:00:00Z", False), ("second", "2026-10-04T10:01:00Z", True)]},
+            {"invoice-total": [("first", "2026-10-04T10:00:00Z", False), ("second", "2026-10-04T10:01:00Z", True)]},
         )
         with self.assertRaisesRegex(ValueError, "no later attempt is selected"):
-            select_submission(report, ("ticket-routing",))
+            select_submission(report, ("invoice-total",))
 
     def test_any_changed_byte_rejects_the_selection(self):
-        report = generation_run(self.root, {"ticket-routing": [("only", "2026-10-04T10:00:00Z", True)]})
-        save(self.root / "selection.json", select_submission(report, ("ticket-routing",)))
-        cases = self.root / "task-packages/ticket-routing/tests/cases.json"
+        report = generation_run(self.root, {"invoice-total": [("only", "2026-10-04T10:00:00Z", True)]})
+        save(self.root / "selection.json", select_submission(report, ("invoice-total",)))
+        cases = self.root / "task-packages/invoice-total/tests/cases.json"
         for path in (cases, self.root / "jobs/generated-1/only/agent/submission.yaml"):
             original = path.read_bytes()
             path.write_bytes(original + b"\n")
@@ -132,17 +133,17 @@ class SelectionTests(unittest.TestCase):
 
 class PackageTests(unittest.TestCase):
     def test_generation_package_holds_only_its_prompt_and_given_cases(self):
-        scenario = "dual-ledger-closeout"
+        scenario = "invoice-total"
         fresh = all_cases()[scenario]
-        fresh["positive"][0]["inputs"]["domestic_invoices"][0]["id"] = "FRESH-PRIVATE"
+        fresh["positive"][0]["inputs"]["invoices"][0]["id"] = "FRESH-PRIVATE"
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "tasks"
             stage_tasks(path, mode="generation", scenarios=(scenario,), cases={scenario: fresh})
             self.assertEqual([p.name for p in path.iterdir()], [scenario])
-            self.assertEqual(list(path.rglob("*.yaml")), [path / "dual-ledger-closeout/tests/bindings.yaml"])
+            self.assertFalse(any(p.name == "config.yaml" for p in path.rglob("*.yaml")))
             self.assertEqual(json.loads((path / scenario / "tests/cases.json").read_text()), {scenario: fresh})
             for invalid in ((), ("unknown",), (scenario, scenario)):
                 with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                     stage_tasks(Path(directory) / "invalid", scenarios=invalid)
             with self.assertRaises(ValueError):
-                stage_tasks(Path(directory) / "other", scenarios=("invoice-total",), cases={scenario: fresh})
+                stage_tasks(Path(directory) / "other", scenarios=("checkout-recovery",), cases={scenario: fresh})

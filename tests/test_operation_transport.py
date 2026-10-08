@@ -107,9 +107,9 @@ class OperationTransportTests(unittest.TestCase):
     def test_unused_http_catalog_entries_do_not_change_existing_workflows(self):
         original = read_bindings(CATALOG)
         extended = {**original, **self.generic_tool()[1]}
-        for name in ("01-invoice-total", "04-revise-answer"):
+        for name in ("benchmarks/01-invoice-total/config.yaml", "tests/support/graphs/refinement.yaml"):
             with self.subTest(config=name):
-                cfg = read(ROOT / "benchmarks" / name / "config.yaml")
+                cfg = read(ROOT / name)
                 before = N8nBackend().compile(cfg, original, CompileOptions())
                 after = N8nBackend().compile(cfg, extended, CompileOptions())
                 self.assertEqual(before.document, after.document)

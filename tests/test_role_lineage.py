@@ -2,6 +2,7 @@
 
 import copy
 import hashlib
+import json
 from typing import get_args
 import unittest
 
@@ -13,7 +14,8 @@ from sapi_config_lab.profile import read, read_bindings, validate
 from verification import roles
 from verification.contracts import Rejected
 from verification.extensions import reply_roles
-from verification.roles import OUTPUTS, bind_roles, resolve
+from verification.roles import OUTPUTS, resolve
+from verification.roles import bind_roles as bind_selected_roles
 
 ROOT = workspace_root()
 # Generated attempt 2 of reports/20261006T185618Z-generation, rejected before this fix although the
@@ -23,7 +25,25 @@ PROJECTED_SHA256 = "9f0802c34c543954b1fb9a5d975c2bad3d38692e03ae392f74767d602c6f
 
 
 def reference(name: str) -> dict:
-    return read(next(ROOT.glob(f"benchmarks/*-{name}/config.yaml")))
+    if name == "invoice-total":
+        return read(ROOT / "benchmarks/01-invoice-total/config.yaml")
+    filename = {
+        "competitor-report": "branch",
+        "dual-ledger-closeout": "repeated",
+        "revise-answer": "refinement",
+        "priority-support-brief": "guarded",
+    }[name]
+    return read(ROOT / "tests/support/graphs" / (filename + ".yaml"))
+
+
+def bind_roles(scenario, config):
+    if scenario == "invoice-total":
+        return bind_selected_roles(scenario, config)
+    filename = {"competitor-report": "branch", "dual-ledger-closeout": "repeated", "priority-support-brief": "guarded"}[
+        scenario
+    ]
+    contract = json.loads((ROOT / "tests/support/graphs" / (filename + "-contract.json")).read_text())
+    return bind_selected_roles(scenario, config, contract)
 
 
 def fields(step: str, operation: str, ref: str = "ref") -> dict:

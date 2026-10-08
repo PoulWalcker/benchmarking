@@ -322,13 +322,9 @@ class ManifestTests(unittest.TestCase):
         )
         result = subprocess.run([sys.executable, "-c", script], cwd=ROOT, capture_output=True, text=True, check=True)
         rows = json.loads(result.stdout)
-        self.assertEqual(len(rows), 11)
-        baseline = json.loads((ROOT / "evidence/migration-01-baseline/benchmarks.json").read_text())
-        self.assertEqual({row["id"] for row in rows}, set(baseline))
-        self.assertEqual(
-            {row["id"] for row in rows if row["default"]},
-            {name for name, value in baseline.items() if value["manifest"]["default"]},
-        )
+        self.assertEqual(len(rows), 2)
+        self.assertEqual({row["id"] for row in rows}, {"invoice-total", "checkout-recovery"})
+        self.assertEqual({row["id"] for row in rows if row["default"]}, {"invoice-total"})
 
     def test_versioned_listing_coexists_with_legacy_without_adapting_execution(self):
         legacy = self.root / "02-old-task"

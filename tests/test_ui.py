@@ -74,7 +74,7 @@ class UiTests(unittest.TestCase):
                 main(
                     [
                         "open",
-                        str(workspace_root() / "benchmarks/04-revise-answer/config.yaml"),
+                        str(workspace_root() / "tests/support/graphs/refinement.yaml"),
                         "--live",
                         "--state-dir",
                         temporary,
@@ -85,7 +85,7 @@ class UiTests(unittest.TestCase):
     def test_open_reuses_post_import_identity_and_preserves_user_edits(self):
         adapter = FakeN8n()
         original = copy.deepcopy(adapter.rows)
-        source = workspace_root() / "benchmarks/09-priority-support-brief/config.yaml"
+        source = workspace_root() / "tests/support/graphs/guarded.yaml"
         with tempfile.TemporaryDirectory() as temporary:
             state = Path(temporary)
             first = open_workflow(source, state, adapter=adapter)
@@ -125,7 +125,7 @@ class UiTests(unittest.TestCase):
                 open_workflow(source, state, adapter=adapter)
             self.assertEqual(adapter.imports, 0)
 
-    def test_imports_eight_of_nine_inactive_graphs_and_defers_the_lifecycle_one(self):
+    def test_imports_retained_local_graph_inactive_and_skips_remote_world(self):
         adapter = FakeN8n()
         with tempfile.TemporaryDirectory() as temporary:
             output = io.StringIO()
@@ -136,16 +136,16 @@ class UiTests(unittest.TestCase):
             ):
                 self.assertEqual(main(["open", "--all", "--no-browser", "--state-dir", temporary]), 0)
             rows = [json.loads(line) for line in output.getvalue().splitlines()]
-            self.assertEqual(len(rows), 9)
-            self.assertEqual(adapter.imports, 8)
-            self.assertEqual(sum(row["status"] == "controller_required" for row in rows), 1)
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(adapter.imports, 1)
+            self.assertEqual(sum(row["status"] == "controller_required" for row in rows), 0)
             self.assertTrue(all(row["executed"] is False for row in rows))
             bridge.assert_not_called()
             self.assertFalse(list(Path(temporary).rglob("budget.json")))
 
     def test_live_open_creates_fresh_copy_with_exact_overlay_and_derived_cap(self):
         adapter = FakeN8n()
-        source = workspace_root() / "benchmarks/04-revise-answer/config.yaml"
+        source = workspace_root() / "tests/support/graphs/refinement.yaml"
         with tempfile.TemporaryDirectory() as temporary:
             state = Path(temporary)
             with (
@@ -202,7 +202,7 @@ class UiTests(unittest.TestCase):
             request.assert_not_called()
 
     def test_preparing_a_live_graph_freezes_exact_inputs_and_a_single_run_cap(self):
-        source = workspace_root() / "benchmarks/09-priority-support-brief/config.yaml"
+        source = workspace_root() / "tests/support/graphs/guarded.yaml"
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "run"
             prepared = prepare(source, output, host=HostConfig())
@@ -241,7 +241,7 @@ class UiTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "run"
-            prepare(workspace_root() / "benchmarks/09-priority-support-brief/config.yaml", output)
+            prepare(workspace_root() / "tests/support/graphs/guarded.yaml", output)
             with self.assertRaisesRegex(ValueError, "cap"):
                 admit(output, max_attempts=5, seconds=600, model="gpt-6-astra")
             self.assertFalse((output / "budget.json").exists())

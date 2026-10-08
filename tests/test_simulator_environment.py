@@ -93,122 +93,94 @@ class SourceCacheTests(unittest.TestCase):
 
 @unittest.skipUnless(AVAILABLE, "Requires the pinned upstream source cache and the benchmark extra")
 class OriginalEnvironmentTests(unittest.TestCase):
-    def test_crm_original_case_passes_with_explicit_bounded_transient_retry(self):
-        with start_environment(SOURCE, "crm-lead-qualification", seed=2) as session:
-            inquiry = session.call("inquiry.read")["value"]
-            session.call("documents.read")
-            session.call("research.read")
-            facts = session.call("customer.ask", {"questions": ["Please confirm budget, timeline and support needs."]})[
-                "value"
-            ]
-            changes = {**facts, "status": "Qualified", "next_action": "discovery_call", "owner": "sales_coordinator"}
-            result = session.call("crm.update", {"changes": changes}, operation_id="update", max_attempts=2)
-            self.assertTrue(result["ok"])
-            session.call(
-                "followup.create",
-                {"lead_id": inquiry["lead_id"], "type": "discovery_call", "status": "pending_scheduling"},
-                operation_id="followup",
-            )
-            session.call(
-                "customer.send",
-                {
-                    "recipient": inquiry["contact"],
-                    "body": "Please share availability for discovery; scope and timing remain subject to assessment.",
-                },
-                operation_id="send",
-            )
-            session.call("crm.read")
+    def test_known_receipt_replay_does_not_duplicate_side_effects(self):
+        operation, arguments = CHECKOUT_ORACLE_ACTIONS[3]
+        with start_environment(SOURCE) as session:
+            request = {"operation": operation, "arguments": arguments, "operation_id": "patch"}
+            # Discard the first response; the retained receipt must prevent another write.
+            post(session.connection, "/tools", request)
+            replay = post(session.connection, "/tools", request)
+            self.assertTrue(replay["ok"])
+            conflict = session.call(operation, {**arguments, "unexpected": True}, operation_id="patch")
+            self.assertEqual(conflict["error"]["code"], "PROJECT_OPERATION_ID_CONFLICT")
             evidence = session.finalize()
-            self.assertTrue(all(evidence["checks"].values()))
-            updates = [e for e in evidence["events"] if e["data"]["operation"] == "crm.update"]
-            self.assertEqual([e["data"]["result"]["ok"] for e in updates], [False, True])
-            self.assertEqual(evidence["tool_calls"], 9)
-            policy = session.transport_evidence()
-            self.assertEqual(next(e for e in policy["events"] if e.get("operation_id") == "update")["attempts"], 2)
-            self.assertFalse(policy["ambiguous_outcome"])
-
-    def test_known_receipt_replay_does_not_duplicate_create_or_send(self):
-        with start_environment(SOURCE, "crm-lead-qualification") as session:
-            inquiry = session.call("inquiry.read")["value"]
-            actions = [
-                (
-                    "followup.create",
-                    {"lead_id": inquiry["lead_id"], "type": "discovery_call", "status": "pending_scheduling"},
-                ),
-                ("customer.send", {"recipient": inquiry["contact"], "body": "Discovery is pending."}),
-            ]
-            for op, args in actions:
-                request = {"operation": op, "arguments": args, "operation_id": op}
-                # Discard the first response as if the client lost it. The proxy
-                # already retained the receipt; replay must not dispatch again.
-                post(session.connection, "/tools", request)
-                replay = post(session.connection, "/tools", request)
-                self.assertTrue(replay["ok"])
-                conflict = session.call(op, {**args, "unexpected": True}, operation_id=op)
-                self.assertEqual(conflict["error"]["code"], "PROJECT_OPERATION_ID_CONFLICT")
-            evidence = session.finalize()
-            self.assertEqual(evidence["tool_calls"], 3)
-            self.assertEqual(len(evidence["final"]["followups"]), 1)
-            self.assertEqual(len(evidence["final"]["messages"]), 1)
+            self.assertEqual(evidence["tool_calls"], 1)
+            self.assertEqual(len(evidence["events"]), 1)
+            self.assertIn(arguments["new"], evidence["final"]["source"])
+            self.assertNotIn(arguments["old"], evidence["final"]["source"])
 
     def test_unknown_response_after_committed_side_effect_stops_all_redispatch(self):
-        for operation, arguments in (
-            ("followup.create", {"lead_id": "LEAD-1007", "type": "discovery_call", "status": "pending_scheduling"}),
-            ("customer.send", {"recipient": "customer@crescent.example", "body": "Discovery pending."}),
-        ):
-            with self.subTest(operation=operation), start_environment(SOURCE, "crm-lead-qualification") as session:
+        operation, arguments = CHECKOUT_ORACLE_ACTIONS[3]
+        with start_environment(SOURCE) as session:
 
-                def lost_response(*args, original=autowfbench._post, **kwargs):
-                    original(*args, **kwargs)
-                    raise TimeoutError("Injected response loss after upstream commit")
+            def lost_response(*args, original=autowfbench._post, **kwargs):
+                original(*args, **kwargs)
+                raise TimeoutError("Injected response loss after upstream commit")
 
-                with patch("sapi_config_lab.execute.autowfbench._post", side_effect=lost_response) as dispatch:
-                    first = session.call(operation, arguments, operation_id="effect", max_attempts=3)
-                    same = session.call(operation, arguments, operation_id="effect", max_attempts=3)
-                    different = session.call(operation, arguments, operation_id="different")
-                    self.assertEqual(dispatch.call_count, 1)
-                self.assertEqual(first, same)
-                self.assertEqual(different["error"]["code"], "PROJECT_AMBIGUOUS_OUTCOME")
-                self.assertFalse(first["error"]["retryable"])
-                self.assertTrue(session.transport_evidence()["ambiguous_outcome"])
-                evidence = session.finalize()
-                self.assertEqual(evidence["tool_calls"], 1)
-                effects = (
-                    evidence["final"]["followups"] if operation == "followup.create" else evidence["final"]["messages"]
-                )
-                self.assertEqual(len(effects), 1)
+            with patch("sapi_config_lab.execute.autowfbench._post", side_effect=lost_response) as dispatch:
+                first = session.call(operation, arguments, operation_id="effect", max_attempts=3)
+                same = session.call(operation, arguments, operation_id="effect", max_attempts=3)
+                different = session.call(operation, arguments, operation_id="different")
+                self.assertEqual(dispatch.call_count, 1)
+            self.assertEqual(first, same)
+            self.assertEqual(different["error"]["code"], "PROJECT_AMBIGUOUS_OUTCOME")
+            self.assertFalse(first["error"]["retryable"])
+            self.assertTrue(session.transport_evidence()["ambiguous_outcome"])
+            evidence = session.finalize()
+            self.assertEqual(evidence["tool_calls"], 1)
+            self.assertEqual(len(evidence["events"]), 1)
+            self.assertIn(arguments["new"], evidence["final"]["source"])
 
     def test_nonretryable_errors_and_explicit_attempt_limits_are_preserved(self):
-        with start_environment(SOURCE, "crm-lead-qualification") as session:
-            result = session.call(
-                "customer.send",
-                {"recipient": "wrong.example", "body": "Message"},
-                operation_id="denied",
-                max_attempts=3,
-            )
-            self.assertEqual(result["error"]["code"], "UNAUTHORIZED_RECIPIENT")
-            result = session.call("crm.update", {"changes": {"status": "Qualified"}}, operation_id="one-attempt")
-            self.assertEqual(result["error"]["code"], "CRM_TEMPORARILY_UNAVAILABLE")
+        transient = {"ok": False, "error": {"code": "TRANSIENT", "message": "temporary", "retryable": True}}
+        denied = {"ok": False, "error": {"code": "DENIED", "message": "denied", "retryable": False}}
+        with start_environment(SOURCE) as session:
+            with patch("sapi_config_lab.execute.autowfbench._post", return_value=denied) as dispatch:
+                result = session.call("source.read", operation_id="denied", max_attempts=3)
+                self.assertEqual(result, denied)
+                self.assertEqual(dispatch.call_count, 1)
+            with patch("sapi_config_lab.execute.autowfbench._post", return_value=transient) as dispatch:
+                result = session.call("source.read", operation_id="one-attempt")
+                self.assertEqual(result, transient)
+                self.assertEqual(dispatch.call_count, 1)
+                result = session.call("source.read", operation_id="bounded", max_attempts=3)
+                self.assertEqual(result, transient)
+                self.assertEqual(dispatch.call_count, 4)
             with self.assertRaises(ValueError):
-                session.call("crm.update", {}, max_attempts=2)
+                session.call("source.read", max_attempts=2)
             with self.assertRaises(ValueError):
-                session.call("crm.update", {}, operation_id="too-many", max_attempts=4)
-            evidence = session.finalize()
-            self.assertEqual(evidence["tool_calls"], 2)
-            self.assertEqual(evidence["final"]["messages"], [])
-            self.assertEqual(evidence["final"]["lead"]["status"], "New")
+                session.call("source.read", operation_id="too-many", max_attempts=4)
+            self.assertEqual(session.finalize()["tool_calls"], 0)
 
-    def test_operation_receipts_and_crm_failure_budget_reset_with_new_session(self):
+    def test_operation_receipts_and_transient_retry_policy_reset_with_new_session(self):
+        operation, arguments = CHECKOUT_ORACLE_ACTIONS[3]
+        transient = {"ok": False, "error": {"code": "TRANSIENT", "message": "temporary", "retryable": True}}
+        original = autowfbench._post
+        initial = []
         for _ in range(2):
-            with start_environment(SOURCE, "crm-lead-qualification") as session:
-                result = session.call(
-                    "crm.update", {"changes": {"status": "Qualified"}}, operation_id="same-key", max_attempts=2
-                )
+            with start_environment(SOURCE) as session:
+                attempts = 0
+
+                def dispatch(*args, **kwargs):
+                    nonlocal attempts
+                    attempts += 1
+                    return transient if attempts == 1 else original(*args, **kwargs)
+
+                with patch("sapi_config_lab.execute.autowfbench._post", side_effect=dispatch):
+                    result = session.call(operation, arguments, operation_id="same-key", max_attempts=2)
+                    replay = session.call(operation, arguments, operation_id="same-key", max_attempts=2)
                 self.assertTrue(result["ok"])
+                self.assertEqual(replay, result)
+                self.assertEqual(attempts, 2)
                 evidence = session.finalize()
-                self.assertEqual(evidence["initial"]["lead"]["status"], "New")
-                self.assertEqual(evidence["tool_calls"], 2)
-                self.assertEqual(len(session.transport_evidence()["events"]), 1)
+                initial.append(evidence["initial"]["source"])
+                self.assertIn(arguments["old"], evidence["initial"]["source"])
+                self.assertEqual(evidence["tool_calls"], 1)
+                events = session.transport_evidence()["events"]
+                self.assertEqual(events[0]["attempts"], 2)
+                self.assertEqual(events[1]["kind"], "receipt_replayed")
+                self.assertFalse(session.transport_evidence()["ambiguous_outcome"])
+        self.assertEqual(initial[0], initial[1])
 
     def test_oracle_uses_original_effects_events_and_checks(self):
         with start_environment(SOURCE, seed=2) as session:

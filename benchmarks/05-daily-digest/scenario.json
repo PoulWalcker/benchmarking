@@ -1,9 +1,0 @@
-{
-  "environment": "fixtures",
-  "evaluator": "verifier",
-  "default": false,
-  "prompt_extension": "TASK-SPECIFIC LIFECYCLE EXTENSION",
-  "budgets": {
-    "authoring_attempts": 0
-  }
-}

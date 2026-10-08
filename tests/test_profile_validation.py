@@ -12,7 +12,7 @@ from sapi_config_lab.paths import CATALOG, workspace_root
 class ProfileValidationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.config = profile.read(workspace_root() / "benchmarks/03-competitor-report/config.yaml")
+        cls.config = profile.read(workspace_root() / "tests/support/graphs/branch.yaml")
         cls.bindings = profile.read_bindings(CATALOG)
 
     def test_invalid_shapes_report_the_offending_field(self):
@@ -75,20 +75,24 @@ class ProfileValidationTests(unittest.TestCase):
     def test_extensions_validate_nested_fields_before_rejecting_capability(self):
         for filename, route, value, location in [
             (
-                "04-refinement.yaml",
+                "graphs/refinement",
                 ("execution", "refinement", "initial_state"),
                 [],
                 "execution.refinement.initial_state",
             ),
-            ("05-scheduled-digest.yaml", ("lifecycle", "on_test_pass"), None, "lifecycle.on_test_pass"),
+            ("lifecycle/config", ("lifecycle", "on_test_pass"), None, "lifecycle.on_test_pass"),
         ]:
-            # Match the existing example names without coupling to editorial stems.
-            path = next((workspace_root() / "benchmarks").glob(filename[:2] + "-*/config.yaml"))
+            path = workspace_root() / "tests/support" / (filename + ".yaml")
             config = profile.read(path)
             target = config
             for key in route[:-1]:
                 target = target[key]
             target[route[-1]] = value
             with self.subTest(path=location), self.assertRaises(profile.Invalid) as caught:
-                profile.validate(config, self.bindings)
+                profile.validate(
+                    config,
+                    self.bindings
+                    if filename.startswith("graphs/")
+                    else profile.read_bindings(path.with_name("bindings.yaml")),
+                )
             self.assertIn(location, str(caught.exception))

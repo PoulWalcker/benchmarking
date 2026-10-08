@@ -6,7 +6,7 @@ from sapi_config_lab.coordinate.scenarios import SCENARIOS
 from sapi_config_lab.execute.hosting import terminal_submission as admitted
 
 CHECKOUT = SCENARIOS["checkout-recovery"].artifact
-CRM = SCENARIOS["crm-lead-qualification"].artifact
+NO_ARTIFACT = None
 
 
 def terminal_submission(record, elapsed, run_id, artifact=CHECKOUT):
@@ -46,9 +46,9 @@ class TerminalSubmissionTests(unittest.TestCase):
                 record = {"status": status, "output": {"final_answer": "Success", "incident_summary": "All fixed"}}
                 self.assertEqual(terminal_submission(record, 1, "run-one"), ("solution_failed", None))
 
-    def test_crm_result_does_not_require_checkout_artifact(self):
+    def test_generic_result_does_not_require_checkout_artifact(self):
         record = {"status": "success", "output": {"final_answer": "actual receipts"}}
-        reason, submission = terminal_submission(record, 1, "case", CRM)
+        reason, submission = terminal_submission(record, 1, "case", NO_ARTIFACT)
         self.assertEqual(reason, "completed")
         self.assertEqual(submission["artifacts"], [])
         self.assertEqual(terminal_submission(record, 1, "case")[0], "protocol_error")

@@ -38,7 +38,6 @@ def model_config(scenario, operation):
 class HostedPreflightTests(unittest.TestCase):
     def test_advertised_model_operations_fail_clearly_in_stub_mode_and_compile_live(self):
         for name, operation in [
-            ("crm-lead-qualification", "crm.plan"),
             ("checkout-recovery", "incident.plan"),
             ("checkout-recovery", "incident.summarize"),
         ]:
@@ -52,12 +51,12 @@ class HostedPreflightTests(unittest.TestCase):
                 )
                 self.assertTrue(any(node["type"].endswith(".httpRequest") for node in document["nodes"]))
 
-    def test_crm_model_candidate_admits_without_running_a_stub_or_environment(self):
-        scenario = SCENARIOS["crm-lead-qualification"]
+    def test_hosted_model_candidate_admits_without_running_a_stub_or_environment(self):
+        scenario = SCENARIOS["checkout-recovery"]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             submission = root / "config.yaml"
-            submission.write_text(yaml.safe_dump(model_config(scenario, "crm.plan")))
+            submission.write_text(yaml.safe_dump(model_config(scenario, "incident.plan")))
             (root / "bindings.yaml").write_bytes(scenario.bindings.read_bytes())
             with patch.object(hosted_worker, "SUBMISSION", submission), patch.object(hosted_worker, "TESTS", root):
                 report = hosted_worker.admit(
@@ -79,11 +78,11 @@ class PreflightExecutionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             run = Run(root / "run", {}, {}, "test", staging=root / "staging")
-            run.bounds = {"crm-lead-qualification": 720}
-            task = run.tasks / "crm-lead-qualification"
+            run.bounds = {"checkout-recovery": 720}
+            task = run.tasks / "checkout-recovery"
             (task / "tests").mkdir(parents=True)
             (task / "task.toml").write_text("")
-            (task / "tests/environment.json").write_text('{"scenario":"crm-lead-qualification","seed":0}')
+            (task / "tests/environment.json").write_text('{"scenario":"checkout-recovery","seed":0}')
             with (
                 patch("sapi_config_lab.coordinate.runs.TrialHost") as host,
                 patch("sapi_config_lab.coordinate.runs.run_logged", return_value=0) as command,

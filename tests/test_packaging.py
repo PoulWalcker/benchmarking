@@ -31,37 +31,20 @@ ROOT = workspace_root()
 # is given. Recorded authoring evidence pins these hashes, so a change here is a
 # change to the benchmark and must be deliberate.
 GENERATION_PROMPTS = {
-    "bulletin-market-brief": "f1e595a18f8500edffa61029811a9e949107bd160b410a56150e1beb54ad7297",
-    "competitor-report": "2d17a6ddd01a5261f62ba421906a600c2774cd23ab0bcbcbba1ff04184dff0d4",
-    "daily-digest": "70d11e29f5910912e9fd70947e41a7a1f31ac0f4a1396e12f511e3a1a0c197b6",
-    "dual-ledger-closeout": "7f2baad6cf11d00e45db9230ed1063ca9b722dcef3e9188ca27cfa08621a09e6",
     "invoice-total": "d1e72a8298a682f09c6198beb8e26f54beaf086f56a65a79a7cc68e0a0625f49",
-    "priority-support-brief": "446aefbcbfdbe3dcb4b37116241ca0964a3112943d95f3d2b7d48cf1f8dccd94",
-    "revise-answer": "94a2fa3749b2c3be6355247ae36d7759f71db995c9e4b54212d1c2e4dd6f5e96",
-    "support-review-packet": "8817f0794c1f945059287ec85503d6d517e6f571f0f8c00233dc182a76e7a9f0",
-    "ticket-routing": "21ea6dc4070a0070ee7f1cb59d9556ba262d6919eae426ed9f56f5743bdc4a77",
 }
 
 
 # The reduced-catalog experiment arm (`--catalog scenario`): the same prompts with only the
 # operations each scenario's reference uses. Not the default; a change here is an experiment change.
 SCENARIO_CATALOG_PROMPTS = {
-    "bulletin-market-brief": "598364e7e198d500f0681d10531040e2f1b84af1623feb981d28b147d7c509a7",
-    "competitor-report": "d2f4f1f23e30d2827bebec8d6ba7bb667a9829b142a400b478533f49268a4838",
-    "daily-digest": "6c75dc16c94b96da52686b3f18c04e44ad0fb0cbca88b8157211bf81d28ebf5a",
-    "dual-ledger-closeout": "df78227a3807963556ca2e2ee43d3d3b413746c3a714a857eb6910d536a9151f",
     "invoice-total": "8c43ed0f1fd947ba5430cd95cb5555a0575b183fa0d6fbc2883ca2c98981150a",
-    "priority-support-brief": "968125d5376c2c8cd006ea1f982787db6ac06e5e8d4b6abc84c749a79c868789",
-    "revise-answer": "6ecdd336c2df7988c7ef7eedbec15b008eddbde4c8d23270f81e98aee45a27b4",
-    "support-review-packet": "098993bd827c98e10629b34bed3da9ffecc60d526e90cb44170c49c4ce9e9171",
-    "ticket-routing": "dbe964d99ebb1cd0a2dee4d3bed13a05afcda353f0d693c5e7e33c89b6b743b4",
 }
 
 
 # Hosted prompt revision: environment-neutral wording; historical authoring records retain their original hashes.
 HOSTED_PROMPTS = {
     "checkout-recovery": "920472a634ec32c6d55d66aceec6c4a66035d6cd69b5bc3ad36f3b3c315fae17",
-    "crm-lead-qualification": "79b6ae1e1a2afb19f7257cf6a608f1ec958564ca07f2293ca6909a7811dcb658",
 }
 
 
@@ -176,7 +159,7 @@ class PackagingTests(unittest.TestCase):
 
     @unittest.skipUnless(AVAILABLE, "Requires the pinned upstream source and benchmark extra")
     def test_hosted_packages_scrub_the_evaluator_and_carry_no_hidden_data(self):
-        names = ("checkout-recovery", "crm-lead-qualification")
+        names = ("checkout-recovery",)
         for mode in ("generation", "oracle"):
             with tempfile.TemporaryDirectory() as directory:
                 hashes = stage_tasks(Path(directory) / "tasks", mode=mode, scenarios=names)

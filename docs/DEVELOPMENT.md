@@ -120,7 +120,7 @@ Before any dispatch, `live` requires a passing control report for the same sourc
 
 ```bash
 uv run --locked sapi-lab ui open --all
-uv run --locked sapi-lab ui open benchmarks/09-priority-support-brief/config.yaml --live
+uv run --locked sapi-lab ui open benchmarks/01-invoice-total/config.yaml --live
 ```
 
 Imports are inactive copies and never execute. A `--live` session arms one fresh copy with a budgeted bridge; execution stays a manual click. UI runs are for inspection, not benchmark evidence.
@@ -155,8 +155,9 @@ One fact, one owner: boundaries in `ARCHITECTURE.md`, workflow here, YAML semant
 ## Versioned manifest development
 
 `uv run --locked sapi-lab benchmarks [--root <benchmark-directory>] [--defaults]`
-lists metadata without importing evaluators. It reports legacy versions as `null`;
-Invoice-total and checkout-recovery use versioned manifests; nine other benchmarks remain legacy.
+lists metadata without importing evaluators.
+Only invoice-total and checkout-recovery are production benchmarks, both versioned.
+Invoice-total is the sole default; retired names are unknown selections.
 Existing command names and default selection are preserved. `package-tasks` and
 the unpaid `harbor` controls materialize both through their declared entrypoints
 and separate verifiers. Remaining experiment caller migration is still in progress.

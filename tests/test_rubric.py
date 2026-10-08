@@ -9,6 +9,7 @@ import unittest
 
 from sapi_config_lab.evaluate import autowfbench
 from sapi_config_lab.paths import workspace_root
+from tests.support.rubric import CARD as SAMPLE_CARD
 from verification import rubric, rubric_cards
 from verification.rubric import (
     Criterion,
@@ -23,18 +24,7 @@ from verification.rubric_cards import card_for
 
 ANCHORS = {"yes": "a", "maybe": "b", "no": "c"}
 
-# Every scenario that carries a card. A scenario is added by writing its evaluation/rubric.json
-# and one branch in rubric_facts; this list is the roster that change has to pass.
-CARDED = {
-    "support-review-packet",
-    "competitor-report",
-    "bulletin-market-brief",
-    "priority-support-brief",
-    "ticket-routing",
-    "invoice-total",
-    "dual-ledger-closeout",
-}
-SUPPORT_REVIEW_PACKET = card_for("support-review-packet")
+CARDED = {"invoice-total"}
 # The scenarios that ship a card file today.
 CARDS = {
     path.parent.parent.name.split("-", 1)[1]
@@ -144,19 +134,23 @@ ROUNDING_FACTS = RunFacts(
 )
 
 
-def support_facts(**overrides):
+def sample_facts(**overrides):
     facts = {
         "execution_pass": True,
-        "checks": {"routing_single_action": True, "ledger_report": True, "review_matches": True},
-        "prose": {"candidate": "draft and packet", "environment": "ticket and invoices", "verification": "review"},
+        "checks": {"first_check": True, "second_check": True, "third_check": True},
+        "prose": {
+            "candidate": "sample explanation",
+            "environment": "sample inputs",
+            "verification": "protected checks",
+        },
         "refs": {"usefulness": ("candidate-final",)},
-        "run_digest": "support-0001",
+        "run_digest": "sample-0001",
     }
     facts.update(overrides)
     return RunFacts(**facts)
 
 
-def support_judge(**overrides):
+def sample_judge(**overrides):
     answers = {"usefulness": "yes", "honesty": "yes", "actionability": "yes"}
     answers.update(overrides)
     return RecordedJudge(answers)
@@ -236,7 +230,7 @@ class SurfaceTests(unittest.TestCase):
                 rubric.digest(sample)
 
     def test_the_document_claims_its_own_schema_not_the_autowfbench_one(self):
-        document = score(SUPPORT_REVIEW_PACKET, support_facts(), support_judge())
+        document = score(SAMPLE_CARD, sample_facts(), sample_judge())
         self.assertEqual(document["schema"], "sapi-lab-rubric-evaluation/v1")
         self.assertNotEqual(document["schema"], autowfbench.SCHEMA)
 
@@ -262,9 +256,9 @@ class RewardInvariantTests(unittest.TestCase):
         # Every oracle/nop control gate asserts {"reward": 1.0} or {"reward": 0.0}
         # exactly, so nothing this module emits may be mistaken for that payload.
         documents = [
-            score(SUPPORT_REVIEW_PACKET, support_facts(), support_judge(actionability="maybe")),
-            score(SUPPORT_REVIEW_PACKET, support_facts(), RecordedJudge({})),
-            score(SUPPORT_REVIEW_PACKET, support_facts(execution_pass=False), support_judge()),
+            score(SAMPLE_CARD, sample_facts(), sample_judge(actionability="maybe")),
+            score(SAMPLE_CARD, sample_facts(), RecordedJudge({})),
+            score(SAMPLE_CARD, sample_facts(execution_pass=False), sample_judge()),
             score(card_for("invoice-total"), RunFacts(True, {"accepted": True})),
             score(card_for("invoice-total"), RunFacts(True, {"accepted": False})),
         ]
@@ -281,7 +275,7 @@ class RewardInvariantTests(unittest.TestCase):
                 self.assertTrue(document["score_0_10"] is None or 0.0 <= document["score_0_10"] <= 10.0)
 
     def test_binary_cards_keep_the_existing_pass_fail_behaviour(self):
-        for scenario in ("invoice-total", "dual-ledger-closeout"):
+        for scenario in ("invoice-total",):
             card = card_for(scenario)
             self.assertFalse(card.needs_judge)
             accepted = score(card, RunFacts(execution_pass=True, checks={"accepted": True}))
@@ -318,13 +312,13 @@ class DispatchTests(unittest.TestCase):
         self.assertEqual(document["status"], "complete")
 
     def test_one_run_costs_at_most_one_dispatch(self):
-        judge = support_judge()
-        score(SUPPORT_REVIEW_PACKET, support_facts(), judge)
+        judge = sample_judge()
+        score(SAMPLE_CARD, sample_facts(), judge)
         self.assertEqual(len(judge.requests), 1)
 
     def test_a_non_executing_run_is_never_charged_for_a_judgement_it_discards(self):
-        judge = support_judge()
-        document = score(SUPPORT_REVIEW_PACKET, support_facts(execution_pass=False), judge)
+        judge = sample_judge()
+        document = score(SAMPLE_CARD, sample_facts(execution_pass=False), judge)
         self.assertEqual(judge.requests, [])
         self.assertEqual(document["status"], "unscored")
         self.assertIsNone(document["judge_error"])
@@ -334,7 +328,7 @@ class DispatchTests(unittest.TestCase):
 
     def test_a_judge_that_answers_nothing_is_a_judge_fault(self):
         self.assertEqual(
-            score(SUPPORT_REVIEW_PACKET, support_facts(), RecordedJudge({}))["status"],
+            score(SAMPLE_CARD, sample_facts(), RecordedJudge({}))["status"],
             "judge_failed",
         )
 
@@ -348,23 +342,23 @@ class DispatchTests(unittest.TestCase):
             def judge(self, request):
                 raise AssertionError("dispatched for a run that did not execute")
 
-        document = score(SUPPORT_REVIEW_PACKET, support_facts(execution_pass=False), ExplodingJudge())
+        document = score(SAMPLE_CARD, sample_facts(execution_pass=False), ExplodingJudge())
         self.assertEqual(document["status"], "unscored")
         self.assertIsNone(document["judge_error"])
 
 
 class JudgeVisibilityTests(unittest.TestCase):
     def test_the_judge_receives_no_execution_flag_and_no_checks_at_all(self):
-        judge = support_judge()
-        score(SUPPORT_REVIEW_PACKET, support_facts(), judge)
+        judge = sample_judge()
+        score(SAMPLE_CARD, sample_facts(), judge)
         facts = judge.requests[0].facts
         # Withheld means absent. A False flag would assert the run did not execute.
         self.assertFalse(hasattr(facts, "execution_pass"))
         self.assertFalse(hasattr(facts, "checks"))
 
     def test_the_judge_never_sees_the_protected_verification_narrative(self):
-        judge = support_judge()
-        score(SUPPORT_REVIEW_PACKET, support_facts(), judge)
+        judge = sample_judge()
+        score(SAMPLE_CARD, sample_facts(), judge)
         facts = judge.requests[0].facts
         self.assertEqual(set(facts.prose), {"candidate", "environment"})
         self.assertNotIn("verification", facts.prose)
@@ -386,34 +380,34 @@ class JudgeVisibilityTests(unittest.TestCase):
             ),
         )
         with self.assertRaisesRegex(RubricError, "must not read protected verification"):
-            score(card, RunFacts(True, {}, prose={"verification": "x"}), support_judge())
+            score(card, RunFacts(True, {}, prose={"verification": "x"}), sample_judge())
 
     def test_the_judge_receives_only_the_criteria_it_must_answer(self):
-        judge = support_judge()
-        score(SUPPORT_REVIEW_PACKET, support_facts(), judge)
+        judge = sample_judge()
+        score(SAMPLE_CARD, sample_facts(), judge)
         request = judge.requests[0]
         self.assertEqual(
             tuple(criterion.id for criterion in request.criteria), ("usefulness", "honesty", "actionability")
         )
         # No deterministic check name or question crosses the seam.
         self.assertEqual([criterion.check_id for criterion in request.criteria], ["", "", ""])
-        self.assertEqual(request.card_digest, SUPPORT_REVIEW_PACKET.digest())
+        self.assertEqual(request.card_digest, SAMPLE_CARD.digest())
 
     def test_refs_keyed_by_a_deterministic_criterion_never_reach_the_judge(self):
         # Prose is only half the boundary: refs are keyed by criterion id, and
         # unfiltered they hand the judge the references behind a check it may
         # not see at all.
-        judge = support_judge()
-        refs = {"usefulness": ("candidate-final",), "routing": ("check-routing-trace",), "ledger": ("invoices.json",)}
-        score(SUPPORT_REVIEW_PACKET, support_facts(refs=refs), judge)
+        judge = sample_judge()
+        refs = {"usefulness": ("candidate-final",), "first": ("check-first-trace",), "second": ("checks.json",)}
+        score(SAMPLE_CARD, sample_facts(refs=refs), judge)
         self.assertEqual(set(judge.requests[0].facts.refs), {"usefulness"})
 
     def test_judged_rows_do_not_claim_to_hold_judge_citations(self):
-        document = score(SUPPORT_REVIEW_PACKET, support_facts(), support_judge())
+        document = score(SAMPLE_CARD, sample_facts(), sample_judge())
         rows = {row["id"]: row for row in document["criteria"]}
         self.assertNotIn("evidence_refs", rows["usefulness"])
         self.assertEqual(rows["usefulness"]["refs_supplied"], ["candidate-final"])
-        self.assertEqual(rows["routing"]["refs_supplied"], ["check-routing_single_action"])
+        self.assertEqual(rows["first"]["refs_supplied"], ["check-first_check"])
 
 
 class ImmutabilityTests(unittest.TestCase):
@@ -429,14 +423,14 @@ class ImmutabilityTests(unittest.TestCase):
                         refused.append(error)
                 return super().judge(request)
 
-        before = SUPPORT_REVIEW_PACKET.digest()
-        document = score(SUPPORT_REVIEW_PACKET, support_facts(), MutatingJudge({"usefulness": "yes"}))
+        before = SAMPLE_CARD.digest()
+        document = score(SAMPLE_CARD, sample_facts(), MutatingJudge({"usefulness": "yes"}))
         self.assertEqual(len(refused), 3)  # the write is refused, not merely undone
-        self.assertEqual(SUPPORT_REVIEW_PACKET.digest(), before)
+        self.assertEqual(SAMPLE_CARD.digest(), before)
         self.assertEqual(document["rubric"]["digest"], before)
         self.assertEqual(
-            SUPPORT_REVIEW_PACKET.criteria[3].anchors["maybe"],
-            "Relevant but generic; an agent must add something substantial.",
+            SAMPLE_CARD.criteria[3].anchors["maybe"],
+            "Partly supported.",
         )
 
     def test_mutating_a_dict_after_construction_does_not_change_a_card(self):
@@ -612,23 +606,23 @@ class AnswerValueTests(unittest.TestCase):
 
     def test_a_non_numeric_answer_table_is_refused_before_any_dispatch(self):
         # It used to pass validation, spend the dispatch and then raise from digest().
-        judge = support_judge()
+        judge = sample_judge()
         card = RubricCard(
             "t",
             "1.0.0",
             "local",
-            SUPPORT_REVIEW_PACKET.criteria,
+            SAMPLE_CARD.criteria,
             answer_values={"yes": float("nan"), "maybe": 0.33, "no": 0.0},
         )
         with self.assertRaises(RubricError):
-            score(card, support_facts(), judge)
+            score(card, sample_facts(), judge)
         self.assertEqual(judge.requests, [])
 
 
 class ValidationTests(unittest.TestCase):
     def test_a_missing_deterministic_check_is_an_error_not_a_no(self):
-        with self.assertRaisesRegex(RubricError, "Missing deterministic check: ledger_report"):
-            score(SUPPORT_REVIEW_PACKET, support_facts(checks={"routing_single_action": True, "review_matches": True}))
+        with self.assertRaisesRegex(RubricError, "Missing deterministic check: second_check"):
+            score(SAMPLE_CARD, sample_facts(checks={"first_check": True, "third_check": True}))
         with self.assertRaisesRegex(RubricError, "Non-boolean deterministic check"):
             score(card_for("invoice-total"), RunFacts(True, {"accepted": "yes"}))
 
@@ -653,7 +647,7 @@ class ValidationTests(unittest.TestCase):
         for message, criteria in cases.items():
             card = RubricCard("t", "1.0.0", "local", criteria)
             with self.subTest(message=message), self.assertRaisesRegex(RubricError, message):
-                score(card, RunFacts(True, {"check_a": True, "check_b": True}), support_judge())
+                score(card, RunFacts(True, {"check_a": True, "check_b": True}), sample_judge())
         with self.assertRaisesRegex(RubricError, "sum above zero"):
             score(RubricCard("t", "1.0.0", "local", ()), RunFacts(True, {}))
         with self.assertRaisesRegex(RubricError, "execution_pass must be a boolean"):
@@ -669,17 +663,17 @@ class ValidationTests(unittest.TestCase):
 
     def test_an_llm_card_requires_a_judge(self):
         with self.assertRaisesRegex(RubricError, "pass a judge"):
-            score(SUPPORT_REVIEW_PACKET, support_facts())
+            score(SAMPLE_CARD, sample_facts())
 
     def test_required_evidence_must_be_satisfiable_before_a_judge_is_asked(self):
-        judge = support_judge()
+        judge = sample_judge()
         with self.assertRaisesRegex(RubricError, "honesty lacks: environment"):
-            score(SUPPORT_REVIEW_PACKET, support_facts(prose={"candidate": "d"}), judge)
+            score(SAMPLE_CARD, sample_facts(prose={"candidate": "d"}), judge)
         self.assertEqual(judge.requests, [])
 
     def test_an_unknown_scenario_has_no_card(self):
-        # The two scenarios verified through another path, and a name that is none.
-        for scenario in ("revise-answer", "daily-digest", "not-a-scenario"):
+        # An unknown name has no fallback card.
+        for scenario in ("not-a-scenario",):
             with self.subTest(scenario=scenario), self.assertRaisesRegex(RubricError, "No rubric card"):
                 card_for(scenario)
 
@@ -697,7 +691,7 @@ class UnscoredTests(unittest.TestCase):
             def judge(self, request):
                 raise TimeoutError("judge timed out")
 
-        document = score(SUPPORT_REVIEW_PACKET, support_facts(), BrokenJudge())
+        document = score(SAMPLE_CARD, sample_facts(), BrokenJudge())
         self.assertEqual(document["status"], "judge_failed")
         self.assertIsNone(document["score_0_10"])
         self.assertIsNone(document["normalized_reward"])
@@ -715,7 +709,7 @@ class UnscoredTests(unittest.TestCase):
             def judge(self, request):
                 raise asyncio.CancelledError()
 
-        document = score(SUPPORT_REVIEW_PACKET, support_facts(), CancelledJudge())
+        document = score(SAMPLE_CARD, sample_facts(), CancelledJudge())
         self.assertEqual(document["status"], "judge_failed")
         self.assertIsNone(document["score_0_10"])
         self.assertIn("CancelledError", document["judge_error"])
@@ -740,7 +734,7 @@ class UnscoredTests(unittest.TestCase):
             (asyncio.CancelledError(), "BaseExceptionGroup"),
             (TimeoutError("late"), "ExceptionGroup"),
         ):
-            document = score(SUPPORT_REVIEW_PACKET, support_facts(), GroupedJudge(error))
+            document = score(SAMPLE_CARD, sample_facts(), GroupedJudge(error))
             with self.subTest(error=type(error).__name__):
                 self.assertEqual(document["status"], "judge_failed")
                 self.assertIsNone(document["score_0_10"])
@@ -760,7 +754,7 @@ class UnscoredTests(unittest.TestCase):
 
         for error in (KeyboardInterrupt(), SystemExit(), RubricError("the request is unusable")):
             with self.subTest(error=type(error).__name__), self.assertRaises(BaseExceptionGroup):
-                score(SUPPORT_REVIEW_PACKET, support_facts(), GroupedJudge(error))
+                score(SAMPLE_CARD, sample_facts(), GroupedJudge(error))
 
     def test_a_reply_whose_mappings_are_not_mappings_degrades(self):
         # Judge is a Protocol and JudgeReply is not enforced, so `reasons=None`
@@ -792,7 +786,7 @@ class UnscoredTests(unittest.TestCase):
             ({"attribution": None}, "attribution is not a mapping"),
             ({"attribution": [("mode", "recorded")]}, "attribution is not a mapping"),
         ):
-            document = score(SUPPORT_REVIEW_PACKET, support_facts(), DuckJudge(broken))
+            document = score(SAMPLE_CARD, sample_facts(), DuckJudge(broken))
             with self.subTest(broken=sorted(broken)):
                 self.assertEqual(document["status"], "judge_failed")
                 self.assertIsNone(document["score_0_10"])
@@ -801,7 +795,7 @@ class UnscoredTests(unittest.TestCase):
     def test_an_answer_outside_the_table_is_refused_rather_than_looked_up(self):
         for answer in ("probably", "YES", "", None, 1):
             judge = RecordedJudge({"usefulness": answer, "honesty": "yes", "actionability": "yes"})
-            document = score(SUPPORT_REVIEW_PACKET, support_facts(), judge)
+            document = score(SAMPLE_CARD, sample_facts(), judge)
             with self.subTest(answer=answer):
                 self.assertEqual(document["judge_error"], "Judge returned an unsupported answer")
                 self.assertEqual(document["status"], "judge_failed")
@@ -817,7 +811,7 @@ class UnscoredTests(unittest.TestCase):
             def judge(self, request):
                 raise TimeoutError("judge timed out")
 
-        document = score(SUPPORT_REVIEW_PACKET, support_facts(), BrokenJudge())
+        document = score(SAMPLE_CARD, sample_facts(), BrokenJudge())
         judged = [row["reason"] for row in document["criteria"] if row["evaluator"] == "llm"]
         self.assertEqual(judged, ["The judge was asked once and returned no usable answer"] * 3)
         for reason in _every_reason(document):
@@ -832,7 +826,7 @@ class UnscoredTests(unittest.TestCase):
                 raise KeyboardInterrupt()
 
         with self.assertRaises(KeyboardInterrupt):
-            score(SUPPORT_REVIEW_PACKET, support_facts(), InterruptedJudge())
+            score(SAMPLE_CARD, sample_facts(), InterruptedJudge())
 
     def test_a_caller_mistake_raised_inside_the_judge_is_not_degraded(self):
         class ComplainingJudge:
@@ -843,11 +837,11 @@ class UnscoredTests(unittest.TestCase):
                 raise RubricError("The request names a criterion this judge cannot answer")
 
         with self.assertRaisesRegex(RubricError, "cannot answer"):
-            score(SUPPORT_REVIEW_PACKET, support_facts(), ComplainingJudge())
+            score(SAMPLE_CARD, sample_facts(), ComplainingJudge())
 
     def test_an_incomplete_or_mismatched_reply_keeps_its_llm_criteria_unanswered(self):
         incomplete = RecordedJudge({"usefulness": "yes"}, completeness="incomplete")
-        document = score(SUPPORT_REVIEW_PACKET, support_facts(), incomplete)
+        document = score(SAMPLE_CARD, sample_facts(), incomplete)
         self.assertEqual(document["status"], "judge_failed")
         self.assertIsNone(document["score_0_10"])
         self.assertEqual(document["judge_error"], "Judge reported incomplete evidence")
@@ -855,12 +849,10 @@ class UnscoredTests(unittest.TestCase):
         self.assertIsNone(next(row for row in document["criteria"] if row["id"] == "usefulness")["points"])
 
         partial = RecordedJudge({"usefulness": "yes", "honesty": "yes"})
-        self.assertEqual(
-            score(SUPPORT_REVIEW_PACKET, support_facts(), partial)["judge_error"], "Judge omitted a scored criterion"
-        )
+        self.assertEqual(score(SAMPLE_CARD, sample_facts(), partial)["judge_error"], "Judge omitted a scored criterion")
         unknown = RecordedJudge({"usefulness": "yes", "honesty": "yes", "actionability": "yes", "ledger": "no"})
         self.assertEqual(
-            score(SUPPORT_REVIEW_PACKET, support_facts(), unknown)["judge_error"],
+            score(SAMPLE_CARD, sample_facts(), unknown)["judge_error"],
             "Judge answered an unknown criterion",
         )
 
@@ -884,14 +876,14 @@ class UnscoredTests(unittest.TestCase):
             ("attribution is incomplete", ForgedJudge({}, dropped=("response_digest",))),
         ]
         for fault, judge in faults:
-            document = score(SUPPORT_REVIEW_PACKET, support_facts(), judge)
+            document = score(SAMPLE_CARD, sample_facts(), judge)
             with self.subTest(fault=fault):
                 self.assertEqual(document["status"], "judge_failed")
                 self.assertIsNone(document["score_0_10"])
                 self.assertRegex(document["judge_error"], fault)
 
     def test_a_run_that_did_not_execute_is_unscored_rather_than_scored_low(self):
-        document = score(SUPPORT_REVIEW_PACKET, support_facts(execution_pass=False), support_judge())
+        document = score(SAMPLE_CARD, sample_facts(execution_pass=False), sample_judge())
         self.assertEqual(document["status"], "unscored")
         self.assertIsNone(document["score_0_10"])
         self.assertIsNone(document["normalized_reward"])
@@ -984,16 +976,16 @@ class ArithmeticTests(unittest.TestCase):
         self.assertEqual((rows["regression"]["answer"], rows["regression"]["points"]), ("no", 0.0))
 
     def test_the_card_records_its_own_identity_and_origin(self):
-        document = score(SUPPORT_REVIEW_PACKET, support_facts(), support_judge())
+        document = score(SAMPLE_CARD, sample_facts(), sample_judge())
         self.assertEqual(
             document["rubric"],
             {
-                "id": "support-review-packet",
+                "id": "rubric-sample",
                 "version": "1.0.0",
                 "origin": "local",
                 "digest": rubric.digest(
                     {
-                        "id": "support-review-packet",
+                        "id": "rubric-sample",
                         "version": "1.0.0",
                         "origin": "local",
                         "prompt_version": rubric.PROMPT_VERSION,
@@ -1008,13 +1000,13 @@ class ArithmeticTests(unittest.TestCase):
                                 "anchors": dict(criterion.anchors),
                                 "required_evidence": list(criterion.required_evidence),
                             }
-                            for criterion in SUPPORT_REVIEW_PACKET.criteria
+                            for criterion in SAMPLE_CARD.criteria
                         ],
                     }
                 ),
             },
         )
-        self.assertEqual(sum(criterion.weight for criterion in SUPPORT_REVIEW_PACKET.criteria), 10)
+        self.assertEqual(sum(criterion.weight for criterion in SAMPLE_CARD.criteria), 10)
         self.assertEqual(set(CARDS), CARDED)
 
     def test_every_card_weighs_ten_with_a_deterministic_majority(self):

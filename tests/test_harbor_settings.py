@@ -95,10 +95,17 @@ class VerifierBoundTests(unittest.TestCase):
         self.assertEqual(hosted_verifier_seconds(120, 375, admit=True), VERIFIER_OVERHEAD_SECONDS)
 
 
-def with_timeout(name: str, seconds: int):
+def with_timeout(name: str, seconds: int, *, legacy: bool = True):
     scenario = SCENARIOS[name]
     return patch.dict(
-        scenarios.SCENARIOS, {name: replace(scenario, harbor={**scenario.harbor, "verifier_timeout_sec": seconds})}
+        scenarios.SCENARIOS,
+        {
+            name: replace(
+                scenario,
+                benchmark=None if legacy else scenario.benchmark,
+                harbor={**scenario.harbor, "verifier_timeout_sec": seconds},
+            )
+        },
     )
 
 
@@ -109,23 +116,23 @@ class StagingTests(unittest.TestCase):
                 stage_tasks(Path(directory) / "tasks", mode=mode, scenarios=tuple(FIXTURES))
 
     def test_a_valid_timeout_is_rendered_into_task_toml(self):
-        with tempfile.TemporaryDirectory() as directory, with_timeout("competitor-report", 3240):
-            stage_tasks(Path(directory) / "tasks", scenarios=("competitor-report",))
-            settings = tomllib.loads((Path(directory) / "tasks/competitor-report/task.toml").read_text())
-        self.assertEqual(settings["metadata"]["name"], "competitor-report")
-        self.assertEqual(settings["verifier"]["timeout_sec"], 3240)
+        with tempfile.TemporaryDirectory() as directory, with_timeout("invoice-total", 5160):
+            stage_tasks(Path(directory) / "tasks", scenarios=("invoice-total",))
+            settings = tomllib.loads((Path(directory) / "tasks/invoice-total/task.toml").read_text())
+        self.assertEqual(settings["metadata"]["name"], "invoice-total")
+        self.assertEqual(settings["verifier"]["timeout_sec"], 5160)
         self.assertEqual(settings["agent"]["timeout_sec"], HARBOR_DEFAULTS["agent_timeout_sec"])
         self.assertEqual(settings["environment"]["memory_mb"], HARBOR_DEFAULTS["memory_mb"])
 
     def test_an_insufficient_timeout_refuses_staging_before_writing(self):
-        with tempfile.TemporaryDirectory() as directory, with_timeout("competitor-report", 3239):
-            with self.assertRaisesRegex(ValueError, "competitor-report: its verifier may run 3240s"):
-                stage_tasks(Path(directory) / "tasks", scenarios=("competitor-report",))
+        with tempfile.TemporaryDirectory() as directory, with_timeout("invoice-total", 5159):
+            with self.assertRaisesRegex(ValueError, "invoice-total: its verifier may run 5160s"):
+                stage_tasks(Path(directory) / "tasks", scenarios=("invoice-total",))
             self.assertFalse((Path(directory) / "tasks").exists())
 
     def test_a_replayed_long_deadline_is_refused(self):
         with tempfile.TemporaryDirectory() as directory:
-            config = read(SCENARIOS["competitor-report"].config)
+            config = read(SCENARIOS["invoice-total"].config)
             config["execution"]["deadline_seconds"] = 3600
             path = Path(directory) / "slow.yaml"
             path.write_text(json.dumps(config))
@@ -134,8 +141,8 @@ class StagingTests(unittest.TestCase):
                 stage_tasks(
                     Path(directory) / "tasks",
                     mode="replay",
-                    scenarios=("competitor-report",),
-                    submissions={"competitor-report": submission},
+                    scenarios=("invoice-total",),
+                    submissions={"invoice-total": submission},
                 )
 
     @unittest.skipUnless(AVAILABLE, "Requires the pinned upstream source and benchmark extra")
@@ -155,7 +162,7 @@ class StagingTests(unittest.TestCase):
         scenario = SCENARIOS["invoice-total"]
         config = validate_config((scenario.directory / scenario.benchmark.harbor_task).read_text())
         required = verifier_bounds(("invoice-total",))["invoice-total"]
-        with tempfile.TemporaryDirectory() as directory, with_timeout("invoice-total", 1):
+        with tempfile.TemporaryDirectory() as directory, with_timeout("invoice-total", 1, legacy=False):
             stage_tasks(Path(directory) / "valid", scenarios=("invoice-total",))
             config.verifier.timeout_sec = required - 1
             with patch("sapi_config_lab.harbor_integration.tasks.validate_config", return_value=config):
@@ -166,22 +173,32 @@ class StagingTests(unittest.TestCase):
 
 class OuterTimeoutTests(unittest.TestCase):
     def test_a_job_contains_every_trial_at_its_own_limits_and_plan_estimate(self):
-        bounds = verifier_bounds(("invoice-total", "competitor-report"))
-        trial = HARBOR_DEFAULTS["build_timeout_sec"] + HARBOR_DEFAULTS["agent_timeout_sec"] + TRIAL_OVERHEAD_SECONDS
-        expected = 2 * (2 * trial + bounds["invoice-total"] + bounds["competitor-report"]) + JOB_OVERHEAD_SECONDS
+        names = ("invoice-total", "checkout-recovery")
+        bounds = verifier_bounds(names)
+        expected = (
+            2
+            * sum(
+                SCENARIOS[name].harbor["build_timeout_sec"]
+                + SCENARIOS[name].harbor["agent_timeout_sec"]
+                + TRIAL_OVERHEAD_SECONDS
+                + seconds
+                for name, seconds in bounds.items()
+            )
+            + JOB_OVERHEAD_SECONDS
+        )
         self.assertEqual(job_seconds(bounds, attempts=2), expected)
         self.assertEqual(
-            suite_seconds(("invoice-total", "competitor-report")),
+            suite_seconds(names),
             LOCAL_TESTS_SECONDS + BUILD_TIMEOUT_SECONDS + TRANSPORT_SECONDS + 2 * job_seconds(bounds),
         )
 
     def test_run_harbor_derives_its_timeout_from_the_staged_bounds(self):
         staging = Path(tempfile.mkdtemp())
-        task = staging / "tasks" / "competitor-report"
+        task = staging / "tasks" / "invoice-total"
         task.mkdir(parents=True)
         (task / "task.toml").write_text("")
         run = Run(Path(tempfile.mkdtemp()), {}, {}, "t", staging=staging, harbor_argv=["harbor"])
-        run.bounds = {"competitor-report": 3240}
+        run.bounds = {"invoice-total": 3240}
         timeouts = []
         with (
             patch(
@@ -214,7 +231,7 @@ class DeadlineBudgetTests(unittest.TestCase):
         self.assertEqual(self.budget("generation", "invoice-total"), {"deadline_seconds": AUTHORED_DEADLINE_SECONDS})
 
     def test_the_verifier_plans_nothing_for_a_longer_deadline(self):
-        scenario = SCENARIOS["competitor-report"]
+        scenario = SCENARIOS["invoice-total"]
         with tempfile.TemporaryDirectory() as directory:
             for deadline, accepted in ((120, True), (60, True), (121, False), (True, False), ("120", False)):
                 config = read(scenario.config)
@@ -222,23 +239,23 @@ class DeadlineBudgetTests(unittest.TestCase):
                 path = Path(directory) / "config.yaml"
                 path.write_text(json.dumps(config))
                 if accepted:
-                    self.assertTrue(plan("competitor-report", path, scenario.cases(), deadline_budget=120)["entries"])
+                    self.assertTrue(plan("invoice-total", path, scenario.cases(), deadline_budget=120)["entries"])
                     continue
                 with self.assertRaises(Rejected) as raised:
-                    plan("competitor-report", path, scenario.cases(), deadline_budget=120)
+                    plan("invoice-total", path, scenario.cases(), deadline_budget=120)
                 self.assertEqual(raised.exception.code, "deadline_exceeds_budget")
 
     def test_the_packaged_command_reads_the_budget_beside_its_cases(self):
-        scenario = SCENARIOS["competitor-report"]
+        scenario = SCENARIOS["invoice-total"]
         with tempfile.TemporaryDirectory() as directory:
             tests = Path(directory)
-            (tests / "cases.json").write_text(json.dumps({"competitor-report": scenario.cases()}))
-            (tests / "budget.json").write_text(json.dumps({"deadline_seconds": 60}))
-            argv = ["verify.py", "plan", "--scenario", "competitor-report", "--config", str(scenario.config)]
+            (tests / "cases.json").write_text(json.dumps({"invoice-total": scenario.cases()}))
+            (tests / "budget.json").write_text(json.dumps({"deadline_seconds": 29}))
+            argv = ["verify.py", "plan", "--scenario", "invoice-total", "--config", str(scenario.config)]
             argv += ["--cases", str(tests / "cases.json"), "--output", str(tests / "plan.json")]
             with patch("sys.argv", argv), contextlib.redirect_stdout(io.StringIO()) as stdout:
                 self.assertEqual(verify_main(), 1)
-        self.assertIn("exceeds the 60s", stdout.getvalue())
+        self.assertIn("exceeds the 29s", stdout.getvalue())
 
 
 class ScenarioSettingsTests(unittest.TestCase):

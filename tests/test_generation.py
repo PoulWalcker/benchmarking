@@ -50,7 +50,7 @@ class GenerationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             tasks = Path(directory) / "tasks"
             hashes = stage_tasks(tasks, mode="generation", image="test-n8n:fixed")
-            self.assertEqual(len(hashes), 3)
+            self.assertEqual(set(hashes), {"invoice-total"})
             for task in tasks.iterdir():
                 self.assertFalse((task / "solution").exists())
                 expected_catalogs = (

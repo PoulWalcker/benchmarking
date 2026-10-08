@@ -179,8 +179,10 @@ this ticket does not migrate existing re-evaluation consumers.
 `sapi-lab benchmarks`. It neither translates a legacy header into an executable
 versioned descriptor nor imports `coordinate/scenarios.py`. The latter retains
 legacy execution globals and a temporary metadata view for migrated invoice
-callers; new consumers use the explicit descriptor boundary. Invoice-total and checkout-recovery use positive packaging; the nine other
-benchmarks retain legacy execution until their planned retirement.
+callers; new consumers use the explicit descriptor boundary. Only invoice-total (default) and checkout-recovery remain production-discoverable,
+both through positive packaging. Nine retired packages remain readable in sealed
+historical evidence; test-only graph specimens have no manifests or runtime selection.
+Shared legacy execution/evaluator tables remain for their separate removal gate.
 Verifier independence and the frozen migration ownership edges are unchanged.
 
 ## Positive Harbor packages

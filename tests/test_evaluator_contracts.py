@@ -63,7 +63,7 @@ class EvaluatorContractTests(unittest.TestCase):
     def test_environment_metadata_never_loads_or_validates_a_scoring_contract(self):
         with patch("sapi_config_lab.coordinate.providers.freeze_contract", side_effect=AssertionError("scorer loaded")):
             provider = ENVIRONMENTS["autowfbench"]
-            for name in ("checkout-recovery", "crm-lead-qualification"):
+            for name in ("checkout-recovery",):
                 scenario = SCENARIOS[name]
                 self.assertEqual(provider.limit_seconds(scenario), 120)
                 self.assertTrue(provider.task(scenario))

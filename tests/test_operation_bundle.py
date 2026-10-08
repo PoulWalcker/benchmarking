@@ -141,8 +141,8 @@ class OperationBundleTests(unittest.TestCase):
     def test_legacy_default_preserves_exact_artifacts_for_both_compiler_paths(self):
         source = (RESOURCES / "operations.js").read_text()
         bindings = read_bindings(CATALOG)
-        for scenario in ("01-invoice-total", "04-revise-answer"):
-            config = read(ROOT / "benchmarks" / scenario / "config.yaml")
+        for scenario in ("benchmarks/01-invoice-total/config.yaml", "tests/support/graphs/refinement.yaml"):
+            config = read(ROOT / scenario)
             with self.subTest(scenario=scenario):
                 self.assertEqual(
                     compile_n8n(config, bindings),

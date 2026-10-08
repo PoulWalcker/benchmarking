@@ -1,8 +1,0 @@
-{
-  "environment": "fixtures",
-  "evaluator": "verifier",
-  "default": true,
-  "harbor": {
-    "verifier_timeout_sec": 4200
-  }
-}

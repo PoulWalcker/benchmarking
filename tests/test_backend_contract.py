@@ -135,12 +135,8 @@ class BackendContractTests(unittest.TestCase):
             # Both environments compile through the same backend; a simulator's tools are bound at run time.
             options = CompileOptions(operation_url="http://tools/tools" if scenario.hosted else None)
             with self.subTest(config=path.parent.name):
-                if path.parent.name != "05-daily-digest":
-                    compiled = backend.compile(config, bindings, options)
-                    self.assertNotIn("not-persisted", str(compiled.document))
-                    self.assertEqual(compiled.engine, "n8n")
-                    attempts = config["execution"].get("refinement", {}).get("max_attempts", 1)
-                    self.assertEqual(len(compiled.mapping), attempts * len(config["workflow"]["steps"]))
-                else:
-                    with self.assertRaises(profile.Unsupported):
-                        backend.compile(config, bindings, CompileOptions())
+                compiled = backend.compile(config, bindings, options)
+                self.assertNotIn("not-persisted", str(compiled.document))
+                self.assertEqual(compiled.engine, "n8n")
+                attempts = config["execution"].get("refinement", {}).get("max_attempts", 1)
+                self.assertEqual(len(compiled.mapping), attempts * len(config["workflow"]["steps"]))

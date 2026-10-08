@@ -17,13 +17,26 @@ ROOT = workspace_root()
 class LabTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.bindings = profile.read(CATALOG)["operations"]
-        from sapi_config_lab.coordinate.scenarios import SCENARIOS
+        support = ROOT / "tests/support"
+        cls.bindings = profile.read_bindings(CATALOG)
+        cls.bindings.update(profile.read_bindings(support / "refinement/bindings.yaml"))
+        cls.bindings.update(profile.read_bindings(support / "lifecycle/bindings.yaml"))
+        conditional = profile.read(support / "graphs/guarded.yaml")
+        conditional["workflow"]["steps"] = conditional["workflow"]["steps"][:4]
+        conditional["workflow"]["dependencies"] = conditional["workflow"]["dependencies"][:4]
+        conditional["workflow"]["output"] = {"ref": "steps.select"}
+        cls.configs = {
+            "invoice": profile.read(ROOT / "benchmarks/01-invoice-total/config.yaml"),
+            "conditional": conditional,
+            "join": profile.read(support / "graphs/branch.yaml"),
+            "repeated": profile.read(support / "graphs/repeated.yaml"),
+            "guarded": profile.read(support / "graphs/guarded.yaml"),
+            "refinement": profile.read(support / "refinement/config.yaml"),
+            "lifecycle": profile.read(support / "lifecycle/config.yaml"),
+        }
 
-        cls.configs = [profile.read(s.config) for s in SCENARIOS.values() if s.environment == "fixtures"]
-
-    def run_config(self, index, inputs=None, mutate_export=None):
-        artifact, _ = compiler.compile_n8n(copy.deepcopy(self.configs[index]), self.bindings)
+    def run_config(self, name, inputs=None, mutate_export=None):
+        artifact, _ = compiler.compile_n8n(copy.deepcopy(self.configs[name]), self.bindings)
         if mutate_export:
             mutate_export(artifact)
         with tempfile.TemporaryDirectory() as tmp:
@@ -40,19 +53,19 @@ class LabTests(unittest.TestCase):
         return json.loads(run.stdout)
 
     def test_all_configs_pass_profile_checks(self):
-        for cfg in self.configs:
+        for cfg in self.configs.values():
             with self.subTest(workflow=cfg["workflow"]["id"]):
                 profile.validate(cfg, self.bindings)
 
     def test_invoice_fixture_counts_each_invoice_once(self):
-        result = self.run_config(0)
+        result = self.run_config("invoice")
         self.assertEqual(result["output"], {"total_minor": 38000, "currency": "AED", "invoice_count": 3})
         self.assertTrue(result["simulation"])
         self.assertEqual([e["step_id"] for e in result["trace"]], ["validate", "total", "report"])
 
     def test_invoice_new_input_and_zero_amount(self):
         result = self.run_config(
-            0,
+            "invoice",
             {
                 "invoices": [
                     {"id": "A", "amount_minor": 0, "currency": "USD"},
@@ -74,29 +87,36 @@ class LabTests(unittest.TestCase):
         ]
         for invoices, message in cases:
             with self.subTest(message=message), self.assertRaisesRegex(RuntimeError, message):
-                self.run_config(0, {"invoices": invoices})
+                self.run_config("invoice", {"invoices": invoices})
 
-    def test_ticket_priority_boundary_and_skipped_branch(self):
-        for days in (0, 2, 3, 100):
-            with self.subTest(days=days):
-                result = self.run_config(1, {"ticket": {"id": "T-new", "text": "late", "days_overdue": days}})
-                high = days > 2
-                self.assertEqual(
-                    result["output"],
-                    {"ticket_id": "T-new", "action": "escalate" if high else "normal_reply", "mode": "draft"},
+    def test_conditional_guards_complete_one_branch_and_skip_the_other(self):
+        for high, days in ((False, 0), (True, 3)):
+            with self.subTest(high=high):
+                result = self.run_config(
+                    "conditional", {"ticket": {"id": "T-new", "text": "sample", "days_overdue": days}}
                 )
-                states = {e["step_id"]: e["status"] for e in result["trace"]}
-                self.assertEqual(states["escalate"], "completed" if high else "skipped")
-                self.assertEqual(states["normal"], "skipped" if high else "completed")
-                self.assertEqual(states["result"], "completed")
+                states = {event["step_id"]: event["status"] for event in result["trace"]}
+                selected = "escalate" if high else "normal"
+                skipped = "normal" if high else "escalate"
+                self.assertEqual(states[selected], "completed")
+                self.assertEqual(states[skipped], "skipped")
+                self.assertEqual(states["select"], "completed")
+                self.assertEqual(result["output"], result["steps"][selected])
+                self.assertNotIn(skipped, result["steps"])
 
-    def test_ticket_rejects_bad_overdue_days(self):
-        with self.assertRaisesRegex(RuntimeError, "Invalid overdue days"):
-            self.run_config(1, {"ticket": {"id": "T", "days_overdue": -1}})
+    def test_live_input_schema_rejects_invalid_value_before_dispatch(self):
+        step = copy.deepcopy(self.configs["join"]["workflow"]["steps"][0])
+        step["with"]["material"] = 7
+        binding = self.bindings[step["uses"]]
+        ctx = {"inputs": {}, "steps": {}, "statuses": {}, "events": {}}
+        body = f"const step = {json.dumps(step)}, ctx = {json.dumps(ctx)}, binding = {json.dumps(binding)};\n"
+        body += "prepareAgency(step, ctx, binding, 'test/1'); console.log('null');"
+        with self.assertRaisesRegex(RuntimeError, "Schema violation at inputs.material"):
+            self.runtime_js(body)
 
     def test_research_join_preserves_both_sources(self):
         result = self.run_config(
-            2, {"product_material": "PRODUCT_SENTINEL", "marketing_material": "MARKETING_SENTINEL"}
+            "join", {"product_material": "PRODUCT_SENTINEL", "marketing_material": "MARKETING_SENTINEL"}
         )
         self.assertEqual(result["output"]["evidence"], ["PRODUCT_SENTINEL", "MARKETING_SENTINEL"])
         self.assertEqual(result["output"]["report"], "Product: PRODUCT_SENTINEL\n\nMarketing: MARKETING_SENTINEL")
@@ -110,34 +130,34 @@ class LabTests(unittest.TestCase):
             artifact["nodes"].reverse()
             artifact["connections"]["Fixture"]["main"][0].reverse()
 
-        self.assertEqual(self.run_config(2)["output"], self.run_config(2, mutate_export=reverse)["output"])
+        self.assertEqual(self.run_config("join")["output"], self.run_config("join", mutate_export=reverse)["output"])
 
     def test_missing_join_input_is_not_an_optional_skip(self):
         def drop_branch(artifact):
             artifact["connections"]["marketing [LLM STUB]"]["main"][0] = []
 
         with self.assertRaisesRegex(RuntimeError, "Unavailable reference: steps.marketing"):
-            self.run_config(2, mutate_export=drop_branch)
+            self.run_config("join", mutate_export=drop_branch)
 
     def test_missing_input_fails_instead_of_producing_result(self):
         with self.assertRaisesRegex(RuntimeError, "Unavailable reference: inputs.invoices"):
-            self.run_config(0, {})
+            self.run_config("invoice", {})
 
     def test_missing_conditional_branch_token_is_an_error(self):
         def drop_branch(artifact):
             artifact["connections"]["normal"]["main"][0] = []
 
         with self.assertRaisesRegex(RuntimeError, "Unavailable reference: steps.normal"):
-            self.run_config(1, mutate_export=drop_branch)
+            self.run_config("conditional", mutate_export=drop_branch)
 
     def test_pipeline_forbids_llm(self):
-        cfg = copy.deepcopy(self.configs[1])
+        cfg = copy.deepcopy(self.configs["conditional"])
         cfg["workflow"]["kind"] = "Pipeline"
         with self.assertRaisesRegex(profile.Invalid, "Pipeline cannot include LLM"):
             profile.validate(cfg, self.bindings)
 
     def test_cycle_is_rejected(self):
-        cfg = copy.deepcopy(self.configs[0])
+        cfg = copy.deepcopy(self.configs["invoice"])
         cfg["workflow"]["dependencies"].append(["report", "validate"])
         with self.assertRaisesRegex(profile.Invalid, "Cyclic"):
             profile.validate(cfg, self.bindings)
@@ -148,25 +168,25 @@ class LabTests(unittest.TestCase):
             ("steps.report", "not an upstream"),
             ("steps.validate.nonexistent", "Unknown output"),
         ]:
-            cfg = copy.deepcopy(self.configs[0])
+            cfg = copy.deepcopy(self.configs["invoice"])
             cfg["workflow"]["steps"][1]["with"]["invoices"] = {"ref": ref}
             with self.subTest(ref=ref), self.assertRaisesRegex(profile.Invalid, message):
                 profile.validate(cfg, self.bindings)
 
     def test_conditional_output_needs_explicit_optional_reference(self):
-        cfg = copy.deepcopy(self.configs[1])
+        cfg = copy.deepcopy(self.configs["conditional"])
         cfg["workflow"]["steps"][-1]["with"]["normal"] = {"ref": "steps.normal"}
         with self.assertRaisesRegex(profile.Invalid, "conditional output requires optional_ref"):
             profile.validate(cfg, self.bindings)
 
     def test_actor_operation_restriction(self):
-        cfg = copy.deepcopy(self.configs[2])
+        cfg = copy.deepcopy(self.configs["join"])
         cfg["workflow"]["steps"][0]["actor"] = "writer-sapi"
         with self.assertRaisesRegex(profile.Invalid, "unauthorized actor"):
             profile.validate(cfg, self.bindings)
 
     def test_duplicate_ids_and_keys_are_rejected(self):
-        cfg = copy.deepcopy(self.configs[0])
+        cfg = copy.deepcopy(self.configs["invoice"])
         cfg["workflow"]["steps"].append(copy.deepcopy(cfg["workflow"]["steps"][0]))
         with self.assertRaisesRegex(profile.Invalid, "duplicate step"):
             profile.validate(cfg, self.bindings)
@@ -177,28 +197,31 @@ class LabTests(unittest.TestCase):
                 profile.read(p)
 
     def test_unknown_operation_is_rejected(self):
-        cfg = copy.deepcopy(self.configs[0])
+        cfg = copy.deepcopy(self.configs["invoice"])
         cfg["workflow"]["steps"][0]["uses"] = "invented.automatic_magic"
         with self.assertRaisesRegex(profile.Invalid, "Unknown operation"):
             profile.validate(cfg, self.bindings)
 
     def test_activation_requires_exact_revision(self):
-        cfg = copy.deepcopy(self.configs[0])
+        cfg = copy.deepcopy(self.configs["invoice"])
         cfg["activation"]["workflow_ref"]["revision"] = 2
         with self.assertRaisesRegex(profile.Invalid, "another revision"):
             profile.validate(cfg, self.bindings)
 
     def test_refinement_must_be_bounded(self):
-        cfg = copy.deepcopy(self.configs[3])
+        cfg = copy.deepcopy(self.configs["refinement"])
         cfg["execution"]["refinement"]["max_attempts"] = 0
         with self.assertRaisesRegex(profile.Invalid, "Invalid refinement limit"):
             profile.validate(cfg, self.bindings)
 
     def test_unsupported_semantics_rejected_by_backend(self):
-        for index, reason in [(4, "E_LIFECYCLE")]:
-            with self.subTest(index=index), self.assertRaisesRegex(profile.Unsupported, reason):
-                compiler.compile_n8n(self.configs[index], self.bindings)
-        cfg = copy.deepcopy(self.configs[2])
+        with self.assertRaisesRegex(profile.Unsupported, "E_LIFECYCLE"):
+            compiler.compile_n8n(
+                self.configs["lifecycle"],
+                self.bindings,
+                operation_source=(ROOT / "tests/support/lifecycle/operations.js").read_text(),
+            )
+        cfg = copy.deepcopy(self.configs["join"])
         cfg["execution"]["concurrency"] = "required_parallel"
         with self.assertRaisesRegex(profile.Unsupported, "E_PARALLEL"):
             compiler.compile_n8n(cfg, self.bindings)
@@ -236,10 +259,10 @@ class LabTests(unittest.TestCase):
         self.assertEqual(result["restored"]["steps"], {})
 
     def test_live_response_restores_envelope_and_checks_contract(self):
-        step = self.configs[1]["workflow"]["steps"][0]
+        step = self.configs["conditional"]["workflow"]["steps"][0]
         binding = self.bindings["ticket.classify"]
         ctx = {
-            "inputs": self.configs[1]["workflow"]["inputs"],
+            "inputs": self.configs["conditional"]["workflow"]["inputs"],
             "steps": {"earlier": {"value": 7}},
             "statuses": {"earlier": "completed"},
             "events": {"earlier": {"step_id": "earlier"}},
@@ -281,7 +304,7 @@ class LabTests(unittest.TestCase):
                 )
 
     def test_live_compiler_emits_exclusive_guard_and_fail_closed_transport(self):
-        cfg = copy.deepcopy(self.configs[2])
+        cfg = copy.deepcopy(self.configs["join"])
         cfg["workflow"]["inputs"]["enabled"] = False
         cfg["workflow"]["steps"][0]["when"] = {"ref": "inputs.enabled", "eq": True}
         cfg["workflow"]["steps"][2]["with"]["product"] = {"optional_ref": "steps.product"}
@@ -302,15 +325,15 @@ class LabTests(unittest.TestCase):
     def test_live_requires_explicit_deployment_and_supported_catalog_schema(self):
         for bridge_url in (None, "file:///tmp/bridge", "http://user:secret@bridge", "http://bridge?token=secret"):
             with self.subTest(url=bridge_url), self.assertRaises(profile.Invalid):
-                compiler.compile_n8n(self.configs[1], self.bindings, llm_mode="live", bridge_url=bridge_url)
+                compiler.compile_n8n(self.configs["conditional"], self.bindings, llm_mode="live", bridge_url=bridge_url)
         bindings = copy.deepcopy(self.bindings)
         bindings["ticket.classify"]["output_schema"]["patternProperties"] = {}
         with self.assertRaisesRegex(profile.Invalid, "unsupported schema keywords"):
-            compiler.compile_n8n(self.configs[1], bindings)
+            compiler.compile_n8n(self.configs["conditional"], bindings)
         bindings = copy.deepcopy(self.bindings)
         bindings["ticket.classify"].pop("output_schema")
         with self.assertRaisesRegex(profile.Invalid, "output_schema required"):
-            compiler.compile_n8n(self.configs[1], bindings)
+            compiler.compile_n8n(self.configs["conditional"], bindings)
 
 
 if __name__ == "__main__":
