@@ -22,7 +22,6 @@ from sapi_config_lab.paths import workspace_root
 
 ROOT = workspace_root()
 LOCAL_TESTS_SECONDS = 300
-TRANSPORT_SECONDS = 1800
 
 
 def transport_probe(run: Run, *, skip_build: bool = False) -> dict:

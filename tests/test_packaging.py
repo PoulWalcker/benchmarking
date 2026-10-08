@@ -160,7 +160,7 @@ class PackagingTests(unittest.TestCase):
             self.assertEqual(json.loads((task / "tests/payload/cases.json").read_text()), invoice_cases())
 
     @unittest.skipUnless(AVAILABLE, "Requires the pinned upstream source and benchmark extra")
-    def test_hosted_packages_scrub_the_evaluator_and_carry_no_hidden_data(self):
+    def test_hosted_packages_select_public_material_and_carry_no_hidden_data(self):
         selected = select_benchmarks(ROOT / "benchmarks", ("checkout-recovery",))
         for mode in ("generation", "oracle"):
             with tempfile.TemporaryDirectory() as directory:
