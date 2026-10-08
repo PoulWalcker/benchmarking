@@ -37,6 +37,7 @@ VERIFIER_FILES = (
     "roles.py",
     "n8n_provenance.py",
     "extensions.py",
+    "refinement.py",
     "rubric.py",
     "rubric_cards.py",
     "rubric_facts.py",

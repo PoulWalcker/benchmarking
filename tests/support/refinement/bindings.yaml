@@ -1,0 +1,32 @@
+schema: sapi-bindings/v0
+operations:
+  probe.advance:
+    kind: LLM
+    inputs: [previous, feedback]
+    outputs: [value]
+    implementation: agency_bridge
+    prompt: Advance the numeric value once.
+    output_contract: "{value: integer}"
+    input_schema:
+      type: object
+      required: [previous, feedback]
+      additionalProperties: false
+      properties:
+        previous:
+          type: [object, 'null']
+          required: [value]
+          additionalProperties: false
+          properties:
+            value: {type: integer}
+        feedback: {type: array, items: {type: string}}
+    output_schema:
+      type: object
+      required: [value]
+      additionalProperties: false
+      properties:
+        value: {type: integer}
+  probe.check:
+    kind: Script
+    inputs: [draft, target, ceiling]
+    outputs: [pass, errors]
+    implementation: local_js

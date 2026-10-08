@@ -1,0 +1,65 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: numeric-refinement
+  revision: 1
+  kind: Gantt
+  inputs:
+    target: 2
+    ceiling: 10
+  steps:
+  - id: draft
+    kind: LLM
+    uses: probe.advance
+    with:
+      previous:
+        ref: runtime.previous
+      feedback:
+        ref: runtime.feedback
+  - id: check
+    kind: Script
+    uses: probe.check
+    with:
+      draft:
+        ref: steps.draft
+      target:
+        ref: inputs.target
+      ceiling:
+        ref: inputs.ceiling
+  dependencies:
+  - - draft
+    - check
+  acceptance: The numeric probe reaches its target within its ceiling.
+  output:
+    ref: steps.draft
+activation:
+  kind: Callback
+  rule_id: numeric-requested
+  hook: probe.requested
+  condition: valid_input
+  reaction: Trigger
+  workflow_ref:
+    id: numeric-refinement
+    revision: 1
+execution:
+  concurrency: independent
+  deadline_seconds: 120
+  on_step_error: fail
+  refinement:
+    region:
+    - draft
+    - check
+    initial_state:
+      previous: null
+      feedback: []
+    until:
+      ref: steps.check.pass
+      eq: true
+    max_attempts: 3
+    carry:
+      previous:
+        ref: steps.draft
+      feedback:
+        ref: steps.check.errors
+    exhausted: failed
+    output_policy: last_accepted_only

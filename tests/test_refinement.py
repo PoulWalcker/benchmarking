@@ -9,23 +9,25 @@ import unittest
 
 from sapi_config_lab import profile
 from sapi_config_lab.compile.n8n import compile_n8n
-from sapi_config_lab.paths import CATALOG, workspace_root
+from tests.support.refinement import ROOT, check_refinement_history, definition
 
 
 class RefinementTests(unittest.TestCase):
     def setUp(self):
-        self.config = profile.read(workspace_root() / "benchmarks/04-revise-answer/config.yaml")
-        self.bindings = profile.read_bindings(CATALOG)
+        self.config = definition()
+        self.bindings = profile.read_bindings(ROOT / "bindings.yaml")
 
     def run_export(self, config=None, mutate=None):
-        document, mapping = compile_n8n(config or self.config, self.bindings)
+        document, mapping = compile_n8n(
+            config or self.config, self.bindings, operation_source=(ROOT / "operations.js").read_text()
+        )
         if mutate:
             mutate(document)
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "workflow.json"
             path.write_text(json.dumps(document))
             run = subprocess.run(
-                ["node", str(workspace_root() / "tests/support/run-refinement-export.mjs"), str(path)],
+                ["node", str(ROOT.parent / "run-refinement-export.mjs"), str(path)],
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -38,48 +40,58 @@ class RefinementTests(unittest.TestCase):
         probe, mapping = self.run_export()
         self.assertIsNone(probe["error"])
         result = probe["result"]
-        self.assertEqual(result["output"], {"text": "We are checking order A7842."})
+        self.assertEqual(result["output"], {"value": 2})
         attempts = result["refinement"]["attempts"]
         self.assertEqual([a["accepted"] for a in attempts], [False, True])
         self.assertEqual(
             attempts[1]["runtime"],
-            {"previous": {"text": "We are checking your order."}, "feedback": ["Include the order ID"]},
+            {"previous": {"value": 1}, "feedback": ["Increase value"]},
         )
         self.assertNotIn("Attempt 3 / draft [LLM STUB]", probe["executed"])
         self.assertEqual(mapping["attempt2:draft"], "Attempt 2 / draft [LLM STUB]")
         self.assertEqual(self.config, original)
 
     def test_first_acceptance_stops_before_any_later_attempt(self):
-        self.config["workflow"]["inputs"]["required_order_id"] = "checking"
+        self.config["workflow"]["inputs"]["target"] = 1
         probe, _ = self.run_export()
         self.assertEqual(probe["result"]["refinement"]["accepted_attempt"], 1)
         self.assertNotIn("Attempt 2 / Fixture", probe["executed"])
 
     def test_exhaustion_preserves_three_rejections_but_no_accepted_result(self):
-        self.config["workflow"]["inputs"]["max_characters"] = 1
+        self.config["workflow"]["inputs"]["ceiling"] = 1
         probe, _ = self.run_export()
         self.assertIn("exhausted", probe["error"])
         self.assertIsNone(probe["result"])
         attempts = probe["checkpoints"][-1]["value"]["refinement"]["attempts"]
         self.assertEqual(len(attempts), 3)
         self.assertEqual([a["accepted"] for a in attempts], [False, False, False])
-        self.assertEqual(attempts[2]["runtime"]["feedback"], ["Shorten the reply"])
+        self.assertEqual(attempts[2]["runtime"]["feedback"], ["Value exceeds ceiling"])
 
     def test_generic_lowering_also_handles_a_script_only_workflow(self):
-        config = profile.read(workspace_root() / "benchmarks/01-invoice-total/config.yaml")
-        config["execution"]["refinement"] = {
-            "region": [s["id"] for s in config["workflow"]["steps"]],
-            "initial_state": {},
-            "carry": {},
-            "until": {"ref": "steps.report.total_minor", "eq": 38000},
-            "max_attempts": 2,
-            "exhausted": "failed",
-            "output_policy": "last_accepted_only",
-        }
+        config = definition()
+        config["workflow"]["steps"][0]["kind"] = "Script"
+        self.bindings["probe.advance"]["kind"] = "Script"
+        self.bindings["probe.advance"]["implementation"] = "local_js"
         probe, _ = self.run_export(config)
         self.assertIsNone(probe["error"])
-        self.assertEqual(probe["result"]["output"]["total_minor"], 38000)
-        self.assertEqual(probe["result"]["refinement"]["accepted_attempt"], 1)
+        self.assertEqual(probe["result"]["output"], {"value": 2})
+        self.assertEqual(probe["result"]["refinement"]["accepted_attempt"], 2)
+
+    def test_reversed_declarations_preserve_dependency_order_in_recursive_compilation(self):
+        self.config["workflow"]["steps"].reverse()
+        probe, _ = self.run_export()
+        self.assertIsNone(probe["error"])
+        self.assertEqual(probe["result"]["refinement"]["accepted_attempt"], 2)
+        self.assertEqual(probe["result"]["output"], {"value": 2})
+
+    def test_boolean_until_does_not_accept_numeric_one_in_runtime_or_verification(self):
+        policy = self.config["execution"]["refinement"]
+        policy.update(max_attempts=1, until={"ref": "steps.draft.value", "eq": True})
+        probe, _ = self.run_export()
+        self.assertIn("exhausted", probe["error"])
+        attempts = probe["checkpoints"][-1]["value"]["refinement"]["attempts"]
+        self.assertFalse(attempts[0]["accepted"])
+        self.assertTrue(check_refinement_history(self.config, attempts)["exhausted"])
 
     def test_total_deadline_prevents_first_operation_when_already_expired(self):
         def expire(document):
@@ -92,11 +104,17 @@ class RefinementTests(unittest.TestCase):
         self.assertEqual(probe["checkpoints"], [])
 
     def test_live_attempts_have_distinct_admission_ids_and_remaining_timeouts(self):
-        graph, mapping = compile_n8n(self.config, self.bindings, llm_mode="live", bridge_url="http://127.0.0.1:8766")
+        graph, mapping = compile_n8n(
+            self.config,
+            self.bindings,
+            llm_mode="live",
+            bridge_url="http://127.0.0.1:8766",
+            operation_source=(ROOT / "operations.js").read_text(),
+        )
         nodes = {node["name"]: node for node in graph["nodes"]}
         for number in (1, 2, 3):
             source = nodes[f"Attempt {number} / Prepare draft"]["parameters"]["jsCode"]
-            self.assertIn(f"revise-answer/r1/draft/attempt{number}/", source)
+            self.assertIn(f"numeric-refinement/r1/draft/attempt{number}/", source)
             restore = nodes[mapping[f"attempt{number}:draft"]]["parameters"]["jsCode"]
             self.assertIn(f'$("Attempt {number} / Prepare draft")', restore)
             self.assertIn(

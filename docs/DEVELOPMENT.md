@@ -279,3 +279,17 @@ Versioned checkout generation performs compile-only admission without invoking
 world hooks or scoring. New versioned records support offline saved-judgement
 re-evaluation; `--dispatch-judge`/`--calibration` for those records are refused until
 the experiment caller integration. Historical records keep their existing path.
+
+
+The generic refinement control uses test-only numeric operations and a local
+unpaid bridge; it does not discover or run a production benchmark:
+
+```bash
+uv run --locked python -m unittest tests.test_refinement tests.test_refinement_admission tests.test_refinement_verification tests.test_occurrence_budget -v
+SAPI_RUN_DOCKER_TESTS=1 uv run --locked --extra harbor --extra benchmark python -m unittest tests.test_refinement_verification -v
+```
+
+The opt-in native case runs first acceptance, later acceptance, exhaustion and
+stub accounting within one Harbor 0.21.0 trial with zero infrastructure retries.
+Its source identity, exact command, native engine records, bridge requests and
+independent verdicts remain under `reports/migration-11/native-refinement-*/`.

@@ -304,3 +304,15 @@ identity, ledger reservations and old host connectivity retain their established
 path. Ordinary controls and versioned re-evaluation use the native path. Explicit
 paid/calibration re-evaluation of a new versioned record is refused until that
 integration; matching saved judgement replay remains available without dispatch.
+
+
+Generic bounded refinement is compiled with explicit trusted operation source,
+including every recursively lowered attempt. `verification/refinement.py`
+independently verifies sequential native attempt edges, unchanged deadlines,
+carry, stopping, exhaustion and model occurrence identities. Its required
+`check_steps` callable supplies independent operation expectations; the mechanism
+contains no benchmark rules. The legacy reply evaluator adapts this mechanism
+while its retired package awaits removal. Numeric test-only fixtures under
+`tests/support/refinement/` exercise these semantics with all production benchmark
+directories absent and with an unpaid local bridge in a Harbor-managed native
+n8n control. Infrastructure retries are zero and do not implement refinement.
