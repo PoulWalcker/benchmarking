@@ -22,10 +22,12 @@ provide business rules and expected values. These files provide reusable indepen
 | `fixture.py` | explicit independent behavior and evaluation data |
 | `roles.py` | bind submitted occurrences to an explicit role contract and output fields |
 | `n8n_provenance.py` | tie observations and graph lineage to native n8n records |
-| `refinement.py`, `lifecycle.py` | generic native history checks with independent callbacks |
+| `refinement.py` | generic native history checks with independent callbacks |
 | `rubric.py`, `rubric_facts.py` | optional quality beside acceptance, using an explicit card |
 
 Acceptance requires independent obligations and native provenance. Evaluation never
 reruns a workflow or rewrites evidence. Quality remains separate; unavailable scores
 stay null. Current occurrence acceptance requires the submitted graph. Historical
-records use their matching archived evaluator snapshot, including its old formats.
+formats remain readable through the normalized result reader; archived evaluator
+execution is deferred. Current native re-evaluation requires the recorded source
+identity and preserves original evidence.

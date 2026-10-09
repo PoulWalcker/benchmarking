@@ -47,10 +47,9 @@ remains null.
 
 ```text
 src/sapi_config_lab/
-├── author/       model-driven definition authoring and repair
 ├── compile/      validated YAML -> backend artifact
 ├── execute/      artifact execution, runtime transport and host tools
-├── evaluate/     generic views and export of recorded evidence
+├── evaluate/     normalized current and historical result readers
 ├── coordinate/   orchestration only
 └── harbor_integration/  adaptation to external Harbor 0.21.0
 
@@ -65,7 +64,7 @@ reports/          local run output (ignored)
 
 ## Documentation
 
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): ownership, trust areas, runs, installed resources and evidence.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): ownership, trust areas, runs and evidence.
 - [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md): setup, commands, configuration, adding scenarios, reading runs.
 - [docs/PROFILE.md](docs/PROFILE.md): `sapi-lab/v0` semantics and limits.
 - [AGENTS.md](AGENTS.md): rules for coding agents.

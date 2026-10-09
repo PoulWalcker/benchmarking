@@ -1,0 +1,3748 @@
+{
+  "method": {
+    "lines": "physical lines including blank/comment lines, zero-line files retained",
+    "narrow": "production/build/domain .py/.js/.sh under src verification infra tasks benchmarks; excludes project tests/docs/data/Dockerfiles",
+    "broad": "tracked .py/.js/.sh/.yaml/.yml/.toml/Dockerfile/*.Dockerfile under src verification benchmarks tasks harbor infra generation public and root; excludes tests/docs/JSON/evidence/reports/vendor/calibration trees"
+  },
+  "baseline_sha": "ce624339729444a167afaa3c12f2b40123d992b2",
+  "implementation_sha": "df05bedbbded802dd8a5bcd3fc532150c33ae96c",
+  "snapshots": {
+    "baseline": {
+      "files": [
+        {
+          "path": "benchmarks/01-invoice-total/bindings.yaml",
+          "lines": 215,
+          "bytes": 7821,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/01-invoice-total/config.yaml",
+          "lines": 45,
+          "bytes": 1228,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/01-invoice-total/evaluation/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/01-invoice-total/evaluation/evaluator.py",
+          "lines": 113,
+          "bytes": 4182,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/01-invoice-total/operations.js",
+          "lines": 66,
+          "bytes": 3754,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/01-invoice-total/task.toml",
+          "lines": 22,
+          "bytes": 512,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/01-invoice-total/verifier.sh",
+          "lines": 3,
+          "bytes": 78,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/10-checkout-recovery/bindings.yaml",
+          "lines": 150,
+          "bytes": 3482,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/10-checkout-recovery/config.yaml",
+          "lines": 64,
+          "bytes": 1850,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/10-checkout-recovery/environment/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/10-checkout-recovery/environment/docker-compose.yaml",
+          "lines": 32,
+          "bytes": 839,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/10-checkout-recovery/environment/hooks.py",
+          "lines": 185,
+          "bytes": 7189,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/10-checkout-recovery/environment/install.py",
+          "lines": 37,
+          "bytes": 1384,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/10-checkout-recovery/environment/server.py",
+          "lines": 344,
+          "bytes": 14907,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/10-checkout-recovery/environment/verifier.Dockerfile",
+          "lines": 2,
+          "bytes": 214,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/10-checkout-recovery/evaluation/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/10-checkout-recovery/evaluation/calibration.py",
+          "lines": 109,
+          "bytes": 4635,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/10-checkout-recovery/evaluation/evaluator.py",
+          "lines": 108,
+          "bytes": 5092,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/10-checkout-recovery/evaluation/scoring.py",
+          "lines": 476,
+          "bytes": 19167,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/10-checkout-recovery/operations.js",
+          "lines": 3,
+          "bytes": 190,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/10-checkout-recovery/task.toml",
+          "lines": 26,
+          "bytes": 638,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "benchmarks/10-checkout-recovery/verifier.sh",
+          "lines": 3,
+          "bytes": 90,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "harbor/templates/solve.sh",
+          "lines": 4,
+          "bytes": 118,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "harbor/templates/task.toml",
+          "lines": 21,
+          "bytes": 619,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "harbor/templates/test.sh",
+          "lines": 17,
+          "bytes": 998,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "infra/Dockerfile",
+          "lines": 26,
+          "bytes": 1438,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "infra/build_resources.py",
+          "lines": 28,
+          "bytes": 1236,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "infra/check_distribution.py",
+          "lines": 242,
+          "bytes": 10957,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "infra/check_types.py",
+          "lines": 25,
+          "bytes": 756,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "infra/native/Dockerfile",
+          "lines": 41,
+          "bytes": 3748,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "infra/native/build.sh",
+          "lines": 8,
+          "bytes": 449,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "infra/verify_spec_source.py",
+          "lines": 120,
+          "bytes": 5156,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "pyproject.toml",
+          "lines": 96,
+          "bytes": 3873,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "run-generation.sh",
+          "lines": 4,
+          "bytes": 136,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "run.sh",
+          "lines": 4,
+          "bytes": 134,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/__main__.py",
+          "lines": 3,
+          "bytes": 74,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/author/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/author/rebuilder.py",
+          "lines": 139,
+          "bytes": 6677,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/benchmark.py",
+          "lines": 302,
+          "bytes": 12304,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/benchmark_loading.py",
+          "lines": 158,
+          "bytes": 7277,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/compile/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/compile/n8n.py",
+          "lines": 328,
+          "bytes": 15375,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/compile/refinement.py",
+          "lines": 208,
+          "bytes": 9520,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/compile/runtime-fragment.js",
+          "lines": 145,
+          "bytes": 8312,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/contracts.py",
+          "lines": 113,
+          "bytes": 3605,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/backend.py",
+          "lines": 39,
+          "bytes": 1465,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/benchmark_authoring.py",
+          "lines": 46,
+          "bytes": 1883,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/benchmark_discovery.py",
+          "lines": 15,
+          "bytes": 834,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/benchmark_packages.py",
+          "lines": 116,
+          "bytes": 4179,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/benchmark_worker.py",
+          "lines": 166,
+          "bytes": 7307,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/cases.py",
+          "lines": 154,
+          "bytes": 5511,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/cli.py",
+          "lines": 253,
+          "bytes": 11999,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/compilation.py",
+          "lines": 58,
+          "bytes": 2263,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/controls.py",
+          "lines": 133,
+          "bytes": 6144,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/evaluation.py",
+          "lines": 188,
+          "bytes": 8932,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/generate.py",
+          "lines": 231,
+          "bytes": 11494,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/historical_evaluation.py",
+          "lines": 173,
+          "bytes": 8914,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/ledger.py",
+          "lines": 167,
+          "bytes": 7454,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/lifecycle.py",
+          "lines": 762,
+          "bytes": 36817,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/live.py",
+          "lines": 468,
+          "bytes": 23674,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/live_evidence.py",
+          "lines": 171,
+          "bytes": 8309,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/observe.py",
+          "lines": 130,
+          "bytes": 5094,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/packages.py",
+          "lines": 181,
+          "bytes": 8166,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/provenance.py",
+          "lines": 90,
+          "bytes": 2375,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/replay.py",
+          "lines": 173,
+          "bytes": 8059,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/runs.py",
+          "lines": 281,
+          "bytes": 12598,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/transport.py",
+          "lines": 306,
+          "bytes": 13422,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/ui.py",
+          "lines": 523,
+          "bytes": 23567,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/wrapper.py",
+          "lines": 5,
+          "bytes": 224,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/evaluate/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/evaluate/records.py",
+          "lines": 204,
+          "bytes": 9405,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/evaluate/review_export.py",
+          "lines": 261,
+          "bytes": 10633,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/evidence.py",
+          "lines": 61,
+          "bytes": 2345,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/execute/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/execute/agency.py",
+          "lines": 474,
+          "bytes": 20243,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/execute/host.py",
+          "lines": 102,
+          "bytes": 4481,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/execute/n8n.py",
+          "lines": 278,
+          "bytes": 12224,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/execute/ui_n8n.py",
+          "lines": 69,
+          "bytes": 3407,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/__init__.py",
+          "lines": 1,
+          "bytes": 52,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/model_wrapper.py",
+          "lines": 112,
+          "bytes": 4775,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/runner.py",
+          "lines": 63,
+          "bytes": 2194,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/runtime/Dockerfile",
+          "lines": 10,
+          "bytes": 889,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/submission.py",
+          "lines": 55,
+          "bytes": 2177,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/tasks.py",
+          "lines": 220,
+          "bytes": 10810,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/yaml_agent.py",
+          "lines": 94,
+          "bytes": 4081,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/net.py",
+          "lines": 12,
+          "bytes": 365,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/paths.py",
+          "lines": 37,
+          "bytes": 1804,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/pinned_source.py",
+          "lines": 125,
+          "bytes": 4999,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/profile.py",
+          "lines": 474,
+          "bytes": 21727,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/wrapper_audit.py",
+          "lines": 31,
+          "bytes": 981,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/environment/Dockerfile",
+          "lines": 1,
+          "bytes": 49,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/solution/config.yaml",
+          "lines": 64,
+          "bytes": 1850,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/solution/solve.sh",
+          "lines": 3,
+          "bytes": 71,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/task.toml",
+          "lines": 25,
+          "bytes": 565,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/Dockerfile",
+          "lines": 3,
+          "bytes": 170,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/calibration_transport.py",
+          "lines": 79,
+          "bytes": 3436,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/docker-compose.yaml",
+          "lines": 29,
+          "bytes": 759,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/fake_bridge.py",
+          "lines": 50,
+          "bytes": 1920,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/main.py",
+          "lines": 122,
+          "bytes": 4777,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/test.sh",
+          "lines": 6,
+          "bytes": 204,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/environment/Dockerfile",
+          "lines": 1,
+          "bytes": 45,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/solution/config.yaml",
+          "lines": 45,
+          "bytes": 1228,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/solution/solve.sh",
+          "lines": 3,
+          "bytes": 71,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/task.toml",
+          "lines": 24,
+          "bytes": 564,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/tests/Dockerfile",
+          "lines": 3,
+          "bytes": 166,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/tests/main.py",
+          "lines": 27,
+          "bytes": 744,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/tests/test.sh",
+          "lines": 6,
+          "bytes": 204,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/__init__.py",
+          "lines": 1,
+          "bytes": 63,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/contracts.py",
+          "lines": 78,
+          "bytes": 2781,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/fixture.py",
+          "lines": 34,
+          "bytes": 1106,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/lifecycle.py",
+          "lines": 359,
+          "bytes": 19986,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/lifecycle_submission.py",
+          "lines": 87,
+          "bytes": 3564,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/n8n_provenance.py",
+          "lines": 398,
+          "bytes": 21303,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/refinement.py",
+          "lines": 335,
+          "bytes": 17489,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/roles.py",
+          "lines": 222,
+          "bytes": 9904,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/rubric.py",
+          "lines": 488,
+          "bytes": 20572,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/rubric_facts.py",
+          "lines": 116,
+          "bytes": 4798,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/verify.py",
+          "lines": 569,
+          "bytes": 24815,
+          "narrow": true,
+          "broad": true
+        }
+      ],
+      "totals": {
+        "narrow": {
+          "files": 94,
+          "lines": 13751
+        },
+        "broad": {
+          "files": 120,
+          "lines": 14725
+        }
+      }
+    },
+    "pre_compact": {
+      "files": [
+        {
+          "path": "harbor/templates/solve.sh",
+          "lines": 4,
+          "bytes": 118,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "harbor/templates/task.toml",
+          "lines": 21,
+          "bytes": 619,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "harbor/templates/test.sh",
+          "lines": 17,
+          "bytes": 998,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "infra/Dockerfile",
+          "lines": 26,
+          "bytes": 1428,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "infra/build_resources.py",
+          "lines": 39,
+          "bytes": 1766,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "infra/check_distribution.py",
+          "lines": 280,
+          "bytes": 13061,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "infra/check_types.py",
+          "lines": 25,
+          "bytes": 806,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "infra/native/Dockerfile",
+          "lines": 44,
+          "bytes": 3633,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "infra/native/build.sh",
+          "lines": 18,
+          "bytes": 1203,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "infra/verify_spec_source.py",
+          "lines": 120,
+          "bytes": 5156,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "pyproject.toml",
+          "lines": 96,
+          "bytes": 3858,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "run-generation.sh",
+          "lines": 4,
+          "bytes": 136,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "run.sh",
+          "lines": 4,
+          "bytes": 134,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/__main__.py",
+          "lines": 3,
+          "bytes": 74,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/author/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/author/rebuilder.py",
+          "lines": 139,
+          "bytes": 6677,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/benchmark.py",
+          "lines": 302,
+          "bytes": 12304,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/benchmark_loading.py",
+          "lines": 158,
+          "bytes": 7277,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/compile/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/compile/n8n.py",
+          "lines": 328,
+          "bytes": 15375,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/compile/refinement.py",
+          "lines": 208,
+          "bytes": 9520,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/compile/runtime-fragment.js",
+          "lines": 145,
+          "bytes": 8312,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/contracts.py",
+          "lines": 113,
+          "bytes": 3605,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/archived_evaluation.py",
+          "lines": 294,
+          "bytes": 14066,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/backend.py",
+          "lines": 39,
+          "bytes": 1465,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/benchmark_authoring.py",
+          "lines": 46,
+          "bytes": 1883,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/benchmark_discovery.py",
+          "lines": 15,
+          "bytes": 834,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/benchmark_packages.py",
+          "lines": 116,
+          "bytes": 4179,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/benchmark_worker.py",
+          "lines": 166,
+          "bytes": 7307,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/cases.py",
+          "lines": 154,
+          "bytes": 5511,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/cli.py",
+          "lines": 253,
+          "bytes": 11978,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/compilation.py",
+          "lines": 58,
+          "bytes": 2263,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/controls.py",
+          "lines": 147,
+          "bytes": 6729,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/evaluation.py",
+          "lines": 210,
+          "bytes": 9897,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/generate.py",
+          "lines": 268,
+          "bytes": 13426,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/historical_evaluation.py",
+          "lines": 173,
+          "bytes": 8914,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/ledger.py",
+          "lines": 167,
+          "bytes": 7454,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/lifecycle.py",
+          "lines": 762,
+          "bytes": 36817,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/live.py",
+          "lines": 535,
+          "bytes": 27006,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/live_evidence.py",
+          "lines": 183,
+          "bytes": 8666,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/native_evaluation.py",
+          "lines": 130,
+          "bytes": 6572,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/native_record.py",
+          "lines": 38,
+          "bytes": 1478,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/native_tasks.py",
+          "lines": 122,
+          "bytes": 5363,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/observe.py",
+          "lines": 130,
+          "bytes": 5094,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/packages.py",
+          "lines": 182,
+          "bytes": 8259,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/provenance.py",
+          "lines": 104,
+          "bytes": 3106,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/replay.py",
+          "lines": 191,
+          "bytes": 9210,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/runs.py",
+          "lines": 326,
+          "bytes": 15281,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/transport.py",
+          "lines": 306,
+          "bytes": 13422,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/ui.py",
+          "lines": 523,
+          "bytes": 23552,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/wrapper.py",
+          "lines": 5,
+          "bytes": 224,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/evaluate/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/evaluate/records.py",
+          "lines": 214,
+          "bytes": 9728,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/evaluate/review_export.py",
+          "lines": 261,
+          "bytes": 10633,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/evidence.py",
+          "lines": 61,
+          "bytes": 2345,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/execute/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/execute/agency.py",
+          "lines": 474,
+          "bytes": 20243,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/execute/host.py",
+          "lines": 102,
+          "bytes": 4481,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/execute/n8n.py",
+          "lines": 278,
+          "bytes": 12224,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/execute/ui_n8n.py",
+          "lines": 69,
+          "bytes": 3407,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/__init__.py",
+          "lines": 1,
+          "bytes": 52,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/model_wrapper.py",
+          "lines": 112,
+          "bytes": 4775,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/runner.py",
+          "lines": 75,
+          "bytes": 2415,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/runtime/Dockerfile",
+          "lines": 10,
+          "bytes": 889,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/submission.py",
+          "lines": 55,
+          "bytes": 2177,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/tasks.py",
+          "lines": 220,
+          "bytes": 10810,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/yaml_agent.py",
+          "lines": 140,
+          "bytes": 5865,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/net.py",
+          "lines": 12,
+          "bytes": 365,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/paths.py",
+          "lines": 37,
+          "bytes": 1789,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/pinned_source.py",
+          "lines": 125,
+          "bytes": 4999,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/profile.py",
+          "lines": 474,
+          "bytes": 21727,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/wrapper_audit.py",
+          "lines": 31,
+          "bytes": 981,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/bindings.yaml",
+          "lines": 150,
+          "bytes": 3482,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/environment/Dockerfile",
+          "lines": 1,
+          "bytes": 49,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/environment/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/environment/hooks.py",
+          "lines": 185,
+          "bytes": 7189,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/environment/install.py",
+          "lines": 37,
+          "bytes": 1384,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/environment/legacy-compose.yaml",
+          "lines": 32,
+          "bytes": 839,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/environment/server.py",
+          "lines": 344,
+          "bytes": 14907,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/environment/verifier.Dockerfile",
+          "lines": 2,
+          "bytes": 214,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/evaluation/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/evaluation/calibration.py",
+          "lines": 109,
+          "bytes": 4635,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/evaluation/evaluator.py",
+          "lines": 108,
+          "bytes": 5092,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/evaluation/scoring.py",
+          "lines": 483,
+          "bytes": 19438,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/experiment.py",
+          "lines": 54,
+          "bytes": 2036,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/legacy-task.toml",
+          "lines": 26,
+          "bytes": 638,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/operations.js",
+          "lines": 3,
+          "bytes": 190,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/solution/config.yaml",
+          "lines": 64,
+          "bytes": 1850,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/solution/solve.sh",
+          "lines": 3,
+          "bytes": 71,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/task.toml",
+          "lines": 35,
+          "bytes": 748,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/Dockerfile",
+          "lines": 3,
+          "bytes": 196,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/calibration_transport.py",
+          "lines": 79,
+          "bytes": 3436,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/docker-compose.yaml",
+          "lines": 29,
+          "bytes": 759,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/fake_bridge.py",
+          "lines": 50,
+          "bytes": 1920,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/main.py",
+          "lines": 158,
+          "bytes": 6358,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/test.sh",
+          "lines": 6,
+          "bytes": 204,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/verifier.sh",
+          "lines": 3,
+          "bytes": 90,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/bindings.yaml",
+          "lines": 215,
+          "bytes": 7821,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/environment/Dockerfile",
+          "lines": 1,
+          "bytes": 45,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/evaluation/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/evaluation/evaluator.py",
+          "lines": 113,
+          "bytes": 4182,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/experiment.py",
+          "lines": 104,
+          "bytes": 3860,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/legacy-task.toml",
+          "lines": 22,
+          "bytes": 512,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/operations.js",
+          "lines": 66,
+          "bytes": 3754,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/solution/config.yaml",
+          "lines": 45,
+          "bytes": 1228,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/solution/solve.sh",
+          "lines": 3,
+          "bytes": 71,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/task.toml",
+          "lines": 29,
+          "bytes": 644,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/tests/Dockerfile",
+          "lines": 3,
+          "bytes": 192,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/tests/main.py",
+          "lines": 39,
+          "bytes": 1227,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/tests/test.sh",
+          "lines": 6,
+          "bytes": 204,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/verifier.sh",
+          "lines": 3,
+          "bytes": 78,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/__init__.py",
+          "lines": 1,
+          "bytes": 63,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/contracts.py",
+          "lines": 78,
+          "bytes": 2781,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/fixture.py",
+          "lines": 34,
+          "bytes": 1106,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/lifecycle.py",
+          "lines": 359,
+          "bytes": 19986,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/lifecycle_submission.py",
+          "lines": 87,
+          "bytes": 3564,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/n8n_provenance.py",
+          "lines": 398,
+          "bytes": 21303,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/refinement.py",
+          "lines": 335,
+          "bytes": 17489,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/roles.py",
+          "lines": 222,
+          "bytes": 9904,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/rubric.py",
+          "lines": 488,
+          "bytes": 20572,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/rubric_facts.py",
+          "lines": 116,
+          "bytes": 4798,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/verify.py",
+          "lines": 569,
+          "bytes": 24815,
+          "narrow": true,
+          "broad": true
+        }
+      ],
+      "totals": {
+        "narrow": {
+          "files": 100,
+          "lines": 14905
+        },
+        "broad": {
+          "files": 124,
+          "lines": 15788
+        }
+      }
+    },
+    "current": {
+      "files": [
+        {
+          "path": "infra/Dockerfile",
+          "lines": 26,
+          "bytes": 1428,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "infra/check_distribution.py",
+          "lines": 205,
+          "bytes": 8356,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "infra/check_types.py",
+          "lines": 26,
+          "bytes": 895,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "infra/native/Dockerfile",
+          "lines": 44,
+          "bytes": 3599,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "infra/native/build.sh",
+          "lines": 13,
+          "bytes": 927,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "infra/verify_spec_source.py",
+          "lines": 120,
+          "bytes": 5156,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "pyproject.toml",
+          "lines": 91,
+          "bytes": 3638,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "run-generation.sh",
+          "lines": 4,
+          "bytes": 136,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "run.sh",
+          "lines": 4,
+          "bytes": 134,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/__main__.py",
+          "lines": 3,
+          "bytes": 74,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/compile/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/compile/n8n.py",
+          "lines": 328,
+          "bytes": 15375,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/compile/refinement.py",
+          "lines": 208,
+          "bytes": 9520,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/compile/runtime-fragment.js",
+          "lines": 145,
+          "bytes": 8312,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/contracts.py",
+          "lines": 113,
+          "bytes": 3605,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/backend.py",
+          "lines": 39,
+          "bytes": 1465,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/cases.py",
+          "lines": 154,
+          "bytes": 5511,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/cli.py",
+          "lines": 209,
+          "bytes": 9737,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/compilation.py",
+          "lines": 57,
+          "bytes": 2237,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/controls.py",
+          "lines": 147,
+          "bytes": 6729,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/evaluation.py",
+          "lines": 110,
+          "bytes": 4996,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/generate.py",
+          "lines": 268,
+          "bytes": 13418,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/ledger.py",
+          "lines": 167,
+          "bytes": 7454,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/live.py",
+          "lines": 524,
+          "bytes": 26487,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/live_evidence.py",
+          "lines": 183,
+          "bytes": 8666,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/native_evaluation.py",
+          "lines": 130,
+          "bytes": 6576,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/native_record.py",
+          "lines": 38,
+          "bytes": 1478,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/native_tasks.py",
+          "lines": 122,
+          "bytes": 5363,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/observe.py",
+          "lines": 115,
+          "bytes": 4347,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/provenance.py",
+          "lines": 86,
+          "bytes": 2248,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/replay.py",
+          "lines": 191,
+          "bytes": 9210,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/runs.py",
+          "lines": 276,
+          "bytes": 12528,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/task_worker.py",
+          "lines": 110,
+          "bytes": 4430,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/transport.py",
+          "lines": 306,
+          "bytes": 13422,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/coordinate/wrapper.py",
+          "lines": 5,
+          "bytes": 224,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/evaluate/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/evaluate/records.py",
+          "lines": 214,
+          "bytes": 9728,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/evidence.py",
+          "lines": 61,
+          "bytes": 2345,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/execute/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/execute/agency.py",
+          "lines": 474,
+          "bytes": 20243,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/execute/host.py",
+          "lines": 92,
+          "bytes": 3884,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/execute/n8n.py",
+          "lines": 278,
+          "bytes": 12224,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/__init__.py",
+          "lines": 1,
+          "bytes": 52,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/model_wrapper.py",
+          "lines": 112,
+          "bytes": 4775,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/runner.py",
+          "lines": 79,
+          "bytes": 2659,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/runtime/Dockerfile",
+          "lines": 10,
+          "bytes": 889,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/submission.py",
+          "lines": 55,
+          "bytes": 2177,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/task_config.py",
+          "lines": 44,
+          "bytes": 2544,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/harbor_integration/yaml_agent.py",
+          "lines": 140,
+          "bytes": 5865,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/net.py",
+          "lines": 12,
+          "bytes": 365,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/paths.py",
+          "lines": 30,
+          "bytes": 1361,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/pinned_source.py",
+          "lines": 125,
+          "bytes": 5187,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/profile.py",
+          "lines": 474,
+          "bytes": 21727,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "src/sapi_config_lab/wrapper_audit.py",
+          "lines": 31,
+          "bytes": 981,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/bindings.yaml",
+          "lines": 150,
+          "bytes": 3482,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/environment/Dockerfile",
+          "lines": 1,
+          "bytes": 49,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/environment/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/environment/hooks.py",
+          "lines": 185,
+          "bytes": 7189,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/environment/install.py",
+          "lines": 37,
+          "bytes": 1384,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/environment/server.py",
+          "lines": 344,
+          "bytes": 14907,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/evaluation/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/evaluation/calibration.py",
+          "lines": 109,
+          "bytes": 4635,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/evaluation/evaluator.py",
+          "lines": 108,
+          "bytes": 5092,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/evaluation/scoring.py",
+          "lines": 483,
+          "bytes": 19438,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/experiment.py",
+          "lines": 59,
+          "bytes": 2191,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/operations.js",
+          "lines": 3,
+          "bytes": 190,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/solution/config.yaml",
+          "lines": 64,
+          "bytes": 1850,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/solution/solve.sh",
+          "lines": 3,
+          "bytes": 71,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/task.toml",
+          "lines": 35,
+          "bytes": 748,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/Dockerfile",
+          "lines": 3,
+          "bytes": 196,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/calibration_transport.py",
+          "lines": 79,
+          "bytes": 3436,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/docker-compose.yaml",
+          "lines": 29,
+          "bytes": 759,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/fake_bridge.py",
+          "lines": 50,
+          "bytes": 1920,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/main.py",
+          "lines": 158,
+          "bytes": 6353,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/checkout-recovery/tests/test.sh",
+          "lines": 6,
+          "bytes": 204,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/bindings.yaml",
+          "lines": 215,
+          "bytes": 7821,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/environment/Dockerfile",
+          "lines": 1,
+          "bytes": 45,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/evaluation/__init__.py",
+          "lines": 0,
+          "bytes": 0,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/evaluation/evaluator.py",
+          "lines": 113,
+          "bytes": 4182,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/experiment.py",
+          "lines": 108,
+          "bytes": 3982,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/operations.js",
+          "lines": 66,
+          "bytes": 3754,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/solution/config.yaml",
+          "lines": 45,
+          "bytes": 1228,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/solution/solve.sh",
+          "lines": 3,
+          "bytes": 71,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/task.toml",
+          "lines": 29,
+          "bytes": 644,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/tests/Dockerfile",
+          "lines": 3,
+          "bytes": 192,
+          "narrow": false,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/tests/main.py",
+          "lines": 39,
+          "bytes": 1222,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "tasks/invoice-total/tests/test.sh",
+          "lines": 6,
+          "bytes": 204,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/__init__.py",
+          "lines": 1,
+          "bytes": 63,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/contracts.py",
+          "lines": 78,
+          "bytes": 2781,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/fixture.py",
+          "lines": 34,
+          "bytes": 1106,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/n8n_provenance.py",
+          "lines": 398,
+          "bytes": 21303,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/refinement.py",
+          "lines": 335,
+          "bytes": 17489,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/roles.py",
+          "lines": 222,
+          "bytes": 9904,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/rubric.py",
+          "lines": 488,
+          "bytes": 20572,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/rubric_facts.py",
+          "lines": 116,
+          "bytes": 4798,
+          "narrow": true,
+          "broad": true
+        },
+        {
+          "path": "verification/verify.py",
+          "lines": 569,
+          "bytes": 24815,
+          "narrow": true,
+          "broad": true
+        }
+      ],
+      "totals": {
+        "narrow": {
+          "files": 81,
+          "lines": 10820
+        },
+        "broad": {
+          "files": 98,
+          "lines": 11574
+        }
+      }
+    }
+  },
+  "rename_aware_numstat": [
+    "2\t2\t.dockerignore",
+    "5\t6\tAGENTS.md",
+    "11\t4\tREADME.md",
+    "0\t45\tbenchmarks/01-invoice-total/config.yaml",
+    "0\t31\tbenchmarks/01-invoice-total/instruction.md",
+    "0\t63\tbenchmarks/01-invoice-total/scenario.json",
+    "0\t22\tbenchmarks/01-invoice-total/task.toml",
+    "0\t3\tbenchmarks/01-invoice-total/verifier.sh",
+    "0\t64\tbenchmarks/10-checkout-recovery/config.yaml",
+    "0\t32\tbenchmarks/10-checkout-recovery/environment/docker-compose.yaml",
+    "0\t2\tbenchmarks/10-checkout-recovery/environment/verifier.Dockerfile",
+    "0\t1\tbenchmarks/10-checkout-recovery/instruction.md",
+    "0\t91\tbenchmarks/10-checkout-recovery/scenario.json",
+    "0\t26\tbenchmarks/10-checkout-recovery/task.toml",
+    "0\t3\tbenchmarks/10-checkout-recovery/verifier.sh",
+    "160\t450\tdocs/ARCHITECTURE.md",
+    "67\t22\tdocs/DEVELOPMENT.md",
+    "0\t4\tharbor/templates/solve.sh",
+    "0\t21\tharbor/templates/task.toml",
+    "0\t17\tharbor/templates/test.sh",
+    "1\t1\tinfra/Dockerfile",
+    "0\t28\tinfra/build_resources.py",
+    "64\t101\tinfra/check_distribution.py",
+    "9\t8\tinfra/check_types.py",
+    "21\t18\tinfra/native/Dockerfile",
+    "4\t4\tinfra/native/Dockerfile.dockerignore",
+    "7\t2\tinfra/native/build.sh",
+    "1\t6\tpyproject.toml",
+    "0\t0\tsrc/sapi_config_lab/author/__init__.py",
+    "0\t139\tsrc/sapi_config_lab/author/rebuilder.py",
+    "0\t302\tsrc/sapi_config_lab/benchmark.py",
+    "0\t158\tsrc/sapi_config_lab/benchmark_loading.py",
+    "0\t46\tsrc/sapi_config_lab/coordinate/benchmark_authoring.py",
+    "0\t15\tsrc/sapi_config_lab/coordinate/benchmark_discovery.py",
+    "0\t116\tsrc/sapi_config_lab/coordinate/benchmark_packages.py",
+    "15\t59\tsrc/sapi_config_lab/coordinate/cli.py",
+    "6\t7\tsrc/sapi_config_lab/coordinate/compilation.py",
+    "23\t9\tsrc/sapi_config_lab/coordinate/controls.py",
+    "18\t96\tsrc/sapi_config_lab/coordinate/evaluation.py",
+    "79\t42\tsrc/sapi_config_lab/coordinate/generate.py",
+    "0\t173\tsrc/sapi_config_lab/coordinate/historical_evaluation.py",
+    "0\t762\tsrc/sapi_config_lab/coordinate/lifecycle.py",
+    "118\t62\tsrc/sapi_config_lab/coordinate/live.py",
+    "20\t8\tsrc/sapi_config_lab/coordinate/live_evidence.py",
+    "130\t0\tsrc/sapi_config_lab/coordinate/native_evaluation.py",
+    "38\t0\tsrc/sapi_config_lab/coordinate/native_record.py",
+    "122\t0\tsrc/sapi_config_lab/coordinate/native_tasks.py",
+    "4\t19\tsrc/sapi_config_lab/coordinate/observe.py",
+    "0\t181\tsrc/sapi_config_lab/coordinate/packages.py",
+    "6\t10\tsrc/sapi_config_lab/coordinate/provenance.py",
+    "21\t3\tsrc/sapi_config_lab/coordinate/replay.py",
+    "61\t66\tsrc/sapi_config_lab/coordinate/runs.py",
+    "2\t58\tsrc/sapi_config_lab/coordinate/{benchmark_worker.py => task_worker.py}",
+    "0\t523\tsrc/sapi_config_lab/coordinate/ui.py",
+    "12\t2\tsrc/sapi_config_lab/evaluate/records.py",
+    "0\t261\tsrc/sapi_config_lab/evaluate/review_export.py",
+    "0\t10\tsrc/sapi_config_lab/execute/host.py",
+    "0\t69\tsrc/sapi_config_lab/execute/ui_n8n.py",
+    "18\t2\tsrc/sapi_config_lab/harbor_integration/runner.py",
+    "44\t0\tsrc/sapi_config_lab/harbor_integration/task_config.py",
+    "0\t220\tsrc/sapi_config_lab/harbor_integration/tasks.py",
+    "48\t2\tsrc/sapi_config_lab/harbor_integration/yaml_agent.py",
+    "4\t11\tsrc/sapi_config_lab/paths.py",
+    "8\t8\tsrc/sapi_config_lab/pinned_source.py",
+    "0\t0\t{benchmarks/10-checkout-recovery => tasks/checkout-recovery}/authoring-notes.md",
+    "0\t0\t{benchmarks/10-checkout-recovery => tasks/checkout-recovery}/authoring-prompt.txt",
+    "0\t0\t{benchmarks/10-checkout-recovery => tasks/checkout-recovery}/bindings.yaml",
+    "0\t0\t{benchmarks/01-invoice-total/evaluation => tasks/checkout-recovery/environment}/__init__.py",
+    "0\t0\t{benchmarks/10-checkout-recovery => tasks/checkout-recovery}/environment/hooks.py",
+    "0\t0\t{benchmarks/10-checkout-recovery => tasks/checkout-recovery}/environment/install.py",
+    "0\t0\t{benchmarks/10-checkout-recovery => tasks/checkout-recovery}/environment/server.py",
+    "0\t0\t{benchmarks/10-checkout-recovery/environment => tasks/checkout-recovery/evaluation}/__init__.py",
+    "0\t0\t{benchmarks/10-checkout-recovery => tasks/checkout-recovery}/evaluation/calibration.py",
+    "0\t0\t{benchmarks/10-checkout-recovery => tasks/checkout-recovery}/evaluation/evaluator.py",
+    "0\t0\t{benchmarks/10-checkout-recovery => tasks/checkout-recovery}/evaluation/judge-calibration.json",
+    "10\t3\t{benchmarks/10-checkout-recovery => tasks/checkout-recovery}/evaluation/scoring.py",
+    "59\t0\ttasks/checkout-recovery/experiment.py",
+    "0\t0\t{benchmarks/10-checkout-recovery => tasks/checkout-recovery}/operations.js",
+    "0\t0\t{benchmarks/10-checkout-recovery => tasks/checkout-recovery}/provenance/autowfbench-source.json",
+    "10\t0\ttasks/checkout-recovery/task.toml",
+    "1\t1\ttasks/checkout-recovery/tests/Dockerfile",
+    "0\t0\t{tests/native => tasks/checkout-recovery/tests}/calibration/evaluation.json",
+    "0\t0\t{tests/native => tasks/checkout-recovery/tests}/calibration/judge-reply.json",
+    "0\t0\t{tests/native => tasks/checkout-recovery/tests}/calibration/origin.json",
+    "0\t0\t{tests/native => tasks/checkout-recovery/tests}/calibration/run-log.json",
+    "0\t0\t{tests/native => tasks/checkout-recovery/tests}/calibration/task-contract.json",
+    "49\t13\ttasks/checkout-recovery/tests/main.py",
+    "0\t0\t{benchmarks/01-invoice-total => tasks/invoice-total}/bindings.yaml",
+    "0\t0\t{benchmarks/01-invoice-total => tasks/invoice-total}/cases.json",
+    "0\t0\t{benchmarks/10-checkout-recovery => tasks/invoice-total}/evaluation/__init__.py",
+    "0\t0\t{benchmarks/01-invoice-total => tasks/invoice-total}/evaluation/contract.json",
+    "0\t0\t{benchmarks/01-invoice-total => tasks/invoice-total}/evaluation/evaluator.py",
+    "0\t0\t{benchmarks/01-invoice-total => tasks/invoice-total}/evaluation/outputs.json",
+    "0\t0\t{benchmarks/01-invoice-total => tasks/invoice-total}/evaluation/rubric.json",
+    "108\t0\ttasks/invoice-total/experiment.py",
+    "0\t0\t{benchmarks/01-invoice-total => tasks/invoice-total}/operations.js",
+    "0\t0\t{benchmarks/01-invoice-total => tasks/invoice-total}/task.md",
+    "5\t0\ttasks/invoice-total/task.toml",
+    "1\t1\ttasks/invoice-total/tests/Dockerfile",
+    "27\t15\ttasks/invoice-total/tests/main.py",
+    "4\t3\ttests/checkout_fault_probe.py",
+    "0\t0\ttests/support/{lifecycle => admission}/bindings.yaml",
+    "0\t0\ttests/support/{lifecycle => admission}/config.yaml",
+    "0\t0\ttests/support/{lifecycle => admission}/operations.js",
+    "9\t8\ttests/support/checkout_evaluation.py",
+    "0\t32\ttests/support/extensibility/bindings.yaml",
+    "0\t30\ttests/support/extensibility/config.yaml",
+    "0\t22\ttests/support/extensibility/environment/docker-compose.yaml",
+    "0\t35\ttests/support/extensibility/environment/hooks.py",
+    "0\t55\ttests/support/extensibility/environment/server.py",
+    "0\t46\ttests/support/extensibility/evaluation/evaluator.py",
+    "0\t1\ttests/support/extensibility/instruction.md",
+    "0\t8\ttests/support/extensibility/operations.js",
+    "0\t53\ttests/support/extensibility/scenario.json",
+    "0\t25\ttests/support/extensibility/task.toml",
+    "0\t3\ttests/support/extensibility/verifier.sh",
+    "0\t474\ttests/support/historical-evaluator/autowfbench.py.txt",
+    "0\t8\ttests/support/historical-evaluator/capture.json",
+    "11\t6\ttests/support/invoice.py",
+    "0\t59\ttests/support/lifecycle/__init__.py",
+    "0\t79\ttests/support/lifecycle/native_control.py",
+    "1\t1\ttests/support/verifying.py",
+    "9\t9\ttests/test_backend_contract.py",
+    "0\t255\ttests/test_benchmark_extensibility.py",
+    "0\t358\ttests/test_benchmark_manifest.py",
+    "0\t369\ttests/test_benchmark_packages.py",
+    "21\t13\ttests/test_boundaries.py",
+    "2\t2\ttests/test_checkout_package_environment.py",
+    "1\t1\ttests/test_checkout_package_evaluator.py",
+    "15\t87\ttests/test_cli_composition.py",
+    "85\t0\ttests/test_compiler_admission.py",
+    "4\t45\ttests/test_evaluator_contracts.py",
+    "1\t1\ttests/test_evidence_boundary.py",
+    "25\t47\ttests/test_fixture_bindings.py",
+    "1\t1\ttests/test_fixture_ownership.py",
+    "0\t58\ttests/test_generation.py",
+    "38\t250\ttests/test_harbor_checkout.py",
+    "1\t1\ttests/test_harbor_runner.py",
+    "7\t72\ttests/test_harbor_settings.py",
+    "80\t110\ttests/test_hosted_preflight.py",
+    "109\t122\ttests/test_invoice_package.py",
+    "6\t102\ttests/test_legacy_records.py",
+    "0\t415\ttests/test_lifecycle.py",
+    "0\t387\ttests/test_lifecycle_verification.py",
+    "31\t21\ttests/test_live.py",
+    "8\t12\ttests/test_native_budgets.py",
+    "270\t0\ttests/test_native_evaluation.py",
+    "104\t0\ttests/test_native_experiments.py",
+    "269\t0\ttests/test_native_generation.py",
+    "119\t0\ttests/test_native_phase.py",
+    "31\t10\ttests/test_native_tasks.py",
+    "15\t7\ttests/test_normalized_records.py",
+    "1\t1\ttests/test_occurrences.py",
+    "3\t3\ttests/test_operation_bundle.py",
+    "4\t4\ttests/test_operation_transport.py",
+    "55\t172\ttests/test_packaging.py",
+    "1\t1\ttests/test_profile_validation.py",
+    "0\t101\ttests/test_rebuilder.py",
+    "1\t1\ttests/test_refinement_admission.py",
+    "13\t12\ttests/test_retirement.py",
+    "0\t94\ttests/test_review_export.py",
+    "1\t1\ttests/test_role_lineage.py",
+    "1\t4\ttests/test_rubric.py",
+    "5\t32\ttests/test_rubric_wiring.py",
+    "76\t49\ttests/test_runs.py",
+    "0\t37\ttests/test_selection.py",
+    "30\t12\ttests/test_simulator_hosting.py",
+    "26\t30\ttests/{test_benchmark_worker.py => test_task_worker.py}",
+    "6\t2\ttests/test_transport_controls.py",
+    "0\t277\ttests/test_ui.py",
+    "1\t1\ttests/test_verification_contract.py",
+    "4\t4\ttests/test_workflows.py",
+    "0\t359\tverification/lifecycle.py",
+    "0\t87\tverification/lifecycle_submission.py"
+  ],
+  "removed_paths": [
+    "benchmarks/01-invoice-total/config.yaml",
+    "benchmarks/01-invoice-total/instruction.md",
+    "benchmarks/01-invoice-total/scenario.json",
+    "benchmarks/01-invoice-total/task.toml",
+    "benchmarks/01-invoice-total/verifier.sh",
+    "benchmarks/10-checkout-recovery/config.yaml",
+    "benchmarks/10-checkout-recovery/environment/docker-compose.yaml",
+    "benchmarks/10-checkout-recovery/environment/verifier.Dockerfile",
+    "benchmarks/10-checkout-recovery/instruction.md",
+    "benchmarks/10-checkout-recovery/scenario.json",
+    "benchmarks/10-checkout-recovery/task.toml",
+    "benchmarks/10-checkout-recovery/verifier.sh",
+    "harbor/templates/solve.sh",
+    "harbor/templates/task.toml",
+    "harbor/templates/test.sh",
+    "infra/build_resources.py",
+    "src/sapi_config_lab/author/__init__.py",
+    "src/sapi_config_lab/author/rebuilder.py",
+    "src/sapi_config_lab/benchmark.py",
+    "src/sapi_config_lab/benchmark_loading.py",
+    "src/sapi_config_lab/coordinate/benchmark_authoring.py",
+    "src/sapi_config_lab/coordinate/benchmark_discovery.py",
+    "src/sapi_config_lab/coordinate/benchmark_packages.py",
+    "src/sapi_config_lab/coordinate/historical_evaluation.py",
+    "src/sapi_config_lab/coordinate/lifecycle.py",
+    "src/sapi_config_lab/coordinate/packages.py",
+    "src/sapi_config_lab/coordinate/ui.py",
+    "src/sapi_config_lab/evaluate/review_export.py",
+    "src/sapi_config_lab/execute/ui_n8n.py",
+    "src/sapi_config_lab/harbor_integration/tasks.py",
+    "tests/support/extensibility/bindings.yaml",
+    "tests/support/extensibility/config.yaml",
+    "tests/support/extensibility/environment/docker-compose.yaml",
+    "tests/support/extensibility/environment/hooks.py",
+    "tests/support/extensibility/environment/server.py",
+    "tests/support/extensibility/evaluation/evaluator.py",
+    "tests/support/extensibility/instruction.md",
+    "tests/support/extensibility/operations.js",
+    "tests/support/extensibility/scenario.json",
+    "tests/support/extensibility/task.toml",
+    "tests/support/extensibility/verifier.sh",
+    "tests/support/historical-evaluator/autowfbench.py.txt",
+    "tests/support/historical-evaluator/capture.json",
+    "tests/support/lifecycle/__init__.py",
+    "tests/support/lifecycle/native_control.py",
+    "tests/test_benchmark_extensibility.py",
+    "tests/test_benchmark_manifest.py",
+    "tests/test_benchmark_packages.py",
+    "tests/test_lifecycle.py",
+    "tests/test_lifecycle_verification.py",
+    "tests/test_rebuilder.py",
+    "tests/test_review_export.py",
+    "tests/test_ui.py",
+    "verification/lifecycle.py",
+    "verification/lifecycle_submission.py"
+  ],
+  "diff_totals": {
+    "narrow": {
+      "added": 1130,
+      "removed": 4061,
+      "net": -2931
+    },
+    "broad": {
+      "added": 1170,
+      "removed": 4321,
+      "net": -3151
+    },
+    "project_tests": {
+      "added": 1505,
+      "removed": 4541,
+      "net": -3036
+    },
+    "documentation": {
+      "added": 243,
+      "removed": 482,
+      "net": -239
+    }
+  },
+  "rename_aware_diff": [
+    {
+      "before": ".dockerignore",
+      "after": ".dockerignore",
+      "added": 2,
+      "removed": 2
+    },
+    {
+      "before": "AGENTS.md",
+      "after": "AGENTS.md",
+      "added": 5,
+      "removed": 6
+    },
+    {
+      "before": "README.md",
+      "after": "README.md",
+      "added": 11,
+      "removed": 4
+    },
+    {
+      "before": "benchmarks/01-invoice-total/config.yaml",
+      "after": "benchmarks/01-invoice-total/config.yaml",
+      "added": 0,
+      "removed": 45
+    },
+    {
+      "before": "benchmarks/01-invoice-total/instruction.md",
+      "after": "benchmarks/01-invoice-total/instruction.md",
+      "added": 0,
+      "removed": 31
+    },
+    {
+      "before": "benchmarks/01-invoice-total/scenario.json",
+      "after": "benchmarks/01-invoice-total/scenario.json",
+      "added": 0,
+      "removed": 63
+    },
+    {
+      "before": "benchmarks/01-invoice-total/task.toml",
+      "after": "benchmarks/01-invoice-total/task.toml",
+      "added": 0,
+      "removed": 22
+    },
+    {
+      "before": "benchmarks/01-invoice-total/verifier.sh",
+      "after": "benchmarks/01-invoice-total/verifier.sh",
+      "added": 0,
+      "removed": 3
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/config.yaml",
+      "after": "benchmarks/10-checkout-recovery/config.yaml",
+      "added": 0,
+      "removed": 64
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/environment/docker-compose.yaml",
+      "after": "benchmarks/10-checkout-recovery/environment/docker-compose.yaml",
+      "added": 0,
+      "removed": 32
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/environment/verifier.Dockerfile",
+      "after": "benchmarks/10-checkout-recovery/environment/verifier.Dockerfile",
+      "added": 0,
+      "removed": 2
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/instruction.md",
+      "after": "benchmarks/10-checkout-recovery/instruction.md",
+      "added": 0,
+      "removed": 1
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/scenario.json",
+      "after": "benchmarks/10-checkout-recovery/scenario.json",
+      "added": 0,
+      "removed": 91
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/task.toml",
+      "after": "benchmarks/10-checkout-recovery/task.toml",
+      "added": 0,
+      "removed": 26
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/verifier.sh",
+      "after": "benchmarks/10-checkout-recovery/verifier.sh",
+      "added": 0,
+      "removed": 3
+    },
+    {
+      "before": "docs/ARCHITECTURE.md",
+      "after": "docs/ARCHITECTURE.md",
+      "added": 160,
+      "removed": 450
+    },
+    {
+      "before": "docs/DEVELOPMENT.md",
+      "after": "docs/DEVELOPMENT.md",
+      "added": 67,
+      "removed": 22
+    },
+    {
+      "before": "harbor/templates/solve.sh",
+      "after": "harbor/templates/solve.sh",
+      "added": 0,
+      "removed": 4
+    },
+    {
+      "before": "harbor/templates/task.toml",
+      "after": "harbor/templates/task.toml",
+      "added": 0,
+      "removed": 21
+    },
+    {
+      "before": "harbor/templates/test.sh",
+      "after": "harbor/templates/test.sh",
+      "added": 0,
+      "removed": 17
+    },
+    {
+      "before": "infra/Dockerfile",
+      "after": "infra/Dockerfile",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "before": "infra/build_resources.py",
+      "after": "infra/build_resources.py",
+      "added": 0,
+      "removed": 28
+    },
+    {
+      "before": "infra/check_distribution.py",
+      "after": "infra/check_distribution.py",
+      "added": 64,
+      "removed": 101
+    },
+    {
+      "before": "infra/check_types.py",
+      "after": "infra/check_types.py",
+      "added": 9,
+      "removed": 8
+    },
+    {
+      "before": "infra/native/Dockerfile",
+      "after": "infra/native/Dockerfile",
+      "added": 21,
+      "removed": 18
+    },
+    {
+      "before": "infra/native/Dockerfile.dockerignore",
+      "after": "infra/native/Dockerfile.dockerignore",
+      "added": 4,
+      "removed": 4
+    },
+    {
+      "before": "infra/native/build.sh",
+      "after": "infra/native/build.sh",
+      "added": 7,
+      "removed": 2
+    },
+    {
+      "before": "pyproject.toml",
+      "after": "pyproject.toml",
+      "added": 1,
+      "removed": 6
+    },
+    {
+      "before": "src/sapi_config_lab/author/__init__.py",
+      "after": "src/sapi_config_lab/author/__init__.py",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "src/sapi_config_lab/author/rebuilder.py",
+      "after": "src/sapi_config_lab/author/rebuilder.py",
+      "added": 0,
+      "removed": 139
+    },
+    {
+      "before": "src/sapi_config_lab/benchmark.py",
+      "after": "src/sapi_config_lab/benchmark.py",
+      "added": 0,
+      "removed": 302
+    },
+    {
+      "before": "src/sapi_config_lab/benchmark_loading.py",
+      "after": "src/sapi_config_lab/benchmark_loading.py",
+      "added": 0,
+      "removed": 158
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/benchmark_authoring.py",
+      "after": "src/sapi_config_lab/coordinate/benchmark_authoring.py",
+      "added": 0,
+      "removed": 46
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/benchmark_discovery.py",
+      "after": "src/sapi_config_lab/coordinate/benchmark_discovery.py",
+      "added": 0,
+      "removed": 15
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/benchmark_packages.py",
+      "after": "src/sapi_config_lab/coordinate/benchmark_packages.py",
+      "added": 0,
+      "removed": 116
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/cli.py",
+      "after": "src/sapi_config_lab/coordinate/cli.py",
+      "added": 15,
+      "removed": 59
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/compilation.py",
+      "after": "src/sapi_config_lab/coordinate/compilation.py",
+      "added": 6,
+      "removed": 7
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/controls.py",
+      "after": "src/sapi_config_lab/coordinate/controls.py",
+      "added": 23,
+      "removed": 9
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/evaluation.py",
+      "after": "src/sapi_config_lab/coordinate/evaluation.py",
+      "added": 18,
+      "removed": 96
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/generate.py",
+      "after": "src/sapi_config_lab/coordinate/generate.py",
+      "added": 79,
+      "removed": 42
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/historical_evaluation.py",
+      "after": "src/sapi_config_lab/coordinate/historical_evaluation.py",
+      "added": 0,
+      "removed": 173
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/lifecycle.py",
+      "after": "src/sapi_config_lab/coordinate/lifecycle.py",
+      "added": 0,
+      "removed": 762
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/live.py",
+      "after": "src/sapi_config_lab/coordinate/live.py",
+      "added": 118,
+      "removed": 62
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/live_evidence.py",
+      "after": "src/sapi_config_lab/coordinate/live_evidence.py",
+      "added": 20,
+      "removed": 8
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/native_evaluation.py",
+      "after": "src/sapi_config_lab/coordinate/native_evaluation.py",
+      "added": 130,
+      "removed": 0
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/native_record.py",
+      "after": "src/sapi_config_lab/coordinate/native_record.py",
+      "added": 38,
+      "removed": 0
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/native_tasks.py",
+      "after": "src/sapi_config_lab/coordinate/native_tasks.py",
+      "added": 122,
+      "removed": 0
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/observe.py",
+      "after": "src/sapi_config_lab/coordinate/observe.py",
+      "added": 4,
+      "removed": 19
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/packages.py",
+      "after": "src/sapi_config_lab/coordinate/packages.py",
+      "added": 0,
+      "removed": 181
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/provenance.py",
+      "after": "src/sapi_config_lab/coordinate/provenance.py",
+      "added": 6,
+      "removed": 10
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/replay.py",
+      "after": "src/sapi_config_lab/coordinate/replay.py",
+      "added": 21,
+      "removed": 3
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/runs.py",
+      "after": "src/sapi_config_lab/coordinate/runs.py",
+      "added": 61,
+      "removed": 66
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/benchmark_worker.py",
+      "after": "src/sapi_config_lab/coordinate/task_worker.py",
+      "added": 2,
+      "removed": 58
+    },
+    {
+      "before": "src/sapi_config_lab/coordinate/ui.py",
+      "after": "src/sapi_config_lab/coordinate/ui.py",
+      "added": 0,
+      "removed": 523
+    },
+    {
+      "before": "src/sapi_config_lab/evaluate/records.py",
+      "after": "src/sapi_config_lab/evaluate/records.py",
+      "added": 12,
+      "removed": 2
+    },
+    {
+      "before": "src/sapi_config_lab/evaluate/review_export.py",
+      "after": "src/sapi_config_lab/evaluate/review_export.py",
+      "added": 0,
+      "removed": 261
+    },
+    {
+      "before": "src/sapi_config_lab/execute/host.py",
+      "after": "src/sapi_config_lab/execute/host.py",
+      "added": 0,
+      "removed": 10
+    },
+    {
+      "before": "src/sapi_config_lab/execute/ui_n8n.py",
+      "after": "src/sapi_config_lab/execute/ui_n8n.py",
+      "added": 0,
+      "removed": 69
+    },
+    {
+      "before": "src/sapi_config_lab/harbor_integration/runner.py",
+      "after": "src/sapi_config_lab/harbor_integration/runner.py",
+      "added": 18,
+      "removed": 2
+    },
+    {
+      "before": "src/sapi_config_lab/harbor_integration/task_config.py",
+      "after": "src/sapi_config_lab/harbor_integration/task_config.py",
+      "added": 44,
+      "removed": 0
+    },
+    {
+      "before": "src/sapi_config_lab/harbor_integration/tasks.py",
+      "after": "src/sapi_config_lab/harbor_integration/tasks.py",
+      "added": 0,
+      "removed": 220
+    },
+    {
+      "before": "src/sapi_config_lab/harbor_integration/yaml_agent.py",
+      "after": "src/sapi_config_lab/harbor_integration/yaml_agent.py",
+      "added": 48,
+      "removed": 2
+    },
+    {
+      "before": "src/sapi_config_lab/paths.py",
+      "after": "src/sapi_config_lab/paths.py",
+      "added": 4,
+      "removed": 11
+    },
+    {
+      "before": "src/sapi_config_lab/pinned_source.py",
+      "after": "src/sapi_config_lab/pinned_source.py",
+      "added": 8,
+      "removed": 8
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/authoring-notes.md",
+      "after": "tasks/checkout-recovery/authoring-notes.md",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/authoring-prompt.txt",
+      "after": "tasks/checkout-recovery/authoring-prompt.txt",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/bindings.yaml",
+      "after": "tasks/checkout-recovery/bindings.yaml",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/01-invoice-total/evaluation/__init__.py",
+      "after": "tasks/checkout-recovery/environment/__init__.py",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/environment/hooks.py",
+      "after": "tasks/checkout-recovery/environment/hooks.py",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/environment/install.py",
+      "after": "tasks/checkout-recovery/environment/install.py",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/environment/server.py",
+      "after": "tasks/checkout-recovery/environment/server.py",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/environment/__init__.py",
+      "after": "tasks/checkout-recovery/evaluation/__init__.py",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/evaluation/calibration.py",
+      "after": "tasks/checkout-recovery/evaluation/calibration.py",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/evaluation/evaluator.py",
+      "after": "tasks/checkout-recovery/evaluation/evaluator.py",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/evaluation/judge-calibration.json",
+      "after": "tasks/checkout-recovery/evaluation/judge-calibration.json",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/evaluation/scoring.py",
+      "after": "tasks/checkout-recovery/evaluation/scoring.py",
+      "added": 10,
+      "removed": 3
+    },
+    {
+      "before": "tasks/checkout-recovery/experiment.py",
+      "after": "tasks/checkout-recovery/experiment.py",
+      "added": 59,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/operations.js",
+      "after": "tasks/checkout-recovery/operations.js",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/provenance/autowfbench-source.json",
+      "after": "tasks/checkout-recovery/provenance/autowfbench-source.json",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "tasks/checkout-recovery/task.toml",
+      "after": "tasks/checkout-recovery/task.toml",
+      "added": 10,
+      "removed": 0
+    },
+    {
+      "before": "tasks/checkout-recovery/tests/Dockerfile",
+      "after": "tasks/checkout-recovery/tests/Dockerfile",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "before": "tests/native/calibration/evaluation.json",
+      "after": "tasks/checkout-recovery/tests/calibration/evaluation.json",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "tests/native/calibration/judge-reply.json",
+      "after": "tasks/checkout-recovery/tests/calibration/judge-reply.json",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "tests/native/calibration/origin.json",
+      "after": "tasks/checkout-recovery/tests/calibration/origin.json",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "tests/native/calibration/run-log.json",
+      "after": "tasks/checkout-recovery/tests/calibration/run-log.json",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "tests/native/calibration/task-contract.json",
+      "after": "tasks/checkout-recovery/tests/calibration/task-contract.json",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "tasks/checkout-recovery/tests/main.py",
+      "after": "tasks/checkout-recovery/tests/main.py",
+      "added": 49,
+      "removed": 13
+    },
+    {
+      "before": "benchmarks/01-invoice-total/bindings.yaml",
+      "after": "tasks/invoice-total/bindings.yaml",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/01-invoice-total/cases.json",
+      "after": "tasks/invoice-total/cases.json",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/10-checkout-recovery/evaluation/__init__.py",
+      "after": "tasks/invoice-total/evaluation/__init__.py",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/01-invoice-total/evaluation/contract.json",
+      "after": "tasks/invoice-total/evaluation/contract.json",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/01-invoice-total/evaluation/evaluator.py",
+      "after": "tasks/invoice-total/evaluation/evaluator.py",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/01-invoice-total/evaluation/outputs.json",
+      "after": "tasks/invoice-total/evaluation/outputs.json",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/01-invoice-total/evaluation/rubric.json",
+      "after": "tasks/invoice-total/evaluation/rubric.json",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "tasks/invoice-total/experiment.py",
+      "after": "tasks/invoice-total/experiment.py",
+      "added": 108,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/01-invoice-total/operations.js",
+      "after": "tasks/invoice-total/operations.js",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "benchmarks/01-invoice-total/task.md",
+      "after": "tasks/invoice-total/task.md",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "tasks/invoice-total/task.toml",
+      "after": "tasks/invoice-total/task.toml",
+      "added": 5,
+      "removed": 0
+    },
+    {
+      "before": "tasks/invoice-total/tests/Dockerfile",
+      "after": "tasks/invoice-total/tests/Dockerfile",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "before": "tasks/invoice-total/tests/main.py",
+      "after": "tasks/invoice-total/tests/main.py",
+      "added": 27,
+      "removed": 15
+    },
+    {
+      "before": "tests/checkout_fault_probe.py",
+      "after": "tests/checkout_fault_probe.py",
+      "added": 4,
+      "removed": 3
+    },
+    {
+      "before": "tests/support/lifecycle/bindings.yaml",
+      "after": "tests/support/admission/bindings.yaml",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "tests/support/lifecycle/config.yaml",
+      "after": "tests/support/admission/config.yaml",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "tests/support/lifecycle/operations.js",
+      "after": "tests/support/admission/operations.js",
+      "added": 0,
+      "removed": 0
+    },
+    {
+      "before": "tests/support/checkout_evaluation.py",
+      "after": "tests/support/checkout_evaluation.py",
+      "added": 9,
+      "removed": 8
+    },
+    {
+      "before": "tests/support/extensibility/bindings.yaml",
+      "after": "tests/support/extensibility/bindings.yaml",
+      "added": 0,
+      "removed": 32
+    },
+    {
+      "before": "tests/support/extensibility/config.yaml",
+      "after": "tests/support/extensibility/config.yaml",
+      "added": 0,
+      "removed": 30
+    },
+    {
+      "before": "tests/support/extensibility/environment/docker-compose.yaml",
+      "after": "tests/support/extensibility/environment/docker-compose.yaml",
+      "added": 0,
+      "removed": 22
+    },
+    {
+      "before": "tests/support/extensibility/environment/hooks.py",
+      "after": "tests/support/extensibility/environment/hooks.py",
+      "added": 0,
+      "removed": 35
+    },
+    {
+      "before": "tests/support/extensibility/environment/server.py",
+      "after": "tests/support/extensibility/environment/server.py",
+      "added": 0,
+      "removed": 55
+    },
+    {
+      "before": "tests/support/extensibility/evaluation/evaluator.py",
+      "after": "tests/support/extensibility/evaluation/evaluator.py",
+      "added": 0,
+      "removed": 46
+    },
+    {
+      "before": "tests/support/extensibility/instruction.md",
+      "after": "tests/support/extensibility/instruction.md",
+      "added": 0,
+      "removed": 1
+    },
+    {
+      "before": "tests/support/extensibility/operations.js",
+      "after": "tests/support/extensibility/operations.js",
+      "added": 0,
+      "removed": 8
+    },
+    {
+      "before": "tests/support/extensibility/scenario.json",
+      "after": "tests/support/extensibility/scenario.json",
+      "added": 0,
+      "removed": 53
+    },
+    {
+      "before": "tests/support/extensibility/task.toml",
+      "after": "tests/support/extensibility/task.toml",
+      "added": 0,
+      "removed": 25
+    },
+    {
+      "before": "tests/support/extensibility/verifier.sh",
+      "after": "tests/support/extensibility/verifier.sh",
+      "added": 0,
+      "removed": 3
+    },
+    {
+      "before": "tests/support/historical-evaluator/autowfbench.py.txt",
+      "after": "tests/support/historical-evaluator/autowfbench.py.txt",
+      "added": 0,
+      "removed": 474
+    },
+    {
+      "before": "tests/support/historical-evaluator/capture.json",
+      "after": "tests/support/historical-evaluator/capture.json",
+      "added": 0,
+      "removed": 8
+    },
+    {
+      "before": "tests/support/invoice.py",
+      "after": "tests/support/invoice.py",
+      "added": 11,
+      "removed": 6
+    },
+    {
+      "before": "tests/support/lifecycle/__init__.py",
+      "after": "tests/support/lifecycle/__init__.py",
+      "added": 0,
+      "removed": 59
+    },
+    {
+      "before": "tests/support/lifecycle/native_control.py",
+      "after": "tests/support/lifecycle/native_control.py",
+      "added": 0,
+      "removed": 79
+    },
+    {
+      "before": "tests/support/verifying.py",
+      "after": "tests/support/verifying.py",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "before": "tests/test_backend_contract.py",
+      "after": "tests/test_backend_contract.py",
+      "added": 9,
+      "removed": 9
+    },
+    {
+      "before": "tests/test_benchmark_extensibility.py",
+      "after": "tests/test_benchmark_extensibility.py",
+      "added": 0,
+      "removed": 255
+    },
+    {
+      "before": "tests/test_benchmark_manifest.py",
+      "after": "tests/test_benchmark_manifest.py",
+      "added": 0,
+      "removed": 358
+    },
+    {
+      "before": "tests/test_benchmark_packages.py",
+      "after": "tests/test_benchmark_packages.py",
+      "added": 0,
+      "removed": 369
+    },
+    {
+      "before": "tests/test_boundaries.py",
+      "after": "tests/test_boundaries.py",
+      "added": 21,
+      "removed": 13
+    },
+    {
+      "before": "tests/test_checkout_package_environment.py",
+      "after": "tests/test_checkout_package_environment.py",
+      "added": 2,
+      "removed": 2
+    },
+    {
+      "before": "tests/test_checkout_package_evaluator.py",
+      "after": "tests/test_checkout_package_evaluator.py",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "before": "tests/test_cli_composition.py",
+      "after": "tests/test_cli_composition.py",
+      "added": 15,
+      "removed": 87
+    },
+    {
+      "before": "tests/test_compiler_admission.py",
+      "after": "tests/test_compiler_admission.py",
+      "added": 85,
+      "removed": 0
+    },
+    {
+      "before": "tests/test_evaluator_contracts.py",
+      "after": "tests/test_evaluator_contracts.py",
+      "added": 4,
+      "removed": 45
+    },
+    {
+      "before": "tests/test_evidence_boundary.py",
+      "after": "tests/test_evidence_boundary.py",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "before": "tests/test_fixture_bindings.py",
+      "after": "tests/test_fixture_bindings.py",
+      "added": 25,
+      "removed": 47
+    },
+    {
+      "before": "tests/test_fixture_ownership.py",
+      "after": "tests/test_fixture_ownership.py",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "before": "tests/test_generation.py",
+      "after": "tests/test_generation.py",
+      "added": 0,
+      "removed": 58
+    },
+    {
+      "before": "tests/test_harbor_checkout.py",
+      "after": "tests/test_harbor_checkout.py",
+      "added": 38,
+      "removed": 250
+    },
+    {
+      "before": "tests/test_harbor_runner.py",
+      "after": "tests/test_harbor_runner.py",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "before": "tests/test_harbor_settings.py",
+      "after": "tests/test_harbor_settings.py",
+      "added": 7,
+      "removed": 72
+    },
+    {
+      "before": "tests/test_hosted_preflight.py",
+      "after": "tests/test_hosted_preflight.py",
+      "added": 80,
+      "removed": 110
+    },
+    {
+      "before": "tests/test_invoice_package.py",
+      "after": "tests/test_invoice_package.py",
+      "added": 109,
+      "removed": 122
+    },
+    {
+      "before": "tests/test_legacy_records.py",
+      "after": "tests/test_legacy_records.py",
+      "added": 6,
+      "removed": 102
+    },
+    {
+      "before": "tests/test_lifecycle.py",
+      "after": "tests/test_lifecycle.py",
+      "added": 0,
+      "removed": 415
+    },
+    {
+      "before": "tests/test_lifecycle_verification.py",
+      "after": "tests/test_lifecycle_verification.py",
+      "added": 0,
+      "removed": 387
+    },
+    {
+      "before": "tests/test_live.py",
+      "after": "tests/test_live.py",
+      "added": 31,
+      "removed": 21
+    },
+    {
+      "before": "tests/test_native_budgets.py",
+      "after": "tests/test_native_budgets.py",
+      "added": 8,
+      "removed": 12
+    },
+    {
+      "before": "tests/test_native_evaluation.py",
+      "after": "tests/test_native_evaluation.py",
+      "added": 270,
+      "removed": 0
+    },
+    {
+      "before": "tests/test_native_experiments.py",
+      "after": "tests/test_native_experiments.py",
+      "added": 104,
+      "removed": 0
+    },
+    {
+      "before": "tests/test_native_generation.py",
+      "after": "tests/test_native_generation.py",
+      "added": 269,
+      "removed": 0
+    },
+    {
+      "before": "tests/test_native_phase.py",
+      "after": "tests/test_native_phase.py",
+      "added": 119,
+      "removed": 0
+    },
+    {
+      "before": "tests/test_native_tasks.py",
+      "after": "tests/test_native_tasks.py",
+      "added": 31,
+      "removed": 10
+    },
+    {
+      "before": "tests/test_normalized_records.py",
+      "after": "tests/test_normalized_records.py",
+      "added": 15,
+      "removed": 7
+    },
+    {
+      "before": "tests/test_occurrences.py",
+      "after": "tests/test_occurrences.py",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "before": "tests/test_operation_bundle.py",
+      "after": "tests/test_operation_bundle.py",
+      "added": 3,
+      "removed": 3
+    },
+    {
+      "before": "tests/test_operation_transport.py",
+      "after": "tests/test_operation_transport.py",
+      "added": 4,
+      "removed": 4
+    },
+    {
+      "before": "tests/test_packaging.py",
+      "after": "tests/test_packaging.py",
+      "added": 55,
+      "removed": 172
+    },
+    {
+      "before": "tests/test_profile_validation.py",
+      "after": "tests/test_profile_validation.py",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "before": "tests/test_rebuilder.py",
+      "after": "tests/test_rebuilder.py",
+      "added": 0,
+      "removed": 101
+    },
+    {
+      "before": "tests/test_refinement_admission.py",
+      "after": "tests/test_refinement_admission.py",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "before": "tests/test_retirement.py",
+      "after": "tests/test_retirement.py",
+      "added": 13,
+      "removed": 12
+    },
+    {
+      "before": "tests/test_review_export.py",
+      "after": "tests/test_review_export.py",
+      "added": 0,
+      "removed": 94
+    },
+    {
+      "before": "tests/test_role_lineage.py",
+      "after": "tests/test_role_lineage.py",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "before": "tests/test_rubric.py",
+      "after": "tests/test_rubric.py",
+      "added": 1,
+      "removed": 4
+    },
+    {
+      "before": "tests/test_rubric_wiring.py",
+      "after": "tests/test_rubric_wiring.py",
+      "added": 5,
+      "removed": 32
+    },
+    {
+      "before": "tests/test_runs.py",
+      "after": "tests/test_runs.py",
+      "added": 76,
+      "removed": 49
+    },
+    {
+      "before": "tests/test_selection.py",
+      "after": "tests/test_selection.py",
+      "added": 0,
+      "removed": 37
+    },
+    {
+      "before": "tests/test_simulator_hosting.py",
+      "after": "tests/test_simulator_hosting.py",
+      "added": 30,
+      "removed": 12
+    },
+    {
+      "before": "tests/test_benchmark_worker.py",
+      "after": "tests/test_task_worker.py",
+      "added": 26,
+      "removed": 30
+    },
+    {
+      "before": "tests/test_transport_controls.py",
+      "after": "tests/test_transport_controls.py",
+      "added": 6,
+      "removed": 2
+    },
+    {
+      "before": "tests/test_ui.py",
+      "after": "tests/test_ui.py",
+      "added": 0,
+      "removed": 277
+    },
+    {
+      "before": "tests/test_verification_contract.py",
+      "after": "tests/test_verification_contract.py",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "before": "tests/test_workflows.py",
+      "after": "tests/test_workflows.py",
+      "added": 4,
+      "removed": 4
+    },
+    {
+      "before": "verification/lifecycle.py",
+      "after": "verification/lifecycle.py",
+      "added": 0,
+      "removed": 359
+    },
+    {
+      "before": "verification/lifecycle_submission.py",
+      "after": "verification/lifecycle_submission.py",
+      "added": 0,
+      "removed": 87
+    }
+  ]
+}

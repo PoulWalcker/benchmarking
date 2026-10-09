@@ -25,14 +25,14 @@ The source of truth is the validator/runtime code. This document records the dur
 | Errors | fail-fast; no general durable transport retry policy |
 | Output | workflow output resolves after terminal dependencies complete |
 | Actors | logical operation permissions; not isolated long-lived Sapi processes |
-| Activation | supported Callback/Cron subset used by the lab lifecycle path |
+| Activation | Callback/Cron syntax and admitted-event lowering; lifecycle execution is deferred |
 | Acceptance | human-readable workflow acceptance is not trusted by itself; executable verifier logic is separate |
 
 Execution uses one logical envelope containing inputs, step outputs/statuses, events, and simulation metadata. The profile does not model one n8n item per business record.
 
 ## Operation catalog
 
-`src/sapi_config_lab/bindings.yaml` is the operation catalog for project scenarios.
+Each native task owns its explicit `tasks/<name>/bindings.yaml` operation catalog.
 
 A new operation requires:
 
@@ -64,9 +64,11 @@ Lifecycle manages workflow definitions across executions: candidate registration
 
 It is outside the compiled candidate graph.
 
-The current lifecycle implementation supports a narrow explicit policy set, including bounded rebuild count and a restricted daily Cron form. Definitions are immutable by hash/revision; a repair creates a new candidate rather than mutating the tested definition in place.
-
-Do not interpret lifecycle support as a general distributed scheduler or full Sapiens WBS runtime.
+The profile still validates the existing lifecycle policy fields and restricted daily
+Cron syntax. The compiler still requires explicit event admission and preserves
+immutable definition/hash/revision semantics. The lifecycle/WBS controller, repair,
+release and scheduling execution are deferred in the compact scope. These retained
+syntax and lowering rules do not provide a runnable durable lifecycle service.
 
 ## Live LLM transport
 
