@@ -233,7 +233,7 @@ def main(argv: list[str] | None = None) -> int:
         series_ceilings = parse_ceilings(args.series_ceiling)
         wrapper_files = parse_wrapper_files(args.wrapper_file)
         reference = (
-            {item.name: item for item in select_benchmarks(ROOT / "benchmarks", args.scenario)}
+            {item.name: item for item in select_benchmarks(ROOT / "tasks", args.scenario)}
             if not args.submissions_manifest
             else {}
         )
@@ -276,7 +276,7 @@ def main(argv: list[str] | None = None) -> int:
                 for name, s in reference.items()
             }
         scenarios = tuple(submissions)
-        selected = select_benchmarks(ROOT / "benchmarks", scenarios)
+        selected = select_benchmarks(ROOT / "tasks", scenarios)
         benchmarks = {item.name: item for item in selected}
         controlled = {trial["task_name"] for trial in gate["oracle"]["trials"]}
         require(set(scenarios) <= controlled, "The control report does not cover every scenario")

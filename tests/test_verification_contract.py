@@ -101,7 +101,7 @@ def invoice_record():
 
 
 def submitted(inputs):
-    config = read(DIRECTORY / "config.yaml")
+    config = read(DIRECTORY / "solution/config.yaml")
     config["workflow"]["inputs"] = inputs
     return config
 

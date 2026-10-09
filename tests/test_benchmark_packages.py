@@ -248,7 +248,7 @@ class DockerBenchmarkPackagesTests(unittest.TestCase):
     def test_real_separate_verifier_transfer_and_all_public_image_layers(self):
         run = ROOT / "reports/migration-03" / ("docker-" + uuid.uuid4().hex[:10])
         run.mkdir(parents=True)
-        benchmark = fixture(run / "benchmarks")
+        benchmark = fixture(run / "tasks")
         task = run / "tasks/synthetic"
         stage_benchmark(benchmark, task, {})
         env = {**os.environ, "MIGRATION_CREDENTIAL_SENTINEL": CREDENTIAL.decode()}

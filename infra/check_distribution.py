@@ -33,8 +33,8 @@ PRIVATE_PATHS = (
 
 def shared_fixture(root: Path) -> None:
     """Exercise declared shared resources without adding a production benchmark."""
-    source = next(item for item in discover_benchmarks(root / "benchmarks") if item.name == "invoice-total")
-    directory = root / "benchmarks/distribution-shared"
+    source = next(item for item in discover_benchmarks(root / "tasks") if item.name == "invoice-total")
+    directory = root / "tasks/distribution-shared"
     shutil.copytree(source.directory, directory)
     metadata = json.loads((directory / "scenario.json").read_text())
     metadata.update(id="distribution-shared", default=False)
@@ -42,7 +42,7 @@ def shared_fixture(root: Path) -> None:
         "sample": {"path": "_shared/distribution", "public": ["public.txt"], "trusted": ["rules.py"]}
     }
     (directory / "scenario.json").write_text(json.dumps(metadata))
-    shared = root / "benchmarks/_shared/distribution"
+    shared = root / "tasks/_shared/distribution"
     shared.mkdir(parents=True)
     (shared / "public.txt").write_text("DECLARED_PUBLIC_DEPENDENCY\n")
     (shared / "rules.py").write_text("EXPECTED = 'DECLARED_PRIVATE_DEPENDENCY'\n")
@@ -52,7 +52,7 @@ def shared_fixture(root: Path) -> None:
 
 
 INSTALLED_PROBE = """
-import hashlib, json
+import hashlib, json, os
 from pathlib import Path
 import subprocess, sys
 from sapi_config_lab.benchmark import discover_benchmarks
@@ -61,6 +61,26 @@ from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.paths import resource_root, workspace_root
 root = resource_root()
 assert not (root / 'src').exists()
+assert (root / 'infra/native/build.sh').is_file()
+mock_bin = Path.cwd() / 'mock-bin'
+mock_bin.mkdir()
+docker = mock_bin / 'docker'
+build_calls = Path.cwd() / 'build-calls.jsonl'
+docker.write_text('#!' + sys.executable + '\\nimport json, os, sys\\n'
+                  'with open(os.environ["BUILD_CALLS"], "a") as out: out.write(json.dumps(sys.argv[1:]) + "\\\\n")\\n')
+docker.chmod(0o755)
+environment = {**os.environ, 'BUILD_CALLS': str(build_calls),
+               'PATH': str(mock_bin) + os.pathsep + str(Path(sys.executable).parent) + os.pathsep + os.environ['PATH']}
+subprocess.run(['sh', str(root / 'infra/native/build.sh')], env=environment, check=True)
+calls = [json.loads(line) for line in build_calls.read_text().splitlines()]
+assert len(calls) == 5
+import sapi_config_lab, verification
+core = Path(sapi_config_lab.__file__).parent
+independent = Path(verification.__file__).parent
+assert str(core / 'harbor_integration/runtime/Dockerfile') in calls[0]
+for call in calls[1:]:
+    assert 'sapi-core=' + str(core) in call
+    assert 'sapi-verification=' + str(independent) in call
 try:
     workspace_root()
 except RuntimeError:
@@ -70,11 +90,15 @@ else:
 expected = json.loads(Path(sys.argv[1]).read_text())
 for relative, digest in expected.items():
     assert hashlib.sha256((root / relative).read_bytes()).hexdigest() == digest, relative
-items = discover_benchmarks(root / 'benchmarks')
+items = discover_benchmarks(root / 'tasks')
 assert {item.name for item in items} == {'invoice-total', 'checkout-recovery', 'distribution-shared'}
 cli = [sys.executable, '-I', '-m', 'sapi_config_lab']
 subprocess.run([*cli, 'benchmarks'], check=True, stdout=subprocess.DEVNULL)
 for item in items:
+    native = root / 'tasks' / item.name
+    assert not (native / 'environment/docker-compose.yaml').exists()
+    for path in ('task.toml', 'instruction.md', 'environment/Dockerfile', 'tests/test.sh', 'tests/main.py', 'tests/Dockerfile', 'solution/solve.sh', 'solution/config.yaml'):
+        assert (native / path).is_file(), native / path
     subprocess.run([*cli, 'compile', str(item.reference.source), '--scenario', item.name,
                     '--output', str(Path.cwd() / (item.name + '.json'))], check=True, stdout=subprocess.DEVNULL)
 destination = Path.cwd() / 'tasks'
@@ -149,7 +173,7 @@ def main() -> int:
             wheel_members = set(archive.namelist())
             if any(b"PRIVATE_EVIDENCE_SENTINEL" in archive.read(name) for name in wheel_members):
                 raise RuntimeError("Private sentinel leaked into wheel")
-        forbidden = {*PRIVATE_PATHS, "benchmarks/_shared/distribution/.env"}
+        forbidden = {*PRIVATE_PATHS, "tasks/_shared/distribution/.env"}
         leaked = forbidden & source_members
         leaked |= {name for name in wheel_members if name.endswith(".env.private")}
         if leaked:
@@ -165,8 +189,16 @@ def main() -> int:
             if required not in source_members:
                 raise RuntimeError(f"Missing reproducibility source: {required}")
         expected_resources = {}
-        for benchmark in discover_benchmarks(checkout / "benchmarks"):
-            declared = (benchmark.directory / "scenario.json", *(item.source for item in benchmark.files))
+        for benchmark in discover_benchmarks(checkout / "tasks"):
+            declared = (
+                benchmark.directory / "scenario.json",
+                *(item.source for item in benchmark.files),
+                *(
+                    path
+                    for path in benchmark.directory.rglob("*")
+                    if path.is_file() and "__pycache__" not in path.parts and not path.name.startswith(".")
+                ),
+            )
             for source in declared:
                 required = source.relative_to(checkout).as_posix()
                 if required not in source_members:
@@ -175,6 +207,12 @@ def main() -> int:
                 if installed not in wheel_members:
                     raise RuntimeError(f"Missing installed benchmark dependency: {required}")
                 expected_resources[required] = hashlib.sha256(source.read_bytes()).hexdigest()
+        native_inputs = list((checkout / "infra/native").glob("*"))
+        for source in native_inputs:
+            relative = source.relative_to(checkout).as_posix()
+            if "sapi_config_lab/resources/" + relative not in wheel_members:
+                raise RuntimeError("Missing native image build resource: " + relative)
+            expected_resources[relative] = hashlib.sha256(source.read_bytes()).hexdigest()
         for name in ("FORMAT.md", "PROFILE.md"):
             relative = "generation/" + name
             expected_resources[relative] = hashlib.sha256((checkout / relative).read_bytes()).hexdigest()

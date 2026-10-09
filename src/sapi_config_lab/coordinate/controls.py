@@ -33,7 +33,7 @@ def transport_probe(run: Run, *, skip_build: bool = False) -> dict:
     environment = task / "environment"
     shutil.copyfile(ROOT / "infra/Dockerfile", environment / "Dockerfile")
     shutil.copyfile(ROOT / ".dockerignore", environment / ".dockerignore")
-    for name in ("src", "generation", "benchmarks"):
+    for name in ("src", "generation", "tasks"):
         shutil.copytree(
             ROOT / name, environment / name, ignore=shutil.ignore_patterns("__pycache__", "evaluation", "cases.json")
         )
@@ -69,7 +69,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--scenario", action="append", dest="scenarios")
     parser.add_argument("--skip-build", action="store_true", help="Reuse already built lab image (development only)")
     args = parser.parse_args(argv)
-    benchmarks = select_benchmarks(ROOT / "benchmarks", args.scenarios)
+    benchmarks = select_benchmarks(ROOT / "tasks", args.scenarios)
     selected = tuple(item.name for item in benchmarks)
     by_name = {item.name: item for item in benchmarks}
     output = args.report_dir or ROOT / "reports" / datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")

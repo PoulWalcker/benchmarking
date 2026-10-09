@@ -14,7 +14,7 @@ class NativeBudgetTests(unittest.TestCase):
     def test_multiple_attempts_cannot_reuse_one_native_world(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            selected = select_benchmarks(workspace_root() / "benchmarks", ("checkout-recovery",))
+            selected = select_benchmarks(workspace_root() / "tasks", ("checkout-recovery",))
             run = Run(root / "run", {}, {}, "test", staging=root / "stage", benchmarks=selected)
             task = run.tasks / selected[0].name
             task.mkdir(parents=True)
@@ -23,6 +23,6 @@ class NativeBudgetTests(unittest.TestCase):
                 run.harbor("job", run.tasks, "oracle", attempts=2)
 
     def test_bridge_grant_uses_declared_native_phases(self):
-        selected = select_benchmarks(workspace_root() / "benchmarks", ("checkout-recovery",))[0]
+        selected = select_benchmarks(workspace_root() / "tasks", ("checkout-recovery",))[0]
         self.assertGreaterEqual(runtime_grant_seconds(selected), selected.config["deadline_seconds"])
         self.assertGreaterEqual(verifier_bounds((selected,))[selected.name], selected.config["deadline_seconds"])

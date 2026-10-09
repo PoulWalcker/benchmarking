@@ -144,7 +144,7 @@ class PackageTests(unittest.TestCase):
                 path,
                 mode="generation",
                 root=workspace_root(),
-                benchmarks=select_benchmarks(workspace_root() / "benchmarks", (scenario,)),
+                benchmarks=select_benchmarks(workspace_root() / "tasks", (scenario,)),
                 cases={scenario: fresh},
             )
             self.assertEqual([p.name for p in path.iterdir()], [scenario])
@@ -155,12 +155,12 @@ class PackageTests(unittest.TestCase):
                     stage_tasks(
                         Path(directory) / "invalid",
                         root=workspace_root(),
-                        benchmarks=select_benchmarks(workspace_root() / "benchmarks", invalid),
+                        benchmarks=select_benchmarks(workspace_root() / "tasks", invalid),
                     )
             with self.assertRaises(ValueError):
                 stage_tasks(
                     Path(directory) / "other",
                     root=workspace_root(),
-                    benchmarks=select_benchmarks(workspace_root() / "benchmarks", ("checkout-recovery",)),
+                    benchmarks=select_benchmarks(workspace_root() / "tasks", ("checkout-recovery",)),
                     cases={scenario: fresh},
                 )

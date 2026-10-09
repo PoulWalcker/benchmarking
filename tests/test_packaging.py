@@ -52,7 +52,7 @@ class PackagingTests(unittest.TestCase):
                 Path(directory) / "tasks",
                 mode="generation",
                 root=ROOT,
-                benchmarks=select_benchmarks(ROOT / "benchmarks", tuple(GENERATION_PROMPTS)),
+                benchmarks=select_benchmarks(ROOT / "tasks", tuple(GENERATION_PROMPTS)),
             )
         self.assertEqual(hashes, GENERATION_PROMPTS)
 
@@ -61,9 +61,7 @@ class PackagingTests(unittest.TestCase):
             names = tuple(SCENARIO_CATALOG_PROMPTS)
             full = Path(directory) / "full"
             self.assertEqual(
-                stage_tasks(
-                    full, mode="generation", root=ROOT, benchmarks=select_benchmarks(ROOT / "benchmarks", names)
-                ),
+                stage_tasks(full, mode="generation", root=ROOT, benchmarks=select_benchmarks(ROOT / "tasks", names)),
                 GENERATION_PROMPTS,
             )
             reduced = Path(directory) / "reduced"
@@ -72,7 +70,7 @@ class PackagingTests(unittest.TestCase):
                     reduced,
                     mode="generation",
                     root=ROOT,
-                    benchmarks=select_benchmarks(ROOT / "benchmarks", names),
+                    benchmarks=select_benchmarks(ROOT / "tasks", names),
                     catalog="scenario",
                 ),
                 SCENARIO_CATALOG_PROMPTS,
@@ -83,7 +81,7 @@ class PackagingTests(unittest.TestCase):
                 self.assertEqual(before, after)
                 used = {
                     step["uses"]
-                    for step in read(select_benchmarks(ROOT / "benchmarks", (name,))[0].reference.source)["workflow"][
+                    for step in read(select_benchmarks(ROOT / "tasks", (name,))[0].reference.source)["workflow"][
                         "steps"
                     ]
                 }
@@ -93,7 +91,7 @@ class PackagingTests(unittest.TestCase):
                 stage_tasks(
                     Path(directory) / "oracle",
                     root=ROOT,
-                    benchmarks=select_benchmarks(ROOT / "benchmarks", names),
+                    benchmarks=select_benchmarks(ROOT / "tasks", names),
                     catalog="scenario",
                 )
 
@@ -104,7 +102,7 @@ class PackagingTests(unittest.TestCase):
                 Path(directory) / "t",
                 mode="generation",
                 root=ROOT,
-                benchmarks=select_benchmarks(ROOT / "benchmarks", ("checkout-recovery",)),
+                benchmarks=select_benchmarks(ROOT / "tasks", ("checkout-recovery",)),
                 catalog="scenario",
             )
 
@@ -120,7 +118,7 @@ class PackagingTests(unittest.TestCase):
                 Path(directory) / "tasks",
                 mode="generation",
                 root=ROOT,
-                benchmarks=select_benchmarks(ROOT / "benchmarks", tuple(GENERATION_PROMPTS)),
+                benchmarks=select_benchmarks(ROOT / "tasks", tuple(GENERATION_PROMPTS)),
             )
 
     def test_experiments_reject_code_from_a_different_installation(self):
@@ -133,7 +131,7 @@ class PackagingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             package = Path(directory) / "site-packages/sapi_config_lab"
             resources = package / "resources"
-            (resources / "benchmarks").mkdir(parents=True)
+            (resources / "tasks").mkdir(parents=True)
             (resources / "generation").mkdir()
             (resources / "generation/PROFILE.md").write_text("resource fixture")
             with patch("sapi_config_lab.paths.__file__", str(package / "paths.py")):
@@ -144,12 +142,12 @@ class PackagingTests(unittest.TestCase):
 
     def test_source_inventory_uses_declared_pins_without_provider_filename_fallback(self):
         self.assertNotIn("provenance/autowfbench-source.json", source_manifest())
-        self.assertIn("benchmarks/10-checkout-recovery/provenance/autowfbench-source.json", source_manifest())
+        self.assertIn("tasks/checkout-recovery/provenance/autowfbench-source.json", source_manifest())
 
     def test_oracle_packages_take_current_sources_and_only_own_cases(self):
         with tempfile.TemporaryDirectory() as directory:
             destination = Path(directory) / "tasks"
-            selected = select_benchmarks(ROOT / "benchmarks")
+            selected = select_benchmarks(ROOT / "tasks")
             stage_tasks(destination, root=ROOT, benchmarks=selected)
             for definition in selected:
                 task = destination / definition.name
@@ -169,7 +167,7 @@ class PackagingTests(unittest.TestCase):
     def test_generation_removes_reference_locations_and_filters_hidden_cases(self):
         with tempfile.TemporaryDirectory() as directory:
             destination = Path(directory) / "tasks"
-            stage_tasks(destination, root=ROOT, benchmarks=select_benchmarks(ROOT / "benchmarks"), mode="generation")
+            stage_tasks(destination, root=ROOT, benchmarks=select_benchmarks(ROOT / "tasks"), mode="generation")
             task = destination / "invoice-total"
             self.assertFalse((task / "solution").exists())
             self.assertFalse((task / "environment/payload/config.yaml").exists())
@@ -178,7 +176,7 @@ class PackagingTests(unittest.TestCase):
 
     @unittest.skipUnless(AVAILABLE, "Requires the pinned upstream source and benchmark extra")
     def test_hosted_packages_select_public_material_and_carry_no_hidden_data(self):
-        selected = select_benchmarks(ROOT / "benchmarks", ("checkout-recovery",))
+        selected = select_benchmarks(ROOT / "tasks", ("checkout-recovery",))
         for mode in ("generation", "oracle"):
             with tempfile.TemporaryDirectory() as directory:
                 hashes = stage_tasks(Path(directory) / "tasks", root=ROOT, benchmarks=selected, mode=mode)
@@ -224,16 +222,16 @@ class PackagingTests(unittest.TestCase):
             self.assertNotEqual(inventory(root), before)
 
     def test_every_benchmark_is_complete_and_its_fixtures_stay_out_of_the_image(self):
-        selected = discover_benchmarks(ROOT / "benchmarks")
-        self.assertEqual(len(selected), len(list((ROOT / "benchmarks").glob("*/scenario.json"))))
+        selected = discover_benchmarks(ROOT / "tasks")
+        self.assertEqual(len(selected), len(list((ROOT / "tasks").glob("*/scenario.json"))))
         for definition in selected:
             for item in definition.files:
                 self.assertTrue(item.source.is_file())
-        # The lab image copies benchmarks/ for its reference configs; cases.json is
+        # The lab image copies tasks/ for its reference configs; cases.json is
         # evaluator-only and reaches a container only as a staged tests/ file.
-        self.assertIn("COPY benchmarks /app/lab/benchmarks/", (ROOT / "infra/Dockerfile").read_text())
-        self.assertIn("benchmarks/*/cases.json", (ROOT / ".dockerignore").read_text().splitlines())
-        self.assertIn("benchmarks/*/evaluation/", (ROOT / ".dockerignore").read_text().splitlines())
+        self.assertIn("COPY tasks /app/lab/tasks/", (ROOT / "infra/Dockerfile").read_text())
+        self.assertIn("tasks/*/cases.json", (ROOT / ".dockerignore").read_text().splitlines())
+        self.assertIn("tasks/*/evaluation/", (ROOT / ".dockerignore").read_text().splitlines())
 
     def test_evaluation_does_not_trust_a_recorded_engine_success(self):
         spec = importlib.util.spec_from_file_location("independent_verifier", ROOT / "verification/verify.py")
@@ -251,7 +249,7 @@ class PackagingTests(unittest.TestCase):
             result = verify_with_runner(
                 verifier,
                 "invoice-total",
-                ROOT / "benchmarks/01-invoice-total/config.yaml",
+                ROOT / "tasks/invoice-total/solution/config.yaml",
                 Path(directory),
                 selected_case=cases[0]["name"],
                 runner=runner,

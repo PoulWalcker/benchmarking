@@ -29,7 +29,7 @@ ROOT = workspace_root()
 
 class NativeSettingsTests(unittest.TestCase):
     def setUp(self):
-        self.selected = select_benchmarks(ROOT / "benchmarks", ("invoice-total",))
+        self.selected = select_benchmarks(ROOT / "tasks", ("invoice-total",))
         self.benchmark = self.selected[0]
 
     def test_sequential_observations_fit_declared_native_verifier_phase(self):

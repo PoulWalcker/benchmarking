@@ -46,7 +46,7 @@ class RecordingBackend:
 
 class BackendContractTests(unittest.TestCase):
     def setUp(self):
-        self.config = profile.read(workspace_root() / "benchmarks/01-invoice-total/config.yaml")
+        self.config = profile.read(workspace_root() / "tasks/invoice-total/solution/config.yaml")
 
     def test_runner_uses_injected_backend_and_leaves_acceptance_unevaluated(self):
         backend = RecordingBackend()
@@ -96,7 +96,7 @@ class BackendContractTests(unittest.TestCase):
         backend = RecordingBackend()
         with tempfile.TemporaryDirectory() as directory, contextlib.redirect_stdout(io.StringIO()):
             output = Path(directory) / "compiled.json"
-            config = str(workspace_root() / "benchmarks/01-invoice-total/config.yaml")
+            config = str(workspace_root() / "tasks/invoice-total/solution/config.yaml")
             self.assertEqual(cli.main(["compile", config, "--output", str(output)], backend=backend), 0)
             self.assertEqual(json.loads(output.read_text()), {"test_document": True})
             self.assertEqual(
@@ -142,7 +142,7 @@ class BackendContractTests(unittest.TestCase):
     def test_n8n_adapter_preserves_supported_and_unsupported_profile(self):
         from sapi_config_lab.benchmark import discover_benchmarks
 
-        for scenario in discover_benchmarks(workspace_root() / "benchmarks"):
+        for scenario in discover_benchmarks(workspace_root() / "tasks"):
             path, bindings = scenario.reference.source, profile.read_bindings(scenario.directory / scenario.bindings)
             config = profile.read(path)
             # Both environments compile through the same backend; a simulator's tools are bound at run time.

@@ -19,7 +19,7 @@ from verification.contracts import equal
 
 class FixtureOwnershipTests(unittest.TestCase):
     def test_a_new_fixture_uses_standard_plan_evidence_and_corruption_checks(self):
-        config = read(DIRECTORY / "config.yaml")
+        config = read(DIRECTORY / "solution/config.yaml")
         config["workflow"]["id"] = config["activation"]["workflow_ref"]["id"] = "new-invoice-task"
         calls = []
 

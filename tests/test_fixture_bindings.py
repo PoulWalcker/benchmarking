@@ -23,7 +23,7 @@ from tests.test_lifecycle import LifecycleBackend
 
 class FixtureBindingsTests(unittest.TestCase):
     def test_selected_catalog_is_public_prompt_and_trusted_execution_input(self):
-        scenario = select_benchmarks(workspace_root() / "benchmarks", ("invoice-total",))[0]
+        scenario = select_benchmarks(workspace_root() / "tasks", ("invoice-total",))[0]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             catalog = read_bindings(

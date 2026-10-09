@@ -67,7 +67,7 @@ class IsolatedRefinementTests(unittest.TestCase):
                 "SAPI_REFINEMENT_ISOLATED": "1",
                 "SAPI_RUN_DOCKER_TESTS": "0",
             }
-            self.assertFalse((isolated / "benchmarks").exists())
+            self.assertFalse((isolated / "tasks").exists())
             result = subprocess.run(
                 [
                     sys.executable,

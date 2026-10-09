@@ -29,12 +29,12 @@ from tests.test_selection import SOURCES, generation_run
 from verification import verify
 
 ROOT = workspace_root()
-DIRECTORY = ROOT / "benchmarks/01-invoice-total"
+DIRECTORY = ROOT / "tasks/invoice-total"
 
 
 class InvoicePackageTests(unittest.TestCase):
     def setUp(self):
-        self.benchmark = load_benchmark(ROOT / "benchmarks", DIRECTORY)
+        self.benchmark = load_benchmark(ROOT / "tasks", DIRECTORY)
         self.options = {"mode": "stub", "deadline_seconds": 30}
         self.identity = freeze_identity(self.benchmark, self.options)
         self.hooks = load_entrypoints(self.benchmark, self.identity)
@@ -42,10 +42,10 @@ class InvoicePackageTests(unittest.TestCase):
     def test_plan_is_exactly_the_frozen_fixture_and_probe_plan(self):
         case_data = json.loads((DIRECTORY / "cases.json").read_text())
         legacy = verify.plan(
-            "invoice-total", DIRECTORY / "config.yaml", case_data, deadline_budget=30, fixture=fixture()
+            "invoice-total", DIRECTORY / "solution/config.yaml", case_data, deadline_budget=30, fixture=fixture()
         )
         with patch.dict(sys.modules, {"verification.fixture_evaluators": None}):
-            self.assertEqual(self.hooks.plan(DIRECTORY / "config.yaml", self.options), legacy)
+            self.assertEqual(self.hooks.plan(DIRECTORY / "solution/config.yaml", self.options), legacy)
         self.assertEqual(len(legacy["entries"]), 14)
         self.assertFalse((ROOT / "src/sapi_config_lab/bindings.yaml").exists())
         self.assertFalse((ROOT / "src/sapi_config_lab/compile/operations.js").exists())
@@ -53,10 +53,10 @@ class InvoicePackageTests(unittest.TestCase):
     def observed(self, root):
         backend = N8nBackend(operation_source=(DIRECTORY / "operations.js").read_text())
         backend.execute = SimulatedN8n((DIRECTORY / "operations.js").read_text()).execute
-        plan = self.hooks.plan(DIRECTORY / "config.yaml", self.options)
+        plan = self.hooks.plan(DIRECTORY / "solution/config.yaml", self.options)
         observe(
             plan,
-            DIRECTORY / "config.yaml",
+            DIRECTORY / "solution/config.yaml",
             root / "evidence",
             runner=partial(run_case, backend=backend),
             bindings=read_bindings(DIRECTORY / "bindings.yaml"),
@@ -68,7 +68,7 @@ class InvoicePackageTests(unittest.TestCase):
             root / "evidence",
             {
                 **self.options,
-                "submission": str(DIRECTORY / "config.yaml"),
+                "submission": str(DIRECTORY / "solution/config.yaml"),
                 "evaluation": str(root / "evaluation"),
                 "identity": self.identity.sha256,
             },
@@ -125,7 +125,7 @@ class InvoicePackageTests(unittest.TestCase):
     def test_staged_runtime_imports_without_any_legacy_dispatch_or_host_modules(self):
         with tempfile.TemporaryDirectory() as directory:
             task = Path(directory) / "tasks/invoice-total"
-            stage_tasks(task.parent, root=ROOT, benchmarks=select_benchmarks(ROOT / "benchmarks", ("invoice-total",)))
+            stage_tasks(task.parent, root=ROOT, benchmarks=select_benchmarks(ROOT / "tasks", ("invoice-total",)))
             metadata = json.loads((task / "tests/benchmark.json").read_text())
             self.assertEqual(metadata["options"]["deadline_seconds"], 30)
             script = (
@@ -141,7 +141,9 @@ class InvoicePackageTests(unittest.TestCase):
             self.assertFalse((public / "payload/cases.json").exists())
             self.assertFalse((public / "payload/operations.js").exists())
             self.assertFalse((task / "tests/payload/config.yaml").exists())
-            self.assertEqual((task / "solution/config.yaml").read_bytes(), (DIRECTORY / "config.yaml").read_bytes())
+            self.assertEqual(
+                (task / "solution/config.yaml").read_bytes(), (DIRECTORY / "solution/config.yaml").read_bytes()
+            )
 
     def test_live_package_gate_accepts_native_layout_and_rejects_tampering(self):
         scenario = self.benchmark
@@ -207,13 +209,13 @@ class InvoicePackageTests(unittest.TestCase):
                 root / "task-packages",
                 mode="generation",
                 root=ROOT,
-                benchmarks=select_benchmarks(ROOT / "benchmarks", ("invoice-total",)),
+                benchmarks=select_benchmarks(ROOT / "tasks", ("invoice-total",)),
                 cases={"invoice-total": cases},
             )
             task = root / "task-packages/invoice-total"
             trial = root / "jobs/generated-1/only"
             (trial / "agent/prompt.txt").write_bytes((task / "instruction.md").read_bytes())
-            (trial / "agent/submission.yaml").write_bytes((DIRECTORY / "config.yaml").read_bytes())
+            (trial / "agent/submission.yaml").write_bytes((DIRECTORY / "solution/config.yaml").read_bytes())
             for relative in ("agent/generation.json", "verifier/evaluation/report.json"):
                 path = trial / relative
                 data = json.loads(path.read_text())
@@ -236,7 +238,7 @@ class InvoicePackageTests(unittest.TestCase):
                     replay,
                     mode="replay",
                     root=ROOT,
-                    benchmarks=select_benchmarks(ROOT / "benchmarks", ("invoice-total",)),
+                    benchmarks=select_benchmarks(ROOT / "tasks", ("invoice-total",)),
                     submissions=loaded,
                     cases={"invoice-total": loaded["invoice-total"]["cases"]},
                 )

@@ -27,7 +27,7 @@ PROJECTED_SHA256 = "9f0802c34c543954b1fb9a5d975c2bad3d38692e03ae392f74767d602c6f
 
 def reference(name: str) -> dict:
     if name == "invoice-total":
-        return read(ROOT / "benchmarks/01-invoice-total/config.yaml")
+        return read(ROOT / "tasks/invoice-total/solution/config.yaml")
     filename = {
         "competitor-report": "branch",
         "dual-ledger-closeout": "repeated",

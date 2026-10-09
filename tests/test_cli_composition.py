@@ -33,7 +33,7 @@ class CliCompositionTests(unittest.TestCase):
                     existing,
                     mode=mode,
                     root=workspace_root(),
-                    benchmarks=select_benchmarks(workspace_root() / "benchmarks", (scenario,)),
+                    benchmarks=select_benchmarks(workspace_root() / "tasks", (scenario,)),
                     catalog=catalog,
                 )
                 cli.main(["package-tasks", str(composed), "--scenario", scenario, "--mode", mode, "--catalog", catalog])
@@ -80,7 +80,7 @@ def guarded(name, *args, **kwargs):
     return original(name, *args, **kwargs)
 with patch("builtins.__import__", side_effect=guarded), tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()):
     root = workspace_root()
-    config = root / "benchmarks/01-invoice-total/config.yaml"
+    config = root / "tasks/invoice-total/solution/config.yaml"
     cli.main(["compile", str(config), "--output", tmp + "/invoice.json"])
     cli.main(["package-tasks", tmp + "/tasks", "--scenario", "invoice-total", "--scenario", "checkout-recovery"])
     ui.prepare(config, Path(tmp) / "ui")
@@ -103,7 +103,7 @@ assert "sapi_config_lab.coordinate.scenarios" not in sys.modules
     def test_historical_detached_compile_needs_no_experiment_workspace(self):
         with tempfile.TemporaryDirectory() as temporary, contextlib.redirect_stdout(io.StringIO()):
             source = Path(temporary) / "candidate.yaml"
-            source.write_bytes((workspace_root() / "benchmarks/01-invoice-total/config.yaml").read_bytes())
+            source.write_bytes((workspace_root() / "tasks/invoice-total/solution/config.yaml").read_bytes())
             with patch(
                 "sapi_config_lab.coordinate.compilation.benchmark_root", side_effect=RuntimeError("no resources")
             ):
@@ -113,9 +113,9 @@ assert "sapi_config_lab.coordinate.scenarios" not in sys.modules
                             "compile",
                             str(source),
                             "--bindings",
-                            str(workspace_root() / "benchmarks/01-invoice-total/bindings.yaml"),
+                            str(workspace_root() / "tasks/invoice-total/bindings.yaml"),
                             "--operations",
-                            str(workspace_root() / "benchmarks/01-invoice-total/operations.js"),
+                            str(workspace_root() / "tasks/invoice-total/operations.js"),
                             "--output",
                             temporary + "/out.json",
                         ]
@@ -136,7 +136,7 @@ assert "sapi_config_lab.coordinate.scenarios" not in sys.modules
         with tempfile.TemporaryDirectory() as temporary, contextlib.redirect_stdout(io.StringIO()):
             base = Path(temporary)
             source = base / "candidate.yaml"
-            source.write_bytes((workspace_root() / "benchmarks/01-invoice-total/config.yaml").read_bytes())
+            source.write_bytes((workspace_root() / "tasks/invoice-total/solution/config.yaml").read_bytes())
             with patch(
                 "sapi_config_lab.coordinate.compilation.discover_benchmarks",
                 wraps=__import__("sapi_config_lab.benchmark", fromlist=["discover_benchmarks"]).discover_benchmarks,

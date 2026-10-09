@@ -315,7 +315,7 @@ class ManifestTests(unittest.TestCase):
     def test_listing_cli_imports_no_evaluators(self):
         script = (
             "import sys\nfrom sapi_config_lab.coordinate.cli import main\n"
-            f"main(['benchmarks', '--root', {str(ROOT / 'benchmarks')!r}])\n"
+            f"main(['benchmarks', '--root', {str(ROOT / 'tasks')!r}])\n"
             "assert not any(name.startswith(('verification', 'sapi_config_lab.evaluate')) for name in sys.modules)\n"
             "assert 'sapi_config_lab.coordinate.providers' not in sys.modules\n"
             "assert 'sapi_config_lab.coordinate.scenarios' not in sys.modules\n"

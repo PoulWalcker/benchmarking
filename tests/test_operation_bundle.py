@@ -26,7 +26,7 @@ const operations = {
 
 class OperationBundleTests(unittest.TestCase):
     def setUp(self):
-        self.config = read(ROOT / "benchmarks/01-invoice-total/config.yaml")
+        self.config = read(ROOT / "tasks/invoice-total/solution/config.yaml")
         self.config["workflow"].update(
             id="bundle-example",
             inputs={"value": 5},
@@ -115,7 +115,7 @@ class OperationBundleTests(unittest.TestCase):
                 self.assertIn(BUNDLE, node["parameters"]["jsCode"], node["name"])
 
     def test_missing_implementation_never_falls_back_to_legacy_source(self):
-        invoice = read(ROOT / "benchmarks/01-invoice-total/config.yaml")
+        invoice = read(ROOT / "tasks/invoice-total/solution/config.yaml")
         bindings = read_bindings(CATALOG)
         for source in ("", BUNDLE):
             with (
@@ -140,7 +140,7 @@ class OperationBundleTests(unittest.TestCase):
             compile_n8n(self.config, self.bindings, operation_source=BUNDLE)
 
     def test_compiler_requires_explicit_source_for_both_paths(self):
-        for scenario in ("benchmarks/01-invoice-total/config.yaml", "tests/support/graphs/refinement.yaml"):
+        for scenario in ("tasks/invoice-total/solution/config.yaml", "tests/support/graphs/refinement.yaml"):
             config = read(ROOT / scenario)
             bindings = read_bindings(CATALOG)
             with self.subTest(scenario=scenario), self.assertRaises(TypeError):

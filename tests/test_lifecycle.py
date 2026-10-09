@@ -323,7 +323,7 @@ class LifecycleTests(unittest.TestCase):
         self.assertIn("Invalid lifecycle admission", record_error(run(RunBinding(9000000000, wrong_rule))))
 
     def test_an_ordinary_case_needs_no_binding_and_ignores_a_supplied_event(self):
-        config = profile.read(workspace_root() / "benchmarks/01-invoice-total/config.yaml")
+        config = profile.read(workspace_root() / "tasks/invoice-total/solution/config.yaml")
         backend = SimulatedN8n(OPERATION_SOURCE)
         compiled = backend.compile(config, profile.read_bindings(CATALOG), CompileOptions())
         self.assertNotIn("SAPI_RUN_BINDING", json.dumps(compiled.document))

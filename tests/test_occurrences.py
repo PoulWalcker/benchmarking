@@ -26,7 +26,7 @@ class OccurrenceTests(unittest.TestCase):
     def test_role_binding_accepts_renamed_ids_but_rejects_wrong_input_origin(self):
         from verification.roles import bind_roles
 
-        config = read(ROOT / "benchmarks/01-invoice-total/config.yaml")
+        config = read(ROOT / "tasks/invoice-total/solution/config.yaml")
         config["workflow"]["steps"].reverse()
         config = _rename(config, {"validate": "alpha", "total": "beta", "report": "gamma"})
         self.assertEqual(

@@ -23,7 +23,7 @@ from sapi_config_lab.paths import workspace_root
 
 def control_passed(agent, trial):
     return selected_control_passed(
-        agent, trial, select_benchmarks(workspace_root() / "benchmarks", (trial["task_name"],))[0]
+        agent, trial, select_benchmarks(workspace_root() / "tasks", (trial["task_name"],))[0]
     )
 
 

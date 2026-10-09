@@ -32,7 +32,7 @@ PUBLIC = {
     "benchmarks": "List benchmark metadata without loading evaluators.",
     "check": "Run every required local check (tests, lint, format, types, distribution); no Docker.",
     "compile": "Validate one YAML; write the n8n JSON and its step-to-node map.",
-    "build": "Compile every benchmarks/*/config.yaml and record which were rejected.",
+    "build": "Compile every tasks/*/solution/config.yaml and record which were rejected.",
     "harbor": "Unpaid control suite: pinned image, transport probes, oracle and nop trials.",
     "generate": "Model-authored YAML after the control suite passes. Costs model calls.",
     "select": "Select generated submissions for replay by a fixed rule; runs nothing.",
@@ -64,7 +64,7 @@ def command_help() -> str:
 
 
 # The required local checks, in order; each is the plain command docs/DEVELOPMENT.md used to list.
-LINTED = ("src", "tests", "verification", "infra", "benchmarks", "tasks")
+LINTED = ("src", "tests", "verification", "infra", "tasks")
 CHECKS = {
     "unittest": ("-m", "unittest", "discover", "-s", "tests", "-v"),
     "ruff check": ("-m", "ruff", "check", *LINTED),
@@ -152,7 +152,7 @@ def build_command(argv: list[str], *, backend: WorkflowBackend | None = None) ->
         cfg = read(path)
         order, _ = validate(cfg, bindings)
         row = {
-            "config": path.parent.name,
+            "config": scenario.name,
             "valid_profile": True,
             "steps": len(order),
             "runtime_tested": False,
@@ -160,7 +160,7 @@ def build_command(argv: list[str], *, backend: WorkflowBackend | None = None) ->
         }
         try:
             compiled = selected.compile(cfg, bindings, options)
-            out = args.output_dir / (path.parent.name + "." + selected.name + ".json")
+            out = args.output_dir / (scenario.name + "." + selected.name + ".json")
             write_json(out, compiled.document)
             write_json(out.with_suffix(".map.json"), compiled.mapping, ensure_ascii=True)
             row.update(demo_export="generated", artifact=out.name)
@@ -195,7 +195,7 @@ def package_tasks_command(argv: list[str]) -> int:
     from sapi_config_lab.coordinate.packages import stage_tasks
 
     root = resource_root()
-    items = select_benchmarks(root / "benchmarks", selected.scenarios)
+    items = select_benchmarks(root / "tasks", selected.scenarios)
     stage_tasks(selected.destination, root=root, benchmarks=items, mode=selected.mode, catalog=selected.catalog)
     print(selected.destination)
     return 0

@@ -27,7 +27,7 @@ from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.pinned_source import PinnedSource
 
 ROOT = workspace_root()
-DIRECTORY = ROOT / "benchmarks/10-checkout-recovery"
+DIRECTORY = ROOT / "tasks/checkout-recovery"
 PRIVATE_MARKERS = (
     b"Checkout-owned frozen task contracts",
     b"sapi-lab-task-contract/v1",
@@ -66,11 +66,11 @@ class CheckoutHarborPackageTests(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
         self.tasks = self.root / "tasks"
-        stage_tasks(self.tasks, root=ROOT, benchmarks=select_benchmarks(ROOT / "benchmarks", ("checkout-recovery",)))
+        stage_tasks(self.tasks, root=ROOT, benchmarks=select_benchmarks(ROOT / "tasks", ("checkout-recovery",)))
         self.task = self.tasks / "checkout-recovery"
 
     def test_manifest_and_native_contexts_keep_the_full_pin_private(self):
-        benchmark = load_benchmark(ROOT / "benchmarks", DIRECTORY)
+        benchmark = load_benchmark(ROOT / "tasks", DIRECTORY)
         public = {item.destination for item in benchmark.public}
         self.assertEqual(public, {"instruction.md", "authoring-notes.md", "bindings.yaml", "authoring-prompt.txt"})
         metadata = read(self.task / "tests/benchmark.json")
@@ -87,7 +87,9 @@ class CheckoutHarborPackageTests(unittest.TestCase):
         )
         pin = self.task / "tests/payload/provenance/autowfbench-source.json"
         self.assertEqual(pin.read_bytes(), (DIRECTORY / "provenance/autowfbench-source.json").read_bytes())
-        self.assertEqual((self.task / "solution/config.yaml").read_bytes(), (DIRECTORY / "config.yaml").read_bytes())
+        self.assertEqual(
+            (self.task / "solution/config.yaml").read_bytes(), (DIRECTORY / "solution/config.yaml").read_bytes()
+        )
         config = validate_config((self.task / "task.toml").read_text())
         self.assertEqual(config.verifier.environment_mode, "separate")
         self.assertFalse((self.task / "environment/docker-compose.yaml").exists())
@@ -98,7 +100,7 @@ class CheckoutHarborPackageTests(unittest.TestCase):
         for name in ("environment.json", "connection.json"):
             self.assertFalse((self.task / "tests" / name).exists())
         public_bytes = b"\n".join(p.read_bytes() for p in (self.task / "environment").rglob("*") if p.is_file())
-        for private in (*PRIVATE_MARKERS, (DIRECTORY / "config.yaml").read_bytes()):
+        for private in (*PRIVATE_MARKERS, (DIRECTORY / "solution/config.yaml").read_bytes()):
             self.assertNotIn(private, public_bytes)
 
     def test_staged_worker_and_entrypoints_import_without_legacy_host_or_evaluator(self):
@@ -131,7 +133,7 @@ class CheckoutHarborPackageTests(unittest.TestCase):
         self.assertFalse((self.root / "hosted").exists())
 
     def test_native_live_staging_pins_the_judge_and_refuses_missing_metadata(self):
-        scenario = load_benchmark(ROOT / "benchmarks", DIRECTORY)
+        scenario = load_benchmark(ROOT / "tasks", DIRECTORY)
         selection = {
             scenario.name: {
                 "path": scenario.reference.source,
@@ -198,7 +200,7 @@ class CheckoutHarborPackageTests(unittest.TestCase):
                     target.write_bytes(archive.extractfile(entry).read())
         metadata = read(self.task / "tests/benchmark.json")
         (record / "benchmark.json").write_text(json.dumps(metadata))
-        benchmark = load_benchmark(ROOT / "benchmarks", DIRECTORY)
+        benchmark = load_benchmark(ROOT / "tasks", DIRECTORY)
         identity = freeze_identity(benchmark, metadata["options"])
         evaluator = load_entrypoints(benchmark, identity).evaluate
         scoring = importlib.import_module(evaluator.__module__.rsplit(".", 1)[0] + ".scoring")
@@ -367,14 +369,14 @@ class DockerCheckoutHarborTests(unittest.TestCase):
     def test_oracle_and_nop_use_fresh_private_worlds_and_preserve_reference_reward(self):
         run = ROOT / "reports/migration-05" / ("docker-" + uuid.uuid4().hex[:10])
         run.mkdir(parents=True)
-        stage_tasks(run / "tasks", root=ROOT, benchmarks=select_benchmarks(ROOT / "benchmarks", ("checkout-recovery",)))
+        stage_tasks(run / "tasks", root=ROOT, benchmarks=select_benchmarks(ROOT / "tasks", ("checkout-recovery",)))
         task = run / "tasks/checkout-recovery"
         before = {
             p.relative_to(task).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in task.rglob("*")
             if p.is_file()
         }
-        reference = (DIRECTORY / "config.yaml").read_bytes()
+        reference = (DIRECTORY / "solution/config.yaml").read_bytes()
         observed, initial, worlds = [], [], []
         for agent in ("nop", "oracle"):
             command = [
@@ -464,7 +466,7 @@ class DockerCheckoutHarborTests(unittest.TestCase):
             if p.is_file()
         }
         self.assertEqual(before, after)
-        self.assertEqual((DIRECTORY / "config.yaml").read_bytes(), reference)
+        self.assertEqual((DIRECTORY / "solution/config.yaml").read_bytes(), reference)
         (run / "proof.json").write_text(
             json.dumps(
                 {
@@ -490,9 +492,7 @@ class DockerCheckoutFaultTests(DockerCheckoutHarborTests):
 
         run = ROOT / "reports/migration-06" / ("faults-" + uuid.uuid4().hex[:10])
         run.mkdir(parents=True)
-        stage_tasks(
-            run / "template", root=ROOT, benchmarks=select_benchmarks(ROOT / "benchmarks", ("checkout-recovery",))
-        )
+        stage_tasks(run / "template", root=ROOT, benchmarks=select_benchmarks(ROOT / "tasks", ("checkout-recovery",)))
         template = run / "template/checkout-recovery"
         from tests.test_checkout_isolation import DOCKER_CANDIDATE_PROBE, DOCKER_REDIRECT_PROBE
 

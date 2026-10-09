@@ -57,7 +57,7 @@ def prepare(
     context: CompilationContext | None = None,
 ) -> dict:
     """Compile selected trusted material without executing; one directory names one owned workflow."""
-    context = context or compose_compilation(config_path, workspace_root() / "benchmarks")
+    context = context or compose_compilation(config_path, workspace_root() / "tasks")
     if context.operation_url() is not None:
         raise ValueError("This workflow needs remote tools inside a Harbor trial; the UI cannot start its world")
     host = host or HostConfig.from_environment()
@@ -383,7 +383,7 @@ def open_command(parser: argparse.ArgumentParser, args: argparse.Namespace, host
     if not 1 <= args.seconds <= MAX_GRANT_SECONDS:
         parser.error("--seconds must be between one second and one hour")
     state = args.state_dir or workspace_root() / "var/ui"
-    root = workspace_root() / "benchmarks"
+    root = workspace_root() / "tasks"
     configs = [s.reference.source for s in discover_benchmarks(root)] if args.all else [args.config]
     contexts = {
         config: compose_compilation(
@@ -497,7 +497,7 @@ def main(argv=None) -> int:
         if args.command == "prepare":
             context = compose_compilation(
                 args.config,
-                workspace_root() / "benchmarks",
+                workspace_root() / "tasks",
                 scenario=args.scenario,
                 bindings=args.bindings,
                 operations=args.operations,

@@ -11,8 +11,8 @@ def main() -> int:
     root = workspace_root()
     targets = [("src", "verification")]
     targets.extend(
-        (str(benchmark.directory),)
-        for benchmark in discover_benchmarks(root / "benchmarks")
+        tuple(str(item.source) for item in benchmark.files if item.source.suffix == ".py")
+        for benchmark in discover_benchmarks(root / "tasks")
         if any(item.source.suffix == ".py" for item in benchmark.files)
     )
     failed = False

@@ -14,13 +14,12 @@ from sapi_config_lab.paths import workspace_root
 SOURCE_DIRECTORIES = (
     "src",
     "tests",
-    "benchmarks",
+    "tasks",
     "docs",
     "generation",
     "infra",
     "verification",
     "harbor",
-    "tasks",
     ".github",
 )
 SOURCE_FILES = (
@@ -58,8 +57,8 @@ def source_manifest(root: Path | None = None) -> dict[str, str]:
     """Hashes of every public source file; provenance/ is an allowlist, so machine snapshots never count."""
     root = root or workspace_root()
     files = {root / name for name in SOURCE_FILES}
-    if (root / "benchmarks").is_dir():
-        for benchmark in discover_benchmarks(root / "benchmarks"):
+    if (root / "tasks").is_dir():
+        for benchmark in discover_benchmarks(root / "tasks"):
             files.update(item.source for item in benchmark.files)
     for directory in SOURCE_DIRECTORIES:
         files.update(

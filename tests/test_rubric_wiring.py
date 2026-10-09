@@ -256,7 +256,7 @@ class VerifierSeamTests(unittest.TestCase):
         report = verify_with_runner(
             adapter,
             "invoice-total",
-            ROOT / "benchmarks/01-invoice-total/config.yaml",
+            ROOT / "tasks/invoice-total/solution/config.yaml",
             directory,
             selected_case=cases()["positive"][0]["name"],
             runner=stub_runner,
@@ -353,7 +353,7 @@ class VerifierSeamTests(unittest.TestCase):
         from sapi_config_lab.benchmark import load_benchmark
         from sapi_config_lab.coordinate.evaluation import control_passed
 
-        benchmark = load_benchmark(ROOT / "benchmarks", ROOT / "benchmarks/01-invoice-total")
+        benchmark = load_benchmark(ROOT / "tasks", ROOT / "tasks/invoice-total")
 
         def trial(agent, reward, exception=None):
             row = {"task_name": "invoice-total", "rewards": {"reward": reward}, "exception": exception}

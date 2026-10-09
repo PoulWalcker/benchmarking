@@ -26,10 +26,7 @@ ANCHORS = {"yes": "a", "maybe": "b", "no": "c"}
 
 CARDED = {"invoice-total"}
 # The scenarios that ship a card file today.
-CARDS = {
-    path.parent.parent.name.split("-", 1)[1]
-    for path in (workspace_root() / "benchmarks").glob("*/evaluation/rubric.json")
-}
+CARDS = {path.parent.parent.name for path in (workspace_root() / "tasks").glob("*/evaluation/rubric.json")}
 
 
 # The criteria of the 2026-10-05 checkout recovery run as the upstream judge scored them (9.33/10).

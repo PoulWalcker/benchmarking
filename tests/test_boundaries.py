@@ -41,6 +41,7 @@ NATIVE_COORDINATORS = {
     "native_tasks.checkout-recovery.tests.fake_bridge": set(),
     "native_tasks.checkout-recovery.tests.calibration_transport": set(),
 }
+ALLOWED["benchmark_domain"] = {SHARED, "verification", "benchmark_domain"}
 ALLOWED["native_coordinate"] = ALLOWED["coordinate"] | {"benchmark_domain", "native_coordinate"}
 
 
@@ -69,6 +70,9 @@ def stage_of(module: str) -> str:
     if module in NATIVE_COORDINATORS:
         return "native_coordinate"
     if module.startswith("native_tasks."):
+        parts = module.split(".")
+        if len(parts) > 2 and parts[2] in {"evaluation", "environment"}:
+            return "benchmark_domain"
         return "unclassified_native"
     if module == "payload" or module.startswith("payload."):
         return "benchmark_domain"
@@ -141,7 +145,11 @@ class StageBoundaryTests(unittest.TestCase):
         loose = {module for module, _, verifier in modules() if not verifier and "." not in module}
         shared = {name for name, stage in STAGES.items() if stage == SHARED}
         self.assertEqual(loose - shared - set(stages) - {"__main__", ""}, set())
-        native = {module for module, _, _ in modules() if module.startswith("native_tasks.")}
+        native = {
+            module
+            for module, _, _ in modules()
+            if module.startswith("native_tasks.") and stage_of(module) != "benchmark_domain"
+        }
         self.assertEqual(native, set(NATIVE_COORDINATORS), "Every native script needs explicit ownership")
         for stage in stages:
             self.assertTrue((ROOT / "src" / PACKAGE / stage).is_dir(), stage)
@@ -202,9 +210,9 @@ def ownership_edges(module: str, source: str, *, package: bool = False) -> set[t
             found.add((module, "benchmark_domain"))
         if any(
             name == prefix or name.startswith(prefix + ".")
-            for prefix in ("benchmarks", PACKAGE + ".resources.benchmarks")
+            for prefix in ("benchmarks", "tasks", PACKAGE + ".resources.benchmarks", PACKAGE + ".resources.tasks")
         ):
-            found.add((module, "benchmarks"))
+            found.add((module, "tasks"))
         if (
             (name == "harbor" or name.startswith("harbor."))
             and not module.startswith("sapi_config_lab.harbor_integration.")
@@ -244,6 +252,8 @@ class OwnershipTests(unittest.TestCase):
             "import importlib as loader\nloader.import_module('benchmarks.new_task')",
             "__import__('benchmarks.new_task')",
             "from sapi_config_lab.resources.benchmarks import new_task",
+            "import tasks.new_task.evaluation",
+            "from sapi_config_lab.resources.tasks import new_task",
             "__import__('sapi_config_lab.resources.benchmarks.new_task.evaluation')",
             "from harbor.models.task.config import TaskConfig",
             "from importlib import import_module as load\nload('harbor.models.task.config')",

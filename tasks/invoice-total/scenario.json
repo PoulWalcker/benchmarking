@@ -1,4 +1,3 @@
-
 {
   "version": "sapi-lab-benchmark/v1",
   "id": "invoice-total",
@@ -10,7 +9,7 @@
   ],
   "trusted": [
     "operations.js",
-    "task.toml",
+    "legacy-task.toml",
     "verifier.sh",
     "cases.json",
     "evaluation/__init__.py",
@@ -19,10 +18,10 @@
     "evaluation/outputs.json",
     "evaluation/evaluator.py"
   ],
-  "reference": "config.yaml",
+  "reference": "solution/config.yaml",
   "bindings": "bindings.yaml",
   "operations": "operations.js",
-  "harbor_task": "task.toml",
+  "harbor_task": "legacy-task.toml",
   "entrypoints": {
     "plan": {
       "path": "evaluation/evaluator.py",

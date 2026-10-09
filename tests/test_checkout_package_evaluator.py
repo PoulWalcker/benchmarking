@@ -16,7 +16,7 @@ from sapi_config_lab.paths import workspace_root
 from tests.support.pinned import AVAILABLE, SOURCE
 
 ROOT = workspace_root()
-DIRECTORY = ROOT / "benchmarks/10-checkout-recovery/evaluation"
+DIRECTORY = ROOT / "tasks/checkout-recovery/evaluation"
 ARCHIVE = ROOT / "evidence/migration-01-baseline/historical/hosted-before-native-fields.tar.gz"
 PACKAGE = "_checkout_package_evaluator_tests"
 SPEC = importlib.util.spec_from_file_location(

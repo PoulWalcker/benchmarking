@@ -1,6 +1,7 @@
 """Direct Harbor parity controls over checked-in tasks, without staging or model calls."""
 
 import ast
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -11,6 +12,7 @@ import tomllib
 import unittest
 import uuid
 
+from harbor.models.task.task import Task
 import yaml
 
 from sapi_config_lab.contracts import OutputArtifact
@@ -24,12 +26,23 @@ REPORTS = ROOT / "reports/native-phase1"
 
 
 class NativeTaskTests(unittest.TestCase):
-    def test_static_task_assets_match_original_public_and_oracle_bytes(self):
-        for name, source in (("invoice-total", "01-invoice-total"), ("checkout-recovery", "10-checkout-recovery")):
+    def test_static_task_assets_preserve_public_and_oracle_bytes(self):
+        pinned = {
+            "invoice-total": {
+                "instruction.md": "eed1f481fd235ddc2e263df1f6212d70ea87a4e8b00287c93abd13b92cc50b7c",
+                "solution/config.yaml": "2b4d9b5569cd811053bb2e504de4111b171be188b2deff88b4ca63f187406e99",
+            },
+            "checkout-recovery": {
+                "instruction.md": "4d54d5e80750d7c588687a6a8ed6ca935e1d35aae68ece9f92725a96460b4f47",
+                "solution/config.yaml": "c9176e088aa14e7afcde3cfb8a461841061a25cc9d8abb8b70acb8154150b1a9",
+            },
+        }
+        self.assertFalse((ROOT / "benchmarks").exists())
+        for name, files in pinned.items():
             task = ROOT / "tasks" / name
-            original = ROOT / "benchmarks" / source
-            self.assertEqual((task / "instruction.md").read_bytes(), (original / "instruction.md").read_bytes())
-            self.assertEqual((task / "solution/config.yaml").read_bytes(), (original / "config.yaml").read_bytes())
+            self.assertFalse((task / "config.yaml").exists())
+            for relative, expected in files.items():
+                self.assertEqual(hashlib.sha256((task / relative).read_bytes()).hexdigest(), expected)
             config = tomllib.loads((task / "task.toml").read_text())
             self.assertEqual(config["agent"]["user"], "1000")
             self.assertEqual(config["environment"]["network_mode"], "no-network")
@@ -37,12 +50,20 @@ class NativeTaskTests(unittest.TestCase):
             self.assertEqual(config["verifier"]["environment_mode"], "separate")
             self.assertEqual(config["artifacts"][0]["exclude"], ["*"])
             self.assertNotIn("metadata", config)
-            self.assertFalse(list(task.rglob("scenario.json")))
             for script in (task / "tests").glob("*.py"):
                 imports = {
                     node.module for node in ast.walk(ast.parse(script.read_text())) if isinstance(node, ast.ImportFrom)
                 }
                 self.assertFalse(imports & {"sapi_config_lab.benchmark", "sapi_config_lab.benchmark_loading"})
+
+    def test_harbor_author_environment_has_no_private_compose_overlay(self):
+        for name in ("invoice-total", "checkout-recovery"):
+            task = Task(ROOT / "tasks" / name)
+            self.assertFalse((task.paths.environment_dir / "docker-compose.yaml").exists())
+            self.assertEqual(task.config.verifier.environment_mode, "separate")
+        trusted = yaml.safe_load((ROOT / "tasks/checkout-recovery/tests/docker-compose.yaml").read_text())
+        self.assertEqual(set(trusted["services"]), {"main", "simulator"})
+        self.assertTrue(trusted["networks"]["verification"]["internal"])
 
     def test_fake_transport_records_calls_without_precreated_directories(self):
         transport_for = runpy.run_path(str(ROOT / "tasks/checkout-recovery/tests/fake_bridge.py"))["transport_for"]
@@ -57,9 +78,9 @@ class NativeTaskTests(unittest.TestCase):
     @unittest.skipUnless(AVAILABLE, "Requires pinned upstream source")
     def test_saved_calibration_adapter_binds_fresh_evidence_and_rejects_tampering(self):
         adapter = runpy.run_path(str(ROOT / "tasks/checkout-recovery/tests/calibration_transport.py"))
-        template = ROOT / "tests/native/calibration/judge-reply.json"
+        template = ROOT / "tasks/checkout-recovery/tests/calibration/judge-reply.json"
         original = template.read_bytes()
-        run = json.loads((ROOT / "tests/native/calibration/run-log.json").read_text())
+        run = json.loads((ROOT / "tasks/checkout-recovery/tests/calibration/run-log.json").read_text())
         run["run_id"] = "fresh-native-calibration-attempt"
         run["submission"]["run_id"] = run["run_id"]
         contract = SCORING.freeze_contract(
@@ -92,7 +113,7 @@ class NativeTaskTests(unittest.TestCase):
 
     @unittest.skipUnless(AVAILABLE, "Requires pinned upstream source")
     def test_saved_spike_calibration_replays_through_original_scorer(self):
-        directory = ROOT / "tests/native/calibration"
+        directory = ROOT / "tasks/checkout-recovery/tests/calibration"
         contract = SCORING.freeze_contract(
             SOURCE,
             "production-checkout-recovery",

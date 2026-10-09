@@ -44,7 +44,7 @@ from sapi_config_lab.paths import workspace_root
 
 def recorded_benchmark(name: str) -> Benchmark:
     """Select trusted local metadata; recorded names never nominate executable paths."""
-    matches = [item for item in discover_benchmarks(workspace_root() / "benchmarks") if item.name == name]
+    matches = [item for item in discover_benchmarks(workspace_root() / "tasks") if item.name == name]
     if len(matches) != 1:
         raise ValueError("Recorded versioned benchmark is unavailable")
     return matches[0]

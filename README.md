@@ -24,7 +24,7 @@ benchmarks are checked with `./run.sh --scenario invoice-total --scenario checko
 Native checkout builds fetch their declared hash-pinned private dependencies.
 
 ```bash
-uv run --locked sapi-lab compile benchmarks/01-invoice-total/config.yaml --output /tmp/workflow.n8n.json
+uv run --locked sapi-lab compile tasks/invoice-total/solution/config.yaml --output /tmp/workflow.n8n.json
 uv run --locked sapi-lab --help
 ```
 
@@ -53,7 +53,7 @@ src/sapi_config_lab/
 ├── coordinate/   orchestration only
 └── harbor_integration/  adaptation to external Harbor 0.21.0
 
-benchmarks/       operations, worlds and evaluators declared by scenario.json
+tasks/            native Harbor tasks, operations, worlds and independent evaluators
 verification/     independent acceptance verifier, packaged into each task
 generation/       model-facing authoring contract (prompt material)
 infra/            runtime image and distribution checks

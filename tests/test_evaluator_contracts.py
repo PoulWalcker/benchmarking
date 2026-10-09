@@ -27,8 +27,8 @@ class EvaluatorContractTests(unittest.TestCase):
             {**valid, "quality": {"status": "complete", "score_0_10": 11, "normalized_reward": 1}},
             {**valid, "quality": {"status": "not_evaluated", "score_0_10": 0, "normalized_reward": 0}},
         ]
-        root = workspace_root() / "benchmarks"
-        benchmark = load_benchmark(root, root / "10-checkout-recovery")
+        root = workspace_root() / "tasks"
+        benchmark = load_benchmark(root, root / "checkout-recovery")
         identity = freeze_identity(benchmark, {})
         for result in bad:
             with self.subTest(result=result), tempfile.TemporaryDirectory() as directory:
@@ -62,7 +62,7 @@ class EvaluatorContractTests(unittest.TestCase):
             patch("sapi_config_lab.benchmark_loading.freeze_identity", side_effect=AssertionError("scorer loaded")),
             patch("importlib.import_module", side_effect=AssertionError("benchmark code imported")),
         ):
-            benchmarks = discover_benchmarks(workspace_root() / "benchmarks")
+            benchmarks = discover_benchmarks(workspace_root() / "tasks")
             benchmark = next(item for item in benchmarks if item.name == "checkout-recovery")
             self.assertEqual(benchmark.config["deadline_seconds"], 120)
             instruction = next(item.source for item in benchmark.public if item.destination == "instruction.md")

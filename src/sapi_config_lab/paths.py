@@ -11,14 +11,14 @@ def resource_root() -> Path:
     if package == source / "src/sapi_config_lab" and (source / "generation/PROFILE.md").is_file():
         return workspace_root()
     resources = package / "resources"
-    if not (resources / "benchmarks").is_dir() or not (resources / "generation/PROFILE.md").is_file():
+    if not (resources / "tasks").is_dir() or not (resources / "generation/PROFILE.md").is_file():
         raise RuntimeError("Installed benchmark resources are missing")
     return resources
 
 
 def benchmark_root() -> Path:
     """The explicitly discoverable benchmark resources for this installation."""
-    return resource_root() / "benchmarks"
+    return resource_root() / "tasks"
 
 
 def workspace_root() -> Path:
@@ -26,7 +26,7 @@ def workspace_root() -> Path:
     explicit = os.environ.get("SAPI_LAB_ROOT")
     candidates = [Path(explicit)] if explicit else [Path.cwd(), *Path.cwd().parents, *Path(__file__).resolve().parents]
     for path in candidates:
-        if (path / "benchmarks").is_dir() and (path / "generation/PROFILE.md").is_file():
+        if (path / "tasks").is_dir() and (path / "generation/PROFILE.md").is_file():
             if Path(__file__).resolve().parent != (path / "src/sapi_config_lab").resolve():
                 raise RuntimeError(
                     "Experiments require the editable package from this workspace. "

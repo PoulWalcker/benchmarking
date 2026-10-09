@@ -47,10 +47,14 @@ Each component has an explicit `INPUT -> PROCESS -> OUTPUT` contract:
 
 ## One scenario registry
 
-Every benchmark is `benchmarks/NN-<name>/`. Its `scenario.json` states what the scenario needs; there is no second registry in code.
+Each benchmark owns its assets in `tasks/<name>/`. `instruction.md` and
+`solution/config.yaml` are the canonical public instruction and reference. Native
+`task.toml` owns direct Harbor infrastructure. The existing experiment commands
+select the same assets through `scenario.json` and `legacy-task.toml`; they do not
+own a second copy of domain code or prompt material.
 
 The versioned manifest declares public/trusted files, reference, bindings, operations,
-native Harbor task configuration, callable entrypoints, dependencies, budgets and
+legacy experiment task configuration, callable entrypoints, dependencies, budgets and
 controls. Benchmark-specific world, completion and scoring declarations live in its
 opaque `config`. See [Versioned benchmark loading](#versioned-benchmark-loading).
 Commands select `Benchmark` descriptors per call and pass them explicitly through
@@ -144,9 +148,10 @@ no shared business catalog or provider/evaluator dispatch table. Independent
 checks receive recorded evidence and never import the implementation under test.
 
 `tests/test_boundaries.py` enforces structural ownership without migration allowlists.
-Every generic Python module and package initializer has a stage. Core and independent
-verification cannot import benchmark packages; only `harbor_integration` imports
-Harbor. Independent verification imports only its own mechanisms. Static absolute,
+Every generic Python module and package initializer has a stage. Task-owned
+`evaluation/` and `environment/` Python modules may import neutral contracts and independent verification, but not coordination or compiler/runtime
+implementations. Core and independent verification cannot import task domain
+packages; only `harbor_integration` imports Harbor. Independent verification imports only its own mechanisms. Static absolute,
 relative and literal dynamic imports are checked, including function-level imports.
 The selected `benchmark_loading` seam loads declared trusted modules; resource access
 does not authorize dynamic code imports. These checks do not detect arbitrary computed
@@ -194,8 +199,9 @@ Historical reads do not require retired benchmark directories.
 
 ## Positive Harbor packages
 
-`harbor_integration/tasks.py` positively packages selected versioned benchmarks. It validates native `task.toml` against pinned Harbor 0.21.0. Integration
-modules may import neutral contracts, generic execution mechanisms and each other;
+`harbor_integration/tasks.py` positively packages selected versioned benchmarks.
+It validates the descriptor-selected `legacy-task.toml` against pinned Harbor 0.21.0.
+Integration modules may import neutral contracts, generic execution mechanisms and each other;
 benchmark planning and scoring stay outside.
 All active benchmark task packaging uses the versioned path.
 
@@ -239,7 +245,7 @@ compile/execute/evaluate pipeline.
 
 ### Invoice package execution
 
-`benchmarks/01-invoice-total` owns its unchanged public catalog, trusted JavaScript
+`tasks/invoice-total` owns its unchanged public catalog, trusted JavaScript
 operation bundle as explicit compatibility material, case/probe planning,
 independent totals, role contract/output schemas,
 and deterministic rubric. Its explicit fixture object supplies these to verifier
@@ -278,8 +284,8 @@ or put the reference back in the public environment.
 
 ## Checkout in a Harbor-managed world
 
-Checkout declares a trusted Compose file and Dockerfile appendix through native
-`task.toml` metadata (`metadata.sapi.verifier_compose` and
+Checkout declares a trusted Compose file and Dockerfile appendix through
+descriptor-selected `legacy-task.toml` metadata (`metadata.sapi.verifier_compose` and
 `metadata.sapi.verifier_dockerfile`). These must name explicitly trusted manifest
 files. The adapter copies Compose into Harbor's verifier build context and appends
 the trusted recipe only to the verifier Dockerfile. The public build is unchanged.
@@ -322,11 +328,14 @@ execution does not import concrete wrapper transport.
 
 ## Installed resources
 
-Wheel resources contain each discovered manifest and its complete declared public,
-trusted, reference and shared dependency closure, plus unchanged generation prompts.
+Wheel resources contain the native task directories, their manifests and complete
+public/trusted/reference and shared dependency closure, unchanged generation prompts,
+and the Docker recipes for `infra/native/build.sh`. Explicit Docker build contexts
+supply core and verification from the checkout or their installed Python packages.
+The recipes build from an installed resource root without a task export step.
 The build hook resolves those declarations without importing benchmark implementation.
 Resource discovery, compilation and task staging work from a clean installation.
-Staging copies generic runtime and independent verifier sources from the actual
+Legacy staging copies generic runtime and independent verifier sources from the actual
 installed packages; it never reconstructs an editable source tree. Public/trusted
 placement rules apply equally to installed and checkout resources.
 
@@ -426,8 +435,8 @@ that original evaluator.
 
 `tasks/invoice-total` and `tasks/checkout-recovery` are also checked-in Harbor task
 packages. Harbor consumes them directly; there is no descriptor discovery or task
-materialization on this path. Their trusted Python entrypoints import the existing
-benchmark planners, world hooks and evaluators explicitly, then call
+materialization on this path. Their trusted Python entrypoints import the task-owned
+planners, world hooks and evaluators explicitly, then call
 `coordinate.benchmark_worker.run_task`, the same observation/evaluation composition
 used by the legacy worker. These trusted scripts are native coordination roots:
 `main.py` for each task, plus checkout's `fake_bridge.py` and
@@ -441,7 +450,7 @@ evaluator boundaries. The legacy manifest path remains supported.
 `infra/native/build.sh` builds explicit image targets from the checkout. Public
 stages copy only original public material and the existing submission gate from a
 pinned Alpine ancestor. Trusted stages copy the existing generic runtime and the
-selected benchmark's trusted source files; references enter only Harbor's oracle
+selected task's trusted source files; references enter only Harbor's oracle
 solution directory. Checkout's private Compose network and credentials volume are
 owned by Harbor. The author environment explicitly uses Harbor `no-network`;
 the separate verifier environment uses its own `public` policy and private
@@ -459,7 +468,7 @@ rejects mismatched evidence digests. No model judges the fresh prose; missing
 required evidence remains unscored. Neither native transport exposes paid calls.
 Each trusted task image freezes SHA-256 hashes of its complete `/tests` tree,
 checks them before verification and records that inventory beside evidence. Native
-control tests also record host sources and base image IDs. These native tasks
-intentionally require a checkout and built local images; the
-existing installed-resource/wheel path retains its guarantees. See
+control tests also record host sources and base image IDs. Native task sources and
+explicit image build inputs are also installed as package resources. They require rebuilt local images; experiment identity gates continue to
+require a matching editable checkout. Installed legacy staging remains available. See
 [NATIVE_PARITY.md](../NATIVE_PARITY.md) for verified coverage and Phase 2 scope.

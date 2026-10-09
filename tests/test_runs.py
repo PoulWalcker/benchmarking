@@ -52,7 +52,7 @@ class RunTests(unittest.TestCase):
 
         def body(run):
             run.use_image("lab")
-            run.stage("oracle", select_benchmarks(workspace_root() / "benchmarks", ("invoice-total",)))
+            run.stage("oracle", select_benchmarks(workspace_root() / "tasks", ("invoice-total",)))
 
         with patch("sapi_config_lab.coordinate.runs.stage_tasks", side_effect=ValueError("invalid declared package")):
             run_experiment(self.output, {}, body, prefix="t")
@@ -85,7 +85,7 @@ class RunTests(unittest.TestCase):
 
         def body(run):
             run.use_image("lab")
-            run.stage("oracle", select_benchmarks(workspace_root() / "benchmarks", ("invoice-total",)))
+            run.stage("oracle", select_benchmarks(workspace_root() / "tasks", ("invoice-total",)))
             body.staging = run.staging
             run.report["status"] = "passed"
             cleanup = patch("sapi_config_lab.coordinate.runs.shutil.rmtree", side_effect=OSError("disk full"))
@@ -103,7 +103,7 @@ class RunTests(unittest.TestCase):
 
         def body(run):
             run.use_image("lab")
-            run.stage("oracle", select_benchmarks(workspace_root() / "benchmarks", ("invoice-total",)))
+            run.stage("oracle", select_benchmarks(workspace_root() / "tasks", ("invoice-total",)))
             run.harbor("oracle", run.tasks, "oracle")
             run.report["status"] = "passed"
             body.staging = run.staging
@@ -144,7 +144,7 @@ class RunTests(unittest.TestCase):
 
         def body(run):
             run.use_image("lab")
-            run.stage("oracle", select_benchmarks(workspace_root() / "benchmarks", ("invoice-total",)))
+            run.stage("oracle", select_benchmarks(workspace_root() / "tasks", ("invoice-total",)))
             with self.assertRaisesRegex(RuntimeError, "interrupted"):
                 run.harbor("oracle", run.tasks, "oracle")
             with self.assertRaisesRegex(ValueError, "twice"):
@@ -168,7 +168,7 @@ class RunTests(unittest.TestCase):
 
         def body(run):
             run.use_image("lab")
-            run.stage("oracle", select_benchmarks(workspace_root() / "benchmarks", ("invoice-total",)))
+            run.stage("oracle", select_benchmarks(workspace_root() / "tasks", ("invoice-total",)))
             run.sources = {"changed": "source"}
             run.harbor("oracle", run.tasks, "oracle")
 
@@ -181,7 +181,7 @@ class RunTests(unittest.TestCase):
 
         def body(run):
             run.use_image("lab")
-            run.stage("generation", select_benchmarks(workspace_root() / "benchmarks", ("checkout-recovery",)))
+            run.stage("generation", select_benchmarks(workspace_root() / "tasks", ("checkout-recovery",)))
             run.harbor("admission", run.tasks, "oracle", admission=True, verifier_env=["SAPI_CASE_NAME=chosen"])
             run.report["status"] = "passed"
 

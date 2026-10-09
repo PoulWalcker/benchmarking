@@ -24,7 +24,7 @@ from verification import verify as verifier
 from verification.contracts import Rejected
 
 ROOT = workspace_root()
-CONFIG = ROOT / "benchmarks/01-invoice-total/config.yaml"
+CONFIG = ROOT / "tasks/invoice-total/solution/config.yaml"
 CASES = cases()
 
 

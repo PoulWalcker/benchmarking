@@ -40,7 +40,7 @@ process.stdout.write(JSON.stringify({prepared, rows}));
 
 class OperationTransportTests(unittest.TestCase):
     def generic_tool(self, *, enabled=True):
-        cfg = read(ROOT / "benchmarks/01-invoice-total/config.yaml")
+        cfg = read(ROOT / "tasks/invoice-total/solution/config.yaml")
         cfg["workflow"]["inputs"] = {"query": "runtime fixture", "enabled": enabled}
         cfg["workflow"]["steps"] = [
             {
@@ -115,11 +115,11 @@ class OperationTransportTests(unittest.TestCase):
         self.assertNotIn("ReferenceError", process.stderr)
 
     def test_generic_script_tool_is_native_http_and_needs_explicit_connection(self):
-        cfg = read(ROOT / "benchmarks/01-invoice-total/config.yaml")
+        cfg = read(ROOT / "tasks/invoice-total/solution/config.yaml")
         cfg["workflow"]["steps"] = [{"id": "read", "kind": "Script", "uses": "source.read", "with": {}}]
         cfg["workflow"]["dependencies"] = []
         cfg["workflow"]["output"] = {"ref": "steps.read"}
-        bindings = read_bindings(ROOT / "benchmarks/10-checkout-recovery/bindings.yaml")
+        bindings = read_bindings(ROOT / "tasks/checkout-recovery/bindings.yaml")
         with self.assertRaises(Invalid):
             N8nBackend(operation_source=OPERATION_SOURCE).compile(cfg, bindings, CompileOptions())
         built = N8nBackend(operation_source=OPERATION_SOURCE).compile(
@@ -135,7 +135,7 @@ class OperationTransportTests(unittest.TestCase):
     def test_unused_http_catalog_entries_do_not_change_existing_workflows(self):
         original = read_bindings(CATALOG)
         extended = {**original, **self.generic_tool()[1]}
-        for name in ("benchmarks/01-invoice-total/config.yaml", "tests/support/graphs/refinement.yaml"):
+        for name in ("tasks/invoice-total/solution/config.yaml", "tests/support/graphs/refinement.yaml"):
             with self.subTest(config=name):
                 cfg = read(ROOT / name)
                 before = N8nBackend(operation_source=OPERATION_SOURCE).compile(cfg, original, CompileOptions())

@@ -10,7 +10,7 @@ uv run --locked sapi-lab fetch-source autowfbench   # host cache for offline sco
 Python is pinned to `3.14.8` by `.python-version`; `--locked` keeps `uv.lock` authoritative. Docker is needed for the n8n/Harbor controls; a local n8n container only for `sapi-lab ui`.
 
 `fetch-source` resolves the trusted pin declared by a benchmark (checkout declares
-`benchmarks/10-checkout-recovery/provenance/autowfbench-source.json`) and verifies
+`tasks/checkout-recovery/provenance/autowfbench-source.json`) and verifies
 every byte under `.cache/<source>/<revision>/`. A changed cache is refused rather
 than repaired. Native checkout verifier builds independently fetch their declared
 private source/wheel dependencies; the host cache supports offline scoring and
@@ -76,9 +76,9 @@ The coordinator sets the container protocol variables itself: `SAPI_LLM_MODE`, `
 
 ## Adding a scenario
 
-Add `benchmarks/NN-<name>/` with a `scenario.json` (fields in [ARCHITECTURE.md](ARCHITECTURE.md#one-scenario-registry)), a reference `config.yaml` that obeys [PROFILE.md](PROFILE.md) and `generation/FORMAT.md`, and an `instruction.md`.
+Add `tasks/<name>/` with a `scenario.json` (fields in [ARCHITECTURE.md](ARCHITECTURE.md#one-scenario-registry)), a reference `solution/config.yaml` that obeys [PROFILE.md](PROFILE.md) and `generation/FORMAT.md`, and an `instruction.md`.
 
-Declare its public/trusted files, bindings, operation JavaScript, native `task.toml`,
+Declare its public/trusted files, bindings, operation JavaScript, descriptor-selected `legacy-task.toml`,
 reference and trusted `plan`/`evaluate` entrypoints as described under
 [Versioned manifest development](#versioned-manifest-development). A fixture
 benchmark owns evaluator-only cases, contract/output schemas, independent business
@@ -139,7 +139,7 @@ SAPI_RUN_DOCKER_TESTS=1 uv run --locked --extra harbor --extra benchmark \
   python -m unittest tests.test_benchmark_extensibility -v
 ```
 
-It temporarily copies the fixture to `benchmarks/99-beacon-calibration`, discovers
+It temporarily copies the fixture to `tasks/99-beacon-calibration`, discovers
 and stages it through the public CLI, then runs fresh Harbor oracle/nop worlds.
 It rejects corrupted completion, re-evaluates without changing original evidence,
 checks unchanged existing source hashes and removes the temporary directory.
@@ -169,7 +169,7 @@ re-evaluates a native trial through its recorded benchmark evaluator. For checko
 
 ```bash
 uv run --locked sapi-lab ui open --all
-uv run --locked sapi-lab ui open benchmarks/01-invoice-total/config.yaml --live
+uv run --locked sapi-lab ui open tasks/invoice-total/solution/config.yaml --live
 ```
 
 Imports are inactive copies and never execute. A `--live` session arms one fresh copy with a budgeted bridge; execution stays a manual click. UI runs are for inspection, not benchmark evidence.
@@ -453,7 +453,17 @@ adapter bound to each fresh run, with no judge dispatch. The resulting
 and measured model quality. No model or paid judge is used. Author environments
 explicitly have no network; trusted verifier/world connectivity is separate.
 
-Native task assets are included in the source distribution. They are intentionally
-checkout-only; use the existing `package-tasks` command for installed-wheel task
-staging. `NATIVE_PARITY.md` records remaining migration limits and deletion
-candidates; Phase 1 removes no legacy architecture.
+Native task directories and their explicit image build inputs are included in both
+wheel and source distributions. From a clean installation, resolve the resource root,
+build the images there, and supply its native task directory directly to Harbor:
+
+```bash
+TASK_RESOURCES=$(python -c 'from sapi_config_lab.paths import resource_root; print(resource_root())')
+sh "$TASK_RESOURCES/infra/native/build.sh"
+harbor run -p "$TASK_RESOURCES/tasks/invoice-total" -a oracle --max-retries 0 --force-build
+```
+
+`package-tasks` still supports existing experiment staging from these same canonical
+assets. Native `task.toml` controls the direct Harbor task; `legacy-task.toml` is used
+only by that staging path. Experiment controls and paid dispatch continue to require
+a matching editable checkout.

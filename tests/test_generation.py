@@ -16,7 +16,7 @@ from sapi_config_lab.paths import workspace_root
 class GenerationTests(unittest.TestCase):
     def setUp(self):
         self.root = workspace_root()
-        self.benchmarks = select_benchmarks(self.root / "benchmarks")
+        self.benchmarks = select_benchmarks(self.root / "tasks")
 
     def test_replay_packages_preserve_exact_selected_bytes_and_reject_bad_selection(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -60,7 +60,7 @@ class GenerationTests(unittest.TestCase):
                 expected_catalogs = [task / "environment/payload/bindings.yaml", task / "tests/payload/bindings.yaml"]
                 self.assertEqual(sorted(task.rglob("*.yaml")), sorted(expected_catalogs))
                 prompt = (task / "instruction.md").read_text()
-                for config in (workspace_root() / "benchmarks").glob("*/config.yaml"):
+                for config in (workspace_root() / "tasks").glob("*/config.yaml"):
                     self.assertNotIn(config.read_text().strip(), prompt)
                 self.assertNotIn((workspace_root() / "verification/verify.py").read_text(), prompt)
                 self.assertEqual(

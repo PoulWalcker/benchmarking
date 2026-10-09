@@ -190,9 +190,9 @@ class HostedTrialCheckTests(unittest.TestCase):
 
     def check(self, result: dict, reference_reward: float | None) -> None:
         scenario = replace(
-            select_benchmarks(workspace_root() / "benchmarks", ("checkout-recovery",))[0],
+            select_benchmarks(workspace_root() / "tasks", ("checkout-recovery",))[0],
             controls=replace(
-                select_benchmarks(workspace_root() / "benchmarks", ("checkout-recovery",))[0].controls,
+                select_benchmarks(workspace_root() / "tasks", ("checkout-recovery",))[0].controls,
                 reference_reward=reference_reward,
             ),
         )
@@ -320,7 +320,7 @@ class NativeLiveReservationTests(unittest.TestCase):
         from sapi_config_lab.coordinate.packages import stage_tasks
         from sapi_config_lab.evidence import write_json
 
-        scenario = select_benchmarks(workspace_root() / "benchmarks", ("checkout-recovery",))[0]
+        scenario = select_benchmarks(workspace_root() / "tasks", ("checkout-recovery",))[0]
         submission_hash = sha256(scenario.reference.source)
         for fault in (None, "duplicate", "submission"):
             with self.subTest(fault=fault), tempfile.TemporaryDirectory() as directory:

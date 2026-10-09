@@ -29,8 +29,8 @@ from tests.support.native import SimulatedN8n
 
 
 def checkout():
-    root = workspace_root() / "benchmarks"
-    return load_benchmark(root, root / "10-checkout-recovery")
+    root = workspace_root() / "tasks"
+    return load_benchmark(root, root / "checkout-recovery")
 
 
 def model_config(benchmark, operation):
@@ -158,8 +158,8 @@ class PreflightExecutionTests(unittest.TestCase):
             self.assertTrue(json.loads((root / "verifier/evaluation/report.json").read_text())["passed"])
 
     def test_mixed_preflight_replays_fixture_and_only_admits_world(self):
-        root = workspace_root() / "benchmarks"
-        invoice = load_benchmark(root, root / "01-invoice-total")
+        root = workspace_root() / "tasks"
+        invoice = load_benchmark(root, root / "invoice-total")
         world = checkout()
         benchmarks = {item.name: item for item in (invoice, world)}
         for incorrect in (False, True):
@@ -254,8 +254,8 @@ class PreflightExecutionTests(unittest.TestCase):
                     check_trials(trials, selected, benchmarks=benchmarks, mode="stub", admission=True)
 
     def test_fixture_admission_report_cannot_pass_preflight(self):
-        root = workspace_root() / "benchmarks"
-        invoice = load_benchmark(root, root / "01-invoice-total")
+        root = workspace_root() / "tasks"
+        invoice = load_benchmark(root, root / "invoice-total")
         report = benchmark_worker.admit(
             metadata(invoice), invoice.directory, invoice.reference.source, {"deadline_seconds": 30}
         )

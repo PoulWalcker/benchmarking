@@ -23,7 +23,7 @@ class ScoredControlTests(unittest.TestCase):
     """A declared reference reward makes the hosted oracle a scored control."""
 
     def setUp(self):
-        self.benchmark = select_benchmarks(workspace_root() / "benchmarks", ("checkout-recovery",))[0]
+        self.benchmark = select_benchmarks(workspace_root() / "tasks", ("checkout-recovery",))[0]
 
     def trial(self, quality, reward=0.732):
         report = hosted_report("checkout-recovery", True, 0.732)
@@ -49,7 +49,7 @@ class ScoredControlTests(unittest.TestCase):
         trial = self.trial(unscored, reward=0.0)
         trial["result"]["acceptance"] = False
         trial["result"]["execution"] = None
-        invoice = select_benchmarks(workspace_root() / "benchmarks", ("invoice-total",))[0]
+        invoice = select_benchmarks(workspace_root() / "tasks", ("invoice-total",))[0]
         self.assertTrue(control_passed("nop", trial, invoice))
         self.assertFalse(control_passed("nop", trial, self.benchmark))
         trial["exception"] = {"exception_type": "RuntimeError"}

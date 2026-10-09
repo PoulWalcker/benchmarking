@@ -151,7 +151,7 @@ class DockerDirectoryExtensionTests(unittest.TestCase):
         run.mkdir(parents=True)
         baseline = sources()
         (run / "source-before.json").write_text(json.dumps(baseline, indent=2))
-        directory = ROOT / "benchmarks/99-beacon-calibration"
+        directory = ROOT / "tasks/99-beacon-calibration"
         self.assertFalse(directory.exists())
         shutil.copytree(FIXTURE, directory)
         self.addCleanup(shutil.rmtree, directory)
@@ -172,7 +172,7 @@ class DockerDirectoryExtensionTests(unittest.TestCase):
             self.assertEqual(result.returncode, expected_exit, (run / (name + ".log")).read_text())
 
         cli = [str(ROOT / ".venv/bin/sapi-lab")]
-        command([*cli, "benchmarks"], "discover")
+        command([*cli, "tasks"], "discover")
         rows = json.loads((run / "discover.log").read_text())
         self.assertIn("beacon-calibration", {row["id"] for row in rows})
         command([*cli, "package-tasks", str(run / "tasks"), "--scenario", "beacon-calibration"], "package")

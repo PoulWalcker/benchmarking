@@ -20,7 +20,7 @@ COPY src /app/lab/src/
 # Task instructions name docs/PROFILE.md; both paths hold the prompt contract.
 COPY generation/PROFILE.md /app/lab/generation/PROFILE.md
 COPY generation/PROFILE.md /app/lab/docs/PROFILE.md
-COPY benchmarks /app/lab/benchmarks/
+COPY tasks /app/lab/tasks/
 RUN mkdir -p /app/submission /app/scenario
 ENTRYPOINT []
 CMD ["sleep", "infinity"]

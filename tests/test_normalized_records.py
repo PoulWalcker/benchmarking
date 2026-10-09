@@ -27,7 +27,7 @@ class NormalizedRecordTests(unittest.TestCase):
         }
         (self.verifier.parent / "result.json").write_text(json.dumps(self.native))
         (self.verifier / "benchmark.json").write_text("{}")
-        self.benchmark = select_benchmarks(workspace_root() / "benchmarks", ("invoice-total",))[0]
+        self.benchmark = select_benchmarks(workspace_root() / "tasks", ("invoice-total",))[0]
 
     def test_normalized_only_verdict_reaches_actual_control_reader(self):
         verdict = {"execution": True, "acceptance": True, "quality": None}

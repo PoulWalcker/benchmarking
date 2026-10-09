@@ -23,12 +23,12 @@ class BenchmarkWorkerTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
         stage_tasks(
-            self.root / "tasks", root=ROOT, benchmarks=select_benchmarks(ROOT / "benchmarks", ("checkout-recovery",))
+            self.root / "tasks", root=ROOT, benchmarks=select_benchmarks(ROOT / "tasks", ("checkout-recovery",))
         )
         shutil.copytree(self.root / "tasks/checkout-recovery/tests", self.root / "tests")
         (self.root / "submission").mkdir()
         self.submission = self.root / "submission/config.yaml"
-        shutil.copyfile(ROOT / "benchmarks/10-checkout-recovery/config.yaml", self.submission)
+        shutil.copyfile(ROOT / "tasks/checkout-recovery/solution/config.yaml", self.submission)
         self.metadata = json.loads((self.root / "tests/benchmark.json").read_text())
         self.output = self.root / "logs/verifier"
 

@@ -27,7 +27,7 @@ class LabTests(unittest.TestCase):
         conditional["workflow"]["dependencies"] = conditional["workflow"]["dependencies"][:4]
         conditional["workflow"]["output"] = {"ref": "steps.select"}
         cls.configs = {
-            "invoice": profile.read(ROOT / "benchmarks/01-invoice-total/config.yaml"),
+            "invoice": profile.read(ROOT / "tasks/invoice-total/solution/config.yaml"),
             "conditional": conditional,
             "join": profile.read(support / "graphs/branch.yaml"),
             "repeated": profile.read(support / "graphs/repeated.yaml"),

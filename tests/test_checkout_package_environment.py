@@ -18,7 +18,7 @@ from sapi_config_lab.profile import Invalid
 from tests.support.checkout_controls import CHECKOUT_ORACLE_ACTIONS
 from tests.support.pinned import AVAILABLE, SOURCE
 
-DIRECTORY = workspace_root() / "benchmarks/10-checkout-recovery/environment"
+DIRECTORY = workspace_root() / "tasks/checkout-recovery/environment"
 
 
 def load(name):
@@ -241,7 +241,7 @@ class CheckoutNativeWorldTests(unittest.TestCase):
             raise
 
     def test_real_oracle_tool_flow_and_frozen_trial_evidence(self):
-        self.context["submission"].write_bytes((DIRECTORY.parent / "config.yaml").read_bytes())
+        self.context["submission"].write_bytes((DIRECTORY.parent / "solution/config.yaml").read_bytes())
         binding = HOOKS.prepare(self.context)
         self.assertEqual(binding.operation_url, self.context["options"]["world_url"] + "/tools")
         self.assertGreater(binding.deadline_at, 0)

@@ -23,4 +23,4 @@ memory_mb = 2048
 
 [metadata.sapi]
 verifier_dockerfile = "environment/verifier.Dockerfile"
-verifier_compose = "environment/docker-compose.yaml"
+verifier_compose = "environment/legacy-compose.yaml"

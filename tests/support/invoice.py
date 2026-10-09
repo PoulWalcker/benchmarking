@@ -6,7 +6,7 @@ from sapi_config_lab.benchmark import load_benchmark
 from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
 from sapi_config_lab.paths import workspace_root
 
-DIRECTORY = workspace_root() / "benchmarks/01-invoice-total"
+DIRECTORY = workspace_root() / "tasks/invoice-total"
 CATALOG = DIRECTORY / "bindings.yaml"
 OPERATION_SOURCE = (DIRECTORY / "operations.js").read_text()
 

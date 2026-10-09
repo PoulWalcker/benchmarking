@@ -17,7 +17,7 @@ from sapi_config_lab.paths import workspace_root
 def trusted_context():
     from sapi_config_lab.coordinate.compilation import CompilationContext
 
-    root = workspace_root() / "benchmarks/01-invoice-total"
+    root = workspace_root() / "tasks/invoice-total"
     return CompilationContext(root / "bindings.yaml", (root / "operations.js").read_text())
 
 
@@ -126,7 +126,7 @@ class UiTests(unittest.TestCase):
         adapter = FakeN8n()
         with tempfile.TemporaryDirectory() as temporary:
             state = Path(temporary)
-            source = workspace_root() / "benchmarks/01-invoice-total/config.yaml"
+            source = workspace_root() / "tasks/invoice-total/solution/config.yaml"
             with patch.object(adapter, "import_new", side_effect=ValueError("unknown import outcome")):
                 with self.assertRaisesRegex(ValueError, "unknown import"):
                     open_workflow(source, state, adapter=adapter, context=trusted_context())
@@ -248,7 +248,7 @@ class UiTests(unittest.TestCase):
                 prepare(source, output, host=HostConfig(), context=trusted_context())
 
     def test_hosted_scenarios_are_refused_before_compilation(self):
-        source = workspace_root() / "benchmarks/10-checkout-recovery/config.yaml"
+        source = workspace_root() / "tasks/checkout-recovery/solution/config.yaml"
         with tempfile.TemporaryDirectory() as directory:
             with patch("sapi_config_lab.coordinate.ui.CompilationContext.backend") as backend:
                 with self.assertRaisesRegex(ValueError, "needs remote tools inside a Harbor trial"):

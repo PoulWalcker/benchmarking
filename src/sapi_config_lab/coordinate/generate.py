@@ -113,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     try:
-        benchmarks = select_benchmarks(ROOT / "benchmarks", args.scenario)
+        benchmarks = select_benchmarks(ROOT / "tasks", args.scenario)
         scenarios = tuple(item.name for item in benchmarks)
         by_name = {item.name: item for item in benchmarks}
         series_ceilings = parse_ceilings(args.series_ceiling)

@@ -29,7 +29,7 @@ adapts tasks to external Harbor 0.21.0, which owns trial infrastructure.
 | Coordinate | `coordinate/` | orchestration; nothing imports it |
 | Verifier | `verification/` | generic independent evidence checks with explicit callbacks; imports only itself |
 | Integration | `harbor_integration/` | task translation and invocation; only it imports Harbor |
-| Benchmarks | `benchmarks/NN-<name>/` | `scenario.json` declares the complete public/trusted/reference closure, hooks and dependencies |
+| Tasks | `tasks/<name>/` | Own domain assets and native Harbor configuration; current experiment descriptors declare their public/trusted/reference closure |
 
 `tests/test_boundaries.py` enforces import direction; change it together with `docs/ARCHITECTURE.md` when a boundary intentionally moves.
 
