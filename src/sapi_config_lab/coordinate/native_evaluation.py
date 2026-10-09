@@ -4,6 +4,7 @@ from collections.abc import Callable
 import json
 from pathlib import Path
 
+from sapi_config_lab.coordinate import fixture_judge
 from sapi_config_lab.coordinate.ledger import Ledger, open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.native_record import SCHEMA
 from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
@@ -50,8 +51,12 @@ def validate_record(record: Path, task: Path, sources: dict) -> dict:
     return metadata
 
 
-def evaluate_record(task: Path, evaluator: Callable, request: dict) -> dict:
-    """Task-owned composition calls its evaluator with the original reservation rules."""
+def evaluate_record(task: Path, evaluator: Callable, request: dict, *, judge_factory: Callable | None = None) -> dict:
+    """Task-owned composition calls its evaluator with the original reservation rules.
+
+    An explicit `judge_factory` builds the Judge from the one-use reservation callback and the
+    stronger fixture receipt contract applies; without one the evaluator receives the callback.
+    """
     record, output = Path(request["record"]).resolve(), Path(request["output"]).resolve()
     sources = source_manifest()
     metadata = validate_record(record, task, sources)
@@ -81,6 +86,16 @@ def evaluate_record(task: Path, evaluator: Callable, request: dict) -> dict:
     consumed = False
     duplicate = False
     work_complete = False
+    receipts = output / "judge" if judge_factory is not None and options["dispatch"] else None
+
+    def settle(call: Callable, ledger: Path, index: int, event: dict) -> dict:
+        if receipts is None:
+            return call()
+        fixture_judge.stamp(receipts, ledger, index, event)
+        with fixture_judge.unknown_while_unsettled(receipts):
+            call()
+        # The receipt and its artifacts, not the call's return value, prove what was dispatched.
+        return fixture_judge.dispatch_outcome(receipts, ledger, index, event)
 
     def reserved(call: Callable) -> dict:
         nonlocal consumed, duplicate, work_complete
@@ -104,21 +119,39 @@ def evaluate_record(task: Path, evaluator: Callable, request: dict) -> dict:
                 or event["count"] != cost
             ):
                 raise ValueError("Native judge requires the exact pending host reservation")
-            result = call()
+            result = settle(call, Path(existing["ledger"]), index, event)
             work_complete = isinstance(result, dict) and result.get("status") == "complete"
             return result
         series = Path(request["series_dir"]) if request.get("series_dir") else None
         ledger = open_ledger(output, series, {"judge": cost}, False, parse_ceilings(request.get("series_ceiling")))
         with ledger.reserved("judge", f"{output.name}/judge", cost, output / "result.json", cost) as outcome:
-            result = call()
+            index = len(ledger.data["events"]) - 1
+            result = settle(call, ledger.path, index, ledger.data["events"][index])
             work_complete = isinstance(result, dict) and result.get("status") == "complete"
             outcome.passed = work_complete
             return result
 
-    if options["dispatch"]:
+    if options["dispatch"] and receipts is None:
         options["reserved_judge"] = reserved
     output.mkdir(parents=True, exist_ok=False)
-    returned = evaluator(record / "evidence", options)
+    if receipts is None:
+        returned = evaluator(record / "evidence", options)
+    else:
+        assert judge_factory is not None
+        judge = judge_factory(
+            directory=receipts,
+            native_identity=(record / "native-task.json").read_bytes(),
+            options=dict(options),
+            reserved=reserved,
+        )
+        if fixture_judge.receipt_state(receipts) != "not_dispatched":
+            raise ValueError("Judge factory must initialize an undispatched fresh receipt")
+        with fixture_judge.unknown_while_unsettled(receipts):
+            returned = evaluator(record / "evidence", options, judge=judge)
+            # Rubric catches may have hidden an unknown dispatch; keep acceptance, never its quality.
+            if fixture_judge.receipt_state(receipts) in fixture_judge.UNSETTLED and isinstance(returned, dict):
+                write_json(output / "result.json", validate_result({**returned, "quality": None}))
+        fixture_judge.skip(receipts, "The evaluator completed no Judge dispatch")
     try:
         result = validate_result(returned)
     except ValueError:
@@ -151,4 +184,7 @@ def reevaluate_native(record: Path, output: Path, judgement: Path | None, **opti
         "judgement": str(judgement.resolve()) if judgement else None,
         **options,
     }
-    return validate_result(invoke(task, request, sources))
+    # A task process lost after its Judge start receipt is an unknown spend, not a known failure.
+    with fixture_judge.unknown_while_unsettled(output / "judge"):
+        result = invoke(task, request, sources)
+    return validate_result(result)

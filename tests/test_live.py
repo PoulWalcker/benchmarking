@@ -310,6 +310,35 @@ class BridgeBindingTests(unittest.TestCase):
 
 
 class NativeLiveReservationTests(unittest.TestCase):
+    def fixture_dispatch(self, root: Path, derived: Path, fault: str, reservation: dict) -> None:
+        """What a fixture task's child leaves behind: a real fresh receipt, then the fault's substitution."""
+        import shutil
+
+        from sapi_config_lab.coordinate.fixture_judge import FixtureJudge
+        from sapi_config_lab.coordinate.native_evaluation import evaluate_record
+        from tests.test_fixture_judge import (
+            CARD,
+            MODEL,
+            REQUEST,
+            answer,
+            fresh_factory,
+            judge_world,
+            rubric_evaluator,
+            valid_wrapper,
+        )
+
+        record, inspection = judge_world(root / "world")
+        request = {"record": str(record), "output": str(derived), "dispatch": True}
+        if fault != "receipt-standalone":
+            request["reservation"] = reservation
+        task = workspace_root() / "tasks/checkout-recovery"
+        evaluate_record(task, rubric_evaluator, request, judge_factory=fresh_factory(inspection, valid_wrapper))
+        if fault == "receipt-mocked":
+            mocked = root / "world/mocked"
+            FixtureJudge.mock(mocked, (record / "native-task.json").read_bytes(), CARD, MODEL, answer).judge(REQUEST)
+            shutil.rmtree(derived / "judge")
+            shutil.copytree(mocked, derived / "judge")
+
     def test_runtime_closes_before_judge_and_invalid_trials_never_dispatch_judge(self):
         from unittest.mock import Mock
 
@@ -318,7 +347,9 @@ class NativeLiveReservationTests(unittest.TestCase):
 
         scenario = workspace_root() / "tasks/checkout-recovery"
         submission_hash = sha256(scenario / "solution/config.yaml")
-        for fault in (None, "duplicate", "submission", "runtime-timeout", "judge-incomplete", "judge-postcondition"):
+        faults = (None, "duplicate", "submission", "runtime-timeout", "judge-incomplete", "judge-postcondition")
+        receipts = ("receipt-fresh", "receipt-standalone", "receipt-mocked")
+        for fault in faults + receipts:
             with self.subTest(fault=fault), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 output = root / "run"
@@ -376,6 +407,7 @@ class NativeLiveReservationTests(unittest.TestCase):
                     live_trial=live_trial,
                     result=result,
                     fault=fault,
+                    root=root,
                     **options,
                 ):
                     events = read_json(output / "ledger.json")["events"]
@@ -383,7 +415,9 @@ class NativeLiveReservationTests(unittest.TestCase):
                         [(event["phase"], event["status"]) for event in events],
                         [("runtime", "passed"), ("judge", "unknown")],
                     )
-                    (derived / "evaluation").mkdir(parents=True)
+                    if fault in receipts:
+                        self.fixture_dispatch(root, derived, fault, options["reservation"])
+                    (derived / "evaluation").mkdir(parents=True, exist_ok=True)
                     judged = {**result, "quality": None} if fault == "judge-incomplete" else result
                     write_json(derived / "evaluation/report.json", {**live_trial["acceptance"], "result": judged})
                     if fault == "judge-postcondition":
@@ -427,7 +461,7 @@ class NativeLiveReservationTests(unittest.TestCase):
                         "--judge-model",
                         "stub-judge",
                     ]
-                    if fault is None:
+                    if fault in (None, "receipt-fresh"):
                         self.assertEqual(main(arguments), 0)
                         dispatch.assert_called_once()
                         self.assertTrue(
@@ -449,7 +483,7 @@ class NativeLiveReservationTests(unittest.TestCase):
                         self.assertEqual(read_json(output / "ledger.json")["events"][-1]["status"], "failed")
                         self.assertEqual(live_trial["result"]["acceptance"], False)
                         self.assertIsNone(live_trial["result"]["quality"])
-                    elif fault == "judge-postcondition":
+                    elif fault in ("judge-postcondition", "receipt-standalone", "receipt-mocked"):
                         with self.assertRaises(SystemExit):
                             main(arguments)
                         self.assertEqual(read_json(output / "ledger.json")["events"][-1]["status"], "failed")

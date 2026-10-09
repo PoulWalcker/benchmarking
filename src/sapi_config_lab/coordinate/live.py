@@ -468,6 +468,7 @@ def main(argv: list[str] | None = None) -> int:
                     run.check(f"after-{scenario}-{name}")
                 runtime_outcome.passed = True
             if judge_calls.get(scenario):
+                from sapi_config_lab.coordinate import fixture_judge
                 from sapi_config_lab.coordinate.native_evaluation import reevaluate_native
 
                 with ledger.reserved(
@@ -507,6 +508,11 @@ def main(argv: list[str] | None = None) -> int:
                         (result["quality"] or {}).get("status") == "complete",
                         "Judge dispatch incomplete: quality is not complete",
                     )
+                    if fixture_judge.receipt_state(derived / "judge") is not None:
+                        # A fixture receipt must prove one fresh dispatch for this host event, not another's.
+                        fixture_judge.dispatch_outcome(
+                            derived / "judge", ledger.path, reservation["index"], reservation["event"]
+                        )
                     check_trials(
                         trials, submissions, benchmarks=benchmarks, mode="live", expected_cases={scenario: {name}}
                     )

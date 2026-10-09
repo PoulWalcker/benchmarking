@@ -415,3 +415,117 @@ class NativeEvaluationTests(unittest.TestCase):
                 invoke_current(self.root / "retry-refused")
         self.assertEqual(calls.read_text(), "reserved\n")
         self.assertEqual(json.loads(ledger.read_text()), saved)
+
+
+FIXTURE_CHILD = """import json, os, signal, subprocess, sys, time
+from pathlib import Path
+sys.path.insert(0, os.environ["SAPI_TEST_ROOT"])
+from sapi_config_lab.coordinate.fixture_judge import FixtureJudge
+from sapi_config_lab.coordinate.native_evaluation import evaluate_record
+from tests.test_fixture_judge import CARD, MODEL, UPSTREAM, answer, asked, envelope, rubric_evaluator
+from tests.test_native_evaluation import TASK
+
+mode = os.environ["SAPI_TEST_JUDGE"]
+
+
+def transport(upstream, prompt, timeout, maximum):
+    if mode == "child-timeout":
+        raise TimeoutError("timed out")
+    if mode == "process-loss":
+        os.kill(os.getpid(), signal.SIGKILL)
+    if mode == "parent-timeout":
+        time.sleep(60)
+    return envelope(answer(asked(prompt)).decode())
+
+
+def factory(*, directory, native_identity, reserved, **_context):
+    inspection = Path(os.environ["SAPI_TEST_INSPECTION"])
+    return FixtureJudge.fresh(
+        directory, native_identity, CARD, MODEL, reserved=reserved, transport=transport, upstream=UPSTREAM,
+        inspection=inspection,
+    )
+
+
+try:
+    result = evaluate_record(TASK, rubric_evaluator, json.loads(sys.stdin.read()), judge_factory=factory)
+except subprocess.TimeoutExpired:
+    raise SystemExit(124) from None
+print(json.dumps(result))
+"""
+
+
+class FixtureJudgeProcessTests(unittest.TestCase):
+    """The task-owned composition runs in a child; its unknown outcomes must reach the host ledger."""
+
+    def setUp(self):
+        from tests.test_fixture_judge import judge_world
+
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.record, self.inspection = judge_world(self.root)
+        self.child = self.root / "composition.py"
+        self.child.write_text(FIXTURE_CHILD)
+
+    def reevaluate(self, mode, ledger, output):
+        real_run = subprocess.run
+
+        def composition(_command, **options):
+            options["env"] = {
+                **os.environ,
+                "SAPI_TEST_ROOT": str(ROOT),
+                "SAPI_TEST_JUDGE": mode,
+                "SAPI_TEST_INSPECTION": str(self.inspection),
+            }
+            if mode == "parent-timeout":
+                options["timeout"] = 8
+            return real_run([sys.executable, str(self.child)], **options)
+
+        with (
+            patch("sapi_config_lab.coordinate.native_tasks.subprocess.run", side_effect=composition),
+            ledger.reserved("judge", "host/" + mode, 1, self.root / "report.json", 4) as outcome,
+        ):
+            index = len(ledger.data["events"]) - 1
+            proof = {"ledger": str(ledger.path), "index": index, "event": ledger.data["events"][index]}
+            result = reevaluate_native(self.record, output, None, dispatch=True, reservation=proof)
+            outcome.passed = True
+        return result
+
+    def snapshot(self):
+        return {str(p.relative_to(self.record)): sha256(p) for p in self.record.rglob("*") if p.is_file()}
+
+    def test_child_timeout_parent_timeout_and_process_loss_stay_unknown_for_the_host(self):
+        before = self.snapshot()
+        for mode, receipt_states in (
+            ("child-timeout", {"unknown"}),
+            ("parent-timeout", {"dispatch_started"}),
+            ("process-loss", {"dispatch_started"}),
+        ):
+            with self.subTest(mode=mode):
+                ledger = Ledger.open(self.root / (mode + ".json"), ceilings={"judge": 4}, stop_after_failure=False)
+                output = self.root / mode
+                with self.assertRaises(subprocess.TimeoutExpired):
+                    self.reevaluate(mode, ledger, output)
+                self.assertEqual(json.loads(ledger.path.read_text())["events"][0]["status"], "unknown")
+                self.assertIn(json.loads((output / "judge/receipt.json").read_text())["state"], receipt_states)
+                with self.assertRaisesRegex(ValueError, "unknown outcome"):
+                    ledger.reserve("judge", "host/next", 1, self.root / "report.json", 4)
+                if mode == "child-timeout":
+                    result = json.loads((output / "result.json").read_text())
+                    self.assertEqual((result["acceptance"], result["quality"]), (True, None))
+                    self.assertTrue((output / "evaluation/report.json").is_file())
+        self.assertEqual(before, self.snapshot())
+
+    def test_host_reserved_fresh_dispatch_completes_once_and_leaves_evidence_unchanged(self):
+        before = self.snapshot()
+        ledger = Ledger.open(self.root / "host.json", ceilings={"judge": 4}, stop_after_failure=False)
+        output = self.record / "paid-evaluation"
+        result = self.reevaluate("complete", ledger, output)
+        self.assertEqual(result["quality"]["status"], "complete")
+        events = json.loads(ledger.path.read_text())["events"]
+        self.assertEqual([(e["name"], e["status"]) for e in events], [("host/complete", "passed")])
+        receipt = json.loads((output / "judge/receipt.json").read_text())
+        self.assertEqual(
+            (receipt["state"], receipt["new_invocations"], receipt["reservation"]["index"]), ("completed", 1, 0)
+        )
+        self.assertEqual(before, {k: v for k, v in self.snapshot().items() if not k.startswith("paid-evaluation/")})
