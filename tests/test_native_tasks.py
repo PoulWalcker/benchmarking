@@ -283,7 +283,7 @@ class NativeHarborTests(unittest.TestCase):
         self.assertFalse((trial / "verifier/evidence/runtime-dispatch.jsonl").exists())
 
     def test_candidate_isolation_and_hostile_transfer(self):
-        for task in ("invoice-total", "checkout-recovery"):
+        for task in ("invoice-total", "checkout-recovery", "research-report"):
             with self.subTest(task=task):
                 trial, _, result = self.run_native(
                     task,
@@ -293,11 +293,19 @@ class NativeHarborTests(unittest.TestCase):
                 )
                 self.assertTrue(result["acceptance"])
                 self.assertTrue(json.loads((trial / "agent/isolation.json").read_text())["private_paths_absent"])
-        for attack in ("symlink", "fifo", "extra", "artifact"):
-            with self.subTest(attack=attack):
-                args = ["--ak", "attack=" + attack]
-                if attack in ("extra", "artifact"):
-                    args += ["--ak", "candidate=tasks/invoice-total/solution/config.yaml"]
-                trial, _, result = self.run_native("invoice-total", "tests.native.control_agent:ControlAgent", *args)
-                self.assertEqual(result["acceptance"], attack == "artifact")
-                self.assertFalse((trial / "artifacts/discarded-convention/reward.txt").exists())
+        # Research's private rubric, calibration expectations and evaluator never enter its candidate image.
+        command = "docker run --rm --user 0 --entrypoint find sapi-native-research-report-public:phase1 / -path /proc"
+        private = (
+            " -prune -o ( -name calibration* -o -name rubric.json -o -name evaluator.py -o -name solve.sh ) -print"
+        )
+        leaked = subprocess.check_output((command + private).split(), text=True)
+        self.assertEqual(leaked.split(), [])
+        for task in ("invoice-total", "research-report"):
+            for attack in ("symlink", "fifo", "extra", "artifact"):
+                with self.subTest(task=task, attack=attack):
+                    args = ["--ak", "attack=" + attack]
+                    if attack in ("extra", "artifact"):
+                        args += ["--ak", "candidate=tasks/" + task + "/solution/config.yaml"]
+                    trial, _, result = self.run_native(task, "tests.native.control_agent:ControlAgent", *args)
+                    self.assertEqual(result["acceptance"], attack == "artifact")
+                    self.assertFalse((trial / "artifacts/discarded-convention/reward.txt").exists())

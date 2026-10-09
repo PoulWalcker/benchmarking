@@ -133,7 +133,8 @@ Research calibration is a separate synthetic action of its composition root.
 source, with expectations that never enter a Judge request. `calibrate` re-verifies one
 source-matched native record, replaces only the final report the Judge reads, binds base
 run digest, variant bytes and card into a new run digest, and reports native execution
-and acceptance as null. Mocked replies compare as `simulated`; label agreement from a
+and acceptance as null. Mocked replies compare as `simulated` and saved wrapper replies as
+`replayed`; only a fresh dispatch in that call is `measured`. Label agreement from a
 real Judge still needs human review of its reasons. Native evaluation refuses calibration.
 
 Checkout controls use an explicitly labeled saved calibration adapter rebound to

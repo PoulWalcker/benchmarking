@@ -206,8 +206,10 @@ base record must verify as one run of the frozen Orion source. Without `"judgeme
 exact variant bytes. A dispatch also takes `"judge": {"upstream", "inspection", "files"}`
 and reserves one Judge call in its own or a `"series_dir"` ledger (fixed by
 `"series_ceiling": ["judge=6"]`) that stops after any failed or unknown attempt.
-`calibration.json` in the output reports `simulated` for mocked replies and `measured`
-for wrapper replies; native execution and acceptance stay null.
+`calibration.json` in the output reports `simulated` for mocked replies, `measured` only
+for this call's own fresh dispatch and `replayed` for a saved wrapper reply. Its `judge`
+field names the origin, new invocation count and the fresh receipt and ledger event or the
+replay receipt; native execution and acceptance stay null.
 
 ## Reading a run
 

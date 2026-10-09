@@ -99,12 +99,20 @@ def calibrate(request: dict) -> dict:
     judge_request, identity = calibration.request(record / "evidence", options, name)
     native_identity = (record / "native-task.json").read_bytes()
     reply = None
+    # Which call answered this comparison: a replay or preview never counts as a fresh measurement.
+    judged: dict = {"origin": None, "new_invocations": 0}
     if saved is not None:
         assert model is not None
         replay = fixture_judge.FixtureJudge.saved(
             saved, native_identity, card(), model, replay_receipt=output / "judge-replay-receipt.json"
         )
         reply = replay.judge(judge_request)
+        judged = {
+            "origin": "saved",
+            "new_invocations": 0,
+            "replay_receipt_sha256": sha256(output / "judge-replay-receipt.json"),
+            "original_receipt_sha256": sha256(saved / "receipt.json"),
+        }
     elif dispatch:
         assert endpoint is not None
         receipts = output / "judge"
@@ -126,6 +134,14 @@ def calibrate(request: dict) -> dict:
                     inspection_sha256=sha256(endpoint["inspection"]),
                 )
                 outcome.passed = True
+                judged.update(
+                    origin="fresh",
+                    new_invocations=1,
+                    ledger=str(ledger.path),
+                    event_index=index,
+                    receipt_sha256=proof["receipt_sha256"],
+                    wrapper_inspection_sha256=sha256(endpoint["inspection"]),
+                )
                 return proof
 
         judge = fixture_judge.FixtureJudge.fresh(
@@ -141,7 +157,8 @@ def calibrate(request: dict) -> dict:
         # The rewritten report never ran; its native execution and acceptance are unmeasured, not inherited.
         "native": {"execution": None, "acceptance": None, "base_record": str(record)},
         "identity": identity,
-        "comparison": calibration.compare(name, reply),
+        "judge": judged,
+        "comparison": calibration.compare(name, reply, fresh=judged["origin"] == "fresh"),
     }
     write_json(output / "calibration.json", result)
     return result

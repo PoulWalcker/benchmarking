@@ -93,8 +93,11 @@ def request(evidence: Path, options: dict, name: str) -> tuple[JudgeRequest, dic
     return synthetic, {**identity, "run_digest": run_digest}
 
 
-def compare(name: str, reply: JudgeReply | None) -> dict[str, Any]:
-    """Expected against observed labels; a mocked reply is labeled simulated and never measures calibration."""
+def compare(name: str, reply: JudgeReply | None, *, fresh: bool = False) -> dict[str, Any]:
+    """Expected against observed labels; only this call's own fresh dispatch is a measurement.
+
+    A mocked reply is simulated, and a replayed wrapper reply reproduces an earlier measurement.
+    """
     expected = catalog()["expected"][name]
     result: dict[str, Any] = {
         "variant": name,
@@ -112,10 +115,10 @@ def compare(name: str, reply: JudgeReply | None) -> dict[str, Any]:
         for criterion in ("clarity", "usefulness")
         if (allowed := expected[criterion]) is not None
     }
-    measured = reply.attribution.get("mode") == "wrapper"
+    wrapper = reply.attribution.get("mode") == "wrapper"
     return {
         **result,
-        "status": "measured" if measured else "simulated",
+        "status": ("measured" if fresh else "replayed") if wrapper else "simulated",
         "observed": {"answers": answers, "reasons": dict(reply.reasons), "model": reply.attribution.get("model")},
         "checks": checks,
         "labels_agree": all(checks.values()),

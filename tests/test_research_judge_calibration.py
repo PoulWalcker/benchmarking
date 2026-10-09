@@ -342,6 +342,41 @@ class FreshCalibrationTests(CalibrationHarness):
         self.assertEqual(len(self.wrapper.prompts), 6)
         self.assertEqual(snapshot(self.record), self.native)
 
+    def test_a_fresh_result_names_its_receipt_and_a_replay_of_it_is_never_measured_again(self):
+        self.wrapper.answers = {"clarity": "yes", "usefulness": "yes"}
+        fresh = self.series("fresh", "a-faithful")
+        receipt = self.root / "fresh/judge/receipt.json"
+        self.assertEqual(
+            fresh["judge"],
+            {
+                "origin": "fresh",
+                "new_invocations": 1,
+                "ledger": str((self.root / "series/ledger.json").resolve()),
+                "event_index": 0,
+                "receipt_sha256": hashlib.sha256(receipt.read_bytes()).hexdigest(),
+                "wrapper_inspection_sha256": json.loads(receipt.read_text())["wrapper_inspection_digest"],
+            },
+        )
+        # The same real answer replayed offline is a reproduction with zero calls, not a second measurement.
+        replayed = self.calibrate("a-faithful", "replayed", judgement=str(self.root / "fresh/judge"))
+        self.assertEqual(replayed["comparison"]["status"], "replayed")
+        self.assertEqual(replayed["comparison"]["labels_agree"], True)
+        self.assertEqual(
+            replayed["judge"],
+            {
+                "origin": "saved",
+                "new_invocations": 0,
+                "replay_receipt_sha256": hashlib.sha256(
+                    (self.root / "replayed/judge-replay-receipt.json").read_bytes()
+                ).hexdigest(),
+                "original_receipt_sha256": hashlib.sha256(receipt.read_bytes()).hexdigest(),
+            },
+        )
+        self.assertEqual(len(self.wrapper.prompts), 1)
+        self.assertEqual(self.events(), [("fresh/judge", 1, "passed")])
+        preview = self.calibrate("a-faithful", "preview")
+        self.assertEqual(preview["judge"], {"origin": None, "new_invocations": 0})
+
     def test_a_failed_or_unknown_call_stops_the_series_without_another_dispatch(self):
         # The host maps the composition's exit 124 to an unknown outcome, never to a known failure.
         for path, status, error in (
