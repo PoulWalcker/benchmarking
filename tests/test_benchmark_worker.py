@@ -32,7 +32,7 @@ class BenchmarkWorkerTests(unittest.TestCase):
         self.metadata = json.loads((self.root / "tests/benchmark.json").read_text())
         self.output = self.root / "logs/verifier"
 
-    def invoke(self, *, missing=False, malformed=False, admission=False, reward="default"):
+    def invoke(self, *, missing=False, malformed=False, admission=False, reward="default", verdict="default"):
         calls = []
         if missing:
             self.submission.unlink()
@@ -63,7 +63,13 @@ class BenchmarkWorkerTests(unittest.TestCase):
 
         def evaluate(evidence, options):
             calls.append("evaluate")
-            result = {"execution": True, "acceptance": True, "quality": {"normalized_reward": 0.2}}
+            if verdict != "default":
+                return verdict
+            result = {
+                "execution": True,
+                "acceptance": True,
+                "quality": {"status": "complete", "score_0_10": 2.0, "normalized_reward": 0.2},
+            }
             if reward != "default":
                 result["harbor_reward"] = reward
             return result
@@ -111,3 +117,16 @@ class BenchmarkWorkerTests(unittest.TestCase):
         (self.output / "reward.txt").unlink()
         self.invoke(reward=None)
         self.assertFalse((self.output / "reward.txt").exists())
+
+    def test_malformed_verdict_never_writes_success_or_reward(self):
+        for result in (
+            None,
+            {},
+            {"execution": 1, "acceptance": True, "quality": None},
+            {"execution": True, "acceptance": True, "quality": {}},
+            {"execution": True, "acceptance": True, "quality": None, "harbor_reward": True},
+        ):
+            with self.subTest(result=result), self.assertRaises(ValueError):
+                self.invoke(verdict=result)
+            self.assertFalse((self.output / "result.json").exists())
+            self.assertFalse((self.output / "reward.txt").exists())

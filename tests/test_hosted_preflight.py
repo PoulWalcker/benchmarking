@@ -15,12 +15,17 @@ from unittest.mock import Mock, patch
 import yaml
 
 from sapi_config_lab.benchmark import load_benchmark, python_module
+from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
 from sapi_config_lab.compile.n8n import compile_n8n
 from sapi_config_lab.coordinate import benchmark_worker
+from sapi_config_lab.coordinate.backend import N8nBackend
 from sapi_config_lab.coordinate.live import check_trials
+from sapi_config_lab.evaluate.records import load_trials
+from sapi_config_lab.evidence import sha256
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import Unsupported, read, read_bindings
 from tests.support.invoice import OPERATION_SOURCE
+from tests.support.native import SimulatedN8n
 
 
 def checkout():
@@ -138,7 +143,9 @@ class PreflightExecutionTests(unittest.TestCase):
                 "/submission/config.yaml": submission,
             }
             with (
-                patch.object(benchmark_worker, "Path", side_effect=lambda path: paths.get(str(path), Path(path))),
+                patch.object(
+                    benchmark_worker, "Path", side_effect=lambda path, paths=paths: paths.get(str(path), Path(path))
+                ),
                 patch.object(benchmark_worker.importlib, "import_module", return_value=hooks),
                 patch.object(benchmark_worker, "observe") as observe,
                 patch.dict(os.environ, {"SAPI_LLM_MODE": "stub", "SAPI_EXPECTED_SUBMISSION_SHA256": ""}),
@@ -149,6 +156,118 @@ class PreflightExecutionTests(unittest.TestCase):
             observe.assert_not_called()
             self.assertEqual((root / "verifier/reward.txt").read_text(), "1\n")
             self.assertTrue(json.loads((root / "verifier/evaluation/report.json").read_text())["passed"])
+
+    def test_mixed_preflight_replays_fixture_and_only_admits_world(self):
+        root = workspace_root() / "benchmarks"
+        invoice = load_benchmark(root, root / "01-invoice-total")
+        world = checkout()
+        benchmarks = {item.name: item for item in (invoice, world)}
+        for incorrect in (False, True):
+            with self.subTest(incorrect=incorrect), tempfile.TemporaryDirectory() as directory:
+                job = Path(directory) / "jobs/preflight"
+                trials, selected = [], {}
+                for benchmark in (invoice, world):
+                    trial = job / benchmark.name
+                    trial.mkdir(parents=True)
+                    submission = trial / "config.yaml"
+                    config = read(benchmark.reference.source)
+                    if benchmark is invoice and incorrect:
+                        config["workflow"]["output"] = {
+                            "literal": {"total_minor": 999, "invoice_count": 999, "currency": "USD"}
+                        }
+                    submission.write_text(yaml.safe_dump(config))
+                    options = {"mode": "stub", "deadline_seconds": config["execution"]["deadline_seconds"]}
+                    self.assertTrue(
+                        benchmark_worker.admit(metadata(benchmark), benchmark.directory, submission, options)["passed"]
+                    )
+                    hooks = load_entrypoints(benchmark, freeze_identity(benchmark, options))
+                    module = SimpleNamespace(**{role: getattr(hooks, role) for role in benchmark.entrypoints})
+                    if benchmark is world:
+                        module = SimpleNamespace(
+                            **{
+                                role: Mock(side_effect=AssertionError("world started"))
+                                for role in benchmark.entrypoints
+                            }
+                        )
+                    declaration = {
+                        **metadata(benchmark),
+                        "identity": {},
+                        "core_files": {},
+                        "payload_files": {},
+                        "options": options,
+                        "entrypoints": {role: {"module": "selected", "symbol": role} for role in benchmark.entrypoints},
+                    }
+                    manifest = trial / "benchmark.json"
+                    manifest.write_text(json.dumps(declaration))
+                    paths = {
+                        "/tests/benchmark.json": manifest,
+                        "/tests/payload": benchmark.directory,
+                        "/logs/verifier": trial / "verifier",
+                        "/submission/config.yaml": submission,
+                    }
+                    engine = SimulatedN8n((benchmark.directory / benchmark.operations).read_text())
+                    with (
+                        patch.object(
+                            benchmark_worker,
+                            "Path",
+                            side_effect=lambda path, paths=paths: paths.get(str(path), Path(path)),
+                        ),
+                        patch.object(benchmark_worker.importlib, "import_module", return_value=module),
+                        patch.object(N8nBackend, "execute", side_effect=engine.execute) as execute,
+                        patch.dict(
+                            os.environ,
+                            {
+                                "SAPI_HOSTED_ADMISSION": "1",
+                                "SAPI_LLM_MODE": "stub",
+                                "SAPI_EXPECTED_SUBMISSION_SHA256": "",
+                            },
+                        ),
+                    ):
+                        self.assertEqual(benchmark_worker.main(), 0)
+                    if benchmark is invoice:
+                        self.assertGreater(execute.call_count, 0, "Fixture preflight skipped independent replay")
+                        verdict = json.loads((trial / "verifier/result.json").read_text())
+                        self.assertIs(verdict["execution"], True)
+                        self.assertIs(verdict["acceptance"], not incorrect)
+                        # The gate must not depend on the benchmark's legacy report format.
+                        (trial / "verifier/evaluation/report.json").unlink()
+                    else:
+                        execute.assert_not_called()
+                        verdict = json.loads((trial / "verifier/result.json").read_text())
+                        self.assertEqual(verdict, {"execution": None, "acceptance": None, "quality": None})
+                    reward = float((trial / "verifier/reward.txt").read_text())
+                    (trial / "result.json").write_text(
+                        json.dumps(
+                            {
+                                "task_name": benchmark.name,
+                                "verifier_result": {"rewards": {"reward": reward}},
+                                "exception_info": None,
+                            }
+                        )
+                    )
+                    selected[benchmark.name] = {"sha256": sha256(submission)}
+                trials = load_trials(job)
+                if incorrect:
+                    with self.assertRaises(ValueError):
+                        check_trials(trials, selected, benchmarks=benchmarks, mode="stub", admission=True)
+                else:
+                    check_trials(trials, selected, benchmarks=benchmarks, mode="stub", admission=True)
+
+    def test_fixture_admission_report_cannot_pass_preflight(self):
+        root = workspace_root() / "benchmarks"
+        invoice = load_benchmark(root, root / "01-invoice-total")
+        report = benchmark_worker.admit(
+            metadata(invoice), invoice.directory, invoice.reference.source, {"deadline_seconds": 30}
+        )
+        trial = {"task_name": invoice.name, "acceptance": report, "exception": None, "rewards": {"reward": 1.0}}
+        with self.assertRaises(ValueError):
+            check_trials(
+                [trial],
+                {invoice.name: {"sha256": report["submission_sha256"]}},
+                benchmarks={invoice.name: invoice},
+                mode="stub",
+                admission=True,
+            )
 
     def test_local_capability_discovery_matches_the_executable_table(self):
         process = subprocess.run(

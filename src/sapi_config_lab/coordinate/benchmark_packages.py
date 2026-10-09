@@ -23,6 +23,8 @@ CORE_FILES = (
     "compile/n8n.py",
     "compile/refinement.py",
     "compile/runtime-fragment.js",
+    "evaluate/__init__.py",
+    "evaluate/records.py",
     "execute/__init__.py",
     "execute/n8n.py",
     "coordinate/__init__.py",

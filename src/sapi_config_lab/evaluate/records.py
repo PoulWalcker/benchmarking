@@ -19,6 +19,9 @@ def validate_result(result: Any) -> dict:
     for key in ("execution", "acceptance"):
         if result[key] is not None and type(result[key]) is not bool:
             raise ValueError(f"Evaluator result {key} must be boolean or null")
+    reward = result.get("harbor_reward")
+    if reward is not None and (type(reward) not in (int, float) or not math.isfinite(reward) or not 0 <= reward <= 1):
+        raise ValueError("Evaluator harbor_reward must be finite in [0, 1] or null")
     value = result["quality"]
     if value is None:
         return result
@@ -57,10 +60,28 @@ def verifier_result(report: dict | None, rubric: dict | None) -> dict:
 
 def trial_result(trial: dict, *, root: Path | None = None) -> dict:
     acceptance = trial.get("acceptance") or {}
+    path = None
+    if "verdict_path" in trial:
+        path = recorded_path(trial["verdict_path"], root)
+    elif "result_path" in trial:
+        record = (
+            recorded_path(trial["evaluation_path"], root).parent.parent
+            if trial.get("evaluation_path")
+            else recorded_path(trial["result_path"], root).parent / "verifier"
+        )
+        path = record / "result.json"
+    if path is not None:
+        if path.exists():
+            result = validate_result(json.loads(path.read_text()))
+            if acceptance.get("schema") == ADMISSION_REPORT and any(result[key] is not None for key in NOT_EVALUATED):
+                raise ValueError("Admission cannot carry evaluated verdict facts")
+            return result
+        if "verdict_path" in trial or (path.parent / "benchmark.json").exists():
+            return dict(NOT_EVALUATED)
     if acceptance.get("schema") == HOSTED_REPORT:
         return acceptance["result"]
     if acceptance.get("schema") == ADMISSION_REPORT:
-        return {**NOT_EVALUATED, "acceptance": acceptance.get("passed")}
+        return dict(NOT_EVALUATED)
     rubric = recorded_path(trial["result_path"], root).parent / "verifier/evaluation/evaluation.json"
     return verifier_result(acceptance, json.loads(rubric.read_text()) if rubric.exists() else None)
 
@@ -70,6 +91,10 @@ def trial_accepted(trial: dict) -> bool:
     acceptance = trial.get("acceptance") or {}
     if trial["exception"]:
         return False
+    if acceptance.get("schema") == ADMISSION_REPORT:
+        return False
+    if "verdict_path" in trial:
+        return validate_result(trial["result"])["acceptance"] is True
     if acceptance.get("schema") == HOSTED_REPORT:
         return acceptance["result"]["acceptance"] is True
     return trial["rewards"] == {"reward": 1.0} and acceptance.get("passed") is True
@@ -111,6 +136,10 @@ def load_trials(job: Path, hosted: dict[str, Path] | None = None) -> list[dict]:
             "evaluation_path": str(report_path),
             "acceptance": json.loads(report_path.read_text()) if report_path.exists() else None,
         }
+        if (record / "result.json").exists() or (record / "benchmark.json").exists():
+            row["verdict_path"] = str(record / "result.json")
+        if (record / "benchmark.json").exists():
+            row["benchmark"] = json.loads((record / "benchmark.json").read_text())
         trials.append(
             {
                 **row,
@@ -158,7 +187,11 @@ def read_report(path: Path, *, root: Path | None = None) -> dict:
                 trials.append(
                     {
                         **value,
-                        "result": value.get("result") or trial_result(value, root=root),
+                        "result": (
+                            trial_result(value, root=root)
+                            if "verdict_path" in value or acceptance.get("schema") == ADMISSION_REPORT
+                            else value.get("result") or trial_result(value, root=root)
+                        ),
                         "native_execution": acceptance.get("native_execution"),
                         "terminal_completion": acceptance.get("terminal_completion"),
                     }

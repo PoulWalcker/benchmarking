@@ -15,14 +15,14 @@ from typing import Any
 
 from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
 from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
-from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, trial_accepted
+from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, trial_accepted, validate_result
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.live_evidence import collect_native, reconcile_dispatches
 from sapi_config_lab.coordinate.packages import runtime_grant_seconds, selected_cases
 from sapi_config_lab.coordinate.replay import load_selection, read_json, require
 from sapi_config_lab.coordinate.runs import Run, progress, run_experiment
 from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
-from sapi_config_lab.evidence import sha256
+from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.agency import strict_json
 from sapi_config_lab.execute.host import LAB_IMAGE, HostConfig
 from sapi_config_lab.paths import workspace_root
@@ -90,25 +90,29 @@ def check_trials(
     for trial in trials:
         acceptance = trial["acceptance"] or {}
         scenario = trial["task_name"]
+        identity = trial_identity(trial)
         require(
-            acceptance.get("mode") == mode and acceptance.get("scenario") == scenario, "Verifier scenario/mode mismatch"
+            identity.get("mode") == mode and identity.get("scenario") == scenario, "Verifier scenario/mode mismatch"
         )
-        if acceptance.get("schema") in {ADMISSION_REPORT, "sapi-lab-upstream-acceptance/v1"}:
-            if admission:
-                require(
-                    mode == "stub"
-                    and acceptance.get("schema") == ADMISSION_REPORT
-                    and acceptance.get("passed") is True
-                    and not trial["exception"]
-                    and trial["rewards"] == {"reward": 1.0}
-                    and acceptance.get("submission_sha256") == submissions[scenario]["sha256"],
-                    "Hosted admission failed or the worker saw another submission",
-                )
-                continue
-            require(acceptance.get("schema") != ADMISSION_REPORT, "Admission is not a live evaluation")
-            # Hosted verdicts are measured, not gated: an evaluated trial, scored when a reference reward is declared.
+        world = "prepare" in benchmarks[scenario].entrypoints
+        if admission and world:
             require(
-                not trial["exception"] and acceptance.get("submission_sha256") == submissions[scenario]["sha256"],
+                mode == "stub"
+                and acceptance.get("schema") == ADMISSION_REPORT
+                and acceptance.get("passed") is True
+                and not trial["exception"]
+                and trial["rewards"] == {"reward": 1.0}
+                and identity.get("submission_sha256") == submissions[scenario]["sha256"],
+                "Hosted admission failed or the worker saw another submission",
+            )
+            continue
+        require(acceptance.get("schema") != ADMISSION_REPORT, "Admission is not an independent evaluation")
+        if "verdict_path" in trial:
+            validate_result(trial["result"])
+        if world:
+            # World verdicts are measured, scored when a reference reward is declared.
+            require(
+                not trial["exception"] and identity.get("submission_sha256") == submissions[scenario]["sha256"],
                 "Harbor failed or the host saw another submission",
             )
             if benchmarks[scenario].controls.reference_reward is None:
@@ -119,20 +123,35 @@ def check_trials(
         require(trial_accepted(trial), "Harbor or independent acceptance failed")
         verifier = Path(trial["result_path"]).parent / "verifier"
         require(
-            acceptance.get("submission_sha256")
+            identity.get("submission_sha256")
             == submissions[scenario]["sha256"]
             == sha256(verifier / "evidence/submission.yaml"),
             "Container submission hash mismatch",
         )
-        require(
-            acceptance.get("cases") and all(row.get("passed") is True for row in acceptance["cases"]),
-            "Missing independent case acceptance",
-        )
-        if expected_cases is not None:
+        if "verdict_path" in trial:
+            observation = read_json(verifier / "evidence/observation.json")
+            cases = [row["name"] for row in observation.get("entries", [])]
+            require(bool(cases), "Missing independent case observations")
+        else:
             require(
-                [row["name"] for row in acceptance["cases"]] == sorted(expected_cases[scenario]),
-                "Required live-case subset changed",
+                acceptance.get("cases") and all(row.get("passed") is True for row in acceptance["cases"]),
+                "Missing independent case acceptance",
             )
+            cases = [row["name"] for row in acceptance["cases"]]
+        if expected_cases is not None:
+            require(cases == sorted(expected_cases[scenario]), "Required live-case subset changed")
+
+
+def trial_identity(trial: dict) -> dict:
+    """Read native submission and mode identity independently of the evaluator's report format."""
+    if "benchmark" in trial:
+        metadata = trial["benchmark"]
+        return {
+            "scenario": metadata.get("name"),
+            "mode": metadata.get("runtime_options", {}).get("mode"),
+            "submission_sha256": metadata.get("submission_sha256"),
+        }
+    return trial["acceptance"] or {}
 
 
 def audit_records(path: Path) -> list[dict]:
@@ -360,13 +379,13 @@ def main(argv: list[str] | None = None) -> int:
                 require(exit_code == 0 and len(trials) == 1, "Live Harbor case failed")
                 trial = trials[0]
                 require(trial["task_name"] == scenario, "Live Harbor selected another benchmark")
-                acceptance = trial["acceptance"] or {}
+                record_identity = trial_identity(trial)
                 require(
-                    acceptance.get("mode") == "live" and acceptance.get("scenario") == scenario,
+                    record_identity.get("mode") == "live" and record_identity.get("scenario") == scenario,
                     "Live record identity differs",
                 )
                 require(
-                    acceptance.get("submission_sha256") == submissions[scenario]["sha256"],
+                    record_identity.get("submission_sha256") == submissions[scenario]["sha256"],
                     "Live submission identity differs",
                 )
                 exception = trial["exception"] or {}
@@ -414,7 +433,10 @@ def main(argv: list[str] | None = None) -> int:
                     if exception.get("exception_type") == "RewardFileNotFoundError":
                         trial["exception"] = None
                     trial["result"] = result
-                    trial["acceptance"] = json.loads((record / "paid-evaluation/evaluation/report.json").read_text())
+                    trial["verdict_path"] = str(record / "paid-evaluation/result.json")
+                    write_json(Path(trial["verdict_path"]), result)
+                    report_file = record / "paid-evaluation/evaluation/report.json"
+                    trial["acceptance"] = json.loads(report_file.read_text()) if report_file.exists() else None
                     trial["evaluation_path"] = str(record / "paid-evaluation/evaluation/report.json")
                     check_trials(
                         trials, submissions, benchmarks=benchmarks, mode="live", expected_cases={scenario: {name}}

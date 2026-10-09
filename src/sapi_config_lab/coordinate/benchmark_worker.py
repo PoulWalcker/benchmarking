@@ -13,6 +13,7 @@ from sapi_config_lab.contracts import CompileOptions, RunBinding
 from sapi_config_lab.coordinate.backend import N8nBackend
 from sapi_config_lab.coordinate.cases import run_case
 from sapi_config_lab.coordinate.observe import observe
+from sapi_config_lab.evaluate.records import NOT_EVALUATED, validate_result
 from sapi_config_lab.evidence import write_json
 from sapi_config_lab.profile import Invalid, Unsupported, check, read, read_bindings
 
@@ -76,14 +77,18 @@ def main() -> int:
     metadata["runtime_options"] = {
         key: options[key] for key in ("mode", "selected_case", "deadline_seconds") if key in options
     }
+    metadata["submission_sha256"] = (
+        hashlib.sha256(submission.read_bytes()).hexdigest() if submission.is_file() else None
+    )
     write_json(output / "benchmark.json", metadata)
     expected = options.get("submission_sha256") or os.environ.get("SAPI_EXPECTED_SUBMISSION_SHA256")
     if expected and submission.is_file() and hashlib.sha256(submission.read_bytes()).hexdigest() != expected:
         raise ValueError("Container submission hash mismatch")
-    if options.get("admission") or os.environ.get("SAPI_HOSTED_ADMISSION") == "1":
+    if "prepare" in functions and (options.get("admission") or os.environ.get("SAPI_HOSTED_ADMISSION") == "1"):
         report = admit(metadata, root, submission, options)
         (output / "evaluation").mkdir(exist_ok=True)
         write_json(output / "evaluation/report.json", report)
+        write_json(output / "result.json", NOT_EVALUATED)
         reward.write_text("1\n" if report["passed"] else "0\n")
         return 0
     context = {
@@ -132,9 +137,7 @@ def main() -> int:
             else {"status": "unknown", "output": None}
         )
         functions["snapshot"](context)
-    result = functions["evaluate"](output / "evidence", options)
-    if any(result.get(key) is not None and type(result[key]) is not bool for key in ("execution", "acceptance")):
-        raise ValueError("Benchmark verdict facts must be booleans or null")
+    result = validate_result(functions["evaluate"](output / "evidence", options))
     write_json(output / "result.json", result)
     projected = result.get("harbor_reward", None if result["acceptance"] is None else int(result["acceptance"]))
     if projected is not None:

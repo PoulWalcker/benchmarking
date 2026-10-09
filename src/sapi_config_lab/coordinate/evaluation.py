@@ -52,6 +52,8 @@ def recorded_benchmark(name: str) -> Benchmark:
 
 def control_passed(agent: str, trial: dict, benchmark: Benchmark) -> bool:
     """Gate controls using independent acceptance and the declared reference reward."""
+    if (trial.get("acceptance") or {}).get("schema") == ADMISSION_REPORT:
+        return False
     result = trial["result"]
     quality = result["quality"]
     if agent == "oracle":

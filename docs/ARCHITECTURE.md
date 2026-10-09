@@ -86,8 +86,8 @@ Harbor owns trial environments and phase limits. The benchmark retains its seman
 workflow deadline and evidence finalization. Checkout's simulator, scorer and
 calibration modules live in its declared benchmark package.
 
-`coordinate/evaluation.py` validates one result shape: execution, acceptance and
-optional quality (`null` is not zero). Controls use explicit descriptor controls
+`evaluate/records.py` validates one result shape at worker, re-evaluation and read
+boundaries: execution, acceptance and optional quality (`null` is not zero). Controls use explicit descriptor controls
 and normalized results, with no hosted/verifier taxonomy. Re-evaluation verifies
 the recorded source/options identity before calling the selected evaluator.
 Native and terminal completion observations remain separate from acceptance; older
@@ -256,8 +256,11 @@ image still contains only declared public files and pinned upstream runtime byte
 `coordinate/benchmark_worker.py` reads the trusted staged metadata, verifies source
 hashes, binds both benchmark and generic verifier sources into evaluator identity,
 calls the local planner, executes the observation plan with the supplied
-bundle, and calls the local evaluator on frozen evidence. It writes the normalized
-result beside the existing independent verification report. Harbor keeps ownership
+bundle, and calls the local evaluator on frozen evidence. It writes the authoritative
+normalized `result.json` beside any benchmark-specific verification report. Preflight uses
+compilation-only admission only for benchmarks declaring a `prepare` hook; fixture
+benchmarks still run their observation plan and independent evaluation. Admission
+leaves execution, acceptance and quality null. Harbor keeps ownership
 of the two environments, collection, transfer and phase limits. Missing YAML yields
 rejected acceptance, null execution/quality and deterministic reward zero.
 
@@ -399,8 +402,10 @@ fixtures in pinned n8n.
 ## Historical records
 
 `evaluate/records.py` reads trial results and historical report layouts without
-importing execution, provider or lifecycle tables. The saved execution, acceptance,
-quality and reward remain separate facts; missing native and terminal observations
+importing execution, provider or lifecycle tables. New versioned trials require the
+recorded normalized verdict; missing verdicts remain unevaluated and malformed
+verdicts fail without a legacy fallback. Legacy report reconstruction applies only
+to historical trials. The saved execution, acceptance, quality and reward remain separate facts; missing native and terminal observations
 remain null. Review export resolves absolute historical references through an
 explicit relocated run root without rewriting recorded paths or rewards.
 

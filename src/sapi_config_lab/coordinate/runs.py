@@ -136,6 +136,7 @@ class Run:
                 "Tasks this run did not stage have no time bound: " + ", ".join(sorted(set(names) - set(self.bounds)))
             )
         if admission:
+            # Each worker selects world admission or fixture replay from its declared hooks.
             arguments["verifier_env"] = [*arguments.get("verifier_env", []), "SAPI_HOSTED_ADMISSION=1"]
         native = all((task / "tests/benchmark.json").is_file() for task in task_dirs(tasks))
         if not native:
