@@ -14,7 +14,7 @@ from sapi_config_lab.coordinate.ledger import Ledger
 from sapi_config_lab.coordinate.live import main as live
 from sapi_config_lab.coordinate.native_tasks import select_tasks
 from sapi_config_lab.coordinate.runs import Run, run_experiment
-from sapi_config_lab.evaluate.records import read_report
+from sapi_config_lab.evaluate.records import load_trials, read_report
 from sapi_config_lab.paths import workspace_root
 
 
@@ -129,6 +129,9 @@ class RunTests(unittest.TestCase):
         self.assertNotIn("result", row)
         self.assertTrue((self.output / row["evidence_path"] / "world/receipt.json").exists())
         self.assertNotIn("harbor_timeouts", saved)
+        partial = load_trials(self.output / "jobs/oracle")
+        self.assertEqual(len(partial), 1)
+        self.assertIsNone(partial[0]["result"]["acceptance"])
 
     def test_job_references_do_not_duplicate_the_authoritative_derived_trial(self):
         FakeHost(self)
@@ -173,6 +176,14 @@ class RunTests(unittest.TestCase):
         reference = saved["recorded"]["harbor_jobs"]["live"]["trials"][0]
         self.assertNotIn("result_path", reference)
         self.assertEqual(json.loads((self.output / reference["evidence_path"] / "result.json").read_text()), original)
+        verdict = Path(saved["trials"][0]["verdict_path"])
+        verdict.unlink()
+        missing = read_report(self.output / "report.json", root=self.output)["trials"]
+        self.assertEqual(len(missing), 1)
+        self.assertEqual(missing[0]["result"], {"execution": None, "acceptance": None, "quality": None})
+        verdict.write_text("{}")
+        with self.assertRaises(ValueError):
+            read_report(self.output / "report.json", root=self.output)
 
     def test_native_source_mismatch_prevents_dispatch(self):
         host = FakeHost(self)
