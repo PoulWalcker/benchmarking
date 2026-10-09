@@ -1,0 +1,787 @@
+{
+  "passed": true,
+  "tests": 5,
+  "trials": 17,
+  "seconds": 915.218,
+  "paid_calls": 0,
+  "rows": [
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/checkout-recovery-13824427/checkout-recovery__oX7sVEb",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/checkout-recovery",
+        "-a",
+        "tests.native.control_agent:ControlAgent",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "checkout-recovery-13824427",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs",
+        "--ak",
+        "candidate=tests/native/fixtures/checkout-llm.yaml",
+        "--ve",
+        "SAPI_NATIVE_FAKE_MODE=failure"
+      ],
+      "result": {
+        "execution": false,
+        "acceptance": false,
+        "quality": {
+          "status": "awaiting_llm_judge",
+          "score_0_10": null,
+          "normalized_reward": null
+        },
+        "harbor_reward": null
+      },
+      "exception": "RewardFileNotFoundError",
+      "runtime_calls": 1
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/checkout-recovery-1c475a69/checkout-recovery__BGwifxn",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/checkout-recovery",
+        "-a",
+        "tests.native.control_agent:ControlAgent",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "checkout-recovery-1c475a69",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs",
+        "--ak",
+        "candidate=tests/native/fixtures/checkout-llm.yaml",
+        "--ve",
+        "SAPI_NATIVE_FAKE_MODE=malformed"
+      ],
+      "result": {
+        "execution": false,
+        "acceptance": false,
+        "quality": {
+          "status": "awaiting_llm_judge",
+          "score_0_10": null,
+          "normalized_reward": null
+        },
+        "harbor_reward": null
+      },
+      "exception": "RewardFileNotFoundError",
+      "runtime_calls": 1
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/checkout-recovery-4ff5b2d5/checkout-recovery__QCtq9Jo",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/checkout-recovery",
+        "-a",
+        "tests.native.control_agent:ControlAgent",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "checkout-recovery-4ff5b2d5",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs",
+        "--ak",
+        "candidate=/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/over-budget-8adf8be9f9c34361a69f5967142aa51c.yaml"
+      ],
+      "result": {
+        "execution": null,
+        "acceptance": false,
+        "quality": null,
+        "harbor_reward": null
+      },
+      "exception": "RewardFileNotFoundError",
+      "runtime_calls": 0
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/checkout-recovery-6010c9f7/checkout-recovery__B2vACHK",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/checkout-recovery",
+        "-a",
+        "tests.native.control_agent:ProbeAgent",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "checkout-recovery-6010c9f7",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs",
+        "--ak",
+        "candidate=tasks/checkout-recovery/solution/config.yaml"
+      ],
+      "result": {
+        "execution": true,
+        "acceptance": true,
+        "quality": {
+          "status": "complete",
+          "score_0_10": 7.32,
+          "normalized_reward": 0.732
+        },
+        "harbor_reward": 0.732
+      },
+      "exception": null,
+      "runtime_calls": 0
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/checkout-recovery-6231f9e2/checkout-recovery__nwbUNUw",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/checkout-recovery",
+        "-a",
+        "tests.native.control_agent:ControlAgent",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "checkout-recovery-6231f9e2",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs",
+        "--ak",
+        "candidate=tests/native/fixtures/checkout-llm.yaml",
+        "--ve",
+        "SAPI_NATIVE_FAKE_MODE=timeout"
+      ],
+      "result": {
+        "execution": false,
+        "acceptance": false,
+        "quality": {
+          "status": "awaiting_llm_judge",
+          "score_0_10": null,
+          "normalized_reward": null
+        },
+        "harbor_reward": null
+      },
+      "exception": "RewardFileNotFoundError",
+      "runtime_calls": 1
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/checkout-recovery-74de8d8d/checkout-recovery__s9cbAgs",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/checkout-recovery",
+        "-a",
+        "nop",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "checkout-recovery-74de8d8d",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs"
+      ],
+      "result": {
+        "execution": null,
+        "acceptance": false,
+        "quality": null,
+        "harbor_reward": null
+      },
+      "exception": "RewardFileNotFoundError",
+      "runtime_calls": 0
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/checkout-recovery-ca48b31f/checkout-recovery__LzGgM2i",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/checkout-recovery",
+        "-a",
+        "tests.native.control_agent:ControlAgent",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "checkout-recovery-ca48b31f",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs",
+        "--ak",
+        "candidate=tests/native/fixtures/checkout-llm.yaml",
+        "--ve",
+        "SAPI_NATIVE_FAKE_MODE=wrong-model"
+      ],
+      "result": {
+        "execution": false,
+        "acceptance": false,
+        "quality": {
+          "status": "awaiting_llm_judge",
+          "score_0_10": null,
+          "normalized_reward": null
+        },
+        "harbor_reward": null
+      },
+      "exception": "RewardFileNotFoundError",
+      "runtime_calls": 1
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/checkout-recovery-dc860b63/checkout-recovery__2srGeBU",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/checkout-recovery",
+        "-a",
+        "tests.native.control_agent:ControlAgent",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "checkout-recovery-dc860b63",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs",
+        "--ak",
+        "candidate=tests/native/fixtures/checkout-llm.yaml",
+        "--ve",
+        "SAPI_NATIVE_FAKE_MODE=success"
+      ],
+      "result": {
+        "execution": true,
+        "acceptance": true,
+        "quality": {
+          "status": "complete",
+          "score_0_10": 7.32,
+          "normalized_reward": 0.732
+        },
+        "harbor_reward": 0.732
+      },
+      "exception": null,
+      "runtime_calls": 2
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/checkout-recovery-dce4749d/checkout-recovery__z6H482H",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/checkout-recovery",
+        "-a",
+        "oracle",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "checkout-recovery-dce4749d",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs",
+        "--ve",
+        "SAPI_NATIVE_JUDGE_MODE=none"
+      ],
+      "result": {
+        "execution": true,
+        "acceptance": true,
+        "quality": {
+          "status": "awaiting_llm_judge",
+          "score_0_10": null,
+          "normalized_reward": null
+        },
+        "harbor_reward": null
+      },
+      "exception": "RewardFileNotFoundError",
+      "runtime_calls": 0
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/invoice-total-0a606086/invoice-total__RPLL5XP",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/invoice-total",
+        "-a",
+        "tests.native.control_agent:ControlAgent",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "invoice-total-0a606086",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs",
+        "--ak",
+        "attack=artifact",
+        "--ak",
+        "candidate=tasks/invoice-total/solution/config.yaml"
+      ],
+      "result": {
+        "execution": true,
+        "acceptance": true,
+        "quality": {
+          "schema": "sapi-lab-rubric-evaluation/v1",
+          "rubric": {
+            "id": "invoice-total",
+            "version": "1.0.0",
+            "origin": "local",
+            "digest": "3a7f8e5982a3fdfc8c43930158d90a2bc10f50aef4e2624847a65437d0efa12e"
+          },
+          "status": "complete",
+          "score_0_10": 10.0,
+          "deterministic_points": 10.0,
+          "execution_pass": true,
+          "criteria": [
+            {
+              "id": "acceptance",
+              "question": "Does the result satisfy the independent acceptance contract for invoice-total?",
+              "weight": 10,
+              "evaluator": "deterministic",
+              "answer": "yes",
+              "points": 10.0,
+              "reason": "Protected environment verification",
+              "refs_supplied": [
+                "check-accepted"
+              ]
+            }
+          ],
+          "answer_values": {
+            "yes": 1.0,
+            "maybe": 0.33,
+            "no": 0.0
+          },
+          "judge": null,
+          "judge_error": null,
+          "normalized_reward": 1.0
+        }
+      },
+      "exception": null,
+      "runtime_calls": 0
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/invoice-total-2b0fadbf/invoice-total__gHbAZk4",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/invoice-total",
+        "-a",
+        "nop",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "invoice-total-2b0fadbf",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs"
+      ],
+      "result": {
+        "execution": null,
+        "acceptance": false,
+        "quality": {
+          "schema": "sapi-lab-rubric-evaluation/v1",
+          "rubric": {
+            "id": "invoice-total",
+            "version": "1.0.0",
+            "origin": "local",
+            "digest": "3a7f8e5982a3fdfc8c43930158d90a2bc10f50aef4e2624847a65437d0efa12e"
+          },
+          "status": "unscored",
+          "score_0_10": null,
+          "deterministic_points": 0.0,
+          "execution_pass": false,
+          "criteria": [
+            {
+              "id": "acceptance",
+              "question": "Does the result satisfy the independent acceptance contract for invoice-total?",
+              "weight": 10,
+              "evaluator": "deterministic",
+              "answer": "no",
+              "points": 0.0,
+              "reason": "Protected environment verification",
+              "refs_supplied": [
+                "check-accepted"
+              ]
+            }
+          ],
+          "answer_values": {
+            "yes": 1.0,
+            "maybe": 0.33,
+            "no": 0.0
+          },
+          "judge": null,
+          "judge_error": null,
+          "normalized_reward": null
+        }
+      },
+      "exception": null,
+      "runtime_calls": 0
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/invoice-total-8be30ffe/invoice-total__AM9ayV9",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/invoice-total",
+        "-a",
+        "tests.native.control_agent:ControlAgent",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "invoice-total-8be30ffe",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs",
+        "--ak",
+        "attack=fifo"
+      ],
+      "result": {
+        "execution": null,
+        "acceptance": false,
+        "quality": {
+          "schema": "sapi-lab-rubric-evaluation/v1",
+          "rubric": {
+            "id": "invoice-total",
+            "version": "1.0.0",
+            "origin": "local",
+            "digest": "3a7f8e5982a3fdfc8c43930158d90a2bc10f50aef4e2624847a65437d0efa12e"
+          },
+          "status": "unscored",
+          "score_0_10": null,
+          "deterministic_points": 0.0,
+          "execution_pass": false,
+          "criteria": [
+            {
+              "id": "acceptance",
+              "question": "Does the result satisfy the independent acceptance contract for invoice-total?",
+              "weight": 10,
+              "evaluator": "deterministic",
+              "answer": "no",
+              "points": 0.0,
+              "reason": "Protected environment verification",
+              "refs_supplied": [
+                "check-accepted"
+              ]
+            }
+          ],
+          "answer_values": {
+            "yes": 1.0,
+            "maybe": 0.33,
+            "no": 0.0
+          },
+          "judge": null,
+          "judge_error": null,
+          "normalized_reward": null
+        }
+      },
+      "exception": null,
+      "runtime_calls": 0
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/invoice-total-8deb3970/invoice-total__htUxb97",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/invoice-total",
+        "-a",
+        "tests.native.control_agent:ProbeAgent",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "invoice-total-8deb3970",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs",
+        "--ak",
+        "candidate=tasks/invoice-total/solution/config.yaml"
+      ],
+      "result": {
+        "execution": true,
+        "acceptance": true,
+        "quality": {
+          "schema": "sapi-lab-rubric-evaluation/v1",
+          "rubric": {
+            "id": "invoice-total",
+            "version": "1.0.0",
+            "origin": "local",
+            "digest": "3a7f8e5982a3fdfc8c43930158d90a2bc10f50aef4e2624847a65437d0efa12e"
+          },
+          "status": "complete",
+          "score_0_10": 10.0,
+          "deterministic_points": 10.0,
+          "execution_pass": true,
+          "criteria": [
+            {
+              "id": "acceptance",
+              "question": "Does the result satisfy the independent acceptance contract for invoice-total?",
+              "weight": 10,
+              "evaluator": "deterministic",
+              "answer": "yes",
+              "points": 10.0,
+              "reason": "Protected environment verification",
+              "refs_supplied": [
+                "check-accepted"
+              ]
+            }
+          ],
+          "answer_values": {
+            "yes": 1.0,
+            "maybe": 0.33,
+            "no": 0.0
+          },
+          "judge": null,
+          "judge_error": null,
+          "normalized_reward": 1.0
+        }
+      },
+      "exception": null,
+      "runtime_calls": 0
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/invoice-total-8ebe1a34/invoice-total__EPtJAEt",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/invoice-total",
+        "-a",
+        "tests.native.control_agent:ControlAgent",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "invoice-total-8ebe1a34",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs",
+        "--ak",
+        "candidate=tests/native/fixtures/invoice-wrong.yaml"
+      ],
+      "result": {
+        "execution": true,
+        "acceptance": false,
+        "quality": {
+          "schema": "sapi-lab-rubric-evaluation/v1",
+          "rubric": {
+            "id": "invoice-total",
+            "version": "1.0.0",
+            "origin": "local",
+            "digest": "3a7f8e5982a3fdfc8c43930158d90a2bc10f50aef4e2624847a65437d0efa12e"
+          },
+          "status": "unscored",
+          "score_0_10": null,
+          "deterministic_points": 0.0,
+          "execution_pass": false,
+          "criteria": [
+            {
+              "id": "acceptance",
+              "question": "Does the result satisfy the independent acceptance contract for invoice-total?",
+              "weight": 10,
+              "evaluator": "deterministic",
+              "answer": "no",
+              "points": 0.0,
+              "reason": "Protected environment verification",
+              "refs_supplied": [
+                "check-accepted"
+              ]
+            }
+          ],
+          "answer_values": {
+            "yes": 1.0,
+            "maybe": 0.33,
+            "no": 0.0
+          },
+          "judge": null,
+          "judge_error": null,
+          "normalized_reward": null
+        }
+      },
+      "exception": null,
+      "runtime_calls": 0
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/invoice-total-9907d499/invoice-total__TyUN7yy",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/invoice-total",
+        "-a",
+        "tests.native.control_agent:ControlAgent",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "invoice-total-9907d499",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs",
+        "--ak",
+        "attack=symlink"
+      ],
+      "result": {
+        "execution": null,
+        "acceptance": false,
+        "quality": {
+          "schema": "sapi-lab-rubric-evaluation/v1",
+          "rubric": {
+            "id": "invoice-total",
+            "version": "1.0.0",
+            "origin": "local",
+            "digest": "3a7f8e5982a3fdfc8c43930158d90a2bc10f50aef4e2624847a65437d0efa12e"
+          },
+          "status": "unscored",
+          "score_0_10": null,
+          "deterministic_points": 0.0,
+          "execution_pass": false,
+          "criteria": [
+            {
+              "id": "acceptance",
+              "question": "Does the result satisfy the independent acceptance contract for invoice-total?",
+              "weight": 10,
+              "evaluator": "deterministic",
+              "answer": "no",
+              "points": 0.0,
+              "reason": "Protected environment verification",
+              "refs_supplied": [
+                "check-accepted"
+              ]
+            }
+          ],
+          "answer_values": {
+            "yes": 1.0,
+            "maybe": 0.33,
+            "no": 0.0
+          },
+          "judge": null,
+          "judge_error": null,
+          "normalized_reward": null
+        }
+      },
+      "exception": null,
+      "runtime_calls": 0
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/invoice-total-9c0ffb5e/invoice-total__WscPEwd",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/invoice-total",
+        "-a",
+        "tests.native.control_agent:ControlAgent",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "invoice-total-9c0ffb5e",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs",
+        "--ak",
+        "attack=extra",
+        "--ak",
+        "candidate=tasks/invoice-total/solution/config.yaml"
+      ],
+      "result": {
+        "execution": null,
+        "acceptance": false,
+        "quality": {
+          "schema": "sapi-lab-rubric-evaluation/v1",
+          "rubric": {
+            "id": "invoice-total",
+            "version": "1.0.0",
+            "origin": "local",
+            "digest": "3a7f8e5982a3fdfc8c43930158d90a2bc10f50aef4e2624847a65437d0efa12e"
+          },
+          "status": "unscored",
+          "score_0_10": null,
+          "deterministic_points": 0.0,
+          "execution_pass": false,
+          "criteria": [
+            {
+              "id": "acceptance",
+              "question": "Does the result satisfy the independent acceptance contract for invoice-total?",
+              "weight": 10,
+              "evaluator": "deterministic",
+              "answer": "no",
+              "points": 0.0,
+              "reason": "Protected environment verification",
+              "refs_supplied": [
+                "check-accepted"
+              ]
+            }
+          ],
+          "answer_values": {
+            "yes": 1.0,
+            "maybe": 0.33,
+            "no": 0.0
+          },
+          "judge": null,
+          "judge_error": null,
+          "normalized_reward": null
+        }
+      },
+      "exception": null,
+      "runtime_calls": 0
+    },
+    {
+      "trial": "reports/phase2/verification/gate-c/final/native/jobs/invoice-total-a5ef98a3/invoice-total__ubGXzHF",
+      "command": [
+        "harbor",
+        "run",
+        "-p",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/tasks/invoice-total",
+        "-a",
+        "tests.native.control_agent:ControlAgent",
+        "--max-retries",
+        "0",
+        "--force-build",
+        "--job-name",
+        "invoice-total-a5ef98a3",
+        "--jobs-dir",
+        "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/native/jobs",
+        "--ak",
+        "candidate=tests/native/fixtures/invoice-invalid.yaml"
+      ],
+      "result": {
+        "execution": false,
+        "acceptance": false,
+        "quality": {
+          "schema": "sapi-lab-rubric-evaluation/v1",
+          "rubric": {
+            "id": "invoice-total",
+            "version": "1.0.0",
+            "origin": "local",
+            "digest": "3a7f8e5982a3fdfc8c43930158d90a2bc10f50aef4e2624847a65437d0efa12e"
+          },
+          "status": "unscored",
+          "score_0_10": null,
+          "deterministic_points": 0.0,
+          "execution_pass": false,
+          "criteria": [
+            {
+              "id": "acceptance",
+              "question": "Does the result satisfy the independent acceptance contract for invoice-total?",
+              "weight": 10,
+              "evaluator": "deterministic",
+              "answer": "no",
+              "points": 0.0,
+              "reason": "Protected environment verification",
+              "refs_supplied": [
+                "check-accepted"
+              ]
+            }
+          ],
+          "answer_values": {
+            "yes": 1.0,
+            "maybe": 0.33,
+            "no": 0.0
+          },
+          "judge": null,
+          "judge_error": null,
+          "normalized_reward": null
+        }
+      },
+      "exception": null,
+      "runtime_calls": 0
+    }
+  ]
+}

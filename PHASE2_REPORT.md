@@ -1,8 +1,9 @@
 # Phase 2 native Harbor migration
 
-Implementation is complete for the user-approved compact scope. Independent final
-functional/security and architecture verdicts are **pending**; the earlier A/B gates
-passed before the compact removals. No paid model calls, push or merge were performed.
+Implementation is complete for the user-approved compact scope. Independent
+functional/security and architecture reviews **approved**, with no unresolved
+findings. Final maintained tests and fresh controls passed at `6062be9`; the broader
+unchanged-runtime matrix passed at `d58bbd3`. No paid calls, push or merge occurred.
 
 ## Flow and ownership
 
@@ -57,7 +58,7 @@ and benchmark task distribution through wheels. Removed APIs/commands include
 `ui`, `lifecycle`, `review-export`, `package-tasks`, and evaluation snapshot options.
 Their implementations remain in Git. Retained lifecycle syntax/event lowering does
 not provide a durable controller. Current native evaluation requires the exact
-recorded source revision; old incomplete identities remain readable, not executable
+recorded source identity; old incomplete identities remain readable, not executable
 through a historical adapter.
 
 No capability was removed to force a percentage target. The broad result is above
@@ -97,17 +98,37 @@ included in either code reduction.
 - Stage B retained-core approval `0abdfd64`: full check (562 tests), transport, both
   oracle/nop controls, 17 native trials, all five faults, fresh offline evaluation and
   real Harbor with mocked judge dispatch. No paid calls; original Docker baseline preserved.
-- Compact C implementation check: `uv run --locked sapi-lab check` passed with 434 tests,
-  10 opt-in Docker skips, lint/format/types and actual direct/sdist wheel installations.
-  Seven runtime/verifier resources and 11 private exclusions passed.
-- Reader correction `aa95dd2` / `df05bed`: 29 focused tests passed. Exactly one derived
-  row is exposed; missing/malformed explicit verdicts fail closed; partial jobs remain
-  discoverable; original reward/evidence and historical reads are preserved.
-- Final independent native controls, fault/security matrix, offline/live mocked dispatch
-  and architecture re-review: **pending frozen-commit verification**.
+- Final independent full check at `6062be9`: **435 tests / 10 opt-in skips**, Ruff,
+  formatting, all type scopes and direct/sdist wheels passed (62 wheel files,
+  seven runtime resources, 11 private exclusions).
+- Fresh `6062be9` controls: transport **19**; invoice **1.0 / all 14 observations**
+  (11 real n8n executions, three compile rejections); checkout **0.732 / all business
+  checks**, both nops, and offline score reproduction with engine/model/network work
+  blocked and **188 recorded files unchanged**.
+- The actual maintained refinement Docker control passed at `6062be9`: attempts
+  **1/2/3/2**, native calls **1/2/3/0**, zero infrastructure retries. Its initial missing
+  build-context failure was preserved and corrected by one test-fixture line.
+- At `d58bbd3`, **17 native trials and five faults** passed, including runtime
+  success/failure/timeout/wrong-model/malformed replies, budget refusal, isolation,
+  hostile transfer, deadline, worker death, evaluator failure and fresh retry.
+  Real Harbor with a local mock judge proved reservation-before-call and no double
+  reservation; the original null quality and one authoritative derived row remained.
+  The sole manifest difference at `6062be9` is the refinement fixture line;
+  production, runtime, task, infrastructure and current documentation hashes match.
+- Public image layer/configuration scans passed. All 30 initial and six corrected
+  trial projects were cleaned; the baseline **six external containers, six networks
+  and 54 volumes** were preserved. The original checkout was independently attested
+  clean at `2f84b02599417aa9a7bb41e8568bbaef34bf4151`.
+- [Functional/security verdict](evidence/native-harbor-phase2/functional/verdict.md)
+  and [architecture verdict](evidence/native-harbor-phase2/architecture-review.md)
+  both approve. The one-line fixture correction changes no architectural responsibility.
+  Compact references preserve partial discovery; explicit missing/malformed derived
+  verdicts fail closed, and historical reader evidence remains immutable.
 
-Raw logs remain under `reports/phase2/`. Final branch-accessible independent verdict
-summaries will be retained under `evidence/native-harbor-phase2/` after completion.
+Raw logs remain under `reports/phase2/`; selected independent verdicts, machine
+summaries and proof hashes are committed under `evidence/native-harbor-phase2/`.
+The final report/evidence additions preserve all 229 hashes in the tested source
+manifest; these reporting files are outside the guarded source inventory.
 Real paid transport and model performance remain unverified; control calibration
 scores are explicitly saved-answer projections. The supported isolation/resource
 claims apply to the tested Harbor 0.21.0 Docker profile.

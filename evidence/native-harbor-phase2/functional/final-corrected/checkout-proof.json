@@ -1,0 +1,44 @@
+{
+  "result": {
+    "execution": true,
+    "acceptance": true,
+    "quality": {
+      "status": "complete",
+      "score_0_10": 7.32,
+      "normalized_reward": 0.732
+    },
+    "harbor_reward": 0.732
+  },
+  "calibration": {
+    "adapter": "sapi-native-saved-calibration/v1",
+    "template_sha256": "0af5a1b5ffd8cc704cb67a0c4a15afbbebf95b4a3389216f735699c15cbc178b",
+    "contract_digest": "d28bb84a6a306200d3172c45acfefa4565dd3608f99264af84242afc5de78406",
+    "run_log_digest": "63c9c288bffdc475d29624551c463c039e2d895afe633622e16d5f52c9ec8fbb",
+    "request_digest": "42dcb084e9a6dcadac5331364b96dad3749b2647f2052a7e30fccf5e0e2c4f5e",
+    "original_provenance": {
+      "mode": "demo",
+      "model": "SIMULATED",
+      "prompt_version": "1.0.1",
+      "prompt_digest": "b1928f3385a5c8aac5579501511e7587ade5351c9e8daf9d8128874827829cdf",
+      "run_log_digest": "9c0d2c3eb3cc6b2c551ab5755595c2519bab9697bf4f58e0fd36398f82ad4ad4",
+      "response_digest": "8b57c194946ebbb12533c6beeba073e70054da2e53aaff6acd197186b66bf200",
+      "judged_at": "2026-10-06T13:38:55.431064+00:00",
+      "duration_seconds": 0.002,
+      "artifact_id": "judgement-pyoo5h9u"
+    },
+    "original_run_id": "trial-9d04c4ae13f341cb80265dd614dd5f42",
+    "paid_dispatch": false,
+    "judge_dispatches": 0,
+    "meaning": "New simulated reply using saved answer values; not historical replay or measured model quality",
+    "status": "adapted",
+    "reply_digest": "87bdf977e96977c2cff146d4b847975f9c27c9c632bf3dcb3f625a199948c707"
+  },
+  "business_checks": {
+    "eur_fixed": true,
+    "regressions": true,
+    "safe_patch": true,
+    "tested_recovery": true
+  },
+  "engine_version": "2.41.5",
+  "world_observations": 18
+}

@@ -1,0 +1,13 @@
+{
+  "tested_commit": "6062be9cabecd0dde23ad2574103a1c468d91d0c",
+  "source_files": 229,
+  "source_manifest_equal": true,
+  "tested_manifest_sha256": "884f79566f9625f3745248d11da4c6dcd4465d6f0fb73e40ee92bc822c850484",
+  "changed_source_paths": [],
+  "original_checkout_attestation": {
+    "provided_by": "independent verifier and parent read-only Git checks",
+    "head": "2f84b02599417aa9a7bb41e8568bbaef34bf4151",
+    "clean": true
+  },
+  "note": "Report/evidence additions only; no runtime or current-documentation changes after final verified commit."
+}

@@ -1,0 +1,107 @@
+{
+  "invoice": {
+    "trial": "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final-corrected/control/jobs/oracle-invoice-total/invoice-total__TRHYEmq",
+    "native_records": 11,
+    "compile_rejections": 3,
+    "observations": [
+      {
+        "name": "original-38000",
+        "status": "success",
+        "execution_id": "1",
+        "engine_version": "2.41.5",
+        "case_sha256": "bd3756b84c5a7513f284d116e123919a804b005acc05ce42e40c1607014253c1"
+      },
+      {
+        "name": "alternate-values-zero",
+        "status": "success",
+        "execution_id": "1",
+        "engine_version": "2.41.5",
+        "case_sha256": "9526935cb10644f7c42b02f2d4bec8c5bc6383b5fb0a8392193cefed23858e38"
+      },
+      {
+        "name": "maximum-safe-total",
+        "status": "success",
+        "execution_id": "1",
+        "engine_version": "2.41.5",
+        "case_sha256": "ccbb242a999db756a8af710a4c7ff278c7aebd814e08915acc5e9c94b02f5f06"
+      },
+      {
+        "name": "empty",
+        "status": "error",
+        "execution_id": "1",
+        "engine_version": "2.41.5",
+        "case_sha256": "2c8a07015ab62d173b39cda60ecf79ac155d7f0a12ec5b1e9195dbeed9380c07"
+      },
+      {
+        "name": "duplicate-id",
+        "status": "error",
+        "execution_id": "1",
+        "engine_version": "2.41.5",
+        "case_sha256": "940931ae4c661bc5578a205c1ad58999571dfefd1146dfd4ca2d0acdf952956b"
+      },
+      {
+        "name": "mixed-currencies",
+        "status": "error",
+        "execution_id": "1",
+        "engine_version": "2.41.5",
+        "case_sha256": "0169938080398324bb2139a2637f9ce3194e7613b548b971c6081a9aa9cdda2e"
+      },
+      {
+        "name": "negative-amount",
+        "status": "error",
+        "execution_id": "1",
+        "engine_version": "2.41.5",
+        "case_sha256": "f45b1986a1fe3d4398760cfe335ff1f11e9b2c3ae5b631b59eefd1a609305243"
+      },
+      {
+        "name": "fractional-amount",
+        "status": "error",
+        "execution_id": "1",
+        "engine_version": "2.41.5",
+        "case_sha256": "f1c6fc7dcaf87bd65cb4e009eff5e52f643944be0b75bcb67d8fa13363cd6112"
+      },
+      {
+        "name": "unsafe-amount",
+        "status": "error",
+        "execution_id": "1",
+        "engine_version": "2.41.5",
+        "case_sha256": "573ffff221e330d002a164eef6b928b87f75ed0b4d1410145b4c7a3deed75491"
+      },
+      {
+        "name": "total-overflow",
+        "status": "error",
+        "execution_id": "1",
+        "engine_version": "2.41.5",
+        "case_sha256": "2bf76c9717759ed10c62f8aa1dc820300c8dbae25f574af270f45897076673b1"
+      },
+      {
+        "name": "mutated-generated-result",
+        "status": "success",
+        "execution_id": "1",
+        "engine_version": "2.41.5",
+        "case_sha256": "d05453793f9c8cfcdf123f895897aa46735d3b9b6bb72a604b878bca6f80d19a"
+      },
+      {
+        "name": "invalid-yaml-unknown-operation",
+        "status": "compile_error",
+        "execution_id": null,
+        "engine_version": null,
+        "case_sha256": "280ea23cc84477d53fe9ae299f05ef8fe06b24f6146becb70d7327c48d574a2d"
+      },
+      {
+        "name": "invalid-yaml-cycle",
+        "status": "compile_error",
+        "execution_id": null,
+        "engine_version": null,
+        "case_sha256": "eedd3fd7084e875278fbcca978a03cc26c0f9b332d9073fd2d24d988e112a24e"
+      },
+      {
+        "name": "invalid-yaml-unsupported-required-parallel",
+        "status": "compile_error",
+        "execution_id": null,
+        "engine_version": null,
+        "case_sha256": "1945e7800357078218e40a2faa1b6670ae00ff5f6427e6ec0aad170711a2aeaa"
+      }
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "unique_reader_trials": 2,
+  "live_rows": 1,
+  "authoritative_result": {
+    "execution": true,
+    "acceptance": true,
+    "quality": {
+      "status": "complete",
+      "score_0_10": 10.0,
+      "normalized_reward": 1.0
+    },
+    "harbor_reward": 1.0
+  },
+  "original_result": {
+    "execution": true,
+    "acceptance": true,
+    "quality": {
+      "status": "awaiting_llm_judge",
+      "score_0_10": null,
+      "normalized_reward": null
+    },
+    "harbor_reward": null
+  },
+  "original_sha256": "d124b2270edbf817f8725742baba51308f743911ab838a000a54b2dd8fe6800f",
+  "probe_correction": "Reader includes distinct preflight and live trials; assert unique IDs and exactly one live-derived row, not globally one row."
+}

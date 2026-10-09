@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "seconds": 250.687,
+  "matrix": "reports/phase2/verification/gate-c/final/faults/faults-022d05e2d1/matrix.json",
+  "faults": [
+    "deadline",
+    "worker-death",
+    "evaluator-failure",
+    "isolation-freshness",
+    "fresh-retry"
+  ],
+  "managed_services_remaining": [
+    0,
+    0,
+    0,
+    0,
+    0
+  ]
+}

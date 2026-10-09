@@ -1,0 +1,34 @@
+{
+  "passed": true,
+  "real_orchestration": true,
+  "inference": "mock executable only",
+  "runtime_requests": 0,
+  "judge_mock_calls": 1,
+  "ledger_events": [
+    {
+      "count": 0,
+      "name": "live-mocked/checkout-recovery/workflow",
+      "phase": "runtime",
+      "report": "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/live-mocked/report.json",
+      "status": "passed"
+    },
+    {
+      "count": 1,
+      "name": "live-mocked/checkout-recovery/workflow/judge",
+      "phase": "judge",
+      "report": "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/live-mocked/report.json",
+      "status": "passed"
+    }
+  ],
+  "result": {
+    "execution": true,
+    "acceptance": true,
+    "quality": {
+      "status": "complete",
+      "score_0_10": 10.0,
+      "normalized_reward": 1.0
+    },
+    "harbor_reward": 1.0
+  },
+  "report": "/Users/pashvel/Desktop/sapi-config-lab-phase2/reports/phase2/verification/gate-c/final/live-mocked/report.json"
+}

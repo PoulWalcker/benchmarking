@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "previous_commit": "d58bbd33faf25fcf474bfb0d1abe819f6b97467d",
+  "current_commit": "6062be9cabecd0dde23ad2574103a1c468d91d0c",
+  "changed_files": [
+    "tests/test_refinement_verification.py"
+  ],
+  "before": "ef6b2eea902de85e7f5cfbec4a431fdd46fef5c1a79433a44ddba55e76e6ae71",
+  "after": "957a18fb141484b9a792d0a1c2ae16656b43bfbd9ec5c3bce2b234b39cabbb5b",
+  "production_runtime_docs_unchanged": true,
+  "diff": "diff --git a/tests/test_refinement_verification.py b/tests/test_refinement_verification.py\nindex a7c1db9..270b5f3 100644\n--- a/tests/test_refinement_verification.py\n+++ b/tests/test_refinement_verification.py\n@@ -290,7 +290,7 @@ class NativeRefinementDockerTests(unittest.TestCase):\n             \"[environment]\\nbuild_timeout_sec = 1200\\ncpus = 1\\nmemory_mb = 2048\\n\"\n             \"[verifier]\\ntimeout_sec = 1800\\n\"\n         )\n-        dockerfile = (root / \"infra/Dockerfile\").read_text().replace(\"COPY benchmarks /app/lab/benchmarks/\\n\", \"\")\n+        dockerfile = (root / \"infra/Dockerfile\").read_text().replace(\"COPY tasks /app/lab/tasks/\\n\", \"\")\n         (environment / \"Dockerfile\").write_text(dockerfile)\n         shutil.copyfile(root / \".dockerignore\", environment / \".dockerignore\")\n         for name in (\"src\", \"generation\"):\n"
+}

@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "commit": "6062be9cabecd0dde23ad2574103a1c468d91d0c",
+  "source_files": 229,
+  "sources_unchanged": true,
+  "images_unchanged": true,
+  "baseline_container_ids": [
+    "41b6b73730537e3e44a44b9aeb8d756cc2a3f5641be3d71013207764d1792eae",
+    "53ff8901c495a9b273a7e2d4e3b0dc918a219381f880c44fb944d839a70b21b1",
+    "5d2c803770f2f0a8ea86a02bcc2e6c5df468c08855760117683894a20711f161",
+    "8b2de42778a3f258e4edfc2cf407f11fa988151d826c644776ad73643215005a",
+    "8c5b58e634415e400ac38d34848af92db929f04671a5b671f99cdf864ab3ac4f",
+    "c7aac24dc5ffe42c56446eb2af2fa30db6729713a7dee7646ea52072797bb78f"
+  ],
+  "network_count": 6,
+  "volume_count": 54,
+  "trial_projects": [
+    "checkout-recovery__CGzdSzp",
+    "checkout-recovery__sgGuAVz",
+    "invoice-total__97BnASu",
+    "invoice-total__TRHYEmq",
+    "task__mGHtXM9",
+    "transport-task__QYzuTvt"
+  ],
+  "external_resources_preserved": true,
+  "unexpected_resources": 0
+}

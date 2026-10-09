@@ -1,0 +1,66 @@
+{
+  "schema": "sapi-phase2-independent-gate/v1",
+  "gate": "final compact C functional/security",
+  "status": "approved",
+  "commit": "6062be9cabecd0dde23ad2574103a1c468d91d0c",
+  "unchanged_runtime_matrix_commit": "d58bbd33faf25fcf474bfb0d1abe819f6b97467d",
+  "manifest_delta": [
+    "tests/test_refinement_verification.py"
+  ],
+  "paid_calls": 0,
+  "full_check": {
+    "tests": 435,
+    "opt_in_skips": 10,
+    "passed": true
+  },
+  "native_matrix_trials": 17,
+  "fault_cases": 5,
+  "final_refinement_passed": true,
+  "final_control_rewards": {
+    "invoice-total": 1.0,
+    "checkout-recovery": 0.732
+  },
+  "artifacts": {
+    "verdict.md": "31e8a147cc6329dd20412c1a19d08c1193c167125b40d454a591679af8075c50",
+    "final/stage-status.json": "67153930c63cf414185ee83f6f0d6a74b03a64e0c103e6b88ef2ca202d5d324d",
+    "final/baseline.json": "80162395d32677b2fa1bae83c04a3c3e4f28d08343c20b0c18d49103eeacca85",
+    "final/full-check.log": "0f747a8540dbd1ddd2ef1d21ef8e2504475ad50f6f4d378720c774b0cdfd7ce1",
+    "final/control/report.json": "d034e032e76bfdfaba4e7ee585606c75cdcbbbd3baa0c5a9727759a46447471f",
+    "final/native-suite.log": "501ce0fdd4771115d07705392bfe0eed558508e0339704d6c1a1a8c6157028c1",
+    "final/native-suite-summary.json": "53d3f10d10ad8652aea4ab477bbe781ead13f6a991e86cc485edf88d55e0a3a3",
+    "final/fault-suite.log": "f78cbcc5cd5ea3cc2812330ee2652ac8f418cc6cb83eff7d88ea376dd8c97131",
+    "final/fault-suite-summary.json": "13ef7321d66caa5ffb7726aa23accdcd569239090e29c93fde1774d81dcce918",
+    "final/offline-proof.json": "ebd432880246c6599d91ff5fcd660edb05d74d528f48ca4a239988b5fbaad01a",
+    "final/live-mocked-proof.json": "be706c4b052b5381717dda50d1f09300d8f00a26fe821ddef81f4627ae9ccd0c",
+    "final/current-derived-result-proof.json": "8c61661c244a0943f4921ad757f55120e58cb62b16eb3015029c30dc8fd0d10c",
+    "final/derived-association-check.log": "2657b34becb8f627c6b69a72f82bb4584f34d68c2ab6fc3552a139cc50fe58c9",
+    "final/check_derived.py": "acd3629958f1f7a5c6d3ff6ab7454f553acb1b47865017c0d5c7aaebf7b4f385",
+    "final/refinement-suite.log": "9dba6a83c4542ab257ece02916cd7b54fb74b5d178b69ed89b9b9f7902fd0a42",
+    "final/images.json": "7a90813e0e5b7b3d2ea6e37c37385758c55c07f238ac409c6ddab86891c214e1",
+    "final/images-controlled.json": "42c31b210473b70a25d83302b8d18c09216a6837e5a85924c53a8a3e7687eda0",
+    "final/image-rebuild-proof.json": "6d98f95abefd3e66fcc4b23504d4511b38f2047f6481f98fa1a05081e7216104",
+    "final/public-image-proof.json": "1358337444d4f5c357287726e1e0a9f85888382e05cc1b7d4b440641711d161a",
+    "final/invoice-public-proof.json": "13ea9236879a6a213f558b7a5b609879a5a01b5dc0ae329aa03e491e14fb991a",
+    "final/checkout-public-proof.json": "2257790104cb879064af73f574c223b62bda1fdea7399188459e96175a20db9c",
+    "final/final-cleanup-proof.json": "cfe499fe9b0392f84c7fe624dc9571d5881e9d5a7771b84ec0a834b860bf5bde",
+    "final-corrected/source-delta-proof.json": "3db6788fe0d200d7f73bd55adba27e2a30c9d1d14fd25570f0deaf87b6e2040b",
+    "final-corrected/baseline.json": "cc4d394c2e1609940b3638017b816735e5aea7b29b518801104808d47d2c004b",
+    "final-corrected/full-check.log": "b0b937d0a3e1fc93964a402a7c3ae181d09a04b87ccb49179efdd3434a28c4c0",
+    "final-corrected/refinement-suite.log": "6adc4c38725c20a106f03f198636e1ba690a037207f6567cb36c6c72e968155f",
+    "final-corrected/refinement-proof.json": "7f85b470f5af7272bc98ef3b422b3d50157d90a24152c466f1eca26394c15c30",
+    "final-corrected/control/report.json": "8996dd6a127f6836eac1bbc2a339130e8b89c648c8a6c6bc1db7d0b6603a0def",
+    "final-corrected/invoice-observations.json": "e24dcc709075b1d290d125115ea26369f256eae2eb8bb8f7a3ff4cbb2ec66715",
+    "final-corrected/checkout-proof.json": "d0b678dbb7c8db155af80d9f4eeb108b8e4b7e92f0b33189e42988b32f7887b7",
+    "final-corrected/offline-proof.json": "32601cb2652ac9625c97512fc057166d6d65317311e4cae66cbb8df09e4802f6",
+    "final-corrected/images-controlled.json": "d7affdb2ceffa3fccb984185555252f7de160b6d582442f1a361e2cbb4914a18",
+    "final-corrected/public-image-proof.json": "958feb3fa1b164b50d3a070ace27a5adc6a1e02ec60983a2757a32f46db4b3c0",
+    "final-corrected/final-cleanup-proof.json": "3072cf3a1b20dec08e02a7fc728b71df2e58ea233a52a415fe6897ea608100af"
+  },
+  "unresolved_retained_core": [],
+  "limitations": [
+    "No paid provider/model-quality measurement",
+    "Architecture gate is separate",
+    "Explicit compact-scope deferrals not exercised"
+  ],
+  "next": "Commit selected evidence and excluded final report/inventory; preserve source identity."
+}

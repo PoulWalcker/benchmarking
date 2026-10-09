@@ -1,0 +1,340 @@
+[
+  {
+    "Id": "sha256:f8412a1108a08393838a9717a67c59804262164a1ca0796e9019ddca5d4dc3c7",
+    "RepoTags": [
+      "sapi-native-runtime:phase1"
+    ],
+    "RepoDigests": [
+      "sapi-native-runtime@sha256:f8412a1108a08393838a9717a67c59804262164a1ca0796e9019ddca5d4dc3c7"
+    ],
+    "Comment": "buildkit.dockerfile.v0",
+    "Created": "2026-10-08T13:50:58.934334451+04:00",
+    "Config": {
+      "Env": [
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "N8N_DIAGNOSTICS_ENABLED=false",
+        "N8N_VERSION_NOTIFICATIONS_ENABLED=false",
+        "N8N_TEMPLATES_ENABLED=false",
+        "N8N_RUNNERS_ENABLED=false",
+        "N8N_LOG_LEVEL=info",
+        "N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true",
+        "EXECUTIONS_DATA_SAVE_ON_SUCCESS=all",
+        "EXECUTIONS_DATA_SAVE_ON_ERROR=all",
+        "EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true"
+      ],
+      "Cmd": [
+        "sleep",
+        "infinity"
+      ],
+      "WorkingDir": "/app",
+      "ArgsEscaped": true
+    },
+    "Architecture": "arm64",
+    "Os": "linux",
+    "Size": 269240377,
+    "RootFS": {
+      "Type": "layers",
+      "Layers": [
+        "sha256:1b349a3334531b575b01d409540dd8aca14ef29abddacd50f36643d7c949db4b",
+        "sha256:4b62b083b4ff4872477bd51ced1e04bdd2e6b92ee3ce250feb95153228b6e2d7",
+        "sha256:9bb382d9a7939efc520a24528f901da32a888c8d626f3dc37ed3d6dcde03010f",
+        "sha256:9f1dc63cd935e91feec7fb835abf59dd2cb7c4307bdf441e825709042d7fe896",
+        "sha256:e36379413b292398a8c1227d3bc64f26573e94050442718d6b5a2213402ac286"
+      ]
+    },
+    "Metadata": {
+      "LastTagTime": "2026-10-09T11:56:35.722139354Z"
+    },
+    "Descriptor": {
+      "mediaType": "application/vnd.oci.image.index.v1+json",
+      "digest": "sha256:f8412a1108a08393838a9717a67c59804262164a1ca0796e9019ddca5d4dc3c7",
+      "size": 856
+    },
+    "Identity": {
+      "Pull": [
+        {
+          "Repository": "docker.io/library/sapi-native-runtime"
+        }
+      ],
+      "Build": [
+        {
+          "Ref": "ps45rx9szn0r9k46t5maptcx8",
+          "CreatedAt": "2026-10-09T15:56:35.749479383+04:00"
+        }
+      ]
+    }
+  },
+  {
+    "Id": "sha256:e907177803c665006e59979331fe9577bed58fa95dff94f25b7ac8788f99571e",
+    "RepoTags": [
+      "sapi-native-invoice-total-public:phase1"
+    ],
+    "RepoDigests": [
+      "sapi-native-invoice-total-public@sha256:e907177803c665006e59979331fe9577bed58fa95dff94f25b7ac8788f99571e"
+    ],
+    "Comment": "buildkit.dockerfile.v0",
+    "Created": "2026-10-09T11:20:20.457139823+04:00",
+    "Config": {
+      "User": "1000",
+      "Env": [
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      ],
+      "Cmd": [
+        "sleep",
+        "infinity"
+      ],
+      "WorkingDir": "/app",
+      "ArgsEscaped": true
+    },
+    "Architecture": "arm64",
+    "Os": "linux",
+    "Size": 20636302,
+    "RootFS": {
+      "Type": "layers",
+      "Layers": [
+        "sha256:1b349a3334531b575b01d409540dd8aca14ef29abddacd50f36643d7c949db4b",
+        "sha256:41730374344180b5e13f8b81d0eb8e324147562109a93ffa47ee83ae6a22ccfd",
+        "sha256:fab65534885abfe4a16aeed0b8499a9b8d7d96465f48c69a84f5f0bc0205219b",
+        "sha256:55e846428dcc8a104271916df84df10e252c95ce965a511fb4a31837108e1166",
+        "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+        "sha256:ff26b86bea211d96b9909eab6a9a0f7790934c1f48738e41c2f106d6a8fb1de3"
+      ]
+    },
+    "Metadata": {
+      "LastTagTime": "2026-10-09T11:56:36.381660017Z"
+    },
+    "Descriptor": {
+      "mediaType": "application/vnd.oci.image.index.v1+json",
+      "digest": "sha256:e907177803c665006e59979331fe9577bed58fa95dff94f25b7ac8788f99571e",
+      "size": 856
+    },
+    "Identity": {
+      "Pull": [
+        {
+          "Repository": "docker.io/library/sapi-native-invoice-total-public"
+        }
+      ],
+      "Build": [
+        {
+          "Ref": "nlm7ass1qe9ugfmov2e69roxh",
+          "CreatedAt": "2026-10-09T15:56:36.399744841+04:00"
+        }
+      ]
+    }
+  },
+  {
+    "Id": "sha256:b88377bb0836ddc999e3863b5d43917b38cc73b1dc0fca17b297bc30c11dbf24",
+    "RepoTags": [
+      "sapi-native-checkout-recovery-public:phase1"
+    ],
+    "RepoDigests": [
+      "sapi-native-checkout-recovery-public@sha256:b88377bb0836ddc999e3863b5d43917b38cc73b1dc0fca17b297bc30c11dbf24"
+    ],
+    "Comment": "buildkit.dockerfile.v0",
+    "Created": "2026-10-09T11:20:21.475807011+04:00",
+    "Config": {
+      "User": "1000",
+      "Env": [
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      ],
+      "Cmd": [
+        "sleep",
+        "infinity"
+      ],
+      "WorkingDir": "/app",
+      "ArgsEscaped": true
+    },
+    "Architecture": "arm64",
+    "Os": "linux",
+    "Size": 20636683,
+    "RootFS": {
+      "Type": "layers",
+      "Layers": [
+        "sha256:1b349a3334531b575b01d409540dd8aca14ef29abddacd50f36643d7c949db4b",
+        "sha256:41730374344180b5e13f8b81d0eb8e324147562109a93ffa47ee83ae6a22ccfd",
+        "sha256:fab65534885abfe4a16aeed0b8499a9b8d7d96465f48c69a84f5f0bc0205219b",
+        "sha256:55e846428dcc8a104271916df84df10e252c95ce965a511fb4a31837108e1166",
+        "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+        "sha256:d6e8e59775915fbcb7ee6d0a4d0edebc6a68c1914a4ea4a6dbae808375764ebc"
+      ]
+    },
+    "Metadata": {
+      "LastTagTime": "2026-10-09T11:56:36.898998776Z"
+    },
+    "Descriptor": {
+      "mediaType": "application/vnd.oci.image.index.v1+json",
+      "digest": "sha256:b88377bb0836ddc999e3863b5d43917b38cc73b1dc0fca17b297bc30c11dbf24",
+      "size": 856
+    },
+    "Identity": {
+      "Build": [
+        {
+          "Ref": "5786rq6r2jbx22ygsbx56413o",
+          "CreatedAt": "2026-10-09T15:56:36.917378609+04:00"
+        }
+      ]
+    }
+  },
+  {
+    "Id": "sha256:ad4d0a325e37d49adb3edffa37068805e31554b8887e4918ddc9d7d715c45c13",
+    "RepoTags": [
+      "sapi-native-invoice-total-verifier:phase1"
+    ],
+    "RepoDigests": [
+      "sapi-native-invoice-total-verifier@sha256:ad4d0a325e37d49adb3edffa37068805e31554b8887e4918ddc9d7d715c45c13"
+    ],
+    "Comment": "buildkit.dockerfile.v0",
+    "Created": "2026-10-09T15:56:38.703861809+04:00",
+    "Config": {
+      "Env": [
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "N8N_DIAGNOSTICS_ENABLED=false",
+        "N8N_VERSION_NOTIFICATIONS_ENABLED=false",
+        "N8N_TEMPLATES_ENABLED=false",
+        "N8N_RUNNERS_ENABLED=false",
+        "N8N_LOG_LEVEL=info",
+        "N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true",
+        "EXECUTIONS_DATA_SAVE_ON_SUCCESS=all",
+        "EXECUTIONS_DATA_SAVE_ON_ERROR=all",
+        "EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true",
+        "PYTHONPATH=/tests/core:/tests",
+        "PYTHONDONTWRITEBYTECODE=1",
+        "PYTHONNOUSERSITE=1"
+      ],
+      "Cmd": [
+        "sleep",
+        "infinity"
+      ],
+      "WorkingDir": "/app",
+      "ArgsEscaped": true
+    },
+    "Architecture": "arm64",
+    "Os": "linux",
+    "Size": 269335702,
+    "RootFS": {
+      "Type": "layers",
+      "Layers": [
+        "sha256:1b349a3334531b575b01d409540dd8aca14ef29abddacd50f36643d7c949db4b",
+        "sha256:4b62b083b4ff4872477bd51ced1e04bdd2e6b92ee3ce250feb95153228b6e2d7",
+        "sha256:9bb382d9a7939efc520a24528f901da32a888c8d626f3dc37ed3d6dcde03010f",
+        "sha256:9f1dc63cd935e91feec7fb835abf59dd2cb7c4307bdf441e825709042d7fe896",
+        "sha256:e36379413b292398a8c1227d3bc64f26573e94050442718d6b5a2213402ac286",
+        "sha256:d7cfae893c488db9daf0a8a4e5c6476c380e59bbe5da9e22ff98bee6e6a5bca2",
+        "sha256:ae940b54d0a22faa93c5841291d3796a8a7e311f9f3fe35863553d2b80ceed59",
+        "sha256:788cb4880fd1543776b6291044daef345659ccd35381e615d290c6c91328a052",
+        "sha256:f87efc8dc9cb46ce4542f2a2db9da9ed6bca8960a7b2497819d7a890b792436c",
+        "sha256:406240056238f14671f0d3e22e5cbcf5c03572bf71930d419db8de5ce13f790b",
+        "sha256:68042b1cb645971e8c7a657312fa5eeaeedc424c3da5c4715c497cf3c72967f5",
+        "sha256:540f96d5c104cf5f6a11054371a4be4d8623d839c0645f6c7d3b67f9195ec774",
+        "sha256:37cb63e2b2d9caa4245dd7b6ae9ca8037d9c20a009a61738b40c6c2c961cae41",
+        "sha256:276580b973b543f59cd5b818cf1c74fa1b12a69ee6e587bda6e06da0bc7e2e8d",
+        "sha256:0106cb9d06bc672af258ab32082eefe65b85deaae92782016d7334a67e0ad37d",
+        "sha256:fd727d4c0f7ce14c56febd4997a3ba82fda50669d0f669fbcb96219e30703b8a",
+        "sha256:6924401330c427212ff2efc4b8f9510f132fdc4a6999961fa69e3e88acdf86c6",
+        "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+      ]
+    },
+    "Metadata": {
+      "LastTagTime": "2026-10-09T11:56:39.859773998Z"
+    },
+    "Descriptor": {
+      "mediaType": "application/vnd.oci.image.index.v1+json",
+      "digest": "sha256:ad4d0a325e37d49adb3edffa37068805e31554b8887e4918ddc9d7d715c45c13",
+      "size": 856
+    },
+    "Identity": {
+      "Pull": [
+        {
+          "Repository": "docker.io/library/sapi-native-invoice-total-verifier"
+        }
+      ],
+      "Build": [
+        {
+          "Ref": "n2jip4rtizipamt3vk6iksk7x",
+          "CreatedAt": "2026-10-09T15:56:40.142160881+04:00"
+        }
+      ]
+    }
+  },
+  {
+    "Id": "sha256:1fb92117e2e90815abb6ab532cf1565d3e95d03520e7e6ecb6891d0a08b1b8e0",
+    "RepoTags": [
+      "sapi-native-checkout-recovery-verifier:phase1"
+    ],
+    "RepoDigests": [
+      "sapi-native-checkout-recovery-verifier@sha256:1fb92117e2e90815abb6ab532cf1565d3e95d03520e7e6ecb6891d0a08b1b8e0"
+    ],
+    "Comment": "buildkit.dockerfile.v0",
+    "Created": "2026-10-09T15:57:09.132921074+04:00",
+    "Config": {
+      "Env": [
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "N8N_DIAGNOSTICS_ENABLED=false",
+        "N8N_VERSION_NOTIFICATIONS_ENABLED=false",
+        "N8N_TEMPLATES_ENABLED=false",
+        "N8N_RUNNERS_ENABLED=false",
+        "N8N_LOG_LEVEL=info",
+        "N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true",
+        "EXECUTIONS_DATA_SAVE_ON_SUCCESS=all",
+        "EXECUTIONS_DATA_SAVE_ON_ERROR=all",
+        "EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true",
+        "PYTHONPATH=/tests/core:/tests:/tests/payload/vendor/autowfbench",
+        "PYTHONDONTWRITEBYTECODE=1",
+        "PYTHONNOUSERSITE=1",
+        "AUTOWFBENCH_ROOT=/tests/payload/vendor/autowfbench"
+      ],
+      "Cmd": [
+        "sleep",
+        "infinity"
+      ],
+      "WorkingDir": "/app",
+      "ArgsEscaped": true
+    },
+    "Architecture": "arm64",
+    "Os": "linux",
+    "Size": 269453544,
+    "RootFS": {
+      "Type": "layers",
+      "Layers": [
+        "sha256:1b349a3334531b575b01d409540dd8aca14ef29abddacd50f36643d7c949db4b",
+        "sha256:4b62b083b4ff4872477bd51ced1e04bdd2e6b92ee3ce250feb95153228b6e2d7",
+        "sha256:9bb382d9a7939efc520a24528f901da32a888c8d626f3dc37ed3d6dcde03010f",
+        "sha256:9f1dc63cd935e91feec7fb835abf59dd2cb7c4307bdf441e825709042d7fe896",
+        "sha256:e36379413b292398a8c1227d3bc64f26573e94050442718d6b5a2213402ac286",
+        "sha256:d7cfae893c488db9daf0a8a4e5c6476c380e59bbe5da9e22ff98bee6e6a5bca2",
+        "sha256:ae940b54d0a22faa93c5841291d3796a8a7e311f9f3fe35863553d2b80ceed59",
+        "sha256:788cb4880fd1543776b6291044daef345659ccd35381e615d290c6c91328a052",
+        "sha256:f87efc8dc9cb46ce4542f2a2db9da9ed6bca8960a7b2497819d7a890b792436c",
+        "sha256:406240056238f14671f0d3e22e5cbcf5c03572bf71930d419db8de5ce13f790b",
+        "sha256:68042b1cb645971e8c7a657312fa5eeaeedc424c3da5c4715c497cf3c72967f5",
+        "sha256:540f96d5c104cf5f6a11054371a4be4d8623d839c0645f6c7d3b67f9195ec774",
+        "sha256:37cb63e2b2d9caa4245dd7b6ae9ca8037d9c20a009a61738b40c6c2c961cae41",
+        "sha256:276580b973b543f59cd5b818cf1c74fa1b12a69ee6e587bda6e06da0bc7e2e8d",
+        "sha256:60146a02a915d90256b2d9be0fa5c67941dbe85d47c4b6d484d607375003d55c",
+        "sha256:6589b531b158a3decf1d23fc70acc25952f1e3b75784c784abdcc97f9e9d57c4",
+        "sha256:af09630289f9c4791659caccd8148f058da22cc23cd8b88ba77813181cfb1b39",
+        "sha256:d290854ec4b98590ce2ddd1e3f0babc058c502ccb4c573b6358ac213a5846919",
+        "sha256:abcd11e8837c62980664c9397e86452c09dc9bcc925b7cc2a36a460b74b77021",
+        "sha256:aad8d18dd9ef78945539166344574f9fea71443658df1efd744979f7df6f12f1",
+        "sha256:99dfce9ac38f2ddb7d631a05f5f1667c92b96441058db2d89dbc12eadf1bd5fc",
+        "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+      ]
+    },
+    "Metadata": {
+      "LastTagTime": "2026-10-09T11:57:09.719150952Z"
+    },
+    "Descriptor": {
+      "mediaType": "application/vnd.oci.image.index.v1+json",
+      "digest": "sha256:1fb92117e2e90815abb6ab532cf1565d3e95d03520e7e6ecb6891d0a08b1b8e0",
+      "size": 856
+    },
+    "Identity": {
+      "Build": [
+        {
+          "Ref": "cdwon3zgkses2nexsi6tj9lge",
+          "CreatedAt": "2026-10-09T15:57:09.831789825+04:00"
+        }
+      ]
+    }
+  }
+]

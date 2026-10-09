@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "images": [
+    {
+      "task": "invoice-total",
+      "image_id": "sha256:e907177803c665006e59979331fe9577bed58fa95dff94f25b7ac8788f99571e",
+      "uid": 1000,
+      "rootfs_and_config_identical_to_full_layer_scan": true,
+      "no_verifier_ancestor": true,
+      "scan": "reports/phase2/verification/gate-c/final/invoice-public-proof.json"
+    },
+    {
+      "task": "checkout-recovery",
+      "image_id": "sha256:b88377bb0836ddc999e3863b5d43917b38cc73b1dc0fca17b297bc30c11dbf24",
+      "uid": 1000,
+      "rootfs_and_config_identical_to_full_layer_scan": true,
+      "no_verifier_ancestor": true,
+      "scan": "reports/phase2/verification/gate-c/final/checkout-public-proof.json"
+    }
+  ]
+}

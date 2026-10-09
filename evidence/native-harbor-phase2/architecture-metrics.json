@@ -1,0 +1,39 @@
+{
+  "phase1": {
+    "commit": "ce624339729444a167afaa3c12f2b40123d992b2",
+    "common": {
+      "files": 120,
+      "lines": 14725
+    },
+    "operator": {
+      "files": 94,
+      "lines": 13751
+    }
+  },
+  "b3": {
+    "commit": "0abdfd64a12bde9d0505f0021c0c12d266fd4012",
+    "common": {
+      "files": 124,
+      "lines": 15788
+    },
+    "operator": {
+      "files": 100,
+      "lines": 14905
+    }
+  },
+  "compact": {
+    "commit": "d58bbd33faf25fcf474bfb0d1abe819f6b97467d",
+    "common": {
+      "files": 98,
+      "lines": 11574,
+      "versus_phase1": -3151,
+      "versus_b3": -4214
+    },
+    "operator": {
+      "files": 81,
+      "lines": 10820,
+      "versus_phase1": -2931,
+      "versus_b3": -4085
+    }
+  }
+}
