@@ -86,6 +86,8 @@ def select_submission(source_report: Path, scenarios: tuple[str, ...]) -> dict:
             "The first attempt did not pass its stub gate; no later attempt is selected in its place",
         )
         verdict = directory / "verifier/result.json"
+        if report.get("native_tasks") or (directory / "verifier/native-task.json").exists():
+            require(verdict.is_file(), "Native generation is missing its normalized verdict")
         if acceptance.get("schema") == ADMISSION_REPORT:
             require(validate_result(read_json(verdict)) == NOT_EVALUATED, "Admission cannot claim evaluated facts")
         elif verdict.exists():

@@ -113,6 +113,7 @@ class NativeGenerationTests(unittest.TestCase):
                             "submission_sha256": sha256(trial / "agent/submission.yaml"),
                         },
                     )
+                    save(trial / "verifier/result.json", {**NOT_EVALUATED, "execution": True, "acceptance": True})
                     return 0
 
                 original_check = Run.check
@@ -143,6 +144,7 @@ class NativeGenerationTests(unittest.TestCase):
                     report = json.loads((output / "report.json").read_text())
                     self.assertEqual(report["authoring_attempts_spent"], 1)
                     self.assertTrue(report["source_unchanged"])
+                    self.assertIn("native_tasks", report)
                     manifest = select_submission(output / "report.json", ("invoice-total",))
                     write_json(output / "selection.json", manifest)
                     selected = load_selection(output / "selection.json", copy_to=output / "replay-inputs")
@@ -225,6 +227,11 @@ class NativeGenerationTests(unittest.TestCase):
                     save(verdict, value)
                     with self.subTest(value=value), self.assertRaises(ValueError):
                         select_submission(report, ("invoice-total",))
+                original = json.loads(report.read_text())
+                save(report, {**original, "native_tasks": {"invoice-total": str(ROOT / "tasks/invoice-total")}})
+                verdict.unlink()
+                with self.assertRaisesRegex(ValueError, "missing its normalized verdict"):
+                    select_submission(report, ("invoice-total",))
                 save(verdict, {**NOT_EVALUATED, "execution": True, "acceptance": True})
                 self.assertEqual(len(select_submission(report, ("invoice-total",))["entries"]), 1)
 
