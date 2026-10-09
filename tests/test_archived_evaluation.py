@@ -358,6 +358,11 @@ assert sys.argv == [__file__]
 assert request['action'] == 'evaluate'
 metadata = json.loads((Path(request['record']) / 'native-task.json').read_text())
 assert metadata['sources'] == source_manifest()
+if request.get('judgement'):
+    assert json.loads(Path(request['judgement']).read_text()) == {'saved': True}
+if request.get('series_dir'):
+    ledger = json.loads((Path(request['series_dir']) / 'ledger.json').read_text())
+    assert ledger['source_manifest'] == metadata['sources']
 output = Path(request['output'])
 output.mkdir()
 (output / 'request.json').write_text(json.dumps(request))
@@ -380,6 +385,7 @@ print(json.dumps(result))
         return invoke_native_snapshot(self.record, self.output, self.snapshot, self.manifest, request or {})
 
     def test_real_child_uses_fixed_native_entrypoint_and_canonical_request_paths(self):
+        save(self.root / "saved.json", {"saved": True})
         request = {
             "action": "unchecked",
             "record": "/unchecked",
@@ -455,3 +461,17 @@ print(json.dumps(result))
             invoke_native_snapshot(self.record, self.record / "evidence/derived", self.snapshot, self.manifest, {})
         with self.assertRaisesRegex(ValueError, "--source-root"):
             invoke_native_snapshot(self.record, self.root / "missing", None, self.manifest, {})
+
+    def test_relative_saved_reply_and_existing_series_resolve_before_child_changes_directory(self):
+        reply = self.root / "saved.json"
+        save(reply, {"saved": True})
+        series = self.root / "series"
+        save(series / "ledger.json", {"source_manifest": self.sources, "events": [{"status": "unknown"}]})
+        before = hashes(series)
+        self.evaluate({"judgement": os.path.relpath(reply), "series_dir": os.path.relpath(series), "dispatch": False})
+        captured = json.loads((self.output / "request.json").read_text())
+        self.assertEqual(captured["judgement"], str(reply))
+        self.assertEqual(captured["series_dir"], str(series))
+        self.assertEqual(hashes(series), before)
+        self.assertEqual(json.loads(reply.read_text()), {"saved": True})
+        self.assertFalse((self.output / "ledger.json").exists())

@@ -218,6 +218,9 @@ def invoke_native_snapshot(
         if required not in captured:
             raise ValueError("Archived native evaluation source is unavailable: " + required)
     request = {**request, "action": "evaluate", "record": str(record), "output": str(output)}
+    for field in ("judgement", "series_dir"):
+        if request.get(field) is not None:
+            request[field] = str(Path(request[field]).resolve())
     return _invoke_snapshot(record, output, source_root, manifest, captured, [], native_task=name, request=request)
 
 
