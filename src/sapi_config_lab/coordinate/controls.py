@@ -12,8 +12,8 @@ import subprocess
 import sys
 from typing import Any
 
-from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.evaluation import control_passed
+from sapi_config_lab.coordinate.native_tasks import policy, select_tasks
 from sapi_config_lab.coordinate.provenance import host_environment
 from sapi_config_lab.coordinate.runs import Run, progress, run_experiment
 from sapi_config_lab.execute.host import LAB_IMAGE, run_logged
@@ -69,9 +69,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--scenario", action="append", dest="scenarios")
     parser.add_argument("--skip-build", action="store_true", help="Reuse already built lab image (development only)")
     args = parser.parse_args(argv)
-    benchmarks = select_benchmarks(ROOT / "tasks", args.scenarios)
-    selected = tuple(item.name for item in benchmarks)
-    by_name = {item.name: item for item in benchmarks}
+    tasks = select_tasks(ROOT / "tasks", args.scenarios)
+    selected = tuple(task.name for task in tasks)
+    policies = {task.name: policy(task) for task in tasks}
     output = args.report_dir or ROOT / "reports" / datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     report: dict[str, Any] = {
         "schema": "sapi-lab-harbor/v1",
@@ -106,15 +106,23 @@ def main(argv: list[str] | None = None) -> int:
         check("real_n8n_transport", report["transport"]["exit_code"] == 0 and report["transport"].get("passed") is True)
         if not args.skip_build:
             run.use_image(LAB_IMAGE)
-        progress(f"staging: {len(selected)} oracle task packages")
-        run.stage("oracle", benchmarks)
+        progress(f"native images: verifying sources and {len(selected)} checked-in tasks")
+        run.use_native_tasks(tasks, build=not args.skip_build)
         for agent in ("oracle", "nop"):
             progress(f"{agent}: {len(selected)} Harbor tasks through real n8n")
-            exit_code, trials = run.harbor(agent, run.tasks, agent)
+            trials, exit_codes = [], []
+            for task in tasks:
+                code, rows = run.harbor(agent + "-" + task.name, task, agent)
+                exit_codes.append(code)
+                trials.extend(rows)
+            exit_code = next((code for code in exit_codes if code), 0)
             passed = (
                 exit_code == 0
                 and sorted(t["task_name"] for t in trials) == sorted(selected)
-                and all(control_passed(agent, trial, by_name[trial["task_name"]]) for trial in trials)
+                and all(
+                    control_passed(agent, trial, reference_reward=policies[trial["task_name"]].get("reference_reward"))
+                    for trial in trials
+                )
             )
             report[agent] = {"passed": passed, "harbor_exit_code": exit_code, "trials": trials}
             progress(f"{agent}: {'passed' if passed else 'failed'}")

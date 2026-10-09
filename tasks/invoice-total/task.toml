@@ -22,3 +22,8 @@ timeout_sec = 10
 network_mode = "public"
 cpus = 1
 memory_mb = 2048
+
+[metadata.sapi]
+default = true
+judge_calls = 0
+catalogs = ["full", "scenario"]

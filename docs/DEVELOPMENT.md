@@ -30,6 +30,10 @@ do not execute real n8n. For engine evidence run the unpaid control suite:
 ./run.sh --scenario invoice-total --scenario checkout-recovery
 ```
 
+The control command builds native images and passes the checked-in task paths
+directly to Harbor. `--skip-build` requires a prior control build record matching
+the complete current sources and native image IDs.
+
 A control is valid only when `oracle` passes and `nop` fails. Fix the instrument before spending model calls. Hosted nop permits only Harbor’s expected `RewardFileNotFoundError` when quality is unscored and no reward exists; a deterministic evaluator with null quality must record reward zero without an exception. Every control job must exit successfully.
 
 ## CLI

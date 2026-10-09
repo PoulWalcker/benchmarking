@@ -6,6 +6,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -13,6 +14,7 @@ import sys
 from typing import Any
 
 from sapi_config_lab.benchmark import Benchmark
+from sapi_config_lab.coordinate.native_tasks import image_tags
 from sapi_config_lab.coordinate.packages import UPLOAD_ONLY_AGENTS, stage_tasks, verifier_bounds
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.evaluate.records import load_trials as load_trials
@@ -62,6 +64,42 @@ class Run:
     pinned: dict[str, tuple[Path, dict[str, str]]] = field(default_factory=dict)
     bounds: dict[str, int] = field(default_factory=dict)
     benchmarks: tuple[Benchmark, ...] = ()
+    native_tasks: tuple[Path, ...] = ()
+    native_images: dict[str, str] = field(default_factory=dict)
+
+    def use_native_tasks(self, tasks: tuple[Path, ...], *, build: bool = False) -> None:
+        """Pin direct task sources and the source-verified local images that Harbor will consume."""
+        if not tasks or len(set(tasks)) != len(tasks):
+            raise ValueError("Select each native task once")
+        root = workspace_root()
+        cache = root / "reports/native-image-build.json"
+        self.check("before-native-images")
+        if build:
+            with (self.output / "native-build.log").open("w") as log:
+                subprocess.run(
+                    ["sh", str(root / "infra/native/build.sh")],
+                    cwd=root,
+                    stdout=log,
+                    stderr=subprocess.STDOUT,
+                    check=True,
+                )
+            self.check("after-native-build")
+            all_tasks = tuple(sorted(path.parent for path in (root / "tasks").glob("*/task.toml")))
+            built = {tag: image_id(tag) for tag in image_tags(all_tasks)}
+            write_json(cache, {"sources": self.sources, "images": built})
+        recorded = json.loads(cache.read_text())
+        if recorded.get("sources") != self.sources:
+            raise ValueError("Native image build sources differ; rebuild through the control suite")
+        self.native_images = {tag: image_id(tag) for tag in image_tags(tasks)}
+        if any(recorded.get("images", {}).get(tag) != identity for tag, identity in self.native_images.items()):
+            raise ValueError("Native image differs from its verified build")
+        self.native_tasks = tasks
+        self.report["native_images"] = dict(self.native_images)
+        self.report["native_tasks"] = {task.name: str(task) for task in tasks}
+        for task in tasks:
+            self.pin("native task " + task.name, task)
+        write_json(self.output / "native-inputs.json", {task.name: fingerprint(task) for task in tasks})
+        self.pin("native inputs", self.output / "native-inputs.json")
 
     @property
     def tasks(self) -> Path:
@@ -99,6 +137,8 @@ class Run:
             raise RuntimeError(f"Sources changed ({phase})")
         if self.identity is not None and image_id(self.image or "") != self.identity:
             raise RuntimeError(f"Pinned image changed ({phase})")
+        if any(image_id(tag) != identity for tag, identity in self.native_images.items()):
+            raise RuntimeError(f"Native image changed ({phase})")
         for name, (path, recorded) in self.pinned.items():
             if fingerprint(path) != recorded:
                 raise RuntimeError(f"Pinned {name} changed ({phase})")
@@ -120,7 +160,12 @@ class Run:
         **arguments: Any,
     ) -> tuple[int, list[dict]]:
         """Submit declared native packages durably under Harbor phase limits."""
-        if self.staging is None:
+        if self.native_tasks:
+            if tasks not in self.native_tasks:
+                raise ValueError("Only a selected native task can be dispatched")
+            if int(arguments.get("attempts") or 1) != 1:
+                raise ValueError("Native execution requires one attempt per fresh environment")
+        elif self.staging is None:
             raise RuntimeError("No task packages were staged")
         if agent not in UPLOAD_ONLY_AGENTS:
             raise RuntimeError(f"Agent {agent} may run commands beside the shared verifier environment")
@@ -131,14 +176,14 @@ class Run:
             and int(arguments.get("attempts") or 1) != 1
         ):
             raise ValueError("Hosted execution requires exactly one attempt per fresh environment")
-        if not set(names) <= set(self.bounds):
+        if not self.native_tasks and not set(names) <= set(self.bounds):
             raise RuntimeError(
                 "Tasks this run did not stage have no time bound: " + ", ".join(sorted(set(names) - set(self.bounds)))
             )
         if admission:
             # Each worker selects world admission or fixture replay from its declared hooks.
             arguments["verifier_env"] = [*arguments.get("verifier_env", []), "SAPI_HOSTED_ADMISSION=1"]
-        native = all((task / "tests/benchmark.json").is_file() for task in task_dirs(tasks))
+        native = bool(self.native_tasks) or all((task / "tests/benchmark.json").is_file() for task in task_dirs(tasks))
         if not native:
             raise ValueError("Only declared native benchmark packages are supported")
         self.check("before " + job)

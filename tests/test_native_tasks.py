@@ -49,7 +49,7 @@ class NativeTaskTests(unittest.TestCase):
             self.assertEqual(config["verifier"]["environment"]["network_mode"], "public")
             self.assertEqual(config["verifier"]["environment_mode"], "separate")
             self.assertEqual(config["artifacts"][0]["exclude"], ["*"])
-            self.assertNotIn("metadata", config)
+            self.assertNotIn("verifier_compose", config.get("metadata", {}).get("sapi", {}))
             for script in (task / "tests").glob("*.py"):
                 imports = {
                     node.module for node in ast.walk(ast.parse(script.read_text())) if isinstance(node, ast.ImportFrom)

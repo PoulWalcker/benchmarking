@@ -23,3 +23,11 @@ network_mode = "public"
 cpus = 1
 memory_mb = 2048
 
+
+[metadata.sapi]
+default = false
+authoring_attempts = 2
+runtime_model_calls = 4
+judge_calls = 1
+reference_reward = 0.732
+catalogs = ["full"]

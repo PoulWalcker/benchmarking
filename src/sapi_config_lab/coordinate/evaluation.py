@@ -50,14 +50,17 @@ def recorded_benchmark(name: str) -> Benchmark:
     return matches[0]
 
 
-def control_passed(agent: str, trial: dict, benchmark: Benchmark) -> bool:
+def control_passed(
+    agent: str, trial: dict, benchmark: Benchmark | None = None, *, reference_reward: float | None = None
+) -> bool:
     """Gate controls using independent acceptance and the declared reference reward."""
     if (trial.get("acceptance") or {}).get("schema") == ADMISSION_REPORT:
         return False
     result = trial["result"]
     quality = result["quality"]
+    reference_reward = benchmark.controls.reference_reward if benchmark is not None else reference_reward
     if agent == "oracle":
-        expected = benchmark.controls.reference_reward
+        expected = reference_reward
         if expected is not None and (quality or {}).get("status") != "complete":
             return False
         if expected is None:
@@ -69,9 +72,11 @@ def control_passed(agent: str, trial: dict, benchmark: Benchmark) -> bool:
         )
     if agent != "nop" or result["acceptance"] is not False:
         return False
+    if quality is None and reference_reward is not None and trial["rewards"] is None:
+        return (trial["exception"] or {}).get("exception_type") == "RewardFileNotFoundError"
     if quality is None or quality.get("status") == "complete":
         return not trial["exception"] and trial["rewards"] == {"reward": 0.0}
-    if benchmark.controls.reference_reward is None and trial["rewards"] == {"reward": 0.0}:
+    if reference_reward is None and trial["rewards"] == {"reward": 0.0}:
         return not trial["exception"] and quality.get("score_0_10") is None and quality.get("normalized_reward") is None
     exception = trial["exception"] or {}
     return (

@@ -72,12 +72,20 @@ only its directory and declared dependencies; provenance is data, not dispatch.
 
 Every Harbor experiment (`harbor`, `generate`, `live`) runs through `coordinate/runs.py`:
 
-- a new report directory, a source manifest, a pinned base image identity and staged task packages;
+- a new report directory and source manifest; native controls bind checked-in task
+  paths to the exact source-verified public/verifier image IDs; generation/live
+  currently retain their staged task packages;
 - each phase re-checks sources, image and pinned inputs;
 - `Run.harbor` submits versioned packages through `harbor_integration/runner.py` directly into the report's `jobs/` tree. Harbor owns phase limits and resources; partial trial references remain in the report on failure. Selected descriptors supply the trusted entrypoints and budgets;
 - `Run.transport` uses the same integration argv builder for its shared-verifier control; Harbor writes directly into durable output and owns its phase limits. Task input snapshots remain separate from the authoritative trial tree;
 - `Run.bridge` runs the budgeted Agency bridge;
 - the report is always written, cleanup errors included.
+
+Native control selection reads only task.toml policy (defaults, budgets, reward
+expectations and catalog arms). It neither loads descriptors nor creates task
+directories. A reusable image build record must match the complete current source
+manifest and all selected base-image IDs. Run guards recheck images and task/input
+bytes before each dispatch and at finalization.
 
 Paid work is reserved in `coordinate/ledger.py` before it starts; an unknown outcome is never released.
 
