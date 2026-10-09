@@ -58,3 +58,20 @@ adapts tasks to external Harbor 0.21.0, which owns trial infrastructure.
 uv run --locked sapi-lab check   # tests, ruff, ruff format, mypy, distribution
 ./run.sh --scenario <name>       # when execution, packaging, containers, evidence or verification change
 ```
+
+## Agent skills
+
+### Issue tracker
+
+Track issues and specs as local Markdown under `.scratch/`.
+Before creating, reading or updating tickets, read `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five default triage roles.
+Before triaging, read `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Use a single-context layout: root `GLOSSARY.md` and `docs/adr/`.
+Before exploring domain concepts or decisions, read `docs/agents/domain.md`.

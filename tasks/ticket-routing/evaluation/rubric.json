@@ -1,0 +1,14 @@
+{
+  "id": "ticket-routing",
+  "version": "1.0.0",
+  "origin": "local",
+  "criteria": [
+    {
+      "id": "acceptance",
+      "question": "Did the Gantt classify the ticket and execute exactly the required routing branch?",
+      "weight": 10,
+      "evaluator": "deterministic",
+      "check_id": "accepted"
+    }
+  ]
+}

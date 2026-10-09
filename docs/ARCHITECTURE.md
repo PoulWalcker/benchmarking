@@ -34,7 +34,7 @@ file reads; those still require review.
 
 ## Native task ownership
 
-`tasks/invoice-total/` and `tasks/checkout-recovery/` own their public instructions,
+`tasks/invoice-total/`, `tasks/checkout-recovery/` and `tasks/ticket-routing/` own their public instructions,
 bindings, operations, private evaluation, source pins, calibration and oracle
 solutions. Native `task.toml` owns Harbor configuration. Its small `metadata.sapi`
 table contains research policy: default selection, model budgets, catalog arms,

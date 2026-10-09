@@ -12,7 +12,6 @@ from sapi_config_lab.coordinate.native_tasks import select_tasks
 from sapi_config_lab.paths import workspace_root
 
 RETIRED = (
-    "ticket-routing",
     "competitor-report",
     "revise-answer",
     "daily-digest",
@@ -28,12 +27,17 @@ class RetirementTests(unittest.TestCase):
     def test_production_selection_includes_retained_tasks_and_default_is_invoice_only(self):
         root = workspace_root() / "tasks"
         self.assertEqual(
-            {item.name for item in select_tasks(root, ["invoice-total", "checkout-recovery", "research-report"])},
-            {"invoice-total", "checkout-recovery", "research-report"},
+            {
+                item.name
+                for item in select_tasks(
+                    root, ["invoice-total", "checkout-recovery", "ticket-routing", "research-report"]
+                )
+            },
+            {"invoice-total", "checkout-recovery", "ticket-routing", "research-report"},
         )
         self.assertEqual({item.name for item in select_tasks(root)}, {"invoice-total"})
         for options, expected in (
-            ([], {"invoice-total", "checkout-recovery", "research-report"}),
+            ([], {"invoice-total", "checkout-recovery", "ticket-routing", "research-report"}),
             (["--defaults"], {"invoice-total"}),
         ):
             output = io.StringIO()
@@ -60,9 +64,9 @@ class RetirementTests(unittest.TestCase):
             self.assertEqual(main(["build", "--output-dir", temporary]), 0)
             self.assertEqual(
                 {row["config"] for row in json.loads(output.getvalue())},
-                {"invoice-total", "checkout-recovery", "research-report"},
+                {"invoice-total", "checkout-recovery", "ticket-routing", "research-report"},
             )
             self.assertEqual(
                 {path.name.split(".", 1)[0] for path in Path(temporary).glob("*.n8n.json")},
-                {"invoice-total", "checkout-recovery", "research-report"},
+                {"invoice-total", "checkout-recovery", "ticket-routing", "research-report"},
             )

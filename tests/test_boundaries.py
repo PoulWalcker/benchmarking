@@ -31,9 +31,11 @@ ALLOWED = {
 # Native trusted scripts are explicit composition roots, not lower-stage modules.
 NATIVE_COORDINATORS = {
     "native_tasks.invoice-total.experiment": set(),
+    "native_tasks.ticket-routing.experiment": set(),
     "native_tasks.research-report.experiment": set(),
     "native_tasks.checkout-recovery.experiment": set(),
     "native_tasks.invoice-total.tests.main": {"payload.evaluation.evaluator", "payload.experiment"},
+    "native_tasks.ticket-routing.tests.main": {"payload.evaluation.evaluator", "payload.experiment"},
     "native_tasks.research-report.tests.main": {"payload.evaluation.evaluator", "payload.experiment"},
     "native_tasks.checkout-recovery.tests.main": {
         "payload.environment.hooks",

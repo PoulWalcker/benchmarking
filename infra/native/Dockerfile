@@ -16,6 +16,12 @@ COPY tasks/research-report/instruction.md tasks/research-report/task.md tasks/re
 FROM public AS checkout-recovery-public
 COPY tasks/checkout-recovery/instruction.md tasks/checkout-recovery/authoring-notes.md tasks/checkout-recovery/bindings.yaml tasks/checkout-recovery/authoring-prompt.txt /app/public/
 
+FROM public AS ticket-routing-public
+COPY tasks/ticket-routing/instruction.md \
+     tasks/ticket-routing/task.md \
+     tasks/ticket-routing/bindings.yaml \
+     /app/public/
+
 # Trusted stages use the existing pinned n8n runtime, never a public descendant.
 FROM sapi-native-runtime:phase1 AS core
 COPY --from=sapi-identity source-manifest.json /opt/source-manifest.json
@@ -51,3 +57,11 @@ COPY tasks/checkout-recovery/provenance/autowfbench-source.json /tests/payload/p
 RUN python3 /tests/payload/environment/install.py
 ENV PYTHONPATH=/tests/core:/tests:/tests/payload/vendor/autowfbench AUTOWFBENCH_ROOT=/tests/payload/vendor/autowfbench
 RUN python3 -c "from payload.environment.hooks import plan, prepare, snapshot; from payload.evaluation.evaluator import evaluate; from sapi_config_lab.execute.agency import make_handler"
+
+FROM core AS ticket-routing-verifier
+COPY tasks/ticket-routing/experiment.py /tests/payload/experiment.py
+COPY tasks/ticket-routing/bindings.yaml \
+     tasks/ticket-routing/operations.js \
+     tasks/ticket-routing/cases.json \
+     /tests/payload/
+COPY tasks/ticket-routing/evaluation /tests/payload/evaluation

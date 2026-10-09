@@ -25,7 +25,7 @@ from verification.rubric import (
 
 ANCHORS = {"yes": "a", "maybe": "b", "no": "c"}
 
-CARDED = {"invoice-total", "research-report"}
+CARDED = {"invoice-total", "ticket-routing", "research-report"}
 # The scenarios that ship a card file today.
 CARDS = {path.parent.parent.name for path in (workspace_root() / "tasks").glob("*/evaluation/rubric.json")}
 
