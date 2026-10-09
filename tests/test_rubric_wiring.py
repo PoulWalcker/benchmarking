@@ -316,22 +316,6 @@ class VerifierSeamTests(unittest.TestCase):
                 self.assertEqual(reward({"passed": accepted}), expected)
                 self.assertNotEqual(document["normalized_reward"], expected)
 
-    def test_the_viewer_export_leaves_a_rubric_document_alone(self):
-        """It shares a file name with the task-evaluation document; the schema parts them."""
-        from sapi_config_lab.evaluate.review_export import export_trial
-
-        with tempfile.TemporaryDirectory() as directory:
-            trial = Path(directory) / "job" / "trial" / "verifier" / "evaluation"
-            trial.mkdir(parents=True)
-            document = evaluate_facts(
-                [facts_for(*sample_run())], accepted=True, execution_pass=True, judge=RecordedJudge(ANSWERS)
-            )
-            (trial / "evaluation.json").write_text(json.dumps(document))
-            row = export_trial(trial / "evaluation.json", force=True, rewards=True, dry_run=False)
-            self.assertEqual(row["written"], [])
-            self.assertIn("Unexpected schema", row["skipped"][0]["reason"])
-            self.assertFalse((trial / "reward.json").exists())
-
     def test_a_rubric_that_raises_still_leaves_a_report_and_a_verdict(self):
         with unittest.mock.patch.object(verifier, "score_rubric", side_effect=RuntimeError("broken rubric")):
             directory, report = self.verify()

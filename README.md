@@ -29,7 +29,7 @@ uv run --locked sapi-lab compile tasks/invoice-total/solution/config.yaml --outp
 uv run --locked sapi-lab --help
 ```
 
-`generate`, `live`, `evaluate --dispatch-judge` and manual `ui --live` execution can
+`generate`, `live` and current native `evaluate --dispatch-judge` can
 dispatch model calls; read [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) first. Machine
 settings and the editable-workspace gates are documented there.
 
@@ -73,3 +73,9 @@ reports/          local run output (ignored)
 `generation/FORMAT.md` and `generation/PROFILE.md` are prompt material, not documentation; editing them changes recorded prompt hashes.
 
 Historical evidence proves what happened in a recorded run, not that it still holds for the current tree. Pinned sources, versions, image identities and source manifests make that boundary explicit.
+
+The compact scope defers lifecycle/WBS repair execution, custom n8n UI, Markdown
+review export, archived evaluator execution and benchmark task distribution through
+wheels. Historical evidence and normalized result readers remain available. Compiler
+syntax/lowering, bounded refinement and current native offline evaluation/judging
+remain supported. Deferred implementations are retained in Git history.

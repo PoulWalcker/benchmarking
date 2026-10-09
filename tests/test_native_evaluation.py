@@ -12,7 +12,6 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.coordinate.archived_evaluation import invoke_native_snapshot
 from sapi_config_lab.coordinate.ledger import Ledger
 from sapi_config_lab.coordinate.native_evaluation import reevaluate_native, validate_record
 from sapi_config_lab.coordinate.provenance import source_manifest
@@ -190,7 +189,7 @@ class NativeEvaluationTests(unittest.TestCase):
         self.assertEqual(json.loads(ledger.path.read_text())["events"][0]["status"], "passed")
         self.assertEqual(calls.read_text(), "reserved\n")
 
-    def test_actual_archived_task_judge_timeout_stays_unknown_and_blocks_retry(self):
+    def test_actual_current_task_judge_timeout_stays_unknown_and_blocks_retry(self):
         snapshot = self.root / "snapshot"
         for relative in self.sources:
             target = snapshot / relative
@@ -206,10 +205,8 @@ class NativeEvaluationTests(unittest.TestCase):
             ignore=shutil.ignore_patterns(".git", "__pycache__"),
         )
         sources = source_manifest(snapshot)
-        manifest = self.root / "frozen.json"
-        write_json(manifest, sources)
-        record = native_record(self.root / "archived-record", sources)
-        series = self.root / "archived-series"
+        record = native_record(self.root / "current-record", sources)
+        series = self.root / "current-series"
         series.mkdir()
         ledger = series / "ledger.json"
         write_json(
@@ -231,14 +228,43 @@ class NativeEvaluationTests(unittest.TestCase):
             "series_dir": str(series),
             "series_ceiling": None,
         }
+
+        def invoke_current(output):
+            # A temporary checkout changes only the timeout constant, keeping the real task/scorer process path.
+            bootstrap = "import runpy,sys; sys.path[:0]=sys.argv[1:4]; runpy.run_path(sys.argv[4],run_name='__main__')"
+            task = snapshot / "tasks/checkout-recovery"
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "-I",
+                    "-B",
+                    "-c",
+                    bootstrap,
+                    str(snapshot / "src"),
+                    str(snapshot),
+                    str(task),
+                    str(task / "experiment.py"),
+                ],
+                input=json.dumps({**request, "action": "evaluate", "record": str(record), "output": str(output)}),
+                text=True,
+                capture_output=True,
+                check=False,
+                cwd=snapshot,
+            )
+            if completed.returncode == 124:
+                raise subprocess.TimeoutExpired(completed.args, 3)
+            if completed.returncode:
+                raise ValueError(completed.stderr)
+            return json.loads(completed.stdout)
+
         with patch.dict(
             os.environ, {"CODEX_BIN": str(executable), "SAPI_TEST_LEDGER": str(ledger), "SAPI_TEST_CALLS": str(calls)}
         ):
             with self.assertRaises(subprocess.TimeoutExpired):
-                invoke_native_snapshot(record, self.root / "timed-out", snapshot, manifest, request)
+                invoke_current(self.root / "timed-out")
             saved = json.loads(ledger.read_text())
             self.assertEqual([(e["count"], e["status"]) for e in saved["events"]], [(1, "unknown")])
             with self.assertRaises(ValueError):
-                invoke_native_snapshot(record, self.root / "retry-refused", snapshot, manifest, request)
+                invoke_current(self.root / "retry-refused")
         self.assertEqual(calls.read_text(), "reserved\n")
         self.assertEqual(json.loads(ledger.read_text()), saved)

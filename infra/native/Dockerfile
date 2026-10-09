@@ -20,7 +20,7 @@ COPY --from=sapi-core __init__.py contracts.py evidence.py paths.py profile.py p
 COPY --from=sapi-core compile/__init__.py compile/n8n.py compile/refinement.py compile/runtime-fragment.js /tests/core/sapi_config_lab/compile/
 COPY --from=sapi-core execute/__init__.py execute/n8n.py execute/agency.py execute/host.py execute/agency-prompt.md /tests/core/sapi_config_lab/execute/
 COPY --from=sapi-core evaluate/__init__.py evaluate/records.py /tests/core/sapi_config_lab/evaluate/
-COPY --from=sapi-core coordinate/__init__.py coordinate/backend.py coordinate/cases.py coordinate/observe.py coordinate/benchmark_worker.py coordinate/native_record.py coordinate/lifecycle.py /tests/core/sapi_config_lab/coordinate/
+COPY --from=sapi-core coordinate/__init__.py coordinate/backend.py coordinate/cases.py coordinate/observe.py coordinate/benchmark_worker.py coordinate/native_record.py /tests/core/sapi_config_lab/coordinate/
 COPY --from=sapi-verification *.py /tests/core/verification/
 COPY --from=sapi-core harbor_integration/submission.py /opt/sapi-submission.py
 ENV PYTHONPATH=/tests/core:/tests PYTHONDONTWRITEBYTECODE=1 PYTHONNOUSERSITE=1

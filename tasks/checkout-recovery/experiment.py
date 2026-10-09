@@ -4,8 +4,12 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+from typing import TYPE_CHECKING
 
-if __package__:
+if TYPE_CHECKING:
+    from environment.hooks import plan
+    from evaluation.evaluator import evaluate
+elif __package__:
     from .environment.hooks import plan
     from .evaluation.evaluator import evaluate
 else:
@@ -35,6 +39,7 @@ if __name__ == "__main__":
     from sapi_config_lab.execute.n8n import execution_ceiling
 
     request = json.load(sys.stdin)
+    result: dict
     if request["action"] in {"prompt", "plan"}:
         require_verifier_phase(ROOT, execution_ceiling(120, bound=False) + 120)
     if request["action"] == "prompt" and request["catalog"] == "full":

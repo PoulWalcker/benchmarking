@@ -81,7 +81,7 @@ class ProfileValidationTests(unittest.TestCase):
                 [],
                 "execution.refinement.initial_state",
             ),
-            ("lifecycle/config", ("lifecycle", "on_test_pass"), None, "lifecycle.on_test_pass"),
+            ("admission/config", ("lifecycle", "on_test_pass"), None, "lifecycle.on_test_pass"),
         ]:
             path = workspace_root() / "tests/support" / (filename + ".yaml")
             config = profile.read(path)

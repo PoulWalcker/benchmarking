@@ -1,38 +1,20 @@
-"""Historical reads retain recorded facts; only explicit matching independent snapshots may re-evaluate."""
+"""Historical reads preserve recorded facts without executing archived evaluators."""
 
-import contextlib
-import io
 import json
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
 import unittest
-from unittest.mock import patch
 
 from sapi_config_lab.coordinate import evaluation
-from sapi_config_lab.coordinate.historical_evaluation import reevaluate_record
 from sapi_config_lab.evaluate.records import read_report, recorded_path, trial_result, verifier_result
-from sapi_config_lab.evaluate.review_export import find_evaluations
 from sapi_config_lab.evidence import sha256
 from sapi_config_lab.paths import workspace_root
-from tests.support.pinned import AVAILABLE, SOURCE
 
 ROOT = workspace_root()
 BASELINE = ROOT / "evidence/migration-01-baseline"
-CAPTURE = ROOT / "tests/support/historical-evaluator"
-
-
-def captured_scorer():
-    metadata = json.loads((CAPTURE / "capture.json").read_text())
-    original = metadata["original_path"]
-    sealed = json.loads((ROOT / metadata["sealed_manifest"]).read_text())
-    path = CAPTURE / metadata["capture"]
-    if sha256(path) != metadata["sha256"] or sealed[original] != metadata["sha256"]:
-        raise AssertionError("Audited historical evaluator identity differs")
-    return path.read_bytes()
 
 
 def inventory(root):
@@ -65,7 +47,6 @@ def guarded(name, *args, **kwargs):
 builtins.__import__ = guarded
 from sapi_config_lab.coordinate import evaluation
 from sapi_config_lab.evaluate.records import read_report
-from sapi_config_lab.evaluate.review_export import find_evaluations
 root = Path(sys.argv[1])
 view = read_report(root / "control-report.json")
 assert len(view["trials"]) == 22
@@ -113,8 +94,8 @@ for row in json.loads((root / "historical-files.json").read_text()):
                 if name == "hosted-before-native-fields":
                     self.assertIsNone(report.get("native_execution"))
                     self.assertIsNone(report.get("terminal_completion"))
-                with self.assertRaisesRegex(ValueError, "source snapshot unavailable"):
-                    reevaluate_record(record, root / "derived", None, None, None, None)
+                with self.assertRaisesRegex(ValueError, "Historical evaluator execution is deferred"):
+                    evaluation.main(["--record", str(record), "--output", str(root / "derived")])
                 self.assertEqual(inventory(record), before)
 
     def test_relative_and_old_absolute_associations_resolve_after_run_relocation(self):
@@ -140,7 +121,9 @@ for row in json.loads((root / "historical-files.json").read_text()):
                         }
                     )
                 )
-                self.assertEqual(find_evaluations(root / "jobs"), [(trial, source)])
+                self.assertEqual(
+                    recorded_path(prefix + "environments/oracle/retired-task/evaluation/report.json", root), source
+                )
             with self.assertRaisesRegex(ValueError, "escapes"):
                 recorded_path("../outside.json", root)
 
@@ -157,82 +140,3 @@ for row in json.loads((root / "historical-files.json").read_text()):
                 self.assertEqual(sha256(path), row["sha256"])
                 self.assertEqual(read_report(path)["recorded"], json.loads(path.read_text()))
                 self.assertEqual(sha256(path), row["sha256"])
-
-    def test_changed_snapshot_is_refused_before_loading_any_code(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            record = unpack("fixture-observation-v1", root)
-            manifest = root / "sources.json"
-            manifest.write_text(json.dumps({"verification/verify.py": "0" * 64}))
-            (root / "verification").mkdir()
-            (root / "verification/verify.py").write_text("raise AssertionError('must not import')")
-            with patch("sapi_config_lab.coordinate.historical_evaluation.load_snapshot", side_effect=AssertionError):
-                with self.assertRaisesRegex(ValueError, "snapshot differs"):
-                    reevaluate_record(record, root / "derived", root, manifest, None, None)
-
-    def test_snapshot_python_bytecode_cannot_replace_verified_evaluator_bytes(self):
-        import py_compile
-
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            record = unpack("hosted-before-native-fields", root)
-            adapter = root / "src/sapi_config_lab/evaluate/autowfbench.py"
-            adapter.parent.mkdir(parents=True)
-            adapter.write_text("raise AssertionError('unchecked bytecode executed')\n")
-            py_compile.compile(str(adapter), invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH)
-            adapter.write_bytes(captured_scorer())
-            manifest = root / "sources.json"
-            manifest.write_text(json.dumps({str(adapter.relative_to(root)): sha256(adapter)}))
-            (root / "provenance").mkdir()
-            shutil.copyfile(SOURCE.manifest, root / "provenance/autowfbench-source.json")
-            if AVAILABLE:
-                shutil.copytree(SOURCE.root, root / ".cache/autowfbench" / SOURCE.root.name)
-                result = reevaluate_record(
-                    record, root / "derived", root, manifest, None, record / "evaluation/judge-reply.json"
-                )
-                self.assertIs(result["acceptance"], True)
-            else:
-                with self.assertRaisesRegex(ValueError, "Missing or unsafe pinned source"):
-                    reevaluate_record(record, root / "derived", root, manifest, None, None)
-
-    @unittest.skipUnless(AVAILABLE, "Requires pinned independent upstream evaluator")
-    def test_matching_saved_judgement_replays_offline_and_mismatch_never_dispatches(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            record = unpack("hosted-before-native-fields", root)
-            snapshot = root / "snapshot"
-            adapter = snapshot / "src/sapi_config_lab/evaluate/autowfbench.py"
-            adapter.parent.mkdir(parents=True)
-            adapter.write_bytes(captured_scorer())
-            (snapshot / "provenance").mkdir()
-            shutil.copyfile(SOURCE.manifest, snapshot / "provenance/autowfbench-source.json")
-            shutil.copytree(SOURCE.root, snapshot / ".cache/autowfbench" / SOURCE.root.name)
-            manifest = root / "sources.json"
-            manifest.write_text(json.dumps({str(adapter.relative_to(snapshot)): sha256(adapter)}))
-            before = inventory(record)
-            args = ["--record", str(record), "--source-root", str(snapshot), "--source-manifest", str(manifest)]
-            with contextlib.redirect_stdout(io.StringIO()):
-                self.assertEqual(
-                    evaluation.main(
-                        [
-                            *args,
-                            "--output",
-                            str(root / "derived"),
-                            "--judgement",
-                            str(record / "evaluation/judge-reply.json"),
-                        ]
-                    ),
-                    0,
-                )
-            result = json.loads((root / "derived/result.json").read_text())
-            original = json.loads((record / "evaluation/report.json").read_text())["result"]
-            self.assertEqual(result, original)
-            self.assertFalse((root / "derived/evaluation/judge-dispatch.json").exists())
-            reply = json.loads((record / "evaluation/judge-reply.json").read_text())
-            reply["provenance"]["run_log_digest"] = "0" * 64
-            changed = root / "changed-reply.json"
-            changed.write_text(json.dumps(reply))
-            with self.assertRaisesRegex(ValueError, "Judge provenance differs"):
-                evaluation.main([*args, "--output", str(root / "refused"), "--judgement", str(changed)])
-            self.assertFalse((root / "refused/evaluation/judge-dispatch.json").exists())
-            self.assertEqual(inventory(record), before)

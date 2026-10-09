@@ -21,7 +21,7 @@ class LabTests(unittest.TestCase):
         support = ROOT / "tests/support"
         cls.bindings = profile.read_bindings(CATALOG)
         cls.bindings.update(profile.read_bindings(support / "refinement/bindings.yaml"))
-        cls.bindings.update(profile.read_bindings(support / "lifecycle/bindings.yaml"))
+        cls.bindings.update(profile.read_bindings(support / "admission/bindings.yaml"))
         conditional = profile.read(support / "graphs/guarded.yaml")
         conditional["workflow"]["steps"] = conditional["workflow"]["steps"][:4]
         conditional["workflow"]["dependencies"] = conditional["workflow"]["dependencies"][:4]
@@ -33,7 +33,7 @@ class LabTests(unittest.TestCase):
             "repeated": profile.read(support / "graphs/repeated.yaml"),
             "guarded": profile.read(support / "graphs/guarded.yaml"),
             "refinement": profile.read(support / "refinement/config.yaml"),
-            "lifecycle": profile.read(support / "lifecycle/config.yaml"),
+            "lifecycle": profile.read(support / "admission/config.yaml"),
         }
 
     def run_config(self, name, inputs=None, mutate_export=None):
@@ -222,7 +222,7 @@ class LabTests(unittest.TestCase):
             compiler.compile_n8n(
                 self.configs["lifecycle"],
                 self.bindings,
-                operation_source=(ROOT / "tests/support/lifecycle/operations.js").read_text(),
+                operation_source=(ROOT / "tests/support/admission/operations.js").read_text(),
             )
         cfg = copy.deepcopy(self.configs["join"])
         cfg["execution"]["concurrency"] = "required_parallel"

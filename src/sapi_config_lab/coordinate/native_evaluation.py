@@ -26,7 +26,7 @@ def validate_record(record: Path, task: Path, sources: dict) -> dict:
     }:
         raise ValueError("Incomplete native record identity")
     if metadata.get("schema") != SCHEMA or metadata.get("name") != task.name or metadata.get("sources") != sources:
-        raise ValueError("Native record source identity differs; supply its matching archived source snapshot")
+        raise ValueError("Native record source identity differs; evaluate with the exact recorded source revision")
     options = metadata.get("options")
     allowed = {"mode", "deadline_seconds", "selected_case", "cases", "judge_mode", "judge_model", "native_mode"}
     if not isinstance(options, dict) or options.keys() - allowed or metadata.get("options_sha256") != digest(options):

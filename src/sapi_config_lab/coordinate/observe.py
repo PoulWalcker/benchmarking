@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Callable
-from datetime import datetime
 import json
 import os
 from pathlib import Path
@@ -12,7 +11,7 @@ import shutil
 
 from sapi_config_lab.contracts import ArtifactTransform, Document, ExecutionRecord
 from sapi_config_lab.coordinate.cases import run_case
-from sapi_config_lab.evidence import digest, durable_json, sha256, write_json
+from sapi_config_lab.evidence import digest, sha256, write_json
 from sapi_config_lab.profile import read_bindings
 
 Runner = Callable[..., ExecutionRecord]
@@ -44,17 +43,6 @@ def _case(
     runner(entry["config"], directory, bindings=bindings, **options)
 
 
-def _lifecycle(entry: Document, directory: Path, backend, bindings: Document, acceptance) -> None:
-    from sapi_config_lab.coordinate.lifecycle import LifecycleController
-
-    controller = LifecycleController(directory, backend=backend, bindings=bindings, verifier=acceptance)
-    event = controller.callback(controller.register(entry["config"]), entry["callback"])
-    durable_json(directory / "event.json", event)
-    if entry["tick"]:
-        controller.tick(datetime.fromisoformat(entry["tick"]))
-    durable_json(directory / "snapshot.json", controller.snapshot())
-
-
 def recorded_files(directory: Path) -> dict[str, str]:
     """Every file an entry left behind, by path relative to its directory."""
     return {
@@ -69,9 +57,7 @@ def observe(
     *,
     bridge_url: str | None = None,
     runner: Runner = run_case,
-    backend=None,
     bindings: Document,
-    acceptance: Callable[[Document, ExecutionRecord], Document] | None = None,
 ) -> Document:
     """Execute every plan entry in order and write observation.json last."""
     evidence.mkdir(parents=True, exist_ok=True)
@@ -85,10 +71,9 @@ def observe(
         directory = evidence / "cases" / entry["name"]
         row: Document = {"name": entry["name"], "files": {}}
         try:
-            if entry["procedure"] == "lifecycle":
-                _lifecycle(entry, directory, backend, bindings, acceptance)
-            else:
-                _case(entry, directory, plan["mode"], bridge_url, runner, bindings)
+            if entry["procedure"] != "case":
+                raise ValueError("Unsupported observation procedure")
+            _case(entry, directory, plan["mode"], bridge_url, runner, bindings)
         except Exception as error:  # A failed entry is evidence too; acceptance decides
             row["error"] = f"{type(error).__name__}: {error}"
         row["files"] = recorded_files(directory) if directory.is_dir() else {}

@@ -22,9 +22,6 @@ MODULES = {
     "generate": "coordinate.generate",
     "bridge": "harbor_integration.model_wrapper",
     "transport": "coordinate.transport",
-    "ui": "coordinate.ui",
-    "review-export": "evaluate.review_export",
-    "lifecycle": "coordinate.lifecycle",
 }
 
 PUBLIC = {
@@ -37,9 +34,6 @@ PUBLIC = {
     "select": "Select generated submissions for replay by a fixed rule; runs nothing.",
     "live": "Replay saved or reference submissions against live operations. Costs model calls.",
     "evaluate": "Evaluate one recorded trial again; a judge is called only with --dispatch-judge.",
-    "ui": "Import graphs into local n8n and prepare one bounded manual session.",
-    "lifecycle": "Inspect lifecycle state; execution requires explicit Python acceptance/backend composition.",
-    "review-export": "Write a derived analysis.md beside recorded evaluations; adds files only.",
     "fetch-source": "Fetch a pinned upstream source into .cache/ and verify every byte against provenance/.",
 }
 

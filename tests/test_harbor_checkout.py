@@ -180,7 +180,7 @@ class CheckoutHarborPackageTests(unittest.TestCase):
         (record / "benchmark.json").write_text(json.dumps(changed))
         with self.assertRaisesRegex(ValueError, "identity differs"):
             reevaluate_benchmark(record, self.root / "changed", None)
-        with self.assertRaisesRegex(ValueError, "requires --source-root"):
+        with self.assertRaisesRegex(ValueError, "Historical evaluator execution is deferred"):
             evaluate_main(["--record", str(record), "--output", str(self.root / "paid"), "--dispatch-judge"])
 
     def test_calibration_dispatch_is_stubbed_reserved_and_preserves_original_evidence(self):

@@ -4,8 +4,11 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+from typing import TYPE_CHECKING
 
-if __package__:
+if TYPE_CHECKING:
+    from evaluation.evaluator import evaluate, plan
+elif __package__:
     from .evaluation.evaluator import evaluate, plan
 else:
     from evaluation.evaluator import evaluate, plan
@@ -66,6 +69,7 @@ if __name__ == "__main__":
     from sapi_config_lab.execute.n8n import execution_ceiling
 
     request = json.load(sys.stdin)
+    result: dict
     if request["action"] == "prompt":
         result = authoring(request["catalog"])
         count = len(plan(ROOT / "solution/config.yaml", {"deadline_seconds": 120})["entries"])
