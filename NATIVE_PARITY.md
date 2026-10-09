@@ -1,95 +1,80 @@
 # Native Harbor Phase 1 parity
 
-Integration branch: `migration/native-harbor-phase1`, based on
-`2f84b02599417aa9a7bb41e8568bbaef34bf4151`. Reference spike:
+**Independently approved; no unresolved findings.** Branch
+`migration/native-harbor-phase1` starts at
+`2f84b02599417aa9a7bb41e8568bbaef34bf4151`; the reference spike is
 `PoulWalcker/harbor-native-spike@00fffff8b7e410d06cc5b9f9e5db2e77003aa2c9`.
+Approved code: `9bbfa4811d7ebada16faa0e2b4b858e77c51b03a`. Its only change from
+verified runtime `4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b` corrects the
+network probe; task/compiler/runtime/evaluator/image sources are unchanged.
+
+[Independent verification evidence](evidence/native-harbor-phase1/verification.json)
+records exact commands, source/image identities, trial results and log hashes.
+Its SHA-256 is
+`474e131081cec8e11e7533f11d66c9ee5388865dac6182173d07fe8757ef12b8`.
 
 ## Changes and reuse
 
-Two static native Harbor 0.21.0 task directories now live under `tasks/`.
-`infra/native/build.sh` builds explicit public/trusted image targets directly from
-original sources. No task loader, descriptor, registry or materializer was added.
-The original worker exposes its unchanged observation/evaluation flow as
-`run_task`, shared by the manifest worker and native task entrypoints. Existing
-validator, compiler, n8n executor, Agency bridge/reservation ledger, submission
-admission, invoice fixtures/evaluator, checkout world/hooks and scoring are reused.
-No benchmark domain implementation was copied. Oracle YAML and original public
-instruction bytes are duplicated only as native Harbor assets and equality-tested.
+`tasks/invoice-total` and `tasks/checkout-recovery` are static Harbor 0.21.0 tasks.
+`infra/native/build.sh` builds separate public/trusted images directly from existing
+sources. Explicit native coordination roots call the shared `run_task` flow and
+original benchmark entrypoints; no descriptor, loader, registry or materializer
+was added. The validator, compiler, n8n executor, Agency bridge/reservation ledger,
+submission gate, independent invoice evaluator, checkout world and scorer are
+reused. Oracle YAML and public instructions are equality-tested native assets;
+no domain implementation was copied. Legacy architecture remains operational.
 
-## Actual verification
+## Actual independent verification
 
-Independent acceptance is pending. First independent review requested corrections
-to native coordination ownership, saved calibration on fresh evidence, and the
-author network policy. Those corrections are implemented; the final native and
-security gate remains pending. Prior implementation results (before corrections):
+| Check | Result |
+| --- | --- |
+| Full `sapi-lab check` | Passed: 522 tests, 14 opt-in skips; Ruff/format, mypy, wheel/sdist checks |
+| Native invoice oracle | Reward **1.0**; all 14 observations, comprising 11 real n8n 2.41.5 records and 3 intentional compile rejections |
+| Invoice negative controls | Nop, incorrect/invalid YAML and unsafe submissions rejected; artifact smuggling excluded |
+| Native checkout reference | Reward **0.732** on fresh world evidence using immutable saved simulated calibration; all four business checks passed |
+| Runtime LLM bridge | Actual compiled n8n LLM nodes; two reserved deterministic fake calls succeed; timeout, failure, wrong-model and malformed replies fail closed |
+| Budgets and nulls | Excess model budget rejected before dispatch; missing execution/quality facts remain nullable |
+| Isolation and lifecycle | Public image layers/history/filesystems, credentials, mounts, private networks, HTTPS denial and Compose cleanup passed |
+| Legacy and regressions | F1/F2, package security, checkout deadline/worker/evaluator/freshness faults passed; original dual-scenario `run.sh` passed oracle/nop and 19 real transport cases with `source_unchanged=true` |
 
-- `uv run --locked sapi-lab check`: full automated checks passed (520 tests, 14 opt-in skips,
-  Ruff/format, all mypy namespaces, isolated wheel/sdist installation and staging).
-- Invoice native oracle: reward `1.0`; all 14 original observations recorded with
-  real n8n 2.41.5 (`reports/native-phase1/jobs/invoice-total-2f7f2850/`).
-- Checkout native reference: reward `0.732`, independent stateful-world checks and
-  saved-reply replay passed (`reports/native-phase1/jobs/checkout-recovery-6f19108a/`).
-- Native compiled n8n LLM nodes and the existing Agency bridge passed with two
-  deterministically faked, reserved calls and reward `0.732`
-  (`reports/native-phase1/jobs/checkout-recovery-2dc73cd0/`).
-- The prior checkout result used a fresh demo response, so it did **not** prove
-  the requested saved-calibration route on fresh native evidence.
-- Saved original calibration replay passes against the unchanged scorer. Source
-  identities remain in `tests/native/calibration/origin.json`; saved bytes came
-  from the pinned spike, originally archived at its recorded baseline commit.
-- Correction round: 27 targeted tests pass, including fresh-evidence saved-answer
-  adaptation to `0.732`, immutable template verification, stale-reply/tamper
-  rejection, missing-evidence nulls, native ownership boundaries and F1/F2.
-- The exhaustive native/security/failure suite is implemented but awaits the
-  independent verifier. Logs, failed development attempts and successful controls
-  remain under `reports/native-phase1/`; no failed attempt is treated as parity.
-
-Commands and test scope are in `docs/DEVELOPMENT.md`. Native control identity
-records contain exact argv, host source hashes and public/verifier base image IDs.
-Each trusted task image freezes its complete `/tests` tree plus submission gate
-in `/opt/native-sources.sha256`, verifies those hashes before execution and saves
-the inventory beside trial evidence. Local tags require an explicit rebuild;
-this is not the legacy guarded paid-dispatch image-identity policy.
+The native matrix covers 19 logical cases across 19 initial trials and two corrected
+isolation retests. Evidence retains the two initial TCP-probe test failures; both
+corrected authenticated-TLS probes passed. This is collective verified coverage,
+not a claim of one entirely green native-suite invocation. Existing container
+identities were preserved, and no containers remained running at approval.
+**No paid model or judge calls were made.**
 
 ## Functional differences and remaining risks
 
-Native tasks require this checkout and explicitly built local image tags; rebuild
-bases before Harbor's `--force-build`. Native assets ship in the source distribution;
-existing wheel staging remains the installed-resource path. The native adapter is
-an unpaid parity/control path: checkout runtime LLM transport is deterministic fake
-transport. A hash-pinned saved simulation reply supplies only fixed answer values
-to an explicit deterministic calibration adapter. Its NEW simulated reply carries
-fresh run/response hashes; `calibration-transport.json` preserves original source
-identity/provenance and records zero judge dispatches. Historical reply bytes are
-unchanged and cannot pass scoring against fresh evidence. It makes no model-quality
-claim and does not replace legacy guarded paid authoring, live dispatch, selection,
-repair, cross-job budgets or historical re-evaluation.
+Native tasks require a checkout and explicitly rebuilt local base images before
+Harbor's `--force-build`; source-distribution assets do not replace existing wheel
+staging. Trusted task sources are hash-checked before verification, but this unpaid
+path does not replace legacy paid-dispatch source/image gates or authoring, live,
+selection, repair, cross-job budgets and historical re-evaluation workflows.
 
-Checkout rejects missing/invalid submissions before preparing a workflow window;
-its execution and quality remain null and no Harbor reward file is written.
-Harbor represents that missing reward as `RewardFileNotFoundError`. A missing judge
-also remains unscored. The author environment now explicitly uses Harbor
-`no-network`, unlike the legacy default public network; the separate verifier
-retains its own network policy and private simulator network. Invoice keeps its full original 14-observation plan (including
-three positive and seven invalid-input business cases plus four verifier probes).
-No old benchmark architecture is removed in this phase.
+Checkout's calibration adapter verifies the saved reply's immutable hash and
+contract, then projects its fixed answers into a **new simulated reply** bound to
+fresh evidence. `calibration-transport.json` preserves original provenance and
+records zero judge dispatches. Historical reply bytes remain unchanged; stale or
+tampered replies are rejected. Neither calibration nor fake runtime transport
+measures model quality.
 
-## Phase 2 deletion candidates
+Native authors use Harbor `no-network`; separate verifiers retain their own policy
+and private simulator network. Missing/invalid checkout submissions are rejected
+before workflow preparation, preserving null execution/quality. Missing scores
+produce no reward file and Harbor reports `RewardFileNotFoundError`; this is not a
+measured zero. Run instructions remain in [Development](docs/DEVELOPMENT.md#checked-in-native-harbor-tasks).
 
-After migrating **all** legacy callers and their identity/distribution guarantees:
+## Conditional Phase 2 deletion candidates
+
+Only after **all** legacy consumers and identity/distribution guarantees migrate:
 
 - `src/sapi_config_lab/harbor_integration/tasks.py`: descriptor-to-task packaging.
-- `src/sapi_config_lab/coordinate/benchmark_packages.py`: legacy positive staging.
-- `src/sapi_config_lab/coordinate/packages.py`: legacy task composition/selection.
-- `src/sapi_config_lab/benchmark.py`, `benchmark_loading.py`, and
-  `coordinate/benchmark_discovery.py`: descriptor/discovery/loading, only after all
-  compile, authoring, live, evaluation and packaging consumers migrate.
-- `benchmarks/*/scenario.json`, legacy `task.toml` and `verifier.sh`: metadata and
-  shell packaging declarations replaced by static native task directories.
-- `coordinate/benchmark_worker.py` metadata-reading `main()` and `admit()` adapter:
-  retain the shared `run_task` composition and its execution/evaluation mechanisms.
+- `src/sapi_config_lab/coordinate/benchmark_packages.py` and `coordinate/packages.py`: legacy staging/composition.
+- `src/sapi_config_lab/benchmark.py`, `benchmark_loading.py`, and `coordinate/benchmark_discovery.py`: descriptor/loading/discovery, after compile, authoring, live, evaluation and packaging consumers migrate.
+- `benchmarks/*/scenario.json`, legacy `task.toml` and `verifier.sh`: replaced packaging declarations.
+- `src/sapi_config_lab/coordinate/benchmark_worker.py` metadata-reading `main()` and `admit()`: retain shared `run_task` and execution/evaluation mechanisms.
 
-These are conditional candidates, not evidence that deletion is safe today.
-Keep benchmark domain source, compiler/runtime, independent verifier, world/scorer,
-Agency security, normalized readers, legacy evidence and experiment guard/ledger
-mechanisms. No merge or push is part of this change.
+Retain benchmark domain code, compiler/runtime, independent verification, world/scorer,
+Agency security, normalized readers, evidence and experiment guard/ledger mechanisms.
+Phase 2 has not started; nothing was removed, merged or pushed.

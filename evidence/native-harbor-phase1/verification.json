@@ -1,0 +1,769 @@
+{
+  "schema": "sapi-native-phase1-independent-verification/v1",
+  "approval": "approved",
+  "runtime_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+  "test_corrected_sha": "9bbfa4811d7ebada16faa0e2b4b858e77c51b03a",
+  "runtime_delta": "Only tests/native/control_agent.py changed after runtime verification; correct transparent-proxy TCP test to authenticated TLS and retain diagnostics. No task/compiler/runtime/evaluator/image changes.",
+  "commands": [
+    {
+      "sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "command": "./infra/native/build.sh",
+      "status": "passed",
+      "log_path": "reports/native-independent/final/build.log",
+      "log_sha256": "edf9ea9a0ce9530f218ebff5793c07285b6eff9b5525bb19f2ccd1bca4ae71d7"
+    },
+    {
+      "sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "command": "uv run --locked sapi-lab check",
+      "status": "passed",
+      "tests": 522,
+      "skipped": 14,
+      "log_path": "reports/native-independent/final/check.log",
+      "log_sha256": "8dc2ee38bdcf881a686ef030243398be2afe6c53a6436d69dc91cdd11575a6ae"
+    },
+    {
+      "sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "command": "SAPI_RUN_NATIVE_TESTS=1 uv run --locked --extra harbor --extra benchmark python -m unittest tests.test_native_tasks -v",
+      "status": "completed_with_two_probe_test_failures",
+      "tests": 11,
+      "native_trials": 19,
+      "log_path": "reports/native-independent/final/native-suite.log",
+      "log_sha256": "dad5e1d5bf3c0b29edf6ad341cdef4034ecb9edf22b0f9538beb252afcc24671"
+    },
+    {
+      "sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "command": "SAPI_RUN_DOCKER_TESTS=1 uv run --locked --extra harbor --extra benchmark python -m unittest tests.test_benchmark_packages -v",
+      "status": "passed",
+      "tests": 6,
+      "log_path": "reports/native-independent/final/legacy-package-security.log",
+      "log_sha256": "e2a94a21c060ad37c0790ed72e5490959da6226a279797fd25ca9fdf8ced94d8"
+    },
+    {
+      "sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "command": "SAPI_RUN_DOCKER_TESTS=1 SAPI_CHECKOUT_FAULTS=deadline,worker-death,evaluator-failure,isolation-freshness uv run --locked --extra harbor --extra benchmark python -m unittest tests.test_harbor_checkout -v",
+      "status": "passed",
+      "tests": 8,
+      "log_path": "reports/native-independent/final/legacy-checkout.log",
+      "log_sha256": "fb9f8cc8e541e6ac34e12d0a125f2f5684f8db792dccbc36b2db1b03fcf33714"
+    },
+    {
+      "sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "command": "PYTHONPATH=\"$PWD\" uv run --locked --extra harbor --extra benchmark python reports/native-independent/inspect_native.py",
+      "status": "passed",
+      "log_path": "reports/native-independent/final/native-image-security.log",
+      "log_sha256": "295aa829af60cd756d72cf6f90e2696ff8e43de4a68faddd28c40fe6a9786189"
+    },
+    {
+      "sha": "9bbfa4811d7ebada16faa0e2b4b858e77c51b03a",
+      "command": "uv run --locked sapi-lab check",
+      "status": "passed",
+      "tests": 522,
+      "skipped": 14,
+      "log_path": "reports/native-independent/final/check-9bb.log",
+      "log_sha256": "7b0eb91872ba3fef29a14b8de0815c22853bb268bd1b8dfef46955b6dba4a054"
+    },
+    {
+      "sha": "9bbfa4811d7ebada16faa0e2b4b858e77c51b03a",
+      "command": "SAPI_RUN_NATIVE_TESTS=1 PYTHONPATH=\"$PWD\" uv run --locked --extra harbor --extra benchmark python reports/native-independent/final/repaired_probes.py",
+      "status": "passed",
+      "tests": 2,
+      "log_path": "reports/native-independent/final/repaired-probes.log",
+      "log_sha256": "a7df99e48fbc5226f913a70ba370e7e5af8dc06324f7edba376ac84bca4b6bda",
+      "script_sha256": "96ded4dc335cbca2517e2a448fbd890922f26024450628f2b7775cd2afde4298"
+    },
+    {
+      "sha": "9bbfa4811d7ebada16faa0e2b4b858e77c51b03a",
+      "command": "./run.sh --scenario invoice-total --scenario checkout-recovery --report-dir reports/native-independent/final/legacy-controls",
+      "status": "passed",
+      "exit_code": 0,
+      "log_path": "reports/native-independent/final/legacy-controls.log",
+      "log_sha256": "b68021c882ea0f4de59fdb6d719b2f71212a9bc5b2e67340e83c6061a14352d2",
+      "report_path": "reports/native-independent/final/legacy-controls/report.json",
+      "report_sha256": "375474c7500ff7a514dda6b51a096ccb845ab7f8b6bbffe968ce9a4ba29928ed"
+    }
+  ],
+  "native_trials": [
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "checkout-recovery__YqPAFFd",
+      "task": "checkout-recovery",
+      "execution": true,
+      "acceptance": true,
+      "quality_status": "complete",
+      "score_0_10": 7.32,
+      "normalized_reward": 0.732,
+      "native_rewards": {
+        "reward": 0.732
+      },
+      "harbor_exception": null,
+      "fake_calls": 0,
+      "trial_result_sha256": "5f677d212faa0a5c49858c4695add2809a186700c354e3033186d49e07a26313",
+      "case": "oracle",
+      "job": "checkout-recovery-1ab9dc22"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "checkout-recovery__8TvBj5s",
+      "task": "checkout-recovery",
+      "execution": true,
+      "acceptance": true,
+      "quality_status": "awaiting_llm_judge",
+      "score_0_10": null,
+      "normalized_reward": null,
+      "native_rewards": null,
+      "harbor_exception": "RewardFileNotFoundError",
+      "fake_calls": 0,
+      "trial_result_sha256": "6953bfb9bb87c1c1344e5f56fb81618124fb98e1a6b5324a4e4ce6376a810de3",
+      "case": "oracle SAPI_NATIVE_JUDGE_MODE=none",
+      "job": "checkout-recovery-3c64351d"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "checkout-recovery__Xj5bhEg",
+      "task": "checkout-recovery",
+      "execution": null,
+      "acceptance": false,
+      "quality_status": null,
+      "score_0_10": null,
+      "normalized_reward": null,
+      "native_rewards": null,
+      "harbor_exception": "RewardFileNotFoundError",
+      "fake_calls": 0,
+      "trial_result_sha256": "b0ede8ef93f97e678444365b30bca8851f842bb0acf86c5bd403fb9f7f583d1b",
+      "case": "nop",
+      "job": "checkout-recovery-3e6dd488"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "checkout-recovery__e7AAfuk",
+      "task": "checkout-recovery",
+      "execution": false,
+      "acceptance": false,
+      "quality_status": "awaiting_llm_judge",
+      "score_0_10": null,
+      "normalized_reward": null,
+      "native_rewards": null,
+      "harbor_exception": "RewardFileNotFoundError",
+      "fake_calls": 1,
+      "trial_result_sha256": "190b49d8083540f35e1fdeb87903ced6a6358fe64260859303b8f471f01bd9f6",
+      "case": "tests.native.control_agent:ControlAgent checkout-llm.yaml SAPI_NATIVE_FAKE_MODE=malformed",
+      "job": "checkout-recovery-6ca71132"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "checkout-recovery__dMjEAmm",
+      "task": "checkout-recovery",
+      "execution": null,
+      "acceptance": null,
+      "quality_status": null,
+      "score_0_10": null,
+      "normalized_reward": null,
+      "native_rewards": null,
+      "harbor_exception": "AssertionError",
+      "fake_calls": 0,
+      "trial_result_sha256": "cfe5a5f1d662e354ea43eba4608aea90278680c7413bdfc0e297dfe6912c3a3a",
+      "case": "tests.native.control_agent:ProbeAgent config.yaml",
+      "job": "checkout-recovery-7d3e467d"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "checkout-recovery__qDqwMyg",
+      "task": "checkout-recovery",
+      "execution": null,
+      "acceptance": false,
+      "quality_status": null,
+      "score_0_10": null,
+      "normalized_reward": null,
+      "native_rewards": null,
+      "harbor_exception": "RewardFileNotFoundError",
+      "fake_calls": 0,
+      "trial_result_sha256": "ca1503524f539f8864f607b94b44902f70c89b6989327e67ed55ecc88b87e44f",
+      "case": "tests.native.control_agent:ControlAgent over-budget-c37a4b2de3374371ba6dd43b8c596ee8.yaml",
+      "job": "checkout-recovery-9111a9ba"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "checkout-recovery__Zq5XU6q",
+      "task": "checkout-recovery",
+      "execution": true,
+      "acceptance": true,
+      "quality_status": "complete",
+      "score_0_10": 7.32,
+      "normalized_reward": 0.732,
+      "native_rewards": {
+        "reward": 0.732
+      },
+      "harbor_exception": null,
+      "fake_calls": 2,
+      "trial_result_sha256": "f1cf628114c522ba04ef1a7dab931dc8b03a68527eb03abb42504b225a2ec3c8",
+      "case": "tests.native.control_agent:ControlAgent checkout-llm.yaml SAPI_NATIVE_FAKE_MODE=success",
+      "job": "checkout-recovery-98baaa4e"
+    },
+    {
+      "source_sha": "9bbfa4811d7ebada16faa0e2b4b858e77c51b03a",
+      "trial": "checkout-recovery__wtUo29v",
+      "task": "checkout-recovery",
+      "execution": true,
+      "acceptance": true,
+      "quality_status": "complete",
+      "score_0_10": 7.32,
+      "normalized_reward": 0.732,
+      "native_rewards": {
+        "reward": 0.732
+      },
+      "harbor_exception": null,
+      "fake_calls": 0,
+      "trial_result_sha256": "bc7bfe6e9c44de7c7a86eedd7a3a8691e57b918c2aabf0fc103b0fb2c607058e",
+      "case": "tests.native.control_agent:ProbeAgent config.yaml",
+      "job": "checkout-recovery-c036b433"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "checkout-recovery__f7dF62Q",
+      "task": "checkout-recovery",
+      "execution": false,
+      "acceptance": false,
+      "quality_status": "awaiting_llm_judge",
+      "score_0_10": null,
+      "normalized_reward": null,
+      "native_rewards": null,
+      "harbor_exception": "RewardFileNotFoundError",
+      "fake_calls": 1,
+      "trial_result_sha256": "c2dc08d9a71e05b750914bfaca00ff3b305b1dd42dd9e9c41adaf5e3e5289e32",
+      "case": "tests.native.control_agent:ControlAgent checkout-llm.yaml SAPI_NATIVE_FAKE_MODE=failure",
+      "job": "checkout-recovery-c92be8cf"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "checkout-recovery__akYCbU6",
+      "task": "checkout-recovery",
+      "execution": false,
+      "acceptance": false,
+      "quality_status": "awaiting_llm_judge",
+      "score_0_10": null,
+      "normalized_reward": null,
+      "native_rewards": null,
+      "harbor_exception": "RewardFileNotFoundError",
+      "fake_calls": 1,
+      "trial_result_sha256": "9d2a10ab0f38335547066b121c32cad8db8578eba073132f91b1aa807ca0126c",
+      "case": "tests.native.control_agent:ControlAgent checkout-llm.yaml SAPI_NATIVE_FAKE_MODE=wrong-model",
+      "job": "checkout-recovery-cb514a29"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "checkout-recovery__nB7ae5K",
+      "task": "checkout-recovery",
+      "execution": false,
+      "acceptance": false,
+      "quality_status": "awaiting_llm_judge",
+      "score_0_10": null,
+      "normalized_reward": null,
+      "native_rewards": null,
+      "harbor_exception": "RewardFileNotFoundError",
+      "fake_calls": 1,
+      "trial_result_sha256": "c27eb31543e8fb7185bcd336a86521a0f744e8446b959d43d7b107247a556e0e",
+      "case": "tests.native.control_agent:ControlAgent checkout-llm.yaml SAPI_NATIVE_FAKE_MODE=timeout",
+      "job": "checkout-recovery-f4ff5925"
+    },
+    {
+      "source_sha": "9bbfa4811d7ebada16faa0e2b4b858e77c51b03a",
+      "trial": "invoice-total__Kr7C7mu",
+      "task": "invoice-total",
+      "execution": true,
+      "acceptance": true,
+      "quality_status": "complete",
+      "score_0_10": 10.0,
+      "normalized_reward": 1.0,
+      "native_rewards": {
+        "reward": 1.0
+      },
+      "harbor_exception": null,
+      "fake_calls": 0,
+      "trial_result_sha256": "3aa6973116a39a9b482ef8a5d5a874d4d60f05e3639f53f41203ada7d561eb02",
+      "case": "tests.native.control_agent:ProbeAgent config.yaml",
+      "job": "invoice-total-14125065"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "invoice-total__nj9cHV8",
+      "task": "invoice-total",
+      "execution": false,
+      "acceptance": false,
+      "quality_status": "unscored",
+      "score_0_10": null,
+      "normalized_reward": null,
+      "native_rewards": {
+        "reward": 0.0
+      },
+      "harbor_exception": null,
+      "fake_calls": 0,
+      "trial_result_sha256": "5b04a9a8108687c8718ab37c057be42fe0ce85ffc17580a723820275fa6026d3",
+      "case": "tests.native.control_agent:ControlAgent invoice-invalid.yaml",
+      "job": "invoice-total-1ee25f34"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "invoice-total__r8Fd23E",
+      "task": "invoice-total",
+      "execution": null,
+      "acceptance": false,
+      "quality_status": "unscored",
+      "score_0_10": null,
+      "normalized_reward": null,
+      "native_rewards": {
+        "reward": 0.0
+      },
+      "harbor_exception": null,
+      "fake_calls": 0,
+      "trial_result_sha256": "e321be72e670bd5c8a12ab2e3869f0d647f731d4c6eb1e10ef84dfea0d9c399a",
+      "case": "tests.native.control_agent:ControlAgent attack=extra config.yaml",
+      "job": "invoice-total-4b9889ff"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "invoice-total__wa9Jr9T",
+      "task": "invoice-total",
+      "execution": true,
+      "acceptance": true,
+      "quality_status": "complete",
+      "score_0_10": 10.0,
+      "normalized_reward": 1.0,
+      "native_rewards": {
+        "reward": 1.0
+      },
+      "harbor_exception": null,
+      "fake_calls": 0,
+      "trial_result_sha256": "6d4a73f5827812520a77614d117a573c59121f075ca1bca06e1afe991842e718",
+      "case": "tests.native.control_agent:ControlAgent attack=artifact config.yaml",
+      "job": "invoice-total-6974b9c0"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "invoice-total__noqDFYx",
+      "task": "invoice-total",
+      "execution": null,
+      "acceptance": null,
+      "quality_status": null,
+      "score_0_10": null,
+      "normalized_reward": null,
+      "native_rewards": null,
+      "harbor_exception": "AssertionError",
+      "fake_calls": 0,
+      "trial_result_sha256": "c9fb49de9a2fa3139a365aa9e55633b12a5166bf54a69f7e7faca937b1db5ea1",
+      "case": "tests.native.control_agent:ProbeAgent config.yaml",
+      "job": "invoice-total-775701e5"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "invoice-total__G2EheEg",
+      "task": "invoice-total",
+      "execution": true,
+      "acceptance": false,
+      "quality_status": "unscored",
+      "score_0_10": null,
+      "normalized_reward": null,
+      "native_rewards": {
+        "reward": 0.0
+      },
+      "harbor_exception": null,
+      "fake_calls": 0,
+      "trial_result_sha256": "068dd10ced9dc7d607024d953bcf58a2862884f1a35b329d55341e947fe28a6a",
+      "case": "tests.native.control_agent:ControlAgent invoice-wrong.yaml",
+      "job": "invoice-total-9c4369d6"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "invoice-total__nw4kSrk",
+      "task": "invoice-total",
+      "execution": true,
+      "acceptance": true,
+      "quality_status": "complete",
+      "score_0_10": 10.0,
+      "normalized_reward": 1.0,
+      "native_rewards": {
+        "reward": 1.0
+      },
+      "harbor_exception": null,
+      "fake_calls": 0,
+      "trial_result_sha256": "a6a741246c5e446ef1711b34800962ef6b7ec050ed8ef06d1bcbfada79e36de7",
+      "case": "oracle",
+      "job": "invoice-total-bd6e1b6c"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "invoice-total__ApzmNXs",
+      "task": "invoice-total",
+      "execution": null,
+      "acceptance": false,
+      "quality_status": "unscored",
+      "score_0_10": null,
+      "normalized_reward": null,
+      "native_rewards": {
+        "reward": 0.0
+      },
+      "harbor_exception": null,
+      "fake_calls": 0,
+      "trial_result_sha256": "edded4ff4df1af306e469d97978ac3f3e2f28966c79e5259af87e7157b6f1949",
+      "case": "tests.native.control_agent:ControlAgent attack=fifo",
+      "job": "invoice-total-e3c6fc78"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "invoice-total__aYbueph",
+      "task": "invoice-total",
+      "execution": null,
+      "acceptance": false,
+      "quality_status": "unscored",
+      "score_0_10": null,
+      "normalized_reward": null,
+      "native_rewards": {
+        "reward": 0.0
+      },
+      "harbor_exception": null,
+      "fake_calls": 0,
+      "trial_result_sha256": "8d0e6e0a795300017bf68464abae3edf4f339d02f70649349e73d6f2666099d4",
+      "case": "nop",
+      "job": "invoice-total-f31fa384"
+    },
+    {
+      "source_sha": "4bd7d4c7ee7405fa45a4ae61924a9083d4daa84b",
+      "trial": "invoice-total__BvAwMxc",
+      "task": "invoice-total",
+      "execution": null,
+      "acceptance": false,
+      "quality_status": "unscored",
+      "score_0_10": null,
+      "normalized_reward": null,
+      "native_rewards": {
+        "reward": 0.0
+      },
+      "harbor_exception": null,
+      "fake_calls": 0,
+      "trial_result_sha256": "ab75d74851bc1481176bcc66f8c6108ed5638fd9bb9d4fe5bd13650390ea4482",
+      "case": "tests.native.control_agent:ControlAgent attack=symlink",
+      "job": "invoice-total-fd74fdf4"
+    }
+  ],
+  "security": [
+    {
+      "task": "invoice-total",
+      "public_layers": 6,
+      "public_files": 1507,
+      "author_stopped_before_private_started": true
+    },
+    {
+      "task": "checkout-recovery",
+      "public_layers": 6,
+      "public_files": 1508,
+      "author_stopped_before_private_started": true
+    }
+  ],
+  "evaluator_failure": {
+    "trial": "reports/migration-06/faults-a87bb4b7d2/jobs/evaluator-failure/checkout-recovery__wCZehb7",
+    "reward_file_present": false,
+    "normalized_file_present": false,
+    "terminal": {
+      "native_execution": true,
+      "terminal_completion": true,
+      "termination_reason": "completed"
+    },
+    "normalized_reader_result": {
+      "execution": null,
+      "acceptance": null,
+      "quality": null
+    }
+  },
+  "unpaid": true,
+  "limitations": [
+    "Saved calibration produces a clearly labeled new simulated reply using immutable saved answer values; it is not a fresh model-quality judgement.",
+    "Legacy Docker fault matrix selected deadline, worker-death, evaluator-failure and isolation-freshness; other unchanged permutations were not rerun.",
+    "The first native suite had two test-probe failures because Harbor accepts TCP locally in its transparent proxy. Both affected probes passed after the test-only TLS correction; collective coverage is recorded, not a claim of a single all-green native invocation."
+  ],
+  "review_axes": {
+    "standards": "approved corrected runtime 4bd7d4c",
+    "spec": "approved corrected runtime 4bd7d4c"
+  },
+  "corrective_probes": [
+    {
+      "trial": "checkout-recovery__wtUo29v",
+      "task": "checkout-recovery",
+      "proof": {
+        "uid": 1000,
+        "private_paths_absent": true,
+        "credentials_absent": true,
+        "https_egress_blocked": true,
+        "tls_denial": "SSLEOFError",
+        "collector_protected": true
+      },
+      "reward": {
+        "reward": 0.732
+      }
+    },
+    {
+      "trial": "invoice-total__Kr7C7mu",
+      "task": "invoice-total",
+      "proof": {
+        "uid": 1000,
+        "private_paths_absent": true,
+        "credentials_absent": true,
+        "https_egress_blocked": true,
+        "tls_denial": "SSLEOFError",
+        "collector_protected": true
+      },
+      "reward": {
+        "reward": 1.0
+      }
+    }
+  ],
+  "checkout_reference": {
+    "trial": "checkout-recovery__YqPAFFd",
+    "native_rewards": {
+      "reward": 0.732
+    },
+    "calibration": {
+      "adapter": "sapi-native-saved-calibration/v1",
+      "template_sha256": "0af5a1b5ffd8cc704cb67a0c4a15afbbebf95b4a3389216f735699c15cbc178b",
+      "run_log_digest": "ed6846b8122afad507c19e5268759edbf9913df181f232e53c0c4434c4118227",
+      "judge_dispatches": 0,
+      "paid_dispatch": false,
+      "status": "adapted",
+      "original_digest_differs": true
+    },
+    "world_tool_calls": 5,
+    "world_checks": {
+      "eur_fixed": true,
+      "regressions": true,
+      "safe_patch": true,
+      "tested_recovery": true
+    },
+    "world_terminal": {
+      "native_execution": true,
+      "terminal_completion": true,
+      "termination_reason": "completed"
+    }
+  },
+  "invoice_reference": {
+    "trial": "invoice-total__nw4kSrk",
+    "native_rewards": {
+      "reward": 1.0
+    },
+    "observations": [
+      "original-38000",
+      "alternate-values-zero",
+      "maximum-safe-total",
+      "empty",
+      "duplicate-id",
+      "mixed-currencies",
+      "negative-amount",
+      "fractional-amount",
+      "unsafe-amount",
+      "total-overflow",
+      "mutated-generated-result",
+      "invalid-yaml-unknown-operation",
+      "invalid-yaml-cycle",
+      "invalid-yaml-unsupported-required-parallel"
+    ],
+    "n8n_2_41_5_records": 11,
+    "intentional_compile_rejections": 3
+  },
+  "runtime_bridge": {
+    "malformed": {
+      "trial": "checkout-recovery__e7AAfuk",
+      "execution": false,
+      "acceptance": false,
+      "fake_calls": 1,
+      "dispatch_attempts": 1,
+      "bridge_outcomes": [
+        {
+          "http_status": 422,
+          "status": "failed",
+          "error": "contract_rejected"
+        }
+      ]
+    },
+    "success": {
+      "trial": "checkout-recovery__Zq5XU6q",
+      "execution": true,
+      "acceptance": true,
+      "fake_calls": 2,
+      "dispatch_attempts": 2,
+      "bridge_outcomes": [
+        {
+          "http_status": 200,
+          "status": "completed",
+          "error": null
+        },
+        {
+          "http_status": 200,
+          "status": "completed",
+          "error": null
+        }
+      ]
+    },
+    "failure": {
+      "trial": "checkout-recovery__f7dF62Q",
+      "execution": false,
+      "acceptance": false,
+      "fake_calls": 1,
+      "dispatch_attempts": 1,
+      "bridge_outcomes": [
+        {
+          "http_status": 422,
+          "status": "failed",
+          "error": "contract_rejected"
+        }
+      ]
+    },
+    "wrong-model": {
+      "trial": "checkout-recovery__akYCbU6",
+      "execution": false,
+      "acceptance": false,
+      "fake_calls": 1,
+      "dispatch_attempts": 1,
+      "bridge_outcomes": [
+        {
+          "http_status": 422,
+          "status": "failed",
+          "error": "contract_rejected"
+        }
+      ]
+    },
+    "timeout": {
+      "trial": "checkout-recovery__nB7ae5K",
+      "execution": false,
+      "acceptance": false,
+      "fake_calls": 1,
+      "dispatch_attempts": 1,
+      "bridge_outcomes": [
+        {
+          "http_status": 502,
+          "status": "failed",
+          "error": "upstream_transport"
+        }
+      ]
+    }
+  },
+  "native_images": {
+    "checkout-recovery": {
+      "public": "sha256:7d16d0b69abaa5ea75b718017792943e6755844d12fd1898c313f5062014e3ea",
+      "verifier": "sha256:217f8e8f5114ece362ce506e7b5a08a92caaf1712e2ea8708bd1073f7276d09c"
+    },
+    "invoice-total": {
+      "public": "sha256:de963a54ea3235c2cd8eb382fbf015133740dfc1082c49ea32e07adeb9e6f64f",
+      "verifier": "sha256:d7c82f1403c2e9a69ed5197d2e5f8177f22a6452622e62605e1090673cbdc8ad"
+    }
+  },
+  "public_image_inspections": [
+    {
+      "task": "invoice-total",
+      "image": "sha256:93a049069702daa24210b7c53025e1c2497e52dd4c21dc25a0dcb028d348f886",
+      "layers": 6,
+      "protected_data_absent": true,
+      "private_networks_disjoint": true,
+      "mounts_passed": true
+    },
+    {
+      "task": "checkout-recovery",
+      "image": "sha256:a0f517fa50523e1d20a5b3b24768f732ef4e653d627c1176a7a20b5d77c59d7c",
+      "layers": 6,
+      "protected_data_absent": true,
+      "private_networks_disjoint": true,
+      "mounts_passed": true
+    }
+  ],
+  "budget_rejection": {
+    "trial": "checkout-recovery__qDqwMyg",
+    "execution": null,
+    "acceptance": false,
+    "fake_calls": 0,
+    "native_rewards": null
+  },
+  "approved_code_sha": "9bbfa4811d7ebada16faa0e2b4b858e77c51b03a",
+  "unresolved_findings": [],
+  "legacy_guard": {
+    "status": "passed",
+    "source_unchanged": true,
+    "existing_container_identities_preserved": true,
+    "harbor_version": "0.21.0",
+    "n8n_version": "2.41.5",
+    "transport_cases": 19,
+    "transport_passed": true,
+    "controls": {
+      "oracle": {
+        "passed": true,
+        "harbor_exit_code": 0,
+        "trials": [
+          {
+            "task": "checkout-recovery",
+            "path": "jobs/oracle/checkout-recovery__2Pk6wKh",
+            "execution": true,
+            "acceptance": true,
+            "score_0_10": 7.32,
+            "normalized_reward": 0.732,
+            "native_rewards": {
+              "reward": 0.732
+            }
+          },
+          {
+            "task": "invoice-total",
+            "path": "jobs/oracle/invoice-total__24nbJeg",
+            "execution": true,
+            "acceptance": true,
+            "score_0_10": 10.0,
+            "normalized_reward": 1.0,
+            "native_rewards": {
+              "reward": 1.0
+            }
+          }
+        ]
+      },
+      "nop": {
+        "passed": true,
+        "harbor_exit_code": 0,
+        "trials": [
+          {
+            "task": "checkout-recovery",
+            "path": "jobs/nop/checkout-recovery__GMj8yuz",
+            "execution": false,
+            "acceptance": false,
+            "score_0_10": null,
+            "normalized_reward": null,
+            "native_rewards": null
+          },
+          {
+            "task": "invoice-total",
+            "path": "jobs/nop/invoice-total__vYNoSwB",
+            "execution": null,
+            "acceptance": false,
+            "score_0_10": null,
+            "normalized_reward": null,
+            "native_rewards": {
+              "reward": 0.0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "image_history": [
+    {
+      "task": "invoice-total",
+      "history_entries": 9,
+      "protected_history_bytes_absent": true
+    },
+    {
+      "task": "checkout-recovery",
+      "history_entries": 9,
+      "protected_history_bytes_absent": true
+    }
+  ],
+  "source_reconciliation": {
+    "runtime_to_test_fix": [
+      "tests/native/control_agent.py"
+    ],
+    "runtime_files_changed": false,
+    "native_matrix_meaning": "19 logical native cases verified across 21 fresh trials. Initial full native invocation had only two flawed TCP probes; both affected cases passed corrected authenticated-TLS retests. No claim of a single all-green native-suite invocation."
+  },
+  "worktree_clean_at_approval": true,
+  "running_containers_at_approval": []
+}
