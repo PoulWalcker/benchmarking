@@ -76,12 +76,15 @@ class NativeGenerationTests(unittest.TestCase):
                     )
                     return 0
 
-                def wrapper(agent, prompt, *, output=output, calls=calls, answer=answer):
+                def wrapper(upstream, prompt, timeout, maximum, *, output=output, calls=calls, answer=answer):
+                    self.assertEqual((timeout, maximum), (195, 2_000_000))
                     event = json.loads((output / "ledger.json").read_text())["events"][-1]
                     self.assertEqual((event["phase"], event["status"], event["count"]), ("authoring", "unknown", 1))
                     self.assertEqual(prompt.encode(), (output / "inputs/invoice-total/prompt.txt").read_bytes())
                     calls.append(prompt)
-                    return {"ok": True, "exit_code": 0, "output": answer, "stderr": "model: mocked-model\nPRIVATE"}
+                    return json.dumps(
+                        {"ok": True, "exit_code": 0, "output": answer, "stderr": "model: mocked-model\nPRIVATE"}
+                    ).encode()
 
                 def harbor(argv, task, jobs, name, agent, log, *, tasks=tasks, answer=answer, **kwargs):
                     self.assertEqual(task, tasks[0])
@@ -119,13 +122,6 @@ class NativeGenerationTests(unittest.TestCase):
                         (output / "inputs/invoice-total/prompt.txt").write_text("changed")
                     original_check(run, phase)
 
-                def close(run):
-                    try:
-                        run.check("final")
-                    except RuntimeError:
-                        run.report["status"] = "failed"
-                    write_json(run.output / "report.json", run.report)
-
                 with (
                     patch("sapi_config_lab.coordinate.runs.workspace_root", return_value=root),
                     patch("sapi_config_lab.coordinate.runs.running_containers", return_value=""),
@@ -133,10 +129,9 @@ class NativeGenerationTests(unittest.TestCase):
                     patch("sapi_config_lab.coordinate.runs.image_id", side_effect=images.__getitem__),
                     patch.object(Run, "use_image", return_value="sha256:transport"),
                     patch.object(Run, "check", check),
-                    patch.object(Run, "close", close),
                     patch("sapi_config_lab.coordinate.generate.run_logged", side_effect=controls),
                     patch("sapi_config_lab.coordinate.runs.run_job", side_effect=harbor),
-                    patch.object(WrapperYamlAgent, "request", wrapper),
+                    patch("sapi_config_lab.harbor_integration.yaml_agent.request_wrapper", side_effect=wrapper),
                     contextlib.redirect_stdout(io.StringIO()),
                     contextlib.redirect_stderr(io.StringIO()),
                 ):
@@ -147,6 +142,11 @@ class NativeGenerationTests(unittest.TestCase):
                 if fault is None:
                     report = json.loads((output / "report.json").read_text())
                     self.assertEqual(report["authoring_attempts_spent"], 1)
+                    self.assertTrue(report["source_unchanged"])
+                    manifest = select_submission(output / "report.json", ("invoice-total",))
+                    write_json(output / "selection.json", manifest)
+                    selected = load_selection(output / "selection.json", copy_to=output / "replay-inputs")
+                    self.assertEqual(selected["invoice-total"]["path"].read_bytes(), answer.encode())
                     audit = json.loads(next(output.glob("jobs/*/*/agent/generation.json")).read_text())
                     self.assertEqual((audit["generation_calls"], audit["repairs"]), (1, 0))
                     self.assertNotIn("PRIVATE", json.dumps(audit))
@@ -164,7 +164,22 @@ class NativeGenerationTests(unittest.TestCase):
             ):
                 agent = WrapperYamlAgent(logs_dir=root / str(index), upstream="mock://unused")
                 environment = SimpleNamespace(upload_file=AsyncMock())
-                with patch.object(agent, "request", return_value=wrapper), self.assertRaises(RuntimeError):
+                with (
+                    patch(
+                        "sapi_config_lab.harbor_integration.yaml_agent.request_wrapper",
+                        return_value=json.dumps(wrapper).encode(),
+                    ),
+                    self.assertRaises(RuntimeError),
+                ):
+                    asyncio.run(agent.run("prompt", environment, SimpleNamespace()))
+                environment.upload_file.assert_not_awaited()
+            for index, raw in enumerate((b"invalid-json", b"x" * 2_000_001)):
+                agent = WrapperYamlAgent(logs_dir=root / ("raw-" + str(index)), upstream="mock://unused")
+                environment = SimpleNamespace(upload_file=AsyncMock())
+                with (
+                    patch("sapi_config_lab.harbor_integration.yaml_agent.request_wrapper", return_value=raw),
+                    self.assertRaises(RuntimeError),
+                ):
                     asyncio.run(agent.run("prompt", environment, SimpleNamespace()))
                 environment.upload_file.assert_not_awaited()
             selected = root / "selected.yaml"
@@ -199,6 +214,19 @@ class NativeGenerationTests(unittest.TestCase):
             with patch("sapi_config_lab.coordinate.replay.source_manifest", return_value={"source.py": "frozen"}):
                 with self.assertRaisesRegex(ValueError, "Ambiguous"):
                     select_submission(report, ("invoice-total",))
+
+    def test_present_normalized_verdict_is_authoritative_for_selection(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            report = generation_run(root, {"invoice-total": [("one", "2026-10-09T00:00:00Z", True)]})
+            verdict = root / "jobs/generated-1/one/verifier/result.json"
+            with patch("sapi_config_lab.coordinate.replay.source_manifest", return_value={"source.py": "frozen"}):
+                for value in ({**NOT_EVALUATED, "acceptance": False}, {"acceptance": True}, NOT_EVALUATED):
+                    save(verdict, value)
+                    with self.subTest(value=value), self.assertRaises(ValueError):
+                        select_submission(report, ("invoice-total",))
+                save(verdict, {**NOT_EVALUATED, "execution": True, "acceptance": True})
+                self.assertEqual(len(select_submission(report, ("invoice-total",))["entries"]), 1)
 
     def test_admission_is_eligible_with_null_facts_and_immutable_provenance(self):
         with tempfile.TemporaryDirectory() as temporary:

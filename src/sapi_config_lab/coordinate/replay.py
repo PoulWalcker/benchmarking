@@ -8,7 +8,7 @@ from pathlib import Path
 import shutil
 
 from sapi_config_lab.coordinate.provenance import source_manifest
-from sapi_config_lab.evaluate.records import ADMISSION_REPORT, NOT_EVALUATED
+from sapi_config_lab.evaluate.records import ADMISSION_REPORT, NOT_EVALUATED, validate_result
 from sapi_config_lab.evidence import json_text, sha256
 from sapi_config_lab.execute.agency import strict_json
 
@@ -85,10 +85,13 @@ def select_submission(source_report: Path, scenarios: tuple[str, ...]) -> dict:
             and acceptance.get("submission_sha256") == sha256(submission),
             "The first attempt did not pass its stub gate; no later attempt is selected in its place",
         )
+        verdict = directory / "verifier/result.json"
         if acceptance.get("schema") == ADMISSION_REPORT:
+            require(validate_result(read_json(verdict)) == NOT_EVALUATED, "Admission cannot claim evaluated facts")
+        elif verdict.exists():
             require(
-                read_json(directory / "verifier/result.json") == NOT_EVALUATED,
-                "Admission cannot claim evaluated facts",
+                validate_result(read_json(verdict))["acceptance"] is True,
+                "Normalized verdict rejected the first attempt",
             )
         require(
             authored_once(read_json(directory / "agent/generation.json"), sha256(submission), sha256(prompt)),
