@@ -79,16 +79,24 @@ def evaluate_record(task: Path, evaluator: Callable, request: dict) -> dict:
     if (options["dispatch"] or request.get("calibration") or request.get("judgement")) and not cost:
         raise ValueError("This task has no semantic judge")
     consumed = False
+    duplicate = False
+    work_complete = False
 
     def reserved(call: Callable) -> dict:
-        nonlocal consumed
-        if consumed or not cost or source_manifest() != sources:
+        nonlocal consumed, duplicate, work_complete
+        if consumed:
+            duplicate = True
+            raise ValueError("Native judge reservation was consumed more than once")
+        if not cost or source_manifest() != sources:
             raise ValueError("Native judge reservation or source identity differs")
         consumed = True
         existing = request.get("reservation")
         if existing is not None:
             ledger = Ledger.open(Path(existing["ledger"]), ceilings=None, stop_after_failure=None)
-            event = ledger.data["events"][existing["index"]]
+            index = existing["index"]
+            if type(index) is not int or not 0 <= index < len(ledger.data["events"]):
+                raise ValueError("Native judge requires the exact pending host reservation")
+            event = ledger.data["events"][index]
             if (
                 event != existing["event"]
                 or event["phase"] != "judge"
@@ -96,21 +104,37 @@ def evaluate_record(task: Path, evaluator: Callable, request: dict) -> dict:
                 or event["count"] != cost
             ):
                 raise ValueError("Native judge requires the exact pending host reservation")
-            return call()
+            result = call()
+            work_complete = isinstance(result, dict) and result.get("status") == "complete"
+            return result
         series = Path(request["series_dir"]) if request.get("series_dir") else None
         ledger = open_ledger(output, series, {"judge": cost}, False, parse_ceilings(request.get("series_ceiling")))
         with ledger.reserved("judge", f"{output.name}/judge", cost, output / "result.json", cost) as outcome:
             result = call()
-            outcome.passed = result["status"] == "complete"
+            work_complete = isinstance(result, dict) and result.get("status") == "complete"
+            outcome.passed = work_complete
             return result
 
     if options["dispatch"]:
         options["reserved_judge"] = reserved
     output.mkdir(parents=True, exist_ok=False)
-    result = validate_result(evaluator(record / "evidence", options))
+    returned = evaluator(record / "evidence", options)
+    try:
+        result = validate_result(returned)
+    except ValueError:
+        if options["dispatch"] and isinstance(returned, dict) and returned.get("quality") is not None:
+            diagnostic = validate_result({**returned, "quality": None})
+            if source_manifest() != sources:
+                raise ValueError("Native evaluator sources changed") from None
+            write_json(output / "result.json", diagnostic)
+        raise
     if source_manifest() != sources:
         raise ValueError("Native evaluator sources changed")
     write_json(output / "result.json", result)
+    if options["dispatch"] and (
+        not consumed or duplicate or not work_complete or (result["quality"] or {}).get("status") != "complete"
+    ):
+        raise ValueError("Judge dispatch incomplete: callback and complete quality are required")
     return result
 
 

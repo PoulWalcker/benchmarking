@@ -483,17 +483,30 @@ def main(argv: list[str] | None = None) -> int:
                         "index": len(ledger.data["events"]) - 1,
                         "event": ledger.data["events"][-1],
                     }
-                    result = reevaluate_native(
-                        record, record / "paid-evaluation", None, dispatch=True, reservation=reservation
-                    )
+                    derived = record / "paid-evaluation"
+                    report_file = derived / "evaluation/report.json"
+                    result_file = derived / "result.json"
+                    try:
+                        result = reevaluate_native(record, derived, None, dispatch=True, reservation=reservation)
+                    finally:
+                        # The evaluator can fail its Judge postcondition after recording acceptance.
+                        if result_file.is_file():
+                            trial["result"] = json.loads(result_file.read_text())
+                            trial["verdict_path"] = str(result_file)
+                        if report_file.is_file():
+                            trial["acceptance"] = json.loads(report_file.read_text())
+                            trial["evaluation_path"] = str(report_file)
                     trial["native_exception"] = trial["exception"]
                     if exception.get("exception_type") == "RewardFileNotFoundError":
                         trial["exception"] = None
                     trial["result"] = result
-                    trial["verdict_path"] = str(record / "paid-evaluation/result.json")
-                    report_file = record / "paid-evaluation/evaluation/report.json"
+                    trial["verdict_path"] = str(result_file)
                     trial["acceptance"] = json.loads(report_file.read_text()) if report_file.exists() else None
-                    trial["evaluation_path"] = str(record / "paid-evaluation/evaluation/report.json")
+                    trial["evaluation_path"] = str(report_file)
+                    require(
+                        (result["quality"] or {}).get("status") == "complete",
+                        "Judge dispatch incomplete: quality is not complete",
+                    )
                     check_trials(
                         trials, submissions, benchmarks=benchmarks, mode="live", expected_cases={scenario: {name}}
                     )

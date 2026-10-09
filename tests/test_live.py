@@ -313,11 +313,12 @@ class NativeLiveReservationTests(unittest.TestCase):
     def test_runtime_closes_before_judge_and_invalid_trials_never_dispatch_judge(self):
         from unittest.mock import Mock
 
+        from sapi_config_lab.coordinate.native_tasks import policy as task_policy
         from sapi_config_lab.evidence import write_json
 
         scenario = workspace_root() / "tasks/checkout-recovery"
         submission_hash = sha256(scenario / "solution/config.yaml")
-        for fault in (None, "duplicate", "submission", "runtime-timeout"):
+        for fault in (None, "duplicate", "submission", "runtime-timeout", "judge-incomplete", "judge-postcondition"):
             with self.subTest(fault=fault), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 output = root / "run"
@@ -367,15 +368,28 @@ class NativeLiveReservationTests(unittest.TestCase):
                 def experiment(path, report, body, run=run, **options):
                     body(run)
 
-                def judge(recorded, derived, judgement, output=output, live_trial=live_trial, result=result, **options):
+                def judge(
+                    recorded,
+                    derived,
+                    judgement,
+                    output=output,
+                    live_trial=live_trial,
+                    result=result,
+                    fault=fault,
+                    **options,
+                ):
                     events = read_json(output / "ledger.json")["events"]
                     self.assertEqual(
                         [(event["phase"], event["status"]) for event in events],
                         [("runtime", "passed"), ("judge", "unknown")],
                     )
                     (derived / "evaluation").mkdir(parents=True)
-                    write_json(derived / "evaluation/report.json", {**live_trial["acceptance"], "result": result})
-                    return result
+                    judged = {**result, "quality": None} if fault == "judge-incomplete" else result
+                    write_json(derived / "evaluation/report.json", {**live_trial["acceptance"], "result": judged})
+                    if fault == "judge-postcondition":
+                        write_json(derived / "result.json", judged)
+                        raise ValueError("Judge dispatch incomplete: callback was not consumed")
+                    return judged
 
                 with (
                     patch("sapi_config_lab.coordinate.live.run_experiment", side_effect=experiment),
@@ -386,6 +400,13 @@ class NativeLiveReservationTests(unittest.TestCase):
                     patch("sapi_config_lab.coordinate.live.wrapper_identity", return_value={"model": "gpt-6-astra"}),
                     patch("sapi_config_lab.coordinate.live.collect_native", return_value=[]),
                     patch("sapi_config_lab.coordinate.live.reconcile_dispatches", return_value=[]),
+                    patch(
+                        "sapi_config_lab.coordinate.live.policy",
+                        side_effect=lambda task, fault=fault: {
+                            **task_policy(task),
+                            **({"reference_reward": None} if fault == "judge-incomplete" else {}),
+                        },
+                    ),
                     patch(
                         "sapi_config_lab.coordinate.native_evaluation.reevaluate_native", side_effect=judge
                     ) as dispatch,
@@ -422,6 +443,18 @@ class NativeLiveReservationTests(unittest.TestCase):
                         self.assertEqual(
                             [(event["phase"], event["status"]) for event in events], [("runtime", "unknown")]
                         )
+                    elif fault == "judge-incomplete":
+                        with self.assertRaises(SystemExit):
+                            main(arguments)
+                        self.assertEqual(read_json(output / "ledger.json")["events"][-1]["status"], "failed")
+                        self.assertEqual(live_trial["result"]["acceptance"], False)
+                        self.assertIsNone(live_trial["result"]["quality"])
+                    elif fault == "judge-postcondition":
+                        with self.assertRaises(SystemExit):
+                            main(arguments)
+                        self.assertEqual(read_json(output / "ledger.json")["events"][-1]["status"], "failed")
+                        self.assertEqual(live_trial["result"], result)
+                        self.assertEqual(live_trial["acceptance"]["result"], result)
                     else:
                         with self.assertRaises(SystemExit):
                             main(arguments)

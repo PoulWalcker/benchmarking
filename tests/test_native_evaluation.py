@@ -13,7 +13,7 @@ import unittest
 from unittest.mock import patch
 
 from sapi_config_lab.coordinate.ledger import Ledger
-from sapi_config_lab.coordinate.native_evaluation import reevaluate_native, validate_record
+from sapi_config_lab.coordinate.native_evaluation import evaluate_record, reevaluate_native, validate_record
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.evidence import digest, sha256, write_json
 from sapi_config_lab.paths import workspace_root
@@ -85,6 +85,153 @@ class NativeEvaluationTests(unittest.TestCase):
         self.root = Path(temporary.name)
         self.sources = source_manifest()
         self.record = native_record(self.root / "record", self.sources)
+
+    def test_requested_judge_requires_consumed_complete_work_and_quality(self):
+        complete = {"status": "complete", "score_0_10": 2.0, "normalized_reward": 0.2}
+        incomplete = {"status": "incomplete", "score_0_10": None, "normalized_reward": None}
+        cases = (
+            ("ignored-null", None, None),
+            ("ignored-fabricated", None, complete),
+            ("incomplete-work", incomplete, complete),
+            ("incomplete-quality", complete, incomplete),
+        )
+        for name, work, quality in cases:
+            with self.subTest(name=name):
+                output = self.root / name
+                result = {"execution": True, "acceptance": True, "quality": quality}
+
+                def evaluator(_evidence, options, work=work, result=result):
+                    if work is not None:
+                        options["reserved_judge"](lambda: work)
+                    return result
+
+                with self.assertRaisesRegex(ValueError, "Judge dispatch incomplete"):
+                    evaluate_record(
+                        TASK, evaluator, {"record": str(self.record), "output": str(output), "dispatch": True}
+                    )
+                self.assertEqual(json.loads((output / "result.json").read_text()), result)
+                ledger = output / "ledger.json"
+                if work is None:
+                    self.assertFalse(ledger.exists())
+                else:
+                    expected = "passed" if work["status"] == "complete" else "failed"
+                    self.assertEqual(json.loads(ledger.read_text())["events"][0]["status"], expected)
+
+    def test_duplicate_callback_stays_failed_even_if_evaluator_catches_it(self):
+        output = self.root / "duplicate"
+        result = {
+            "execution": True,
+            "acceptance": True,
+            "quality": {"status": "complete", "score_0_10": 2.0, "normalized_reward": 0.2},
+        }
+
+        def evaluator(_evidence, options):
+            options["reserved_judge"](lambda: {"status": "complete"})
+            with self.assertRaises(ValueError):
+                options["reserved_judge"](lambda: {"status": "complete"})
+            return result
+
+        with self.assertRaisesRegex(ValueError, "Judge dispatch incomplete"):
+            evaluate_record(TASK, evaluator, {"record": str(self.record), "output": str(output), "dispatch": True})
+        self.assertEqual(json.loads((output / "result.json").read_text()), result)
+
+    def test_malformed_quality_preserves_valid_facts_as_unscored_diagnostic(self):
+        output = self.root / "malformed-quality"
+        invalid = {
+            "execution": True,
+            "acceptance": True,
+            "quality": {"status": "complete", "score_0_10": None, "normalized_reward": None},
+        }
+
+        def evaluator(_evidence, options):
+            options["reserved_judge"](lambda: {"status": "complete"})
+            return invalid
+
+        with self.assertRaisesRegex(ValueError, "Complete evaluator quality requires"):
+            evaluate_record(TASK, evaluator, {"record": str(self.record), "output": str(output), "dispatch": True})
+        self.assertEqual(
+            json.loads((output / "result.json").read_text()),
+            {"execution": True, "acceptance": True, "quality": None},
+        )
+        self.assertEqual(json.loads((output / "ledger.json").read_text())["events"][0]["status"], "passed")
+
+    def test_unrelated_evaluator_failure_does_not_create_facts(self):
+        output = self.root / "evaluator-error"
+
+        def evaluator(_evidence, _options):
+            raise RuntimeError("scorer failed before returning facts")
+
+        with self.assertRaisesRegex(RuntimeError, "scorer failed"):
+            evaluate_record(TASK, evaluator, {"record": str(self.record), "output": str(output), "dispatch": True})
+        self.assertFalse((output / "result.json").exists())
+
+    def test_ignored_host_reservation_fails_once_and_preserves_acceptance(self):
+        ledger = Ledger.open(self.root / "host-noop-ledger.json", ceilings={"judge": 1}, stop_after_failure=False)
+        output = self.root / "host-noop"
+        result = {"execution": True, "acceptance": True, "quality": None}
+        with self.assertRaisesRegex(ValueError, "Judge dispatch incomplete"):
+            with ledger.reserved("judge", "host/noop", 1, output / "result.json", 1):
+                current = json.loads(ledger.path.read_text())
+                proof = {"ledger": str(ledger.path), "index": 0, "event": current["events"][0]}
+                evaluate_record(
+                    TASK,
+                    lambda _evidence, _options: result,
+                    {"record": str(self.record), "output": str(output), "dispatch": True, "reservation": proof},
+                )
+        self.assertEqual(json.loads((output / "result.json").read_text()), result)
+        self.assertEqual(
+            [(event["count"], event["status"]) for event in json.loads(ledger.path.read_text())["events"]],
+            [(1, "failed")],
+        )
+
+    def test_host_reservation_must_match_exact_pending_event(self):
+        ledger = Ledger.open(self.root / "host-wrong-ledger.json", ceilings={"judge": 1}, stop_after_failure=False)
+        output = self.root / "host-wrong"
+        index = ledger.reserve("judge", "host/wrong", 1, output / "result.json", 1)
+        event = dict(ledger.data["events"][index])
+        event["name"] = "another/event"
+        proof = {"ledger": str(ledger.path), "index": index, "event": event}
+
+        def evaluator(_evidence, options):
+            options["reserved_judge"](lambda: {"status": "complete"})
+            return {"execution": True, "acceptance": True, "quality": None}
+
+        with self.assertRaisesRegex(ValueError, "exact pending host reservation"):
+            evaluate_record(
+                TASK,
+                evaluator,
+                {"record": str(self.record), "output": str(output), "dispatch": True, "reservation": proof},
+            )
+        self.assertEqual(len(json.loads(ledger.path.read_text())["events"]), 1)
+        ledger.finish(index, False)
+        self.assertEqual(json.loads(ledger.path.read_text())["events"][0]["status"], "failed")
+
+    def test_host_reservation_index_must_locate_the_event_exactly(self):
+        ledger = Ledger.open(self.root / "host-index-ledger.json", ceilings={"judge": 1}, stop_after_failure=False)
+        index = ledger.reserve("judge", "host/index", 1, self.root / "result.json", 1)
+        event = ledger.data["events"][index]
+        for alias in (-1, True, 1):
+            with self.subTest(alias=alias):
+                calls = []
+                proof = {"ledger": str(ledger.path), "index": alias, "event": event}
+
+                def evaluator(_evidence, options, calls=calls):
+                    options["reserved_judge"](lambda: calls.append(1) or {"status": "complete"})
+                    return {"execution": True, "acceptance": True, "quality": None}
+
+                with self.assertRaisesRegex(ValueError, "exact pending host reservation"):
+                    evaluate_record(
+                        TASK,
+                        evaluator,
+                        {
+                            "record": str(self.record),
+                            "output": str(self.root / f"host-index-{alias}"),
+                            "dispatch": True,
+                            "reservation": proof,
+                        },
+                    )
+                self.assertEqual(calls, [])
+        self.assertEqual(json.loads(ledger.path.read_text())["events"], [event])
 
     def test_identity_mutations_refuse_before_any_task_process(self):
         path = self.record / "native-task.json"
