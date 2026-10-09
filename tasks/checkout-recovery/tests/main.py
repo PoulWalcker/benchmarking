@@ -15,8 +15,8 @@ import yaml
 
 from sapi_config_lab.contracts import CompileOptions, OutputArtifact
 from sapi_config_lab.coordinate.backend import N8nBackend
-from sapi_config_lab.coordinate.benchmark_worker import run_task
-from sapi_config_lab.evaluate.records import validate_result
+from sapi_config_lab.coordinate.benchmark_worker import admit, run_task
+from sapi_config_lab.evaluate.records import NOT_EVALUATED, validate_result
 from sapi_config_lab.evidence import write_json
 from sapi_config_lab.execute.agency import make_handler
 from sapi_config_lab.pinned_source import PinnedSource
@@ -48,6 +48,23 @@ def evaluate_calibrated(evidence: Path, options: dict) -> dict:
 
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
+    if os.environ.get("SAPI_HOSTED_ADMISSION") == "1":
+        report = admit(
+            {
+                "name": "checkout-recovery",
+                "operations": "operations.js",
+                "bindings": "bindings.yaml",
+                "budgets": {"runtime_model_calls": 4},
+            },
+            ROOT,
+            SUBMISSION,
+            {"deadline_seconds": 120},
+        )
+        (OUT / "evaluation").mkdir(exist_ok=True)
+        write_json(OUT / "evaluation/report.json", report)
+        write_json(OUT / "result.json", NOT_EVALUATED)
+        (OUT / "reward.txt").write_text("1\n" if report["passed"] else "0\n")
+        return 0
     try:
         config = read(SUBMISSION)
         bindings = read_bindings(ROOT / "bindings.yaml")

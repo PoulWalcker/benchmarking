@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 
 from sapi_config_lab.coordinate.provenance import source_manifest
+from sapi_config_lab.evaluate.records import ADMISSION_REPORT, NOT_EVALUATED
 from sapi_config_lab.evidence import json_text, sha256
 from sapi_config_lab.execute.agency import strict_json
 
@@ -84,6 +85,11 @@ def select_submission(source_report: Path, scenarios: tuple[str, ...]) -> dict:
             and acceptance.get("submission_sha256") == sha256(submission),
             "The first attempt did not pass its stub gate; no later attempt is selected in its place",
         )
+        if acceptance.get("schema") == ADMISSION_REPORT:
+            require(
+                read_json(directory / "verifier/result.json") == NOT_EVALUATED,
+                "Admission cannot claim evaluated facts",
+            )
         require(
             authored_once(read_json(directory / "agent/generation.json"), sha256(submission), sha256(prompt)),
             "Authoring provenance mismatch",
@@ -95,7 +101,9 @@ def select_submission(source_report: Path, scenarios: tuple[str, ...]) -> dict:
             "source_yaml_path": str(submission),
             "source_yaml_sha256": sha256(submission),
         }
-        cases = root / "task-packages" / scenario / "tests/cases.json"
+        relative = report.get("private_cases_paths", {}).get(scenario)
+        cases = root / relative if relative else root / "task-packages" / scenario / "tests/cases.json"
+        require(cases.resolve().is_relative_to(root), "Private fixture path escapes the generation run")
         if scenario in report.get("private_cases_sha256", {}):
             require(set(read_json(cases)) == {scenario}, "Private fixture set mismatch")
             require(
@@ -108,7 +116,12 @@ def select_submission(source_report: Path, scenarios: tuple[str, ...]) -> dict:
             {
                 **entry,
                 "attempts": attempts,
-                "provenance": {name: sha256(directory / name) for name in PROVENANCE_FILES},
+                "provenance": {name: sha256(directory / name) for name in PROVENANCE_FILES}
+                | (
+                    {"verifier/result.json": sha256(directory / "verifier/result.json")}
+                    if (directory / "verifier/result.json").exists()
+                    else {}
+                ),
             }
         )
     return {
@@ -147,7 +160,7 @@ def load_selection(path: Path, *, copy_to: Path | None = None) -> dict:
             shutil.copyfile(yaml_path, destination / "submission.yaml")
             if "cases_path" in entry:
                 shutil.copyfile(cases_path, destination / "cases.json")
-            for name in PROVENANCE_FILES:
+            for name in entry["provenance"]:
                 target = destination / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(yaml_path.parent.parent / name, target)

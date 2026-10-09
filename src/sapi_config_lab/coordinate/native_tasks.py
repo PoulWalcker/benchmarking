@@ -1,9 +1,16 @@
 """Select checked-in Harbor tasks and their native experiment policy."""
 
 from collections.abc import Iterable
+import json
 from pathlib import Path
 import re
+import subprocess
+import sys
+import tempfile
 import tomllib
+
+from sapi_config_lab.coordinate.provenance import source_manifest
+from sapi_config_lab.paths import workspace_root
 
 
 def policy(task: Path) -> dict:
@@ -53,3 +60,39 @@ def image_tags(tasks: tuple[Path, ...]) -> tuple[str, ...]:
                 raise ValueError("Native task must use one explicitly built local base image")
             tags.update(bases)
     return tuple(sorted(tags))
+
+
+def invoke(task: Path, request: dict, sources: dict) -> dict:
+    """Run the fixed task-owned trusted composition after verifying all source bytes."""
+    root = workspace_root()
+    if task not in select_tasks(root / "tasks", [task.name]) or source_manifest() != sources:
+        raise ValueError("Native task invocation source mismatch")
+    with tempfile.TemporaryDirectory(prefix="sapi-task-imports-") as cache:
+        bootstrap = "import runpy,sys; sys.path[:0]=sys.argv[1:4]; runpy.run_path(sys.argv[4],run_name='__main__')"
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-I",
+                "-B",
+                "-X",
+                "pycache_prefix=" + cache,
+                "-c",
+                bootstrap,
+                str(Path(__file__).resolve().parents[2]),
+                str(root),
+                str(task),
+                str(task / "experiment.py"),
+            ],
+            input=json.dumps(request),
+            text=True,
+            capture_output=True,
+            check=True,
+            timeout=300,
+            cwd=root,
+        )
+    if source_manifest() != sources:
+        raise ValueError("Native task invocation sources changed")
+    value = json.loads(result.stdout)
+    if not isinstance(value, dict):
+        raise ValueError("Native task result must be an object")
+    return value

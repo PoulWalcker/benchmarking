@@ -15,6 +15,7 @@ def job_args(
     agent: str,
     *,
     agent_key: str | None = None,
+    agent_keys: Sequence[str] = (),
     attempts: str | None = None,
     verifier_env: Sequence[str] = (),
 ) -> list[str]:
@@ -22,6 +23,8 @@ def job_args(
     args = [*harbor, "run", "--path", str(tasks), "--agent", agent]
     if agent_key is not None:
         args += ["--ak", agent_key]
+    for value in agent_keys:
+        args += ["--ak", value]
     if attempts is not None:
         args += ["--n-attempts", attempts]
     args += ["--n-concurrent", "1", "--max-retries", "0", "--jobs-dir", str(jobs), "--job-name", job_name]
@@ -39,6 +42,7 @@ def run_job(
     log: Path,
     *,
     agent_key: str | None = None,
+    agent_keys: Sequence[str] = (),
     attempts: str | None = None,
     verifier_env: Sequence[str] = (),
 ) -> int:
@@ -55,7 +59,15 @@ def run_job(
     for task in selected:
         validate_config((task / "task.toml").read_text())
     args = job_args(
-        harbor, tasks, jobs, job_name, agent, agent_key=agent_key, attempts=attempts, verifier_env=verifier_env
+        harbor,
+        tasks,
+        jobs,
+        job_name,
+        agent,
+        agent_key=agent_key,
+        agent_keys=agent_keys,
+        attempts=attempts,
+        verifier_env=verifier_env,
     )
     jobs.mkdir(parents=True, exist_ok=True)
     (jobs / job_name).mkdir()

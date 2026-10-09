@@ -152,7 +152,7 @@ written under `reports/migration-20/extension-*`.
 
 ## Model-authored definitions
 
-`./run-generation.sh` gives a model the task, `generation/FORMAT.md`, `generation/PROFILE.md` and the operation catalog, once per attempt, with no repair. `--catalog scenario` is an experiment arm, not the default: the catalog shows only the operations the scenario's reference uses, the report records the variant, the operations shown and their hashes, and its prompts are pinned separately. `sapi-lab package-tasks --mode generation --catalog scenario` stages those prompts without a model call. The answer is a candidate like any other: compiled, executed and independently verified. Runtime model steps are stubs during generation. The wrapper does not disable its CLI tools: the prompt forbids them and recognized tool markers in its stderr reject the attempt, which is an audit, not a sandbox. `tests/test_packaging.py` pins every generation prompt's hash; a prompt change is an experiment change.
+`./run-generation.sh` gives a model the task, `generation/FORMAT.md`, `generation/PROFILE.md` and the operation catalog, once per attempt, with no repair. `--catalog scenario` is an experiment arm, not the default: the catalog shows only the operations the scenario's reference uses, the report records the variant, the operations shown and their hashes, and its prompts are pinned separately. `sapi-lab package-tasks --mode generation --catalog scenario` stages those prompts without a model call. Generation submits the selected native task directly, with an exact prompt/hash supplied to the wrapper agent. Invoice answers are compiled, executed and independently verified with stub runtime model steps. Checkout answers receive compilation admission only; successful admission makes the first attempt eligible for replay and does not claim execution, business acceptance or quality. The wrapper does not disable its CLI tools: the prompt forbids them and recognized tool markers in its stderr reject the attempt, which is an audit, not a sandbox. `tests/test_native_generation.py` pins every native generation prompt's hash; a prompt change is an experiment change.
 
 For a hosted scenario the gate after authoring and before live dispatch is admission: the YAML compiles in live mode, stays within `runtime_model_calls` and keeps the benchmark's declared deadline. It proves materialization capability and declared limits, not candidate execution or acceptance. Hosted model operations need no fabricated stub answer. Fresh oracle/nop reference executions still gate the instrument before paid dispatch.
 
@@ -192,7 +192,7 @@ There is no installed global catalog, fixed operation bundle or detached fallbac
 Explicit file composition works without an experiment checkout; descriptor selection
 uses this installation's declared resources. Candidate YAML never selects executable paths.
 UI imports require local operations; remote tools require a Harbor trial.
-`package-tasks`, controls, generation and live execution receive selected descriptors
+`package-tasks` and live execution currently receive selected descriptors
 explicitly. Generic lifecycle APIs require an injected trusted acceptance callable,
 bindings and backend; the CLI does not supply a default business decision.
 

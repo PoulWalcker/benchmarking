@@ -15,12 +15,13 @@ from typing import Any
 
 import yaml
 
-from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
-from sapi_config_lab.coordinate.evaluation import trial_accepted
+from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, NOT_EVALUATED, trial_accepted
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
-from sapi_config_lab.coordinate.packages import AUTHOR_AGENT, CATALOG_VARIANTS, scenario_catalog, selected_cases
+from sapi_config_lab.coordinate.live import validate_control
+from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
+from sapi_config_lab.coordinate.packages import AUTHOR_AGENT, CATALOG_VARIANTS
 from sapi_config_lab.coordinate.runs import Run, load_trials, progress, run_experiment, trial_seconds
-from sapi_config_lab.evidence import sha256
+from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.host import LAB_IMAGE, HostConfig, run_logged
 from sapi_config_lab.paths import workspace_root
 
@@ -36,7 +37,17 @@ def summarize_trials(*jobs: Path) -> list[dict]:
         agent_path = directory / "agent/generation.json"
         agent = json.loads(agent_path.read_text()) if agent_path.exists() else {}
         acceptance = trial["acceptance"]
-        passed = agent.get("status") == "submitted" and trial_accepted(trial)
+        admitted = (
+            (acceptance or {}).get("schema") == ADMISSION_REPORT
+            and acceptance.get("passed") is True
+            and acceptance.get("scenario") == trial["task_name"]
+            and acceptance.get("mode") == "stub"
+            and acceptance.get("submission_sha256") == agent.get("submission_sha256")
+            and trial["result"] == NOT_EVALUATED
+            and not trial["exception"]
+            and trial["rewards"] == {"reward": 1.0}
+        )
+        passed = agent.get("status") == "submitted" and (admitted or trial_accepted(trial))
         stage = None
         if not passed:
             if agent.get("status") != "submitted":
@@ -62,6 +73,7 @@ def summarize_trials(*jobs: Path) -> list[dict]:
             {
                 "scenario": trial["task_name"],
                 "passed": passed,
+                "admitted": admitted,
                 "failure_stage": stage,
                 "generation": agent,
                 "rewards": trial["rewards"],
@@ -113,21 +125,20 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     try:
-        benchmarks = select_benchmarks(ROOT / "tasks", args.scenario)
-        scenarios = tuple(item.name for item in benchmarks)
-        by_name = {item.name: item for item in benchmarks}
+        tasks = select_tasks(ROOT / "tasks", args.scenario)
+        scenarios = tuple(item.name for item in tasks)
+        policies = {item.name: policy(item) for item in tasks}
         series_ceilings = parse_ceilings(args.series_ceiling)
     except ValueError as error:
         parser.error(str(error))
     if not 1 <= args.attempts <= MAX_ATTEMPTS:
         parser.error(f"--attempts must be between 1 and {MAX_ATTEMPTS}")
-    budgets = {item.name: item.budgets.authoring_attempts for item in benchmarks}
+    budgets = {name: value.get("authoring_attempts") for name, value in policies.items()}
     capped = [s for s, budget in budgets.items() if budget is not None and args.attempts > budget]
     if capped:
         parser.error("--attempts exceeds the authoring budget of " + ", ".join(capped))
     for name in scenarios:
-        benchmark = by_name[name]
-        if args.catalog not in benchmark.config.get("authoring", {}).get("catalogs", ("full",)):
+        if args.catalog not in policies[name].get("catalogs", ("full",)):
             parser.error("--catalog scenario applies to fixture scenarios only")
     output = args.report_dir or ROOT / "reports" / (datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-generation")
     ceiling = len(scenarios) * args.attempts
@@ -163,46 +174,72 @@ def main(argv: list[str] | None = None) -> int:
             raise RuntimeError("Control suite failed; model generation was not started")
         progress(f"controls: passed ({round(time.monotonic() - started)}s)")
         run.check("after-controls")
+        identity = run.use_image(LAB_IMAGE)
+        run.use_native_tasks(tasks)
+        validate_control(run.output / "control/report.json", run.sources, identity, native_images=run.native_images)
+        report["prompt_sha256"], report["private_cases_sha256"], report["private_cases_paths"] = {}, {}, {}
+        prompts = {}
+        for task in tasks:
+            run.check("before-prompt-" + task.name)
+            material = invoke(task, {"action": "prompt", "catalog": args.catalog}, run.sources)
+            inputs = run.output / "inputs" / task.name
+            inputs.mkdir(parents=True)
+            prompt = inputs / "prompt.txt"
+            prompt.write_bytes(material["prompt"].encode())
+            prompts[task.name] = prompt
+            report["prompt_sha256"][task.name] = sha256(prompt)
+            if "cases" in material:
+                cases = inputs / "cases.json"
+                write_json(cases, {task.name: material["cases"]})
+                report["private_cases_sha256"][task.name] = sha256(cases)
+                report["private_cases_paths"][task.name] = str(cases.relative_to(run.output))
+            if args.catalog == "scenario":
+                text = material["catalog"]
+                report["catalog"].setdefault("operations", {})[task.name] = sorted(yaml.safe_load(text)["operations"])
+                report["catalog"].setdefault("sha256", {})[task.name] = hashlib.sha256(text.encode()).hexdigest()
+        run.pin("authoring inputs", run.output / "inputs")
+        run.check("before-authoring-ledger")
         ledger = open_ledger(
             run.output, args.series_dir, {"authoring": ceiling}, args.stop_after_failure, series_ceilings
         )
         report["ledger"] = str(ledger.path)
-        run.use_image(LAB_IMAGE)
-        overlays: dict[str, dict] = {}
-        progress(f"staging: {len(scenarios)} generation task packages")
-        report["prompt_sha256"] = run.stage("generation", benchmarks, cases=overlays, catalog=args.catalog)
-        if args.catalog == "scenario":
-            shown = {s: scenario_catalog(by_name[s]) for s in scenarios}
-            report["catalog"]["operations"] = {
-                s: sorted(yaml.safe_load(text)["operations"]) for s, text in shown.items()
-            }
-            report["catalog"]["sha256"] = {s: hashlib.sha256(text.encode()).hexdigest() for s, text in shown.items()}
-        report["fixture_overlay"] = sorted(overlays)
-        report["private_cases_sha256"] = {
-            s: sha256(run.tasks / s / "tests/cases.json") for s in scenarios if selected_cases(by_name[s]) is not None
-        }
+        report["fixture_overlay"] = []
         report_path = run.output / "report.json"
         jobs = []
         for attempt in range(1, args.attempts + 1):
             run.check(f"before-attempt-{attempt}")
             step = f"[{attempt}/{args.attempts}]"
             progress(f"{step} authoring, then verifying: {', '.join(scenarios)}")
-            job = f"generated-{attempt}"
-            jobs.append(run.output / "jobs" / job)
-            with ledger.reserved(
-                "authoring", f"{run.output.name}/{job}", len(scenarios), report_path, ceiling
-            ) as outcome:
-                exit_code, _ = run.harbor(
-                    job, run.tasks, AUTHOR_AGENT, agent_key="upstream=" + args.upstream, attempts="1"
-                )
-                rows = summarize_trials(jobs[-1])
-                for row in rows:
-                    verdict = "passed" if row["passed"] else f"failed at {row['failure_stage']}"
-                    seconds = trial_seconds(row)
-                    progress(f"{step} {row['scenario']}: {verdict}" + (f" ({seconds}s)" if seconds is not None else ""))
-                report["harbor_exit_codes"].append(exit_code)
-                report["trials"].extend(rows)
-                outcome.passed = exit_code == 0 and len(rows) == len(scenarios) and all(r["passed"] for r in rows)
+            for task in tasks:
+                job = f"generated-{attempt}-{task.name}"
+                jobs.append(run.output / "jobs" / job)
+                run.check("before-reservation-" + job)
+                with ledger.reserved("authoring", f"{run.output.name}/{job}", 1, report_path, ceiling) as outcome:
+                    exit_code, _ = run.harbor(
+                        job,
+                        task,
+                        AUTHOR_AGENT,
+                        agent_keys=[
+                            "upstream=" + args.upstream,
+                            "prompt_path=" + str(prompts[task.name]),
+                            "prompt_sha256=" + report["prompt_sha256"][task.name],
+                        ],
+                        attempts="1",
+                        admission=True,
+                        verifier_env=["SAPI_NATIVE_DEADLINE_SECONDS=120", "SAPI_LLM_MODE=stub"],
+                    )
+                    rows = summarize_trials(jobs[-1])
+                    for row in rows:
+                        verdict = "passed" if row["passed"] else f"failed at {row['failure_stage']}"
+                        seconds = trial_seconds(row)
+                        progress(
+                            f"{step} {row['scenario']}: {verdict}" + (f" ({seconds}s)" if seconds is not None else "")
+                        )
+                    report["harbor_exit_codes"].append(exit_code)
+                    report["trials"].extend(rows)
+                    outcome.passed = (
+                        exit_code == 0 and len(rows) == 1 and rows[0]["scenario"] == task.name and rows[0]["passed"]
+                    )
         trials = report["trials"]
         report["passed_trials"] = sum(t["passed"] for t in trials)
         report["total_trials"] = len(trials)

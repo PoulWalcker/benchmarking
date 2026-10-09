@@ -30,7 +30,7 @@ from sapi_config_lab.paths import workspace_root
 ROOT = workspace_root()
 
 
-def validate_control(path: Path, current: dict[str, str], identity: str) -> dict:
+def validate_control(path: Path, current: dict[str, str], identity: str, *, native_images: dict | None = None) -> dict:
     gate = read_json(path)
     require(
         gate.get("schema") == "sapi-lab-harbor/v1" and gate.get("status") == "passed" and gate.get("mode") == "stub",
@@ -51,6 +51,12 @@ def validate_control(path: Path, current: dict[str, str], identity: str) -> dict
         gate.get("checks") and all(check.get("passed") is True for check in gate["checks"]),
         "Control checks did not all pass",
     )
+    if native_images is not None:
+        require(
+            native_images
+            and all(gate.get("native_images", {}).get(tag) == value for tag, value in native_images.items()),
+            "Control report native image mismatch",
+        )
     return gate
 
 

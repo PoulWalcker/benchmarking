@@ -73,8 +73,9 @@ only its directory and declared dependencies; provenance is data, not dispatch.
 Every Harbor experiment (`harbor`, `generate`, `live`) runs through `coordinate/runs.py`:
 
 - a new report directory and source manifest; native controls bind checked-in task
-  paths to the exact source-verified public/verifier image IDs; generation/live
-  currently retain their staged task packages;
+  paths to the exact source-verified public/verifier image IDs; generation uses the
+  same native directories with task-owned exact prompt composition, while live
+  currently retains its staged task packages;
 - each phase re-checks sources, image and pinned inputs;
 - `Run.harbor` submits versioned packages through `harbor_integration/runner.py` directly into the report's `jobs/` tree. Harbor owns phase limits and resources; partial trial references remain in the report on failure. Selected descriptors supply the trusted entrypoints and budgets;
 - `Run.transport` uses the same integration argv builder for its shared-verifier control; Harbor writes directly into durable output and owns its phase limits. Task input snapshots remain separate from the authoritative trial tree;
@@ -324,7 +325,7 @@ snapshot readers using verified original evaluator bytes, without an import shim
 to a trial server or current business scorer.
 
 
-Selected versioned experiments stage native packages for generation, replay and
+Live versioned experiments currently stage native packages for replay and
 live execution. Descriptor budgets and live plans provide judge costs and model
 occurrences. Checkout declares its unchanged full authoring prompt as public
 material; invoice retains its full/scenario catalog arms. Wrapper HTTP transport,
@@ -480,3 +481,12 @@ control tests also record host sources and base image IDs. Native task sources a
 explicit image build inputs are also installed as package resources. They require rebuilt local images; experiment identity gates continue to
 require a matching editable checkout. Installed legacy staging remains available. See
 [NATIVE_PARITY.md](../NATIVE_PARITY.md) for verified coverage and Phase 2 scope.
+
+Generation invokes each selected native task's fixed `experiment.py` in a source-checked
+Python subprocess with isolated imports and no bytecode writes. That task composes its
+original prompt arms; the host pins the resulting prompt and private fixture record.
+The upload-only wrapper agent receives an explicit prompt path/hash, reserves one
+authoring call before dispatch, and uploads its answer unchanged. Checkout compilation
+admission is generation eligibility with null evaluated facts; invoice eligibility
+requires independent fixture acceptance. Selection remains the first-started attempt.
+The upload-only replay agent verifies selected bytes and makes zero generation calls.
