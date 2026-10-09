@@ -32,6 +32,10 @@ class NativeTaskTests(unittest.TestCase):
                 "instruction.md": "eed1f481fd235ddc2e263df1f6212d70ea87a4e8b00287c93abd13b92cc50b7c",
                 "solution/config.yaml": "2b4d9b5569cd811053bb2e504de4111b171be188b2deff88b4ca63f187406e99",
             },
+            "research-report": {
+                "instruction.md": "9204a247b684cb0613a20afea96aed3f2d231fb22cb0c15fca5edf44b2f2763d",
+                "solution/config.yaml": "9c9b59245e67e988f0b259db492a82c840da34afbc79e7b1e99effe56682d81c",
+            },
             "checkout-recovery": {
                 "instruction.md": "4d54d5e80750d7c588687a6a8ed6ca935e1d35aae68ece9f92725a96460b4f47",
                 "solution/config.yaml": "c9176e088aa14e7afcde3cfb8a461841061a25cc9d8abb8b70acb8154150b1a9",
@@ -57,7 +61,7 @@ class NativeTaskTests(unittest.TestCase):
                 self.assertFalse(imports & {"sapi_config_lab.benchmark", "sapi_config_lab.benchmark_loading"})
 
     def test_harbor_author_environment_has_no_private_compose_overlay(self):
-        for name in ("invoice-total", "checkout-recovery"):
+        for name in ("invoice-total", "checkout-recovery", "research-report"):
             task = Task(ROOT / "tasks" / name)
             self.assertFalse((task.paths.environment_dir / "docker-compose.yaml").exists())
             self.assertEqual(task.config.verifier.environment_mode, "separate")

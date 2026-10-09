@@ -30,6 +30,7 @@ class NativeGenerationTests(unittest.TestCase):
         expected = {
             ("invoice-total", "full"): "d1e72a8298a682f09c6198beb8e26f54beaf086f56a65a79a7cc68e0a0625f49",
             ("invoice-total", "scenario"): "8c43ed0f1fd947ba5430cd95cb5555a0575b183fa0d6fbc2883ca2c98981150a",
+            ("research-report", "full"): "12e7a18a0881c4afeee2651ff00cfdcfae531e0e961a5df1c0b8a1e88399aff3",
             ("checkout-recovery", "full"): "920472a634ec32c6d55d66aceec6c4a66035d6cd69b5bc3ad36f3b3c315fae17",
         }
         sources = source_manifest()

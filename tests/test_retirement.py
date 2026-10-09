@@ -25,14 +25,17 @@ RETIRED = (
 
 
 class RetirementTests(unittest.TestCase):
-    def test_production_selection_is_exactly_two_and_default_is_invoice_only(self):
+    def test_production_selection_includes_retained_tasks_and_default_is_invoice_only(self):
         root = workspace_root() / "tasks"
         self.assertEqual(
-            {item.name for item in select_tasks(root, ["invoice-total", "checkout-recovery"])},
-            {"invoice-total", "checkout-recovery"},
+            {item.name for item in select_tasks(root, ["invoice-total", "checkout-recovery", "research-report"])},
+            {"invoice-total", "checkout-recovery", "research-report"},
         )
         self.assertEqual({item.name for item in select_tasks(root)}, {"invoice-total"})
-        for options, expected in (([], {"invoice-total", "checkout-recovery"}), (["--defaults"], {"invoice-total"})):
+        for options, expected in (
+            ([], {"invoice-total", "checkout-recovery", "research-report"}),
+            (["--defaults"], {"invoice-total"}),
+        ):
             output = io.StringIO()
             with contextlib.redirect_stdout(output):
                 self.assertEqual(main(["benchmarks", *options]), 0)
@@ -57,9 +60,9 @@ class RetirementTests(unittest.TestCase):
             self.assertEqual(main(["build", "--output-dir", temporary]), 0)
             self.assertEqual(
                 {row["config"] for row in json.loads(output.getvalue())},
-                {"invoice-total", "checkout-recovery"},
+                {"invoice-total", "checkout-recovery", "research-report"},
             )
             self.assertEqual(
                 {path.name.split(".", 1)[0] for path in Path(temporary).glob("*.n8n.json")},
-                {"invoice-total", "checkout-recovery"},
+                {"invoice-total", "checkout-recovery", "research-report"},
             )

@@ -1,0 +1,21 @@
+{
+  "research.validate": [
+    "material"
+  ],
+  "research.product": [
+    "summary",
+    "evidence"
+  ],
+  "research.marketing": [
+    "summary",
+    "evidence"
+  ],
+  "research.combine": [
+    "product",
+    "marketing"
+  ],
+  "research.write": [
+    "report",
+    "evidence"
+  ]
+}

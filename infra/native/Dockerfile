@@ -10,6 +10,9 @@ CMD ["sleep", "infinity"]
 FROM public AS invoice-total-public
 COPY tasks/invoice-total/instruction.md tasks/invoice-total/task.md tasks/invoice-total/bindings.yaml /app/public/
 
+FROM public AS research-report-public
+COPY tasks/research-report/instruction.md tasks/research-report/task.md tasks/research-report/bindings.yaml /app/public/
+
 FROM public AS checkout-recovery-public
 COPY tasks/checkout-recovery/instruction.md tasks/checkout-recovery/authoring-notes.md tasks/checkout-recovery/bindings.yaml tasks/checkout-recovery/authoring-prompt.txt /app/public/
 
@@ -30,6 +33,12 @@ FROM core AS invoice-total-verifier
 COPY tasks/invoice-total/experiment.py /tests/payload/experiment.py
 COPY tasks/invoice-total/bindings.yaml tasks/invoice-total/operations.js tasks/invoice-total/cases.json /tests/payload/
 COPY tasks/invoice-total/evaluation /tests/payload/evaluation
+RUN python3 -c "from payload.evaluation.evaluator import plan, evaluate; from sapi_config_lab.coordinate.task_worker import run_task"
+
+FROM core AS research-report-verifier
+COPY tasks/research-report/experiment.py /tests/payload/experiment.py
+COPY tasks/research-report/bindings.yaml tasks/research-report/operations.js tasks/research-report/cases.json /tests/payload/
+COPY tasks/research-report/evaluation /tests/payload/evaluation
 RUN python3 -c "from payload.evaluation.evaluator import plan, evaluate; from sapi_config_lab.coordinate.task_worker import run_task"
 
 FROM core AS checkout-recovery-verifier

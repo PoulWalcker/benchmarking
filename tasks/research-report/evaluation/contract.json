@@ -1,0 +1,77 @@
+{
+  "roles": {
+    "validate": {
+      "operation": "research.validate",
+      "kind": "Script",
+      "inputs": {
+        "material": {
+          "ref": "inputs.material"
+        }
+      }
+    },
+    "product": {
+      "operation": "research.product",
+      "kind": "LLM",
+      "inputs": {
+        "material": {
+          "ref": "steps.validate.material"
+        }
+      }
+    },
+    "marketing": {
+      "operation": "research.marketing",
+      "kind": "LLM",
+      "inputs": {
+        "material": {
+          "ref": "steps.validate.material"
+        }
+      }
+    },
+    "combine": {
+      "operation": "research.combine",
+      "kind": "Script",
+      "inputs": {
+        "product": {
+          "ref": "steps.product"
+        },
+        "marketing": {
+          "ref": "steps.marketing"
+        }
+      }
+    },
+    "write": {
+      "operation": "research.write",
+      "kind": "LLM",
+      "inputs": {
+        "brief": {
+          "ref": "steps.combine"
+        }
+      }
+    }
+  },
+  "edges": [
+    [
+      "validate",
+      "product"
+    ],
+    [
+      "validate",
+      "marketing"
+    ],
+    [
+      "product",
+      "combine"
+    ],
+    [
+      "marketing",
+      "combine"
+    ],
+    [
+      "combine",
+      "write"
+    ]
+  ],
+  "output": {
+    "ref": "steps.write"
+  }
+}

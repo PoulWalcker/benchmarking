@@ -25,6 +25,7 @@ FIXTURE_JUDGE_PROMPT = "ec8023162bcb95ddf8f25a3edb02851944dcbde701d0d0fdc83a4beb
 
 # Recorded authoring evidence pins the exact bytes of all supported prompt arms.
 GENERATION_PROMPTS = {
+    "research-report": "12e7a18a0881c4afeee2651ff00cfdcfae531e0e961a5df1c0b8a1e88399aff3",
     "invoice-total": "d1e72a8298a682f09c6198beb8e26f54beaf086f56a65a79a7cc68e0a0625f49",
 }
 SCENARIO_CATALOG_PROMPTS = {

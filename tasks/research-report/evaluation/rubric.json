@@ -1,0 +1,57 @@
+{
+  "id": "research-report",
+  "version": "1.0.0",
+  "origin": "local",
+  "criteria": [
+    {
+      "id": "acceptance",
+      "question": "Did the independently verified graph and report satisfy all mandatory factual checks?",
+      "weight": 4,
+      "evaluator": "deterministic",
+      "check_id": "accepted"
+    },
+    {
+      "id": "grounding",
+      "question": "Are intermediate and final evidence excerpts exact substrings of the source?",
+      "weight": 1,
+      "evaluator": "deterministic",
+      "check_id": "grounding"
+    },
+    {
+      "id": "coverage",
+      "question": "Does the final report retain every named capability, audience and channel?",
+      "weight": 1,
+      "evaluator": "deterministic",
+      "check_id": "coverage"
+    },
+    {
+      "id": "clarity",
+      "question": "Is the synthesized report clear, readable and well organized for its intended reader?",
+      "weight": 2,
+      "evaluator": "llm",
+      "anchors": {
+        "yes": "Clear, concise and logically organized.",
+        "maybe": "Understandable but repetitive or confusing in places.",
+        "no": "Difficult to follow or unusable."
+      },
+      "required_evidence": [
+        "candidate"
+      ]
+    },
+    {
+      "id": "usefulness",
+      "question": "Does the report provide a coherent synthesis of the supplied product, audience and channels without irrelevant filler?",
+      "weight": 2,
+      "evaluator": "llm",
+      "anchors": {
+        "yes": "Useful synthesis grounded in the given material.",
+        "maybe": "Partially useful but limited synthesis.",
+        "no": "Little useful synthesis or mostly irrelevant."
+      },
+      "required_evidence": [
+        "environment",
+        "candidate"
+      ]
+    }
+  ]
+}

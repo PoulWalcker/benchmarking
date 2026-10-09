@@ -4,6 +4,7 @@ import ast
 import asyncio
 from decimal import ROUND_HALF_UP, Decimal
 import inspect
+import json
 import math
 import unittest
 
@@ -24,9 +25,14 @@ from verification.rubric import (
 
 ANCHORS = {"yes": "a", "maybe": "b", "no": "c"}
 
-CARDED = {"invoice-total"}
+CARDED = {"invoice-total", "research-report"}
 # The scenarios that ship a card file today.
 CARDS = {path.parent.parent.name for path in (workspace_root() / "tasks").glob("*/evaluation/rubric.json")}
+
+
+def scenario_card(scenario):
+    document = json.loads((workspace_root() / "tasks" / scenario / "evaluation/rubric.json").read_text())
+    return RubricCard(**{**document, "criteria": tuple(Criterion(**item) for item in document["criteria"])})
 
 
 # The criteria of the 2026-10-05 checkout recovery run as the upstream judge scored them (9.33/10).
@@ -271,8 +277,10 @@ class RewardInvariantTests(unittest.TestCase):
                 self.assertTrue(document["score_0_10"] is None or 0.0 <= document["score_0_10"] <= 10.0)
 
     def test_binary_cards_keep_the_existing_pass_fail_behaviour(self):
-        for scenario in ("invoice-total",):
-            card = invoice_card()
+        for scenario in sorted(CARDS):
+            card = scenario_card(scenario)
+            if card.needs_judge:
+                continue
             self.assertFalse(card.needs_judge)
             accepted = score(card, RunFacts(execution_pass=True, checks={"accepted": True}))
             rejected = score(card, RunFacts(execution_pass=True, checks={"accepted": False}))
@@ -490,12 +498,14 @@ class ImmutabilityTests(unittest.TestCase):
     def test_a_card_is_read_from_scenario_data_and_cannot_be_altered_in_process(self):
         # A card held in a mutable registry could be swapped for every later run; one read from
         # the scenario's rubric.json into a frozen dataclass cannot.
-        card = invoice_card()
-        with self.assertRaises(AttributeError):
-            card.id = "evil"  # type: ignore[misc]
-        with self.assertRaises(TypeError):
-            card.answer_values["yes"] = 0.0  # type: ignore[index]
-        self.assertEqual(invoice_card().digest(), card.digest())
+        for scenario in sorted(CARDS):
+            with self.subTest(scenario=scenario):
+                card = scenario_card(scenario)
+                with self.assertRaises(AttributeError):
+                    card.id = "evil"  # type: ignore[misc]
+                with self.assertRaises(TypeError):
+                    card.answer_values["yes"] = 0.0  # type: ignore[index]
+                self.assertEqual(scenario_card(scenario).digest(), card.digest())
         self.assertEqual(CARDS, CARDED)
 
 
@@ -1003,7 +1013,7 @@ class ArithmeticTests(unittest.TestCase):
     def test_every_card_weighs_ten_with_a_deterministic_majority(self):
         """Ten points per card, and no card leaves the majority to a judge."""
         for scenario in sorted(CARDS):
-            card = invoice_card()
+            card = scenario_card(scenario)
             with self.subTest(scenario=scenario):
                 self.assertEqual(card.id, scenario)
                 total = sum(criterion.weight for criterion in card.criteria)
