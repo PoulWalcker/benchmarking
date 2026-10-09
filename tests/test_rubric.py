@@ -863,6 +863,7 @@ class UnscoredTests(unittest.TestCase):
             ("differs from the dispatched judge", ForgedJudge({"model": "gpt-6-astra"})),
             ("differs from the card prompt version", ForgedJudge({"prompt_version": "0.9"})),
             ("answered a different run", ForgedJudge({"run_digest": "another-run"})),
+            ("answered a different run", ForgedJudge({}, dropped=("run_digest",))),
             ("attribution is incomplete", ForgedJudge({}, dropped=("response_digest",))),
         ]
         for fault, judge in faults:

@@ -21,6 +21,7 @@ from tests.support.verifying import verify_with_runner
 from verification import verify
 
 ROOT = workspace_root()
+FIXTURE_JUDGE_PROMPT = "ec8023162bcb95ddf8f25a3edb02851944dcbde701d0d0fdc83a4beba3536142"
 
 # Recorded authoring evidence pins the exact bytes of all supported prompt arms.
 GENERATION_PROMPTS = {
@@ -35,6 +36,11 @@ HOSTED_PROMPTS = {
 
 
 class PackagingTests(unittest.TestCase):
+    def test_generic_judge_prompt_is_pinned_and_in_source_inventory(self):
+        path = ROOT / "src/sapi_config_lab/coordinate/fixture-judge-prompt.md"
+        self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), FIXTURE_JUDGE_PROMPT)
+        self.assertEqual(source_manifest()[str(path.relative_to(ROOT))], FIXTURE_JUDGE_PROMPT)
+
     def test_generation_prompts_are_byte_identical_to_the_recorded_ones(self):
         sources = source_manifest()
         for name, expected in (GENERATION_PROMPTS | HOSTED_PROMPTS).items():

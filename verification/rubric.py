@@ -322,7 +322,7 @@ def _answers_fault(card: RubricCard, facts: RunFacts, reply: JudgeReply) -> str 
         for name, value in (("answers", reply.answers), ("reasons", reply.reasons)):
             if not isinstance(value, Mapping):
                 return "Judge " + name + " is not a mapping"
-        if facts.run_digest and reply.attribution.get("run_digest", facts.run_digest) != facts.run_digest:
+        if facts.run_digest and reply.attribution.get("run_digest") != facts.run_digest:
             return "Judge answered a different run"
         expected = {criterion.id for criterion in card.criteria if criterion.evaluator == "llm"}
         answered = set(reply.answers)

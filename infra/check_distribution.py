@@ -30,6 +30,7 @@ PRIVATE_PATHS = (
     "tasks/invoice-total/.env",
 )
 RUNTIME_FILES = (
+    "sapi_config_lab/coordinate/fixture-judge-prompt.md",
     "sapi_config_lab/execute/agency-prompt.md",
     "sapi_config_lab/compile/runtime-fragment.js",
     "sapi_config_lab/harbor_integration/runtime/Dockerfile",

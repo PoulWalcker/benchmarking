@@ -1,5 +1,6 @@
 """The verifier's rubric seam: named checks, judge prose, and the reward it must not touch."""
 
+import copy
 from dataclasses import replace
 from functools import partial
 import json
@@ -9,17 +10,20 @@ from types import SimpleNamespace
 import unittest
 import unittest.mock
 
+from sapi_config_lab.coordinate.cases import run_case
+from sapi_config_lab.coordinate.fixture_judge import FixtureJudge
 from sapi_config_lab.profile import read_bindings
-from tests.support.invoice import CATALOG, cases
+from tests.support.invoice import CATALOG, OPERATION_SOURCE, cases
 from tests.support.invoice import card as invoice_card
 from tests.support.invoice import fixture as invoice_fixture
+from tests.support.native import SimulatedN8n
 from tests.support.rubric import CARD
 from tests.support.verifying import verify_with_runner
 from verification import rubric_facts
 from verification import verify as verifier
 from verification.contracts import require
 from verification.fixture import FixtureEvaluator
-from verification.rubric import RecordedJudge, RunFacts, _judge_view
+from verification.rubric import RecordedJudge, RunFacts, _judge_view, score
 
 ROOT = Path(__file__).parents[1]
 CARDS = {"invoice-total"}
@@ -65,7 +69,7 @@ def facts_for(values, output, name="run"):
 
 
 def evaluate_facts(runs, **options):
-    return rubric_facts.evaluate(SCENARIO, runs, card=CARD, **options)
+    return rubric_facts.evaluate(SCENARIO, runs, card=CARD, run_digest="synthetic-rubric-sample", **options)
 
 
 def reward(report):
@@ -183,6 +187,179 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(document["status"], "complete")
         self.assertEqual(document["score_0_10"], 10.0)
         self.assertEqual(document["deterministic_points"], 6.0)
+
+    def test_judging_without_explicit_content_identity_is_unavailable(self):
+        result = rubric_facts.evaluate(
+            SCENARIO,
+            [facts_for(*sample_run())],
+            accepted=True,
+            execution_pass=True,
+            judge=RecordedJudge(ANSWERS),
+            card=CARD,
+        )
+        self.assertEqual(result["status"], rubric_facts.NOT_EVALUATED)
+
+    def test_two_valid_inventories_with_the_same_case_name_have_distinct_content_identity(self):
+        identities = []
+        with tempfile.TemporaryDirectory() as temp:
+            for amount, text in ((12500, "Résumé one"), (12500, "Résumé two"), (12600, "Résumé one")):
+                run = Path(temp) / str(len(identities))
+                case_set = copy.deepcopy(cases())
+                case_set["positive"][0]["inputs"]["invoices"][0]["amount_minor"] = amount
+                verify_with_runner(
+                    verifier,
+                    "invoice-total",
+                    ROOT / "tasks/invoice-total/solution/config.yaml",
+                    run,
+                    selected_case=case_set["positive"][0]["name"],
+                    runner=lambda config, artifacts, text=text, **options: {
+                        "status": "compile_error",
+                        "output": {"text": text},
+                        "mapping": {},
+                    },
+                    cases=case_set,
+                    fixture=invoice_fixture(),
+                    bindings=read_bindings(CATALOG),
+                )
+                expected = verifier.plan(
+                    "invoice-total",
+                    ROOT / "tasks/invoice-total/solution/config.yaml",
+                    case_set,
+                    selected_case=case_set["positive"][0]["name"],
+                    fixture=invoice_fixture(),
+                )
+                evidence = run / "evidence"
+                files = verifier.read_evidence(evidence, expected)
+                identities.append(verifier.verified_content_digest(evidence, expected, files, {"source": "fixed"}))
+        self.assertEqual(len(set(identities)), 3)
+        with tempfile.TemporaryDirectory() as temp:
+            bundle = Path(temp) / "saved"
+
+            def facts(content_digest):
+                return RunFacts(
+                    True,
+                    {"first_check": True, "second_check": True, "third_check": True},
+                    prose={"environment": "source", "candidate": "report"},
+                    run_digest=content_digest,
+                )
+
+            def response(request_digest):
+                return json.dumps(
+                    {
+                        "request_digest": request_digest,
+                        "answers": ANSWERS,
+                        "reasons": dict.fromkeys(ANSWERS, "The report follows the source."),
+                        "completeness": "complete",
+                    }
+                ).encode()
+
+            self.assertEqual(
+                score(
+                    CARD,
+                    facts(identities[0]),
+                    FixtureJudge.mock(bundle, {"source": "fixed"}, CARD, "judge-a", response),
+                )["status"],
+                "complete",
+            )
+            for content_digest in identities[1:]:
+                with self.subTest(content_digest=content_digest):
+                    saved = FixtureJudge.saved(bundle, {"source": "fixed"}, CARD, "judge-a")
+                    self.assertEqual(score(CARD, facts(content_digest), saved)["status"], "judge_failed")
+
+    def replay_across_same_name_observations(self, prose):
+        """Judge one valid observation, then replay its saved reply for changed source and changed report."""
+        selected = replace(
+            invoice_fixture(),
+            business=lambda inputs, observation, mode="stub", *, case=None: None,
+            obligations=lambda inputs, observation, *, case=None: {
+                key + "_check": lambda: None for key in ("first", "second", "third")
+            },
+            prose=prose,
+            rubric=CARD,
+        )
+
+        def response(request_digest):
+            return json.dumps(
+                {
+                    "request_digest": request_digest,
+                    "answers": ANSWERS,
+                    "reasons": dict.fromkeys(ANSWERS, "The report follows the source."),
+                    "completeness": "complete",
+                }
+            ).encode()
+
+        class Capturing:
+            def __init__(self, inner):
+                self.inner, self.mode, self.model = inner, inner.mode, inner.model
+
+            def judge(self, request):
+                requests.append(request)
+                return self.inner.judge(request)
+
+        requests, qualities = [], []
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            bundle = root / "bundle"
+            for index, (amount, changed_report) in enumerate(((12500, False), (12600, False), (12500, True))):
+                case_set = copy.deepcopy(cases())
+                case_set["positive"][0]["inputs"]["invoices"][0]["amount_minor"] = amount
+                source = OPERATION_SOURCE
+                if changed_report:
+                    source = source.replace("total_minor: total.amount_minor,", "total_minor: total.amount_minor + 1,")
+                if index == 0:
+                    inner = FixtureJudge.mock(bundle, {"native": "fixed"}, CARD, "judge-a", response)
+                else:
+                    inner = FixtureJudge.saved(
+                        bundle,
+                        {"native": "fixed"},
+                        CARD,
+                        "judge-a",
+                        replay_receipt=root / ("replay-" + str(index) + ".json"),
+                        transport=lambda _: self.fail("saved replay dispatched"),
+                    )
+                run = root / str(index)
+                report = verify_with_runner(
+                    verifier,
+                    "invoice-total",
+                    ROOT / "tasks/invoice-total/solution/config.yaml",
+                    run,
+                    selected_case=case_set["positive"][0]["name"],
+                    runner=partial(run_case, backend=SimulatedN8n(source)),
+                    cases=case_set,
+                    fixture=selected,
+                    bindings=read_bindings(CATALOG),
+                    judge=Capturing(inner),
+                )
+                # Each observation is internally valid and accepted; only its evidence differs.
+                self.assertTrue(report["cases"][0]["execution"]["succeeded"])
+                self.assertTrue(report["passed"])
+                qualities.append(json.loads((run / "evaluation/evaluation.json").read_text()))
+        self.assertEqual(qualities[0]["status"], "complete")
+        self.assertIsNotNone(qualities[0]["score_0_10"])
+        for quality in qualities[1:]:
+            self.assertEqual(quality["status"], "judge_failed")
+            self.assertIsNone(quality["score_0_10"])
+            self.assertIsNone(quality["normalized_reward"])
+        self.assertEqual(len(requests), 3)
+        self.assertEqual(len({request.facts.run_digest for request in requests}), 3)
+        return requests, qualities
+
+    def test_saved_reply_refuses_changed_valid_native_source_or_report_through_verifier(self):
+        self.replay_across_same_name_observations(
+            lambda inputs, observation, checks: {
+                "environment": json.dumps(inputs["invoices"], sort_keys=True),
+                "candidate": json.dumps(observation.final["output"], sort_keys=True),
+            }
+        )
+
+    def test_saved_reply_is_bound_to_verified_content_not_the_case_name(self):
+        # Identical model-visible prose leaves content identity as the only difference between runs.
+        requests, qualities = self.replay_across_same_name_observations(
+            lambda inputs, observation, checks: {"environment": "Same source.", "candidate": "Same report."}
+        )
+        self.assertEqual(len({json.dumps(dict(request.facts.prose)) for request in requests}), 1)
+        for quality in qualities[1:]:
+            self.assertIn("Saved Judge context mismatch", quality["judge_error"])
 
     def test_a_judge_that_answers_no_leaves_the_six_deterministic_points(self):
         document = self.evaluate(RecordedJudge(dict.fromkeys(ANSWERS, "no")))
