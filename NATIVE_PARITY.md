@@ -18,7 +18,10 @@ instruction bytes are duplicated only as native Harbor assets and equality-teste
 
 ## Actual verification
 
-Independent acceptance is pending. Implementation results:
+Independent acceptance is pending. First independent review requested corrections
+to native coordination ownership, saved calibration on fresh evidence, and the
+author network policy. Those corrections are implemented; the final native and
+security gate remains pending. Prior implementation results (before corrections):
 
 - `uv run --locked sapi-lab check`: full automated checks passed (520 tests, 14 opt-in skips,
   Ruff/format, all mypy namespaces, isolated wheel/sdist installation and staging).
@@ -29,9 +32,14 @@ Independent acceptance is pending. Implementation results:
 - Native compiled n8n LLM nodes and the existing Agency bridge passed with two
   deterministically faked, reserved calls and reward `0.732`
   (`reports/native-phase1/jobs/checkout-recovery-2dc73cd0/`).
+- The prior checkout result used a fresh demo response, so it did **not** prove
+  the requested saved-calibration route on fresh native evidence.
 - Saved original calibration replay passes against the unchanged scorer. Source
   identities remain in `tests/native/calibration/origin.json`; saved bytes came
   from the pinned spike, originally archived at its recorded baseline commit.
+- Correction round: 27 targeted tests pass, including fresh-evidence saved-answer
+  adaptation to `0.732`, immutable template verification, stale-reply/tamper
+  rejection, missing-evidence nulls, native ownership boundaries and F1/F2.
 - The exhaustive native/security/failure suite is implemented but awaits the
   independent verifier. Logs, failed development attempts and successful controls
   remain under `reports/native-phase1/`; no failed attempt is treated as parity.
@@ -49,14 +57,20 @@ Native tasks require this checkout and explicitly built local image tags; rebuil
 bases before Harbor's `--force-build`. Native assets ship in the source distribution;
 existing wheel staging remains the installed-resource path. The native adapter is
 an unpaid parity/control path: checkout runtime LLM transport is deterministic fake
-transport, and the judge is the original simulated demo. It makes no model-quality
+transport. A hash-pinned saved simulation reply supplies only fixed answer values
+to an explicit deterministic calibration adapter. Its NEW simulated reply carries
+fresh run/response hashes; `calibration-transport.json` preserves original source
+identity/provenance and records zero judge dispatches. Historical reply bytes are
+unchanged and cannot pass scoring against fresh evidence. It makes no model-quality
 claim and does not replace legacy guarded paid authoring, live dispatch, selection,
 repair, cross-job budgets or historical re-evaluation.
 
 Checkout rejects missing/invalid submissions before preparing a workflow window;
 its execution and quality remain null and no Harbor reward file is written.
 Harbor represents that missing reward as `RewardFileNotFoundError`. A missing judge
-also remains unscored. Invoice keeps its full original 14-observation plan (including
+also remains unscored. The author environment now explicitly uses Harbor
+`no-network`, unlike the legacy default public network; the separate verifier
+retains its own network policy and private simulator network. Invoice keeps its full original 14-observation plan (including
 three positive and seven invalid-input business cases plus four verifier probes).
 No old benchmark architecture is removed in this phase.
 

@@ -32,6 +32,8 @@ class NativeTaskTests(unittest.TestCase):
             self.assertEqual((task / "solution/config.yaml").read_bytes(), (original / "config.yaml").read_bytes())
             config = tomllib.loads((task / "task.toml").read_text())
             self.assertEqual(config["agent"]["user"], "1000")
+            self.assertEqual(config["environment"]["network_mode"], "no-network")
+            self.assertEqual(config["verifier"]["environment"]["network_mode"], "public")
             self.assertEqual(config["verifier"]["environment_mode"], "separate")
             self.assertEqual(config["artifacts"][0]["exclude"], ["*"])
             self.assertNotIn("metadata", config)
@@ -51,6 +53,42 @@ class NativeTaskTests(unittest.TestCase):
             self.assertTrue(reply["ok"])
             self.assertFalse(json.loads((directory / "call-1.json").read_text())["paid_dispatch"])
             self.assertEqual(json.loads(reply["output"])["new"], "charge_card(amount, currency)")
+
+    @unittest.skipUnless(AVAILABLE, "Requires pinned upstream source")
+    def test_saved_calibration_adapter_binds_fresh_evidence_and_rejects_tampering(self):
+        adapter = runpy.run_path(str(ROOT / "tasks/checkout-recovery/tests/calibration_transport.py"))
+        template = ROOT / "tests/native/calibration/judge-reply.json"
+        original = template.read_bytes()
+        run = json.loads((ROOT / "tests/native/calibration/run-log.json").read_text())
+        run["run_id"] = "fresh-native-calibration-attempt"
+        run["submission"]["run_id"] = run["run_id"]
+        contract = SCORING.freeze_contract(
+            SOURCE,
+            "production-checkout-recovery",
+            judge_mode="demo",
+            artifact=OutputArtifact("incident_summary", "incident-summary.md"),
+        )
+        reply, audit = adapter["adapt"](template, contract, run)
+        self.assertEqual(SCORING.evaluate(contract, run, reply)["normalized_reward"], 0.732)
+        self.assertEqual(reply["judgement"]["run_id"], run["run_id"])
+        self.assertTrue(reply["provenance"]["artifact_id"].startswith("saved-calibration-"))
+        self.assertEqual(audit["template_sha256"], adapter["TEMPLATE_SHA256"])
+        self.assertEqual(audit["judge_dispatches"], 0)
+        self.assertNotEqual(audit["original_provenance"]["run_log_digest"], audit["run_log_digest"])
+        self.assertIsNotNone(SCORING.judgement_fault(contract, run, json.loads(original)))
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            with self.assertRaises(ValueError):
+                SCORING.evaluate_once(contract, run, output / "stale", judgement=json.loads(original))
+            changed = output / "changed-template.json"
+            changed.write_bytes(original + b"\n")
+            with self.assertRaisesRegex(ValueError, "template identity mismatch"):
+                adapter["adapt"](changed, contract, run)
+        self.assertEqual(template.read_bytes(), original)
+        run["events"] = [event for event in run["events"] if event["source"] != "candidate"]
+        missing, audit = adapter["adapt"](template, contract, run)
+        self.assertIsNone(missing)
+        self.assertEqual(audit["status"], "missing_required_evidence")
 
     @unittest.skipUnless(AVAILABLE, "Requires pinned upstream source")
     def test_saved_spike_calibration_replays_through_original_scorer(self):
@@ -163,6 +201,12 @@ class NativeHarborTests(unittest.TestCase):
             artifact=OutputArtifact("incident_summary", "incident-summary.md"),
         )
         directory = trial / "verifier/evaluation"
+        audit = json.loads((trial / "verifier/calibration-transport.json").read_text())
+        self.assertEqual(audit["status"], "adapted")
+        self.assertEqual(audit["judge_dispatches"], 0)
+        self.assertEqual(audit["template_sha256"], "0af5a1b5ffd8cc704cb67a0c4a15afbbebf95b4a3389216f735699c15cbc178b")
+        self.assertNotEqual(audit["original_provenance"]["run_log_digest"], audit["run_log_digest"])
+        self.assertFalse((directory / "judge-dispatch.json").exists())
         replay = SCORING.evaluate(
             contract,
             json.loads((directory / "run-log.json").read_text()),

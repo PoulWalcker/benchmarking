@@ -429,16 +429,34 @@ packages. Harbor consumes them directly; there is no descriptor discovery or tas
 materialization on this path. Their trusted Python entrypoints import the existing
 benchmark planners, world hooks and evaluators explicitly, then call
 `coordinate.benchmark_worker.run_task`, the same observation/evaluation composition
-used by the legacy worker. Import ownership and independent evaluator boundaries
-are unchanged. The legacy manifest path remains supported.
+used by the legacy worker. These trusted scripts are native coordination roots:
+`main.py` for each task, plus checkout's `fake_bridge.py` and
+`calibration_transport.py`. They may import core stages and only their explicitly
+listed trusted `payload` entrypoints; core and verification never import them.
+`tests/test_boundaries.py` enumerates every task Python file, requires an explicit
+owner and rejects undeclared benchmark imports, Harbor imports and reverse edges.
+This adds native composition roots while preserving lower-stage and independent
+evaluator boundaries. The legacy manifest path remains supported.
 
 `infra/native/build.sh` builds explicit image targets from the checkout. Public
 stages copy only original public material and the existing submission gate from a
 pinned Alpine ancestor. Trusted stages copy the existing generic runtime and the
 selected benchmark's trusted source files; references enter only Harbor's oracle
 solution directory. Checkout's private Compose network and credentials volume are
-owned by Harbor. Native unpaid controls use a loopback fake transport with the
-existing Agency reservation/failure mechanisms; they do not expose a paid adapter.
+owned by Harbor. The author environment explicitly uses Harbor `no-network`;
+the separate verifier environment uses its own `public` policy and private
+Compose verification network. The simulator has no published port or author
+network/credential mount. Native unpaid runtime controls use a loopback fake
+transport with the existing Agency reservation/failure mechanisms.
+
+Checkout's native judge input is the immutable saved simulation reply from the
+pinned spike. `calibration_transport.py` verifies its SHA and scorecard/prompt
+identity, projects only its fixed answer values into a new explicitly simulated
+reply bound to fresh recorded evidence, and records original provenance and the
+adapter request identity in `calibration-transport.json`. It never mutates or
+replays the historical reply against a different run. The original scorer still
+rejects mismatched evidence digests. No model judges the fresh prose; missing
+required evidence remains unscored. Neither native transport exposes paid calls.
 Each trusted task image freezes SHA-256 hashes of its complete `/tests` tree,
 checks them before verification and records that inventory beside evidence. Native
 control tests also record host sources and base image IDs. These native tasks

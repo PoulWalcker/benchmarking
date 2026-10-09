@@ -30,6 +30,20 @@ ALLOWED = {
     },
 }
 
+# Native trusted scripts are explicit composition roots, not lower-stage modules.
+NATIVE_COORDINATORS = {
+    "native_tasks.invoice-total.tests.main": {"payload.evaluation.evaluator"},
+    "native_tasks.checkout-recovery.tests.main": {
+        "payload.environment.hooks",
+        "payload.evaluation.evaluator",
+        "payload.evaluation.scoring",
+    },
+    "native_tasks.checkout-recovery.tests.fake_bridge": set(),
+    "native_tasks.checkout-recovery.tests.calibration_transport": set(),
+}
+ALLOWED["native_coordinate"] = ALLOWED["coordinate"] | {"benchmark_domain", "native_coordinate"}
+
+
 # Module (dotted, relative to the package or "verification.") -> stage. The
 # longest matching prefix wins; anything unmatched in the package coordinates.
 STAGES = {
@@ -52,6 +66,12 @@ STAGES = {
 
 
 def stage_of(module: str) -> str:
+    if module in NATIVE_COORDINATORS:
+        return "native_coordinate"
+    if module.startswith("native_tasks."):
+        return "unclassified_native"
+    if module == "payload" or module.startswith("payload."):
+        return "benchmark_domain"
     if module.startswith("verification"):
         return "verification"
     match = max(
@@ -61,6 +81,9 @@ def stage_of(module: str) -> str:
 
 
 def modules():
+    for path in sorted((ROOT / "tasks").rglob("*.py")):
+        relative = path.relative_to(ROOT / "tasks").with_suffix("")
+        yield ".".join(("native_tasks", *relative.parts)), path, False
     for path in sorted((ROOT / "src" / PACKAGE).rglob("*.py")):
         relative = path.relative_to(ROOT / "src" / PACKAGE).with_suffix("")
         yield ".".join(part for part in relative.parts if part != "__init__"), path, False
@@ -71,12 +94,12 @@ def modules():
 
 def imported(path: Path, module: str, verifier: bool) -> set[str]:
     """Resolve stage edges from static and literal dynamic imports, including initializers."""
-    qualified = module if verifier else PACKAGE + ("." + module if module else "")
+    qualified = module if verifier or module.startswith("native_tasks.") else PACKAGE + ("." + module if module else "")
     names = set()
     for name in ownership_imports(path.read_text(), qualified, package=path.name == "__init__.py"):
         if name == PACKAGE or name.startswith(PACKAGE + "."):
             names.add(name.removeprefix(PACKAGE).lstrip("."))
-        elif name == "verification" or name.startswith("verification."):
+        elif name == "verification" or name.startswith(("verification.", "native_tasks.", "payload.")):
             names.add(name)
         elif verifier and (ROOT / "verification" / (name.split(".")[0] + ".py")).exists():
             names.add("verification." + name.split(".")[0])
@@ -89,7 +112,7 @@ class StageBoundaryTests(unittest.TestCase):
         for module, path, verifier in modules():
             source = stage_of(module)
             for name in imported(path, module, verifier):
-                if stage_of(name) not in ALLOWED[source]:
+                if stage_of(name) not in ALLOWED.get(source, set()):
                     found.add((module, name))
         return found
 
@@ -118,6 +141,8 @@ class StageBoundaryTests(unittest.TestCase):
         loose = {module for module, _, verifier in modules() if not verifier and "." not in module}
         shared = {name for name, stage in STAGES.items() if stage == SHARED}
         self.assertEqual(loose - shared - set(stages) - {"__main__", ""}, set())
+        native = {module for module, _, _ in modules() if module.startswith("native_tasks.")}
+        self.assertEqual(native, set(NATIVE_COORDINATORS), "Every native script needs explicit ownership")
         for stage in stages:
             self.assertTrue((ROOT / "src" / PACKAGE / stage).is_dir(), stage)
 
@@ -171,6 +196,10 @@ def ownership_edges(module: str, source: str, *, package: bool = False) -> set[t
     """Forbidden benchmark and infrastructure imports, regardless of stage or import syntax."""
     found = set()
     for name in ownership_imports(source, module, package=package):
+        if (name == "payload" or name.startswith("payload.")) and not any(
+            name == allowed or name.startswith(allowed + ".") for allowed in NATIVE_COORDINATORS.get(module, set())
+        ):
+            found.add((module, "benchmark_domain"))
         if any(
             name == prefix or name.startswith(prefix + ".")
             for prefix in ("benchmarks", PACKAGE + ".resources.benchmarks")
@@ -189,9 +218,23 @@ class OwnershipTests(unittest.TestCase):
     def test_core_and_verifier_do_not_import_benchmarks_and_only_integration_imports_harbor(self):
         found = set()
         for module, path, verifier in modules():
-            qualified = module if verifier else PACKAGE + ("." + module if module else "")
+            qualified = (
+                module if verifier or module.startswith("native_tasks.") else PACKAGE + ("." + module if module else "")
+            )
             found.update(ownership_edges(qualified, path.read_text(), package=path.name == "__init__.py"))
         self.assertEqual(found, set(), f"Ownership violations: {sorted(found)}")
+
+    def test_native_composition_permissions_are_explicit_and_cannot_flow_back_into_core(self):
+        native = "native_tasks.checkout-recovery.tests.main"
+        self.assertEqual(stage_of(native), "native_coordinate")
+        self.assertFalse(ownership_edges(native, "from payload.environment.hooks import prepare"))
+        for module in (native, "native_tasks.checkout-recovery.tests.fake_bridge", "sapi_config_lab.compile.n8n"):
+            self.assertTrue(ownership_edges(module, "from payload.undeclared import private"))
+            self.assertTrue(ownership_edges(module, "from harbor.models.task import Task"))
+        self.assertTrue(ownership_edges("sapi_config_lab.compile.n8n", "from payload.environment.hooks import prepare"))
+        self.assertNotIn("native_coordinate", ALLOWED["compile"])
+        self.assertNotIn("native_coordinate", ALLOWED["coordinate"])
+        self.assertEqual(stage_of("native_tasks.checkout-recovery.tests.unregistered"), "unclassified_native")
 
     def test_static_relative_and_literal_dynamic_imports_obey_boundaries(self):
         examples = (

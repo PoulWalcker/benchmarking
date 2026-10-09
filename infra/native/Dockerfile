@@ -31,6 +31,7 @@ COPY benchmarks/01-invoice-total/evaluation /tests/payload/evaluation
 RUN python3 -c "from payload.evaluation.evaluator import plan, evaluate; from sapi_config_lab.coordinate.benchmark_worker import run_task"
 
 FROM core AS checkout-recovery-verifier
+COPY tests/native/calibration/judge-reply.json /tests/calibration/judge-reply.json
 COPY benchmarks/10-checkout-recovery/bindings.yaml benchmarks/10-checkout-recovery/operations.js /tests/payload/
 COPY benchmarks/10-checkout-recovery/evaluation /tests/payload/evaluation
 COPY benchmarks/10-checkout-recovery/environment/__init__.py benchmarks/10-checkout-recovery/environment/hooks.py benchmarks/10-checkout-recovery/environment/server.py benchmarks/10-checkout-recovery/environment/install.py /tests/payload/environment/

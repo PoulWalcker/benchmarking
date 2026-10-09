@@ -447,7 +447,11 @@ images only; it neither generates tasks nor starts trials. Tests retain logs and
 native trial artifacts under `reports/native-phase1/`. The complete suite includes
 nop/wrong YAML, all invoice observations, stateful checkout, saved calibration,
 fake runtime transport failures, private placement and hostile transfer checks.
-All judge calls are explicitly simulated; no model or paid judge is used.
+Checkout uses hash-pinned saved simulated calibration answers through an explicit
+adapter bound to each fresh run, with no judge dispatch. The resulting
+`calibration-transport.json` distinguishes this projection from historical replay
+and measured model quality. No model or paid judge is used. Author environments
+explicitly have no network; trusted verifier/world connectivity is separate.
 
 Native task assets are included in the source distribution. They are intentionally
 checkout-only; use the existing `package-tasks` command for installed-wheel task

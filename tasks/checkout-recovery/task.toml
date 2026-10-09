@@ -7,6 +7,7 @@ artifacts = [
 timeout_sec = 600
 user = "1000"
 [environment]
+network_mode = "no-network"
 build_timeout_sec = 600
 cpus = 1
 memory_mb = 2048
@@ -18,6 +19,7 @@ command = "python3 /opt/sapi-submission.py collect"
 user = "root"
 timeout_sec = 10
 [verifier.environment]
+network_mode = "public"
 cpus = 1
 memory_mb = 2048
 

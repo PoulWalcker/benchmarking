@@ -6,22 +6,44 @@ from pathlib import Path
 import threading
 import time
 
+from calibration_transport import adapt
 from fake_bridge import transport_for
 from payload.environment.hooks import plan, prepare, snapshot
 from payload.evaluation.evaluator import evaluate
+from payload.evaluation.scoring import freeze_contract, recorded_run_log
 import yaml
 
-from sapi_config_lab.contracts import CompileOptions
+from sapi_config_lab.contracts import CompileOptions, OutputArtifact
 from sapi_config_lab.coordinate.backend import N8nBackend
 from sapi_config_lab.coordinate.benchmark_worker import run_task
 from sapi_config_lab.evaluate.records import validate_result
 from sapi_config_lab.evidence import write_json
 from sapi_config_lab.execute.agency import make_handler
+from sapi_config_lab.pinned_source import PinnedSource
 from sapi_config_lab.profile import check, read, read_bindings
 
 ROOT = Path("/tests/payload")
 OUT = Path("/logs/verifier")
 SUBMISSION = Path("/submission/config.yaml")
+
+
+def evaluate_calibrated(evidence: Path, options: dict) -> dict:
+    contract = freeze_contract(
+        PinnedSource(ROOT / "provenance/autowfbench-source.json", ROOT / "vendor/autowfbench"),
+        "production-checkout-recovery",
+        judge_mode="demo",
+        artifact=OutputArtifact("incident_summary", "incident-summary.md"),
+    )
+    run_log = recorded_run_log(contract, evidence)
+    reply, audit = adapt(Path("/tests/calibration/judge-reply.json"), contract, run_log)
+    if os.environ.get("SAPI_NATIVE_JUDGE_MODE", "calibration") == "none":
+        reply = None
+        audit["status"] = "disabled"
+    write_json(OUT / "calibration-transport.json", audit)
+    result = evaluate(evidence, {**options, "judgement": reply, "dispatch": False})
+    if reply is not None:
+        write_json(OUT / "evaluation/judge-reply.json", reply)
+    return dict(result)
 
 
 def main() -> int:
@@ -87,9 +109,8 @@ def main() -> int:
                 "deadline_seconds": 120,
                 "submission": str(SUBMISSION),
                 "evaluation": str(OUT / "evaluation"),
-                "dispatch": os.environ.get("SAPI_NATIVE_JUDGE_MODE", "demo") == "demo",
             },
-            {"plan": plan, "prepare": prepare, "snapshot": snapshot, "evaluate": evaluate},
+            {"plan": plan, "prepare": prepare, "snapshot": snapshot, "evaluate": evaluate_calibrated},
         )
     finally:
         if bridge:
