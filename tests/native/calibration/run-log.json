@@ -1,0 +1,326 @@
+{
+  "schema_version": "1.0",
+  "run_id": "trial-9d04c4ae13f341cb80265dd614dd5f42",
+  "challenge": {
+    "id": "production-checkout-recovery",
+    "version": "1.0.0",
+    "hashes": {
+      "definition": "b21b6f922f023122f3d65e2b9282a64d2797da10f3908216c1e127991774f1eb",
+      "environment": "4e5d3f8a06f4046a1d16949eac0ad21a486ba9846710bb3d00fa6ccd01991e64",
+      "scorecard": "33b468b9e0232249ecc20cd0d1a66b80cbd81405742a0979da83ca81eae0789a"
+    }
+  },
+  "solution": {
+    "id": "sapi-lab-yaml",
+    "name": "Frozen YAML in real n8n",
+    "version": "1",
+    "runtime": "n8n-2.41.5",
+    "manifest_digest": "177f7895cfd5d748ef83feba7661c4f3b351eb8deb96d2ea92ea5ab164ca6a1c"
+  },
+  "seed": 0,
+  "started_at": "2026-10-06T13:38:49.416607+00:00",
+  "finished_at": "2026-10-06T13:38:55.215286+00:00",
+  "duration_seconds": 5.794144291896373,
+  "termination_reason": "completed",
+  "events": [
+    {
+      "id": "engine-stopped",
+      "source": "engine",
+      "timestamp": "2026-10-06T13:38:55.215286+00:00",
+      "kind": "solution_stopped",
+      "data": {
+        "termination_reason": "completed",
+        "duration_seconds": 5.794144291896373
+      }
+    },
+    {
+      "id": "env-0001",
+      "source": "environment",
+      "timestamp": "2026-10-06T13:38:54.910647+00:00",
+      "kind": "tool_call",
+      "data": {
+        "operation": "incident.read",
+        "arguments": {},
+        "result": {
+          "ok": true,
+          "value": {
+            "failed_orders": [
+              {
+                "order_id": "EUR-101",
+                "amount": 34.2,
+                "currency": "EUR"
+              }
+            ],
+            "deployment": "Latest change added a EUR-specific branch to checkout. USD behavior was unchanged.",
+            "patch_contract": "Submit old and new source fragments. The simulator accepts only a checkout(amount, currency) function with an optional currency branch and charge_card calls. No imports, filesystem access, or arbitrary Python execution."
+          }
+        }
+      }
+    },
+    {
+      "id": "env-0002",
+      "source": "environment",
+      "timestamp": "2026-10-06T13:38:54.929675+00:00",
+      "kind": "tool_call",
+      "data": {
+        "operation": "source.read",
+        "arguments": {},
+        "result": {
+          "ok": true,
+          "value": {
+            "path": "checkout.py",
+            "content": "def checkout(amount, currency):\n    if currency == \"EUR\":\n        return charge_card(currency, amount)\n    return charge_card(amount, currency)\n"
+          }
+        }
+      }
+    },
+    {
+      "id": "env-0003",
+      "source": "environment",
+      "timestamp": "2026-10-06T13:38:54.944119+00:00",
+      "kind": "tool_call",
+      "data": {
+        "operation": "tests.run",
+        "arguments": {},
+        "result": {
+          "ok": true,
+          "value": {
+            "passed": false,
+            "cases": [
+              {
+                "name": "EUR-34.2",
+                "passed": false,
+                "actual": {
+                  "status": 500,
+                  "error": "Invalid payment"
+                }
+              },
+              {
+                "name": "EUR-15.05",
+                "passed": false,
+                "actual": {
+                  "status": 500,
+                  "error": "Invalid payment"
+                }
+              },
+              {
+                "name": "USD-34.2",
+                "passed": true,
+                "actual": {
+                  "status": 200,
+                  "amount": 34.2,
+                  "currency": "USD"
+                }
+              },
+              {
+                "name": "USD-15.05",
+                "passed": true,
+                "actual": {
+                  "status": 200,
+                  "amount": 15.05,
+                  "currency": "USD"
+                }
+              },
+              {
+                "name": "invalid-0-EUR",
+                "passed": true
+              },
+              {
+                "name": "invalid--1-USD",
+                "passed": true
+              },
+              {
+                "name": "invalid-True-USD",
+                "passed": true
+              },
+              {
+                "name": "invalid-10-GBP",
+                "passed": true
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "env-0004",
+      "source": "environment",
+      "timestamp": "2026-10-06T13:38:54.992703+00:00",
+      "kind": "tool_call",
+      "data": {
+        "operation": "checkout.patch",
+        "arguments": {
+          "old": "charge_card(currency, amount)",
+          "new": "charge_card(amount, currency)"
+        },
+        "result": {
+          "ok": true,
+          "value": {
+            "updated": "checkout.py"
+          }
+        }
+      }
+    },
+    {
+      "id": "env-0005",
+      "source": "environment",
+      "timestamp": "2026-10-06T13:38:55.009464+00:00",
+      "kind": "tool_call",
+      "data": {
+        "operation": "tests.run",
+        "arguments": {},
+        "result": {
+          "ok": true,
+          "value": {
+            "passed": true,
+            "cases": [
+              {
+                "name": "EUR-34.2",
+                "passed": true,
+                "actual": {
+                  "status": 200,
+                  "amount": 34.2,
+                  "currency": "EUR"
+                }
+              },
+              {
+                "name": "EUR-15.05",
+                "passed": true,
+                "actual": {
+                  "status": 200,
+                  "amount": 15.05,
+                  "currency": "EUR"
+                }
+              },
+              {
+                "name": "USD-34.2",
+                "passed": true,
+                "actual": {
+                  "status": 200,
+                  "amount": 34.2,
+                  "currency": "USD"
+                }
+              },
+              {
+                "name": "USD-15.05",
+                "passed": true,
+                "actual": {
+                  "status": 200,
+                  "amount": 15.05,
+                  "currency": "USD"
+                }
+              },
+              {
+                "name": "invalid-0-EUR",
+                "passed": true
+              },
+              {
+                "name": "invalid--1-USD",
+                "passed": true
+              },
+              {
+                "name": "invalid-True-USD",
+                "passed": true
+              },
+              {
+                "name": "invalid-10-GBP",
+                "passed": true
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "candidate-final",
+      "source": "candidate",
+      "timestamp": "2026-10-06T13:38:55.215286+00:00",
+      "kind": "final_output",
+      "data": {
+        "final_answer": "Checkout passed the amount and currency arguments to charge_card in reverse order on the EUR branch. EUR transactions failed; previously working USD transactions must continue working. The patch swaps the arguments in that call and preserves validation. The attached before and after tool receipts record verification; no production system was modified.",
+        "artifacts": [
+          {
+            "name": "incident-summary.md",
+            "media_type": "text/markdown",
+            "content": "Checkout passed the amount and currency arguments to charge_card in reverse order on the EUR branch. EUR transactions failed; previously working USD transactions must continue working. The patch swaps the arguments in that call and preserves validation. The attached before and after tool receipts record verification; no production system was modified."
+          }
+        ]
+      }
+    },
+    {
+      "id": "check-eur_fixed",
+      "source": "verification",
+      "timestamp": "2026-10-06T13:38:55.212866+00:00",
+      "kind": "deterministic_check",
+      "data": {
+        "check": "eur_fixed",
+        "passed": true
+      }
+    },
+    {
+      "id": "check-regressions",
+      "source": "verification",
+      "timestamp": "2026-10-06T13:38:55.212886+00:00",
+      "kind": "deterministic_check",
+      "data": {
+        "check": "regressions",
+        "passed": true
+      }
+    },
+    {
+      "id": "check-safe_patch",
+      "source": "verification",
+      "timestamp": "2026-10-06T13:38:55.212889+00:00",
+      "kind": "deterministic_check",
+      "data": {
+        "check": "safe_patch",
+        "passed": true
+      }
+    },
+    {
+      "id": "check-tested_recovery",
+      "source": "verification",
+      "timestamp": "2026-10-06T13:38:55.212892+00:00",
+      "kind": "deterministic_check",
+      "data": {
+        "check": "tested_recovery",
+        "passed": true
+      }
+    }
+  ],
+  "snapshots": {
+    "initial": {
+      "source": "def checkout(amount, currency):\n    if currency == \"EUR\":\n        return charge_card(currency, amount)\n    return charge_card(amount, currency)\n",
+      "patches": []
+    },
+    "final": {
+      "source": "def checkout(amount, currency):\n    if currency == \"EUR\":\n        return charge_card(amount, currency)\n    return charge_card(amount, currency)\n",
+      "patches": [
+        {
+          "old": "charge_card(currency, amount)",
+          "new": "charge_card(amount, currency)"
+        }
+      ]
+    }
+  },
+  "checks": {
+    "eur_fixed": true,
+    "regressions": true,
+    "safe_patch": true,
+    "tested_recovery": true
+  },
+  "submission": {
+    "protocol_version": "1.0",
+    "run_id": "trial-9d04c4ae13f341cb80265dd614dd5f42",
+    "status": "completed",
+    "final_answer": "Checkout passed the amount and currency arguments to charge_card in reverse order on the EUR branch. EUR transactions failed; previously working USD transactions must continue working. The patch swaps the arguments in that call and preserves validation. The attached before and after tool receipts record verification; no production system was modified.",
+    "artifacts": [
+      {
+        "name": "incident-summary.md",
+        "media_type": "text/markdown",
+        "content": "Checkout passed the amount and currency arguments to charge_card in reverse order on the EUR branch. EUR transactions failed; previously working USD transactions must continue working. The patch swaps the arguments in that call and preserves validation. The attached before and after tool receipts record verification; no production system was modified."
+      }
+    ],
+    "trace": []
+  }
+}

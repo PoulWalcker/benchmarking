@@ -11,7 +11,18 @@ import sys
 from sapi_config_lab.benchmark import discover_benchmarks
 from sapi_config_lab.paths import workspace_root
 
-SOURCE_DIRECTORIES = ("src", "tests", "benchmarks", "docs", "generation", "infra", "verification", "harbor", ".github")
+SOURCE_DIRECTORIES = (
+    "src",
+    "tests",
+    "benchmarks",
+    "docs",
+    "generation",
+    "infra",
+    "verification",
+    "harbor",
+    "tasks",
+    ".github",
+)
 SOURCE_FILES = (
     "pyproject.toml",
     "uv.lock",
@@ -19,6 +30,7 @@ SOURCE_FILES = (
     ".gitignore",
     ".dockerignore",
     "README.md",
+    "NATIVE_PARITY.md",
     "AGENTS.md",
     "run.sh",
     "run-generation.sh",
@@ -26,7 +38,20 @@ SOURCE_FILES = (
     "provenance/spec-comparison.json",
     "provenance/spec-source.json",
 )
-SOURCE_SUFFIXES = {".py", ".js", ".mjs", ".yaml", ".yml", ".json", ".toml", ".md", ".sh", ".txt", ".hs"}
+SOURCE_SUFFIXES = {
+    ".py",
+    ".js",
+    ".mjs",
+    ".yaml",
+    ".yml",
+    ".json",
+    ".toml",
+    ".md",
+    ".sh",
+    ".txt",
+    ".hs",
+    ".dockerignore",
+}
 
 
 def source_manifest(root: Path | None = None) -> dict[str, str]:

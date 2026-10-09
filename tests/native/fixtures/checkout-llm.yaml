@@ -1,0 +1,78 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: checkout-reference
+  revision: 1
+  kind: Gantt
+  inputs: {}
+  steps:
+  - id: incident
+    kind: Script
+    uses: incident.read
+    with: {}
+  - id: source
+    kind: Script
+    uses: source.read
+    with: {}
+  - id: before
+    kind: Script
+    uses: tests.run
+    with: {}
+  - id: plan
+    kind: LLM
+    uses: incident.plan
+    with:
+      task: Repair checkout
+      evidence:
+      - ref: steps.incident.result_json
+      - ref: steps.source.result_json
+      - ref: steps.before.result_json
+  - id: patch
+    kind: Script
+    uses: checkout.patch
+    with:
+      old:
+        ref: steps.plan.old
+      new:
+        ref: steps.plan.new
+  - id: after
+    kind: Script
+    uses: tests.run
+    with: {}
+  - id: summary
+    kind: LLM
+    uses: incident.summarize
+    with:
+      task: Summarize checkout repair
+      evidence:
+      - ref: steps.before.result_json
+      - ref: steps.after.result_json
+  dependencies:
+  - - incident
+    - source
+  - - source
+    - before
+  - - before
+    - plan
+  - - plan
+    - patch
+  - - patch
+    - after
+  - - after
+    - summary
+  acceptance: Scripted calibration of original simulator
+  output:
+    ref: steps.summary
+activation:
+  kind: Callback
+  rule_id: invoices-requested
+  hook: benchmark.invoice_batch_requested
+  condition: valid_input
+  reaction: Trigger
+  workflow_ref:
+    id: checkout-reference
+    revision: 1
+execution:
+  concurrency: independent
+  deadline_seconds: 120
+  on_step_error: fail

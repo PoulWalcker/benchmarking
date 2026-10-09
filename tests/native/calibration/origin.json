@@ -1,0 +1,10 @@
+{
+  "source_commit": "872aea76a493a82562dea391371c38de4397d3df",
+  "archive": "evidence/migration-01-baseline/historical/hosted-before-native-fields.tar.gz",
+  "files": {
+    "run-log.json": "23f4024b181013e8e8534857f14a4c42809fdc3b555f19411d9924065f1b5ba4",
+    "judge-reply.json": "0af5a1b5ffd8cc704cb67a0c4a15afbbebf95b4a3389216f735699c15cbc178b",
+    "task-contract.json": "68b72ba71788edf58634c7501ca9fb67f3bd395d739f99e870983aa048c12dfa",
+    "evaluation.json": "7604b5d5a68d44da36f884327eef1547d31ac7c2b915f53d46de898a65a02558"
+  }
+}

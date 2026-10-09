@@ -1,0 +1,60 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: invoice-total
+  revision: 1
+  kind: Pipeline
+  inputs:
+    invoices:
+    - id: INV-1
+      amount_minor: 12500
+      currency: AED
+    - id: INV-2
+      amount_minor: 8000
+      currency: AED
+    - id: INV-3
+      amount_minor: 17500
+      currency: AED
+  steps:
+  - id: validate
+    kind: Script
+    uses: invoices.validate
+    with:
+      invoices:
+        ref: inputs.invoices
+  - id: total
+    kind: Script
+    uses: invoices.sum
+    with:
+      invoices:
+        ref: steps.validate.invoices
+  - id: report
+    kind: Script
+    uses: invoices.report
+    with:
+      total:
+        ref: steps.total
+  dependencies:
+  - - validate
+    - total
+  - - total
+    - report
+  acceptance: Every invoice is counted once; integer minor units and currency are
+    preserved.
+  output:
+    total_minor: 38000
+    currency: AED
+    invoice_count: 3
+activation:
+  kind: Callback
+  rule_id: invoices-requested
+  hook: benchmark.invoice_batch_requested
+  condition: valid_input
+  reaction: Trigger
+  workflow_ref:
+    id: invoice-total
+    revision: 1
+execution:
+  concurrency: independent
+  deadline_seconds: 30
+  on_step_error: fail

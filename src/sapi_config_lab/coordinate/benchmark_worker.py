@@ -91,6 +91,23 @@ def main() -> int:
         write_json(output / "result.json", NOT_EVALUATED)
         reward.write_text("1\n" if report["passed"] else "0\n")
         return 0
+    return run_task(
+        root, output, submission, options, functions, operations=metadata["operations"], bindings=metadata["bindings"]
+    )
+
+
+def run_task(
+    root: Path,
+    output: Path,
+    submission: Path,
+    options: dict,
+    functions: dict,
+    *,
+    operations: str = "operations.js",
+    bindings: str = "bindings.yaml",
+) -> int:
+    """Compose explicit trusted callbacks over the same recorded observation pipeline."""
+    output.mkdir(parents=True, exist_ok=True)
     context = {
         "root": root,
         "output": output,
@@ -112,7 +129,7 @@ def main() -> int:
     context["plan"] = plan
     if plan is not None:
         write_json(output / "plan.json", plan)
-        backend = N8nBackend(operation_source=(root / metadata["operations"]).read_text())
+        backend = N8nBackend(operation_source=(root / operations).read_text())
         observe(
             plan,
             submission,
@@ -124,7 +141,7 @@ def main() -> int:
                 operation_token=binding.operation_token,
                 operation_url=binding.operation_url,
             ),
-            bindings=read_bindings(root / metadata["bindings"]),
+            bindings=read_bindings(root / bindings),
             bridge_url=os.environ.get("SAPI_BRIDGE_URL"),
         )
     if "snapshot" in functions:
@@ -141,7 +158,7 @@ def main() -> int:
     write_json(output / "result.json", result)
     projected = result.get("harbor_reward", None if result["acceptance"] is None else int(result["acceptance"]))
     if projected is not None:
-        reward.write_text(str(projected) + "\n")
+        (output / "reward.txt").write_text(str(projected) + "\n")
     return 0
 
 

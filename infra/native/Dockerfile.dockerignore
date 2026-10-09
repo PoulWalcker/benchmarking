@@ -1,0 +1,31 @@
+reports/
+validation/
+generated/
+provenance/
+__pycache__/
+**/__pycache__/
+.venv/
+.git/
+*.zip
+*.log
+dist/
+.ruff_cache/
+.idea/
+.python/
+.cache/
+.mypy_cache/
+.pytest_cache/
+.github/
+.scratch/
+.codegraph/
+review/
+reviews/
+.env
+.env.*
+.DS_Store
+# Evaluator-only fixtures and evaluation data never enter an image a candidate runs in.
+benchmarks/*/cases.json
+benchmarks/*/evaluation/
+# Explicit trusted targets need fixtures; candidate targets never COPY these paths.
+!benchmarks/*/cases.json
+!benchmarks/*/evaluation/

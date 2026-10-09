@@ -425,3 +425,31 @@ dispatches a judge or starts a world. Unavailable or changed independent evaluat
 sources refuse re-evaluation; report inspection remains available. A matching
 versioned record uses its recorded descriptor identity and does not need these
 historical snapshot options.
+
+## Checked-in native Harbor tasks
+
+The Phase 1 native tasks use the same domain implementations as the existing
+manifest path. Build their explicit public and trusted images from this checkout,
+then pass the static directories directly to Harbor 0.21.0:
+
+```bash
+uv sync --locked --extra harbor --extra benchmark
+./infra/native/build.sh
+uv run --locked harbor run -p tasks/invoice-total -a oracle --max-retries 0 --force-build
+uv run --locked harbor run -p tasks/checkout-recovery -a oracle --max-retries 0 --force-build
+SAPI_RUN_NATIVE_TESTS=1 uv run --locked --extra harbor --extra benchmark \
+  python -m unittest tests.test_native_tasks -v
+```
+
+Rebuild images after editing shared sources. `--force-build` rebuilds Harbor's
+small task layers but cannot rebuild their base images. The build script creates
+images only; it neither generates tasks nor starts trials. Tests retain logs and
+native trial artifacts under `reports/native-phase1/`. The complete suite includes
+nop/wrong YAML, all invoice observations, stateful checkout, saved calibration,
+fake runtime transport failures, private placement and hostile transfer checks.
+All judge calls are explicitly simulated; no model or paid judge is used.
+
+Native task assets are included in the source distribution. They are intentionally
+checkout-only; use the existing `package-tasks` command for installed-wheel task
+staging. `NATIVE_PARITY.md` records remaining migration limits and deletion
+candidates; Phase 1 removes no legacy architecture.

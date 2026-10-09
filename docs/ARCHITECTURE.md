@@ -421,3 +421,27 @@ The [sealed baseline index](../evidence/migration-01-baseline/INDEX.md) records 
 source/prompt identities and historical formats. Archived scorer fixtures retain their
 verified original path and hash; a current benchmark scorer cannot substitute for
 that original evaluator.
+
+## Native Harbor integration (Phase 1)
+
+`tasks/invoice-total` and `tasks/checkout-recovery` are also checked-in Harbor task
+packages. Harbor consumes them directly; there is no descriptor discovery or task
+materialization on this path. Their trusted Python entrypoints import the existing
+benchmark planners, world hooks and evaluators explicitly, then call
+`coordinate.benchmark_worker.run_task`, the same observation/evaluation composition
+used by the legacy worker. Import ownership and independent evaluator boundaries
+are unchanged. The legacy manifest path remains supported.
+
+`infra/native/build.sh` builds explicit image targets from the checkout. Public
+stages copy only original public material and the existing submission gate from a
+pinned Alpine ancestor. Trusted stages copy the existing generic runtime and the
+selected benchmark's trusted source files; references enter only Harbor's oracle
+solution directory. Checkout's private Compose network and credentials volume are
+owned by Harbor. Native unpaid controls use a loopback fake transport with the
+existing Agency reservation/failure mechanisms; they do not expose a paid adapter.
+Each trusted task image freezes SHA-256 hashes of its complete `/tests` tree,
+checks them before verification and records that inventory beside evidence. Native
+control tests also record host sources and base image IDs. These native tasks
+intentionally require a checkout and built local images; the
+existing installed-resource/wheel path retains its guarantees. See
+[NATIVE_PARITY.md](../NATIVE_PARITY.md) for verified coverage and Phase 2 scope.

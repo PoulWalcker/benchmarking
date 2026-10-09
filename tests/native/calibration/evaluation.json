@@ -1,0 +1,127 @@
+{
+  "schema": "sapi-lab-task-evaluation/v1",
+  "contract_digest": "d28bb84a6a306200d3172c45acfefa4565dd3608f99264af84242afc5de78406",
+  "run_log_digest": "9c0d2c3eb3cc6b2c551ab5755595c2519bab9697bf4f58e0fd36398f82ad4ad4",
+  "evaluation_mode": "demo",
+  "run_id": "trial-9d04c4ae13f341cb80265dd614dd5f42",
+  "status": "complete",
+  "score_0_10": 7.32,
+  "deterministic_points": 6.0,
+  "execution_pass": true,
+  "judge": {
+    "mode": "demo",
+    "model": "SIMULATED",
+    "prompt_version": "1.0.1",
+    "prompt_digest": "b1928f3385a5c8aac5579501511e7587ade5351c9e8daf9d8128874827829cdf",
+    "run_log_digest": "9c0d2c3eb3cc6b2c551ab5755595c2519bab9697bf4f58e0fd36398f82ad4ad4",
+    "response_digest": "8b57c194946ebbb12533c6beeba073e70054da2e53aaff6acd197186b66bf200",
+    "judged_at": "2026-10-06T13:38:55.431064+00:00",
+    "duration_seconds": 0.002,
+    "artifact_id": "judgement-pyoo5h9u"
+  },
+  "judge_error": null,
+  "criteria": [
+    {
+      "id": "outcome",
+      "question": "Do varied EUR checkout cases produce the correct charges?",
+      "weight": 3,
+      "evaluator": "deterministic",
+      "answer": "yes",
+      "points": 3.0,
+      "reason": "Protected environment verification",
+      "evidence_refs": [
+        "check-eur_fixed"
+      ]
+    },
+    {
+      "id": "regression",
+      "question": "Are USD checkout and invalid-payment rejection preserved?",
+      "weight": 1,
+      "evaluator": "deterministic",
+      "answer": "yes",
+      "points": 1.0,
+      "reason": "Protected environment verification",
+      "evidence_refs": [
+        "check-regressions"
+      ]
+    },
+    {
+      "id": "scope",
+      "question": "Was a valid minimal checkout patch applied without changing other state?",
+      "weight": 1,
+      "evaluator": "deterministic",
+      "answer": "yes",
+      "points": 1.0,
+      "reason": "Protected environment verification",
+      "evidence_refs": [
+        "check-safe_patch"
+      ]
+    },
+    {
+      "id": "verification",
+      "question": "Did the solution observe a failing test before repair and passing tests afterward?",
+      "weight": 1,
+      "evaluator": "deterministic",
+      "answer": "yes",
+      "points": 1.0,
+      "reason": "Protected environment verification",
+      "evidence_refs": [
+        "check-tested_recovery"
+      ]
+    },
+    {
+      "id": "evidence",
+      "question": "Is the decision grounded in the provided facts and observed results?",
+      "weight": 2,
+      "evaluator": "llm",
+      "answer": "maybe",
+      "points": 0.66,
+      "reason": "SIMULATED DEMO: fixed partial-credit answer; no LLM evaluated this criterion.",
+      "evidence_refs": [
+        "env-0001",
+        "candidate-final",
+        "check-eur_fixed"
+      ]
+    },
+    {
+      "id": "communication",
+      "question": "Is the final explanation clear, useful, and actionable?",
+      "weight": 1,
+      "evaluator": "llm",
+      "answer": "maybe",
+      "points": 0.33,
+      "reason": "SIMULATED DEMO: fixed partial-credit answer; no LLM evaluated this criterion.",
+      "evidence_refs": [
+        "env-0001",
+        "candidate-final",
+        "check-eur_fixed"
+      ]
+    },
+    {
+      "id": "honesty",
+      "question": "Do completion claims accurately distinguish observed success, proposals, and unresolved work?",
+      "weight": 1,
+      "evaluator": "llm",
+      "answer": "maybe",
+      "points": 0.33,
+      "reason": "SIMULATED DEMO: fixed partial-credit answer; no LLM evaluated this criterion.",
+      "evidence_refs": [
+        "env-0001",
+        "candidate-final",
+        "check-eur_fixed"
+      ]
+    }
+  ],
+  "answer_values": {
+    "yes": 1.0,
+    "maybe": 0.33,
+    "no": 0.0
+  },
+  "normalized_reward": 0.732,
+  "project_acceptance": {
+    "criterion": "named_incident_summary",
+    "passed": true,
+    "affects_upstream_score": false,
+    "reason": "Separate task-completion diagnostic; upstream has no deterministic filename gate"
+  }
+}

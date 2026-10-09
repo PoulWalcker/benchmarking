@@ -64,7 +64,7 @@ def command_help() -> str:
 
 
 # The required local checks, in order; each is the plain command docs/DEVELOPMENT.md used to list.
-LINTED = ("src", "tests", "verification", "infra", "benchmarks")
+LINTED = ("src", "tests", "verification", "infra", "benchmarks", "tasks")
 CHECKS = {
     "unittest": ("-m", "unittest", "discover", "-s", "tests", "-v"),
     "ruff check": ("-m", "ruff", "check", *LINTED),

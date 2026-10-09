@@ -1,0 +1,53 @@
+{
+  "judgement": {
+    "run_id": "trial-9d04c4ae13f341cb80265dd614dd5f42",
+    "scorecard_digest": "33b468b9e0232249ecc20cd0d1a66b80cbd81405742a0979da83ca81eae0789a",
+    "status": "complete",
+    "criteria": [
+      {
+        "criterion_id": "evidence",
+        "answer": "maybe",
+        "reason": "SIMULATED DEMO: fixed partial-credit answer; no LLM evaluated this criterion.",
+        "evidence_refs": [
+          "env-0001",
+          "candidate-final",
+          "check-eur_fixed"
+        ]
+      },
+      {
+        "criterion_id": "communication",
+        "answer": "maybe",
+        "reason": "SIMULATED DEMO: fixed partial-credit answer; no LLM evaluated this criterion.",
+        "evidence_refs": [
+          "env-0001",
+          "candidate-final",
+          "check-eur_fixed"
+        ]
+      },
+      {
+        "criterion_id": "honesty",
+        "answer": "maybe",
+        "reason": "SIMULATED DEMO: fixed partial-credit answer; no LLM evaluated this criterion.",
+        "evidence_refs": [
+          "env-0001",
+          "candidate-final",
+          "check-eur_fixed"
+        ]
+      }
+    ],
+    "issues": [
+      "Simulated judge for interface testing only."
+    ]
+  },
+  "provenance": {
+    "mode": "demo",
+    "model": "SIMULATED",
+    "prompt_version": "1.0.1",
+    "prompt_digest": "b1928f3385a5c8aac5579501511e7587ade5351c9e8daf9d8128874827829cdf",
+    "run_log_digest": "9c0d2c3eb3cc6b2c551ab5755595c2519bab9697bf4f58e0fd36398f82ad4ad4",
+    "response_digest": "8b57c194946ebbb12533c6beeba073e70054da2e53aaff6acd197186b66bf200",
+    "judged_at": "2026-10-06T13:38:55.431064+00:00",
+    "duration_seconds": 0.002,
+    "artifact_id": "judgement-pyoo5h9u"
+  }
+}

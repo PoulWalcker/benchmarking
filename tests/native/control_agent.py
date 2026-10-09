@@ -1,0 +1,66 @@
+"""Unpaid native agent for saved candidates and hostile submission controls."""
+
+from pathlib import Path
+
+from harbor.agents.base import BaseAgent
+
+
+class ControlAgent(BaseAgent):
+    def __init__(self, *args, candidate=None, attack=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.candidate, self.attack = candidate, attack
+
+    @staticmethod
+    def name():
+        return "native-control"
+
+    def version(self):
+        return "1"
+
+    async def setup(self, environment):
+        pass
+
+    async def run(self, instruction, environment, context):
+        if self.candidate:
+            await environment.upload_file(
+                source_path=Path(self.candidate).resolve(),
+                target_path="/app/submission/config.yaml",
+            )
+        commands = {
+            "symlink": "ln -s /etc/passwd /app/submission/config.yaml",
+            "fifo": "mkfifo /app/submission/config.yaml",
+            "extra": "touch /app/submission/unexpected",
+            "artifact": "mkdir -p /logs/artifacts; echo forged > /logs/artifacts/reward.txt",
+        }
+        if self.attack:
+            result = await environment.exec(commands[self.attack])
+            if result.return_code:
+                raise RuntimeError("Attack setup failed")
+
+
+class ProbeAgent(ControlAgent):
+    async def run(self, instruction, environment, context):
+        code = """import json,os,pathlib,socket
+assert os.getuid()==1000
+for name in ['/tests','/solution','/opt/native','/run/checkout']:
+ assert not pathlib.Path(name).exists(),name
+try:
+ pathlib.Path('/submission/forged').write_text('forged')
+ raise AssertionError('Protected collector directory was writable')
+except PermissionError:pass
+assert not any(any(part in key for part in ['TOKEN','PASSWORD','API_KEY','SECRET']) for key in os.environ)
+sock=socket.socket();sock.settimeout(.2)
+assert sock.connect_ex(('1.1.1.1',443))!=0
+sock.close()
+try:socket.getaddrinfo('simulator',8000);raise AssertionError('Private service resolved')
+except socket.gaierror:pass
+print(json.dumps({'uid':os.getuid(),'private_paths_absent':True,'credentials_absent':True,'egress_blocked':True,'collector_protected':True}))
+"""
+        import shlex
+
+        result = await environment.exec("python3 -c " + shlex.quote(code))
+        if result.return_code:
+            raise AssertionError(result.stderr)
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
+        (self.logs_dir / "isolation.json").write_text(result.stdout)
+        await super().run(instruction, environment, context)
