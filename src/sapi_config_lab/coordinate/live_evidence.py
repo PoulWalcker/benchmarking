@@ -112,7 +112,13 @@ def reconcile_dispatches(native: list[dict], audit: list[dict], model: str, *, b
 
 
 def collect_native(
-    trials: list[dict], submissions: dict, cohorts: dict[str, set[str]], bridge_url: str, benchmarks: dict
+    trials: list[dict],
+    submissions: dict,
+    cohorts: dict[str, set[str]],
+    bridge_url: str,
+    benchmarks: dict,
+    *,
+    judge_model: str | None = None,
 ) -> list[dict]:
     """Re-check native artifacts of live trials and return each observed model call."""
     from verification import n8n_provenance as provenance
@@ -126,14 +132,21 @@ def collect_native(
         directory = verifier / "evidence"
         submission = submissions[scenario]
         benchmark = benchmarks[scenario]
-        from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
         from sapi_config_lab.coordinate.backend import N8nBackend
+        from sapi_config_lab.coordinate.native_evaluation import validate_record
+        from sapi_config_lab.coordinate.native_tasks import invoke
+        from sapi_config_lab.coordinate.provenance import source_manifest
 
-        options = {"mode": "live", "deadline_seconds": 600, "selected_case": next(iter(cohorts[scenario]))}
+        options = {"mode": "live", "judge_model": judge_model, "selected_case": next(iter(cohorts[scenario]))}
         if "cases" in submission:
             options["cases"] = submission["cases"]
-        frozen = freeze_identity(benchmark, options)
-        planned = load_entrypoints(benchmark, frozen).plan(Path(submission["path"]), options)
+        sources = source_manifest()
+        metadata = validate_record(verifier, benchmark, sources)
+        bundle = invoke(
+            benchmark, {"action": "plan", "submission": str(submission["path"]), "options": options}, sources
+        )
+        require(metadata["options"] == bundle["options"], "Recorded native runtime options differ")
+        planned = bundle["plan"]
         manifest = read_json(directory / "observation.json")
         require(manifest.get("plan_sha256") == digest(planned), "Recorded observation plan differs")
         require(sha256(directory / "submission.yaml") == submission["sha256"], "Recorded submission differs")
@@ -145,8 +158,7 @@ def collect_native(
             artifact = directory / "cases" / row["name"]
             require(row["files"] == verification.inventory(artifact), "Recorded native files changed")
             verification.check_case_record(directory / "cases" / row["name"], row["files"], row["name"])
-        files = {item.destination: item.source for item in benchmark.files}
-        backend = N8nBackend(operation_source=files[benchmark.operations].read_text())
+        backend = N8nBackend(operation_source=(benchmark / "operations.js").read_text())
         for entry in planned["entries"]:
             name = entry["name"]
             require(name in cohorts[scenario] and (scenario, name) not in observed, "Unexpected or duplicate live case")
@@ -156,7 +168,7 @@ def collect_native(
             graph = read_json(artifact / "workflow.json")
             compiled = backend.compile(
                 entry["config"],
-                read_bindings(files[benchmark.bindings]),
+                read_bindings(benchmark / "bindings.yaml"),
                 CompileOptions("live", bridge_url, **planned.get("compile_options", {})),
             )
             require(

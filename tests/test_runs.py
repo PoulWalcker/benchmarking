@@ -13,7 +13,7 @@ from unittest.mock import patch
 from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.ledger import Ledger
 from sapi_config_lab.coordinate.live import main as live
-from sapi_config_lab.coordinate.runs import run_experiment
+from sapi_config_lab.coordinate.runs import Run, run_experiment
 from sapi_config_lab.paths import workspace_root
 
 
@@ -272,7 +272,10 @@ class LiveCeilingTests(unittest.TestCase):
         stub.write_text("{}")
         gate = {"oracle": {"trials": [{"task_name": "checkout-recovery"}]}}
         stdout, stderr = io.StringIO(), io.StringIO()
-        with patch("sapi_config_lab.coordinate.live.validate_control", return_value=gate):
+        with (
+            patch("sapi_config_lab.coordinate.live.validate_control", return_value=gate),
+            patch.object(Run, "use_native_tasks"),
+        ):
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 code = live(
                     [

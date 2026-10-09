@@ -10,13 +10,22 @@ import tempfile
 import tomllib
 
 from sapi_config_lab.coordinate.provenance import source_manifest
-from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.paths import resource_root
 
 
 def policy(task: Path) -> dict:
     """Read policy values from native TOML; executable paths are never configuration."""
     value = tomllib.loads((task / "task.toml").read_text()).get("metadata", {}).get("sapi", {})
-    allowed = {"default", "authoring_attempts", "runtime_model_calls", "judge_calls", "reference_reward", "catalogs"}
+    allowed = {
+        "default",
+        "authoring_attempts",
+        "runtime_model_calls",
+        "judge_calls",
+        "reference_reward",
+        "catalogs",
+        "admission",
+        "human_review",
+    }
     if not isinstance(value, dict) or value.keys() - allowed:
         raise ValueError("Unknown native experiment policy")
     for key in ("authoring_attempts", "runtime_model_calls", "judge_calls"):
@@ -30,6 +39,10 @@ def policy(task: Path) -> dict:
     catalogs = value.get("catalogs", ["full"])
     if not isinstance(catalogs, list) or not catalogs or not set(catalogs) <= {"full", "scenario"}:
         raise ValueError("Unknown native prompt catalog")
+    if value.get("admission", "evaluate") not in {"compile", "evaluate"}:
+        raise ValueError("Unknown native admission policy")
+    if "human_review" in value and type(value["human_review"]) is not bool:
+        raise ValueError("Native human review policy must be boolean")
     return value
 
 
@@ -64,9 +77,10 @@ def image_tags(tasks: tuple[Path, ...]) -> tuple[str, ...]:
 
 def invoke(task: Path, request: dict, sources: dict) -> dict:
     """Run the fixed task-owned trusted composition after verifying all source bytes."""
-    root = workspace_root()
+    root = resource_root()
     if task not in select_tasks(root / "tasks", [task.name]) or source_manifest() != sources:
         raise ValueError("Native task invocation source mismatch")
+    timeout = 420 if request.get("action") == "evaluate" else 300
     with tempfile.TemporaryDirectory(prefix="sapi-task-imports-") as cache:
         bootstrap = "import runpy,sys; sys.path[:0]=sys.argv[1:4]; runpy.run_path(sys.argv[4],run_name='__main__')"
         result = subprocess.run(
@@ -86,10 +100,13 @@ def invoke(task: Path, request: dict, sources: dict) -> dict:
             input=json.dumps(request),
             text=True,
             capture_output=True,
-            check=True,
-            timeout=300,
+            check=False,
+            timeout=timeout,
             cwd=root,
         )
+    if result.returncode == 124:
+        raise subprocess.TimeoutExpired(result.args, timeout)
+    result.check_returncode()
     if source_manifest() != sources:
         raise ValueError("Native task invocation sources changed")
     value = json.loads(result.stdout)

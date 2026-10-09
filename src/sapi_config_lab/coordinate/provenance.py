@@ -8,8 +8,9 @@ from pathlib import Path
 import platform
 import sys
 
-from sapi_config_lab.benchmark import discover_benchmarks
-from sapi_config_lab.paths import workspace_root
+import sapi_config_lab
+from sapi_config_lab.paths import resource_root
+import verification
 
 SOURCE_DIRECTORIES = (
     "src",
@@ -55,22 +56,36 @@ SOURCE_SUFFIXES = {
 
 def source_manifest(root: Path | None = None) -> dict[str, str]:
     """Hashes of every public source file; provenance/ is an allowlist, so machine snapshots never count."""
-    root = root or workspace_root()
+    root = root or resource_root()
     files = {root / name for name in SOURCE_FILES}
-    if (root / "tasks").is_dir():
-        for benchmark in discover_benchmarks(root / "tasks"):
-            files.update(item.source for item in benchmark.files)
+    files.update(path for path in (root / "tasks").rglob("*") if path.is_file() and "__pycache__" not in path.parts)
     for directory in SOURCE_DIRECTORIES:
         files.update(
             path
             for path in (root / directory).rglob("*")
             if "__pycache__" not in path.parts and (path.suffix in SOURCE_SUFFIXES or path.name == "Dockerfile")
         )
-    return {
+    result = {
         str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
         for path in sorted(files)
         if path.is_file()
     }
+    if root == resource_root() and not (root / "src/sapi_config_lab").is_dir():
+        for prefix, installed_directory in (
+            ("src/sapi_config_lab", Path(sapi_config_lab.__file__).parent),
+            ("verification", Path(verification.__file__).parent),
+        ):
+            for path in sorted(installed_directory.rglob("*")):
+                if (
+                    path.is_file()
+                    and "__pycache__" not in path.parts
+                    and "resources" not in path.relative_to(installed_directory).parts
+                    and path.suffix in SOURCE_SUFFIXES
+                ):
+                    result[prefix + "/" + path.relative_to(installed_directory).as_posix()] = hashlib.sha256(
+                        path.read_bytes()
+                    ).hexdigest()
+    return result
 
 
 def host_environment() -> dict[str, str | None]:

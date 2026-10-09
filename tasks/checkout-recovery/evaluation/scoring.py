@@ -47,7 +47,7 @@ def normalized_reward(score_0_10: float) -> float:
 
 
 _WORKER = """
-import json, sys
+import json, sys, subprocess
 from pathlib import Path
 from autowfbench.core.contracts import load_challenge, validate
 from autowfbench.core.scoring import calculate
@@ -63,8 +63,11 @@ elif operation == 'score':
                        request.get('provenance'), request.get('error'))
 elif operation == 'judge':
     from autowfbench.runtime.judge import Judge
-    result = Judge(mode=request['mode'], model=request['model'],
-                   data_dir=Path(request['artifact_dir']), timeout=request['timeout']).evaluate(request['request'])
+    try:
+        result = Judge(mode=request['mode'], model=request['model'],
+                       data_dir=Path(request['artifact_dir']), timeout=request['timeout']).evaluate(request['request'])
+    except subprocess.TimeoutExpired:
+        raise SystemExit(124) from None
 else:
     raise ValueError('Unknown trusted evaluation operation')
 json.dump(result, sys.stdout, allow_nan=False)
@@ -94,6 +97,8 @@ def _upstream(source: PinnedSource, request: Document, timeout: float = WORKER_T
     )
     if source.verify() != before:
         raise ValueError("Pinned evaluator source changed during evaluation")
+    if completed.returncode == 124:
+        raise subprocess.TimeoutExpired("protected judge", timeout)
     if completed.returncode:
         # stderr may hold candidate text or credentials; keep only its digest.
         raise ValueError(
@@ -440,6 +445,8 @@ def evaluate_once(
         try:
             reply = judge(contract, run_log, output / "judge")
             _write(output / "judge-reply.json", reply)
+        except subprocess.TimeoutExpired:
+            raise
         except (ValueError, OSError, subprocess.SubprocessError) as exc:
             error = type(exc).__name__
     report = evaluate(contract, run_log, reply, judge_error=error)

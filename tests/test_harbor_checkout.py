@@ -180,7 +180,7 @@ class CheckoutHarborPackageTests(unittest.TestCase):
         (record / "benchmark.json").write_text(json.dumps(changed))
         with self.assertRaisesRegex(ValueError, "identity differs"):
             reevaluate_benchmark(record, self.root / "changed", None)
-        with self.assertRaisesRegex(ValueError, "identity differs"):
+        with self.assertRaisesRegex(ValueError, "requires --source-root"):
             evaluate_main(["--record", str(record), "--output", str(self.root / "paid"), "--dispatch-judge"])
 
     def test_calibration_dispatch_is_stubbed_reserved_and_preserves_original_evidence(self):
@@ -188,6 +188,8 @@ class CheckoutHarborPackageTests(unittest.TestCase):
         import importlib
 
         from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
+        from sapi_config_lab.coordinate.native_evaluation import evaluate_record
+        from sapi_config_lab.coordinate.provenance import source_manifest
         from sapi_config_lab.evidence import digest
 
         record = self.root / "calibration-record"
@@ -199,7 +201,16 @@ class CheckoutHarborPackageTests(unittest.TestCase):
                     target.parent.mkdir(parents=True, exist_ok=True)
                     target.write_bytes(archive.extractfile(entry).read())
         metadata = read(self.task / "tests/benchmark.json")
-        (record / "benchmark.json").write_text(json.dumps(metadata))
+        (record / "evidence/submission.yaml").write_bytes((DIRECTORY / "solution/config.yaml").read_bytes())
+        native = {
+            "schema": "sapi-lab-native-task/v1",
+            "name": "checkout-recovery",
+            "sources": source_manifest(),
+            "options": metadata["options"],
+            "options_sha256": digest(metadata["options"]),
+            "submission_sha256": hashlib.sha256((record / "evidence/submission.yaml").read_bytes()).hexdigest(),
+        }
+        (record / "native-task.json").write_text(json.dumps(native))
         benchmark = load_benchmark(ROOT / "tasks", DIRECTORY)
         identity = freeze_identity(benchmark, metadata["options"])
         evaluator = load_entrypoints(benchmark, identity).evaluate
@@ -230,7 +241,13 @@ class CheckoutHarborPackageTests(unittest.TestCase):
             )
             return saved
 
-        with patch.object(scoring, "judge", side_effect=judge) as dispatch:
+        def invoke(task, request, sources):
+            return evaluate_record(task, evaluator, request)
+
+        with (
+            patch.object(scoring, "judge", side_effect=judge) as dispatch,
+            patch("sapi_config_lab.coordinate.native_evaluation.invoke", side_effect=invoke),
+        ):
             evaluate_main(
                 [
                     "--record",
@@ -259,8 +276,8 @@ class CheckoutHarborPackageTests(unittest.TestCase):
             if path.is_file()
         }
         self.assertEqual(before, after)
-        metadata["identity"]["sha256"] = "0" * 64
-        (record / "benchmark.json").write_text(json.dumps(metadata))
+        native["options_sha256"] = "0" * 64
+        (record / "native-task.json").write_text(json.dumps(native))
         refused = self.root / "refused"
         with patch.object(scoring, "judge") as dispatch, self.assertRaisesRegex(ValueError, "identity differs"):
             evaluate_main(

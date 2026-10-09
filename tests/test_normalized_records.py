@@ -110,7 +110,7 @@ class NormalizedRecordTests(unittest.TestCase):
         (evidence / "observation.json").write_text(json.dumps({"entries": [{"name": "selected-case"}]}))
         trial = load_trials(self.job)[0]
         arguments = {
-            "benchmarks": {self.benchmark.name: self.benchmark},
+            "benchmarks": {self.benchmark.name: self.benchmark.directory},
             "mode": "live",
             "expected_cases": {self.benchmark.name: {"selected-case"}},
         }

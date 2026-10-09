@@ -10,15 +10,17 @@ from datetime import UTC, datetime
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import time
+import tomllib
 from typing import Any
 
-from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
-from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
-from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, trial_accepted, validate_result
+from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, NOT_EVALUATED, trial_accepted, validate_result
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.live_evidence import collect_native, reconcile_dispatches
-from sapi_config_lab.coordinate.packages import runtime_grant_seconds, selected_cases
+from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
+from sapi_config_lab.coordinate.packages import REPLAY_AGENT
+from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.replay import load_selection, read_json, require
 from sapi_config_lab.coordinate.runs import Run, progress, run_experiment
 from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
@@ -26,6 +28,7 @@ from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.agency import strict_json
 from sapi_config_lab.execute.host import LAB_IMAGE, HostConfig
 from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.profile import read
 
 ROOT = workspace_root()
 
@@ -62,11 +65,19 @@ def validate_control(path: Path, current: dict[str, str], identity: str, *, nati
 
 def validate_packages(path: Path, submissions: dict, benchmarks: dict):
     from sapi_config_lab.coordinate.benchmark_packages import validate_selected
+    from sapi_config_lab.coordinate.packages import selected_cases
 
     for name, selected in submissions.items():
         benchmark = benchmarks[name]
         cases = selected.get("cases", selected_cases(benchmark))
         validate_selected(benchmark, path / name, ROOT, {**selected, "cases": cases})
+
+
+def runtime_grant_seconds(task: Path) -> int:
+    native = tomllib.loads((task / "task.toml").read_text())
+    return int(
+        native["environment"]["build_timeout_sec"] + native["agent"]["timeout_sec"] + native["verifier"]["timeout_sec"]
+    )
 
 
 def model_grant(benchmark, config: dict) -> dict:
@@ -77,7 +88,7 @@ def model_grant(benchmark, config: dict) -> dict:
         for step in workflow["steps"]
         if step["kind"] == "LLM"
     }
-    cap = benchmark.budgets.runtime_model_calls
+    cap = policy(benchmark).get("runtime_model_calls")
     require(cap is None or len(calls) <= cap, "Runtime model cap exceeded")
     return {"max_attempts": len(calls), "operations": dict(Counter(calls.values())), "occurrences": calls}
 
@@ -100,12 +111,13 @@ def check_trials(
         require(
             identity.get("mode") == mode and identity.get("scenario") == scenario, "Verifier scenario/mode mismatch"
         )
-        world = "prepare" in benchmarks[scenario].entrypoints
+        world = policy(benchmarks[scenario]).get("admission") == "compile"
         if admission and world:
             require(
                 mode == "stub"
                 and acceptance.get("schema") == ADMISSION_REPORT
                 and acceptance.get("passed") is True
+                and trial["result"] == NOT_EVALUATED
                 and not trial["exception"]
                 and trial["rewards"] == {"reward": 1.0}
                 and identity.get("submission_sha256") == submissions[scenario]["sha256"],
@@ -121,7 +133,7 @@ def check_trials(
                 not trial["exception"] and identity.get("submission_sha256") == submissions[scenario]["sha256"],
                 "Harbor failed or the host saw another submission",
             )
-            if benchmarks[scenario].controls.reference_reward is None:
+            if policy(benchmarks[scenario]).get("reference_reward") is None:
                 require(trial["result"]["acceptance"] is not None, "Hosted evaluation is missing")
             else:
                 require((trial["result"]["quality"] or {}).get("status") == "complete", "Hosted evaluation is unscored")
@@ -150,6 +162,13 @@ def check_trials(
 
 def trial_identity(trial: dict) -> dict:
     """Read native submission and mode identity independently of the evaluator's report format."""
+    if "native_task" in trial:
+        metadata = trial["native_task"]
+        return {
+            "scenario": metadata.get("name"),
+            "mode": metadata.get("options", {}).get("mode"),
+            "submission_sha256": metadata.get("submission_sha256"),
+        }
     if "benchmark" in trial:
         metadata = trial["benchmark"]
         return {
@@ -186,18 +205,19 @@ def failure_category(trials: list[dict], audit: list[dict], default: str) -> str
     return default
 
 
-def cohort_grants(submissions: dict, benchmarks: dict) -> dict[tuple[str, str], tuple[dict, dict]]:
+def cohort_grants(
+    submissions: dict, benchmarks: dict, judge_model: str | None = None
+) -> dict[tuple[str, str], tuple[dict, dict]]:
     """Reserve the occurrences of each selected benchmark's live observation plan."""
     grants = {}
     for scenario, submission in submissions.items():
         benchmark = benchmarks[scenario]
-        if benchmark is None:
-            raise ValueError("Live experiments require a selected versioned benchmark")
-        options = {"mode": "live", "deadline_seconds": 600}
+        options = {"mode": "live", "judge_model": judge_model}
         if "cases" in submission:
             options["cases"] = submission["cases"]
-        identity = freeze_identity(benchmark, options)
-        plan = load_entrypoints(benchmark, identity).plan(Path(submission["path"]), options)
+        plan = invoke(
+            benchmark, {"action": "plan", "submission": str(submission["path"]), "options": options}, source_manifest()
+        )["plan"]
         for entry in plan["entries"]:
             config = entry["config"]
             grant = model_grant(benchmark, config)
@@ -239,7 +259,7 @@ def main(argv: list[str] | None = None) -> int:
         series_ceilings = parse_ceilings(args.series_ceiling)
         wrapper_files = parse_wrapper_files(args.wrapper_file)
         reference = (
-            {item.name: item for item in select_benchmarks(ROOT / "tasks", args.scenario)}
+            {item.name: item for item in select_tasks(ROOT / "tasks", args.scenario)}
             if not args.submissions_manifest
             else {}
         )
@@ -277,24 +297,23 @@ def main(argv: list[str] | None = None) -> int:
             run.pin("selection manifest", args.submissions_manifest)
         else:
             submissions = {
-                name: {"path": s.reference.source, "sha256": sha256(s.reference.source)}
-                | ({"cases": selected_cases(s)} if selected_cases(s) is not None else {})
+                name: {"path": s / "solution/config.yaml", "sha256": sha256(s / "solution/config.yaml")}
                 for name, s in reference.items()
             }
         scenarios = tuple(submissions)
-        selected = select_benchmarks(ROOT / "tasks", scenarios)
+        selected = select_tasks(ROOT / "tasks", scenarios)
         benchmarks = {item.name: item for item in selected}
+        run.use_native_tasks(selected)
+        validate_control(args.stub_report.resolve(), run.sources, identity, native_images=run.native_images)
         controlled = {trial["task_name"] for trial in gate["oracle"]["trials"]}
         require(set(scenarios) <= controlled, "The control report does not cover every scenario")
         judge_calls = {}
         for name in scenarios:
             benchmark = benchmarks[name]
-            if benchmark is None:
-                raise ValueError("Live experiments require a selected versioned benchmark")
-            judge_calls[name] = benchmark.budgets.judge_calls
+            judge_calls[name] = policy(benchmark).get("judge_calls", 0)
         judge_total = sum(judge_calls.values())
         require(not judge_total or args.preflight_only or args.judge_model, "Hosted evaluation needs --judge-model")
-        grants = cohort_grants(submissions, benchmarks)
+        grants = cohort_grants(submissions, benchmarks, args.judge_model)
         report["budget"]["cases"] = {f"{s}/{c}": grant["max_attempts"] for (s, c), (grant, _) in grants.items()}
         report["budget"]["judge"] = judge_calls
         needed = sum(report["budget"]["cases"].values()) + judge_total
@@ -302,7 +321,7 @@ def main(argv: list[str] | None = None) -> int:
             needed <= args.max_calls,
             f"The cohort needs up to {needed} model calls; --max-calls allows {args.max_calls}",
         )
-        report["human_review"] = {s: benchmarks[s].config.get("human_review", False) for s in scenarios}
+        report["human_review"] = {s: policy(benchmarks[s]).get("human_review", False) for s in scenarios}
         ceilings = {"runtime": args.max_calls} | ({"judge": args.max_calls} if judge_total else {})
         ledger = open_ledger(run.output, args.series_dir, ceilings, args.stop_after_failure, series_ceilings)
         report["ledger"] = str(ledger.path)
@@ -313,23 +332,37 @@ def main(argv: list[str] | None = None) -> int:
             report["wrapper_files_relocated"] = sorted(wrapper_files)
             shutil.copyfile(args.wrapper_evidence, run.output / "wrapper-identity.json")
             run.pin("wrapper identity", args.wrapper_evidence)
-        progress(f"staging: {len(scenarios)} task packages")
-        run.stage(
-            "replay" if args.submissions_manifest else "oracle",
-            selected,
-            submissions={s: {"path": v["path"], "sha256": v["sha256"]} for s, v in submissions.items()}
-            if args.submissions_manifest
-            else None,
-            cases={s: v["cases"] for s, v in submissions.items() if "cases" in v},
-            judge_model=args.judge_model,
-        )
-        validate_packages(run.tasks, submissions, benchmarks)
+        progress(f"inputs: pinning {len(scenarios)} exact submissions for native replay")
+        for scenario, submission in submissions.items():
+            require(sha256(submission["path"]) == submission["sha256"], "Selected submission changed")
+            inputs = run.output / "inputs" / scenario
+            inputs.mkdir(parents=True)
+            shutil.copyfile(submission["path"], inputs / "submission.yaml")
+            submission["path"] = inputs / "submission.yaml"
+            if "cases" in submission:
+                write_json(inputs / "cases.json", {scenario: submission["cases"]})
+        run.pin("replay inputs", run.output / "inputs")
         run.check("before-stub")
         progress(f"preflight: fixture stub replay and hosted compilation/admission of {', '.join(scenarios)}")
         started = time.monotonic()
-        exit_code, stub_trials = run.harbor(
-            "stub-replay", run.tasks, "oracle", verifier_env=["SAPI_LLM_MODE=stub"], admission=True
-        )
+        stub_trials, exit_code = [], 0
+        for task in selected:
+            submission = submissions[task.name]
+            code, rows = run.harbor(
+                "stub-replay-" + task.name,
+                task,
+                REPLAY_AGENT,
+                agent_keys=["submission_path=" + str(submission["path"]), "submission_sha256=" + submission["sha256"]],
+                verifier_env=[
+                    "SAPI_LLM_MODE=stub",
+                    "SAPI_EXPECTED_SUBMISSION_SHA256=" + submission["sha256"],
+                    "SAPI_NATIVE_DEADLINE_SECONDS=" + str(read(submission["path"])["execution"]["deadline_seconds"]),
+                ]
+                + (["SAPI_NATIVE_CASES=" + json.dumps(submission["cases"])] if "cases" in submission else []),
+                admission=True,
+            )
+            exit_code = exit_code or code
+            stub_trials.extend(rows)
         report["preflight"] = {
             "harbor_exit_code": exit_code,
             "trials": stub_trials,
@@ -366,22 +399,38 @@ def main(argv: list[str] | None = None) -> int:
                 with run.bridge(
                     budget,
                     label,
-                    bindings=next(
-                        item.source
-                        for item in benchmarks[scenario].files
-                        if item.destination == benchmarks[scenario].bindings
-                    ),
+                    bindings=benchmarks[scenario] / "bindings.yaml",
                     reject_tool_use=True,
                 ) as audit:
                     exit_code, trials = run.harbor(
                         "live-" + label,
-                        run.tasks / scenario,
-                        "oracle",
-                        verifier_env=["SAPI_LLM_MODE=live", "SAPI_CASE_NAME=" + name, "SAPI_BRIDGE_URL=" + bridge_url],
+                        benchmarks[scenario],
+                        REPLAY_AGENT,
+                        agent_keys=[
+                            "submission_path=" + str(submissions[scenario]["path"]),
+                            "submission_sha256=" + submissions[scenario]["sha256"],
+                        ],
+                        verifier_env=[
+                            "SAPI_LLM_MODE=live",
+                            "SAPI_NATIVE_MODE=live",
+                            "SAPI_CASE_NAME=" + name,
+                            "SAPI_BRIDGE_URL=" + bridge_url,
+                            "SAPI_EXPECTED_SUBMISSION_SHA256=" + submissions[scenario]["sha256"],
+                        ]
+                        + (["SAPI_NATIVE_JUDGE_MODEL=" + args.judge_model] if args.judge_model else [])
+                        + (
+                            ["SAPI_NATIVE_CASES=" + json.dumps(submissions[scenario]["cases"])]
+                            if "cases" in submissions[scenario]
+                            else []
+                        ),
                     )
                 report["trials"].extend(trials)
                 records = audit_records(audit)
                 report["audit"].extend(records)
+                if any(row.get("category") == "timeout_unknown_outcome" for row in records):
+                    raise subprocess.TimeoutExpired(
+                        "protected runtime model", runtime_grant_seconds(benchmarks[scenario])
+                    )
                 require(exit_code == 0 and len(trials) == 1, "Live Harbor case failed")
                 trial = trials[0]
                 require(trial["task_name"] == scenario, "Live Harbor selected another benchmark")
@@ -400,16 +449,14 @@ def main(argv: list[str] | None = None) -> int:
                     or (judge_calls.get(scenario) and exception.get("exception_type") == "RewardFileNotFoundError"),
                     "Live Harbor case failed",
                 )
-                native = collect_native(trials, submissions, {scenario: {name}}, bridge_url, benchmarks)
+                native = collect_native(
+                    trials, submissions, {scenario: {name}}, bridge_url, benchmarks, judge_model=args.judge_model
+                )
                 correlation = reconcile_dispatches(
                     native,
                     records,
                     budget["model"],
-                    bindings=next(
-                        item.source
-                        for item in benchmarks[scenario].files
-                        if item.destination == benchmarks[scenario].bindings
-                    ),
+                    bindings=benchmarks[scenario] / "bindings.yaml",
                 )
                 calls, cap = len(correlation), grant["max_attempts"]
                 require(grant["minimum_attempts"] <= calls <= cap, "Unexpected call count")
@@ -422,7 +469,7 @@ def main(argv: list[str] | None = None) -> int:
                     run.check(f"after-{scenario}-{name}")
                 runtime_outcome.passed = True
             if judge_calls.get(scenario):
-                from sapi_config_lab.coordinate.evaluation import reevaluate_benchmark
+                from sapi_config_lab.coordinate.native_evaluation import reevaluate_native
 
                 with ledger.reserved(
                     "judge",
@@ -432,8 +479,13 @@ def main(argv: list[str] | None = None) -> int:
                     args.max_calls,
                 ) as judge_outcome:
                     record = Path(trial["result_path"]).parent / "verifier"
-                    result = reevaluate_benchmark(
-                        record, record / "paid-evaluation", None, dispatch=True, reserved=lambda call: call()
+                    reservation = {
+                        "ledger": str(ledger.path),
+                        "index": len(ledger.data["events"]) - 1,
+                        "event": ledger.data["events"][-1],
+                    }
+                    result = reevaluate_native(
+                        record, record / "paid-evaluation", None, dispatch=True, reservation=reservation
                     )
                     trial["native_exception"] = trial["exception"]
                     if exception.get("exception_type") == "RewardFileNotFoundError":

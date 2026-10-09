@@ -76,7 +76,11 @@ def trial_result(trial: dict, *, root: Path | None = None) -> dict:
             if acceptance.get("schema") == ADMISSION_REPORT and any(result[key] is not None for key in NOT_EVALUATED):
                 raise ValueError("Admission cannot carry evaluated verdict facts")
             return result
-        if "verdict_path" in trial or (path.parent / "benchmark.json").exists():
+        if (
+            "verdict_path" in trial
+            or (path.parent / "benchmark.json").exists()
+            or (path.parent / "native-task.json").exists()
+        ):
             return dict(NOT_EVALUATED)
     if acceptance.get("schema") == HOSTED_REPORT:
         return acceptance["result"]
@@ -136,8 +140,14 @@ def load_trials(job: Path, hosted: dict[str, Path] | None = None) -> list[dict]:
             "evaluation_path": str(report_path),
             "acceptance": json.loads(report_path.read_text()) if report_path.exists() else None,
         }
-        if (record / "result.json").exists() or (record / "benchmark.json").exists():
+        if (
+            (record / "result.json").exists()
+            or (record / "benchmark.json").exists()
+            or (record / "native-task.json").exists()
+        ):
             row["verdict_path"] = str(record / "result.json")
+        if (record / "native-task.json").exists():
+            row["native_task"] = json.loads((record / "native-task.json").read_text())
         if (record / "benchmark.json").exists():
             row["benchmark"] = json.loads((record / "benchmark.json").read_text())
         trials.append(

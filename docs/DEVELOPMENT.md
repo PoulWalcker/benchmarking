@@ -192,8 +192,7 @@ There is no installed global catalog, fixed operation bundle or detached fallbac
 Explicit file composition works without an experiment checkout; descriptor selection
 uses this installation's declared resources. Candidate YAML never selects executable paths.
 UI imports require local operations; remote tools require a Harbor trial.
-`package-tasks` and live execution currently receive selected descriptors
-explicitly. Generic lifecycle APIs require an injected trusted acceptance callable,
+`package-tasks` still receives descriptors; live execution uses native task directories directly. Generic lifecycle APIs require an injected trusted acceptance callable,
 bindings and backend; the CLI does not supply a default business decision.
 
 ## Reading a run
@@ -216,9 +215,8 @@ One fact, one owner: boundaries in `ARCHITECTURE.md`, workflow here, YAML semant
 lists metadata without importing evaluators.
 Only invoice-total and checkout-recovery are production benchmarks, both versioned.
 Invoice-total is the sole default; retired names are unknown selections.
-Existing command names and default selection are preserved. `package-tasks` and
-the unpaid `harbor` controls materialize both through their declared entrypoints
-and separate verifiers. Experiment consumers receive explicit descriptor selections.
+Existing command names and default selection are preserved. `package-tasks` materializes both through their declared entrypoints and separate verifiers.
+Controls, generation and live replay pass canonical task directories directly to Harbor.
 
 The `sapi-lab-benchmark/v1` manifest has these required keys. Unknown keys fail;
 benchmark-specific declarations belong inside `config`.
@@ -347,14 +345,14 @@ native Harbor phases, semantic workflow windows, engine ceilings and model grant
 Admission checks plans against resolved verifier limits before dispatch. The
 supported resource/privacy controls apply to the pinned Docker profile.
 
-Generation, replay and live use the selected versioned package. Native live staging
+Generation, replay and live use selected native tasks. Native evidence
 freezes `--judge-model` in its source/options identity. The verifier records evidence
 and an unscored paid-judge contract; the host evaluates it under the declared judge
 reservation into `verifier/paid-evaluation/`, preserving original evidence and native
 Harbor results. Checkout's verifier main can reach the scoped host Agency bridge;
 its simulator remains on the private verification network.
 
-Versioned `evaluate --dispatch-judge` and `--calibration CASE --judge-model MODEL`
+Native `evaluate --dispatch-judge` and `--calibration CASE --judge-model MODEL`
 use the recorded evaluator after complete source and saved-contract reconciliation.
 A paid judge enters the ledger reservation only after those checks. Saved judgement
 replay remains offline. Wrapper transport and inspected local-file identity live in
@@ -426,14 +424,31 @@ uv run --locked sapi-lab evaluate --record <old-record> --output <new-derived-di
 Add `--cases <recorded-cases.json>` for expanded fixture inputs and `--judgement
 <saved-judge-reply.json>` for a saved hosted judgement. Historical evaluation never
 dispatches a judge or starts a world. Unavailable or changed independent evaluator
-sources refuse re-evaluation; report inspection remains available. A matching
-versioned record uses its recorded descriptor identity and does not need these
-historical snapshot options.
+sources refuse re-evaluation; report inspection remains available. Versioned records containing `benchmark.json` also require both snapshot options.
+Their original guarded evaluator supports saved judgement, explicitly authorized
+fresh judge dispatch and calibration with its original shared-series accounting.
+The older pre-versioned layouts retain their existing offline-only restriction.
+
+Current native records contain `native-task.json`: complete source hashes, exact
+options/digest and submission hash (explicit null for nop). With matching current
+sources, use `evaluate --record <trial>/verifier --output <new-directory>` and
+optionally `--judgement <saved-reply>`. After sources change, supply the two snapshot
+options to invoke that native task's fixed archived evaluator. Neither path starts
+n8n or a world. Admission-only evidence cannot stand in for an executed record.
+Phase 1 native records lacking complete identity remain readable; guarded offline
+re-evaluation refuses them with an explicit identity error.
+
+Archived execution uses the caller's Python and installed dependencies, while
+verifying the captured original `pyproject.toml` and `uv.lock`. Use an environment
+compatible with those files; it does not recreate an archived virtual environment.
+Saved versioned invoice/checkout records were replayed with Python 3.14.8,
+PyYAML 6.0.3 and fastjsonschema 2.22.2, preserving their 1.0/0.732 scores. Missing
+or incompatible dependencies fail execution. Shared series paths resolve before
+entering the captured checkout; source identity and unknown reservations are retained.
 
 ## Checked-in native Harbor tasks
 
-The Phase 1 native tasks use the same domain implementations as the existing
-manifest path. Build their explicit public and trusted images from this checkout,
+Native task directories own the domain implementations used by every current experiment. Build their explicit public and trusted images from this checkout,
 then pass the static directories directly to Harbor 0.21.0:
 
 ```bash
@@ -467,7 +482,17 @@ sh "$TASK_RESOURCES/infra/native/build.sh"
 harbor run -p "$TASK_RESOURCES/tasks/invoice-total" -a oracle --max-retries 0 --force-build
 ```
 
-`package-tasks` still supports existing experiment staging from these same canonical
-assets. Native `task.toml` controls the direct Harbor task; `legacy-task.toml` is used
+`package-tasks` remains a transitional export command over these canonical assets. Native `task.toml` controls the direct Harbor task; `legacy-task.toml` is used
 only by that staging path. Experiment controls and paid dispatch continue to require
 a matching editable checkout.
+
+
+Native checkout mode is explicit: `control` uses unpaid fake runtime transport and
+saved calibration projection, `admission` compiles only, and `live` requires the
+protected bridge plus an explicit judge model. Real model transport remains
+paid-unverified in this migration; tests use mocked binaries and wrapper replies.
+Runtime grants retain per-operation and occurrence limits. Aggregate runtime/judge
+cost is checked before dispatch; every attempt is durably reserved first. A timeout
+with ambiguous outcome stays unknown and blocks further spending, even when the
+series otherwise permits retry after failure. Offline saved-reply scoring makes no
+model call. Host judging never rewrites Harbor's original reward or result.

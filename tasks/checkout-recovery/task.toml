@@ -31,3 +31,5 @@ runtime_model_calls = 4
 judge_calls = 1
 reference_reward = 0.732
 catalogs = ["full"]
+admission = "compile"
+human_review = true

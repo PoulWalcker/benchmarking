@@ -11,11 +11,13 @@ from fake_bridge import transport_for
 from payload.environment.hooks import plan, prepare, snapshot
 from payload.evaluation.evaluator import evaluate
 from payload.evaluation.scoring import freeze_contract, recorded_run_log
+from payload.experiment import runtime_options
 import yaml
 
 from sapi_config_lab.contracts import CompileOptions, OutputArtifact
 from sapi_config_lab.coordinate.backend import N8nBackend
 from sapi_config_lab.coordinate.benchmark_worker import admit, run_task
+from sapi_config_lab.coordinate.native_record import record
 from sapi_config_lab.evaluate.records import NOT_EVALUATED, validate_result
 from sapi_config_lab.evidence import write_json
 from sapi_config_lab.execute.agency import make_handler
@@ -28,6 +30,8 @@ SUBMISSION = Path("/submission/config.yaml")
 
 
 def evaluate_calibrated(evidence: Path, options: dict) -> dict:
+    if options["native_mode"] == "live":
+        return dict(evaluate(evidence, {**options, "dispatch": False}))
     contract = freeze_contract(
         PinnedSource(ROOT / "provenance/autowfbench-source.json", ROOT / "vendor/autowfbench"),
         "production-checkout-recovery",
@@ -48,7 +52,26 @@ def evaluate_calibrated(evidence: Path, options: dict) -> dict:
 
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
-    if os.environ.get("SAPI_HOSTED_ADMISSION") == "1":
+    native_mode = os.environ.get("SAPI_NATIVE_MODE", "control")
+    if native_mode not in {"control", "admission", "live"}:
+        raise ValueError("Unknown checkout native mode")
+    admission = native_mode == "admission" or os.environ.get("SAPI_HOSTED_ADMISSION") == "1"
+    native_mode = "admission" if admission else native_mode
+    options = record(
+        "checkout-recovery",
+        OUT,
+        SUBMISSION,
+        runtime_options(
+            {
+                "native_mode": native_mode,
+                "selected_case": os.environ.get("SAPI_CASE_NAME"),
+                "judge_model": os.environ.get("SAPI_NATIVE_JUDGE_MODEL"),
+            }
+        ),
+    )
+    if native_mode == "live" and (not options["judge_model"] or not os.environ.get("SAPI_BRIDGE_URL")):
+        raise ValueError("Live checkout requires the protected runtime bridge and explicit judge model")
+    if admission:
         report = admit(
             {
                 "name": "checkout-recovery",
@@ -78,9 +101,6 @@ def main() -> int:
         llms = [step for step in config["workflow"]["steps"] if step["kind"] == "LLM"]
         check(len(llms) <= 4, "Runtime cap exceeded")
         check(config["execution"]["deadline_seconds"] == 120, "Original deadline required")
-        check(
-            "lifecycle" not in config and "refinement" not in config["execution"], "Unsupported native task lifecycle"
-        )
     except (OSError, ValueError, KeyError, TypeError, yaml.YAMLError) as error:
         write_json(OUT / "admission.json", {"passed": False, "error": type(error).__name__})
         write_json(
@@ -89,7 +109,7 @@ def main() -> int:
         )
         return 0
     bridge = None
-    if llms:
+    if llms and native_mode == "control":
         budget = {
             "max_attempts": len(llms),
             "operations": {op: sum(step["uses"] == op for step in llms) for op in {step["uses"] for step in llms}},
@@ -121,12 +141,7 @@ def main() -> int:
             ROOT,
             OUT,
             SUBMISSION,
-            {
-                "mode": "live" if llms else "stub",
-                "deadline_seconds": 120,
-                "submission": str(SUBMISSION),
-                "evaluation": str(OUT / "evaluation"),
-            },
+            options,
             {"plan": plan, "prepare": prepare, "snapshot": snapshot, "evaluate": evaluate_calibrated},
         )
     finally:

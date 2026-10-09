@@ -85,9 +85,15 @@ class HostedPreflightTests(unittest.TestCase):
                 metadata(benchmark), benchmark.directory, submission, {"deadline_seconds": 120}
             )
             self.assertTrue(report["passed"], report)
-            trial = {"task_name": benchmark.name, "acceptance": report, "exception": None, "rewards": {"reward": 1.0}}
+            trial = {
+                "task_name": benchmark.name,
+                "acceptance": report,
+                "exception": None,
+                "rewards": {"reward": 1.0},
+                "result": {"execution": None, "acceptance": None, "quality": None},
+            }
             selected = {benchmark.name: {"sha256": report["submission_sha256"]}}
-            benchmarks = {benchmark.name: benchmark}
+            benchmarks = {benchmark.name: benchmark.directory}
             check_trials([trial], selected, benchmarks=benchmarks, mode="stub", admission=True)
             with self.assertRaises(ValueError):
                 check_trials([trial], selected, benchmarks=benchmarks, mode="live")
@@ -161,7 +167,7 @@ class PreflightExecutionTests(unittest.TestCase):
         root = workspace_root() / "tasks"
         invoice = load_benchmark(root, root / "invoice-total")
         world = checkout()
-        benchmarks = {item.name: item for item in (invoice, world)}
+        benchmarks = {item.name: item.directory for item in (invoice, world)}
         for incorrect in (False, True):
             with self.subTest(incorrect=incorrect), tempfile.TemporaryDirectory() as directory:
                 job = Path(directory) / "jobs/preflight"
@@ -264,7 +270,7 @@ class PreflightExecutionTests(unittest.TestCase):
             check_trials(
                 [trial],
                 {invoice.name: {"sha256": report["submission_sha256"]}},
-                benchmarks={invoice.name: invoice},
+                benchmarks={invoice.name: invoice.directory},
                 mode="stub",
                 admission=True,
             )

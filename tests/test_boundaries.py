@@ -34,9 +34,10 @@ ALLOWED = {
 NATIVE_COORDINATORS = {
     "native_tasks.invoice-total.experiment": set(),
     "native_tasks.checkout-recovery.experiment": set(),
-    "native_tasks.invoice-total.tests.main": {"payload.evaluation.evaluator"},
+    "native_tasks.invoice-total.tests.main": {"payload.evaluation.evaluator", "payload.experiment"},
     "native_tasks.checkout-recovery.tests.main": {
         "payload.environment.hooks",
+        "payload.experiment",
         "payload.evaluation.evaluator",
         "payload.evaluation.scoring",
     },

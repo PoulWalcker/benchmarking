@@ -141,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--judge-model", help="Judge identity for --calibration")
     parser.add_argument("--series-dir", type=Path, help="Reserve the judge call in a shared ledger")
     parser.add_argument("--series-ceiling", action="append")
-    parser.add_argument("--source-root", type=Path, help="Trusted historical evaluator checkout (offline only)")
+    parser.add_argument("--source-root", type=Path, help="Explicit matching archived evaluator source checkout")
     parser.add_argument("--source-manifest", type=Path, help="Frozen source hashes for the historical checkout")
     args = parser.parse_args(argv)
     if args.calibration and not args.judge_model:
@@ -155,38 +155,55 @@ def main(argv: list[str] | None = None) -> int:
     output = args.output.resolve()
     if output.is_relative_to(record / "evidence"):
         raise ValueError("Derived evaluation output must be outside recorded evidence")
-    output.mkdir(parents=True, exist_ok=False)
-    if (record / "benchmark.json").is_file():
-        from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
+    if (record / "native-task.json").is_file():
+        from sapi_config_lab.coordinate.native_evaluation import reevaluate_native
 
-        def reserved(call: Callable) -> dict:
-            metadata = json.loads((record / "benchmark.json").read_text())
-            benchmark = recorded_benchmark(metadata["name"])
-            if benchmark.budgets.judge_calls <= 0:
-                raise ValueError("Recorded benchmark has no declared judge cost")
-            cost = benchmark.budgets.judge_calls
-            ledger = open_ledger(output, args.series_dir, {"judge": cost}, False, parse_ceilings(args.series_ceiling))
-            with ledger.reserved("judge", f"{output.name}/judge", cost, output / "result.json", cost) as outcome:
-                value = call()
-                outcome.passed = value["status"] == "complete"
-                return value
+        request = {
+            "dispatch": args.dispatch_judge,
+            "calibration": args.calibration,
+            "judge_model": args.judge_model,
+            "series_dir": str(args.series_dir.resolve()) if args.series_dir else None,
+            "series_ceiling": args.series_ceiling,
+        }
+        if args.source_root is not None or args.source_manifest is not None:
+            from sapi_config_lab.coordinate.archived_evaluation import invoke_native_snapshot
 
-        result = reevaluate_benchmark(
+            result = invoke_native_snapshot(
+                record,
+                output,
+                args.source_root,
+                args.source_manifest,
+                {**request, "judgement": str(args.judgement.resolve()) if args.judgement else None},
+            )
+        else:
+            result = reevaluate_native(record, output, args.judgement, **request)
+    elif (record / "benchmark.json").is_file():
+        from sapi_config_lab.coordinate.archived_evaluation import reevaluate_versioned
+
+        result = reevaluate_versioned(
             record,
             output,
-            args.judgement,
+            args.source_root,
+            args.source_manifest,
+            judgement=args.judgement,
             dispatch=args.dispatch_judge,
             calibration=args.calibration,
             judge_model=args.judge_model,
-            reserved=reserved,
+            series_dir=args.series_dir,
+            series_ceiling=args.series_ceiling,
         )
     else:
         from sapi_config_lab.coordinate.historical_evaluation import reevaluate_record
 
+        if (record / "native-sources.sha256").is_file():
+            raise ValueError(
+                "Phase 1 native evidence lacks complete research source/options identity; it remains readable but cannot use guarded native re-evaluation"
+            )
         if args.dispatch_judge or args.calibration:
             raise ValueError(
                 "Historical snapshots support offline re-evaluation only; no judge dispatch or calibration"
             )
+        output.mkdir(parents=True, exist_ok=False)
         result = reevaluate_record(record, output, args.source_root, args.source_manifest, args.cases, args.judgement)
     write_json(output / "result.json", result)
     print(json.dumps(result))

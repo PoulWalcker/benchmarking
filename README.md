@@ -7,7 +7,8 @@ task -> author definition -> compile -> execute -> evidence -> evaluate
 ```
 
 The workflow language is the bounded `sapi-lab/v0` profile, inspired by the pinned Sapiens specification; it is not a full Sapiens runtime. n8n is the implemented backend. External Harbor 0.21.0 owns trial infrastructure;
-benchmark packages own operations, worlds and independent evaluation.
+native task directories own operations, worlds and independent evaluation. Controls,
+generation and live replay pass those directories directly to Harbor.
 
 ## Quick start
 

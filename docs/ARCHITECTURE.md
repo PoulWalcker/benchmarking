@@ -16,18 +16,18 @@ The ownership direction is `BENCHMARKS -> CORE -> external Harbor 0.21.0`.
 Benchmarks declare operations, worlds and independent business evaluation. Core
 supplies workflow mechanisms and experiment policy; its integration adapts tasks
 to Harbor. Harbor manages infrastructure around the flow, without owning workflow
-semantics or acceptance. `coordinate/` selects descriptors and sequences the stages.
+semantics or acceptance. `coordinate/` selects native task directories and sequences the stages.
 
 Each component has an explicit `INPUT -> PROCESS -> OUTPUT` contract:
 
 | Owner | Input | Process | Output |
 | --- | --- | --- | --- |
-| Benchmark | public task material, fixtures or world observations | declare operations/hooks; independently plan and score | descriptor, observation plan and normalized verdict |
+| Benchmark | public task material, fixtures or world observations | own operations/worlds; independently plan and score | native task, observation plan and normalized verdict |
 | Compiler | definition, explicit bindings and trusted operation source | validate and lower generic workflow semantics | backend artifact and step map |
 | Execute | artifact and explicit run binding | run n8n and record native observations | immutable engine evidence |
 | Verifier mechanisms | recorded plan/evidence and independent callbacks | check provenance, obligations and optional rubric | acceptance and separate quality facts |
-| Coordinate | selected descriptors, budgets and identities | sequence stages and reserve model calls | durable report and trial references |
-| Harbor integration | positive task packages and native settings | invoke pinned external Harbor | authoritative trial directories and phase outcomes |
+| Coordinate | selected native tasks, budgets and identities | sequence stages and reserve model calls | durable report and trial references |
+| Harbor integration | native task paths and settings | invoke pinned external Harbor | authoritative trial directories and phase outcomes |
 
 
 ## Stages
@@ -39,34 +39,33 @@ Each component has an explicit `INPUT -> PROCESS -> OUTPUT` contract:
 | Compile | `compile/` | validated YAML -> n8n JSON + step map | start n8n or decide acceptance |
 | Execute | `execute/` | n8n runs, Agency bridge, Harbor/Docker host tools and host configuration | turn engine success into acceptance |
 | Evaluate | `evaluate/` | recorded result reading and review export | rerun a workflow |
-| Coordinate | `coordinate/` | CLI descriptor selection, runs, ledger, packaging, live gates, lifecycle controller | hold stage logic another stage owns |
-| Integration | `harbor_integration/` | native task translation, agent/wrapper adaptation and Harbor invocation | own benchmark worlds or scoring |
+| Coordinate | `coordinate/` | CLI task selection, runs, ledger, live gates, lifecycle controller | hold stage logic another stage owns |
+| Integration | `harbor_integration/` | agent/wrapper adaptation and Harbor invocation | own benchmark worlds or scoring |
 | Verifier | `verification/` | independent acceptance and rubric | import compiler, runtime or coordinator code |
 
 `tests/test_boundaries.py` enforces these import edges. Nothing imports `coordinate/`.
 
-## One scenario registry
+## Native task ownership
 
 Each benchmark owns its assets in `tasks/<name>/`. `instruction.md` and
 `solution/config.yaml` are the canonical public instruction and reference. Native
-`task.toml` owns direct Harbor infrastructure. The existing experiment commands
-select the same assets through `scenario.json` and `legacy-task.toml`; they do not
-own a second copy of domain code or prompt material.
+`task.toml` owns Harbor infrastructure and a small `metadata.sapi` policy table
+(default selection, budgets, catalog arms and reference reward). Dockerfiles and
+trusted entrypoints compose the task directly; no generated directory is needed.
+The fixed task-owned `experiment.py` composes exact prompts, execution plans and
+offline evaluation for the host CLI. It runs only after complete source identity
+checks, in an isolated subprocess. It is not a path/hook manifest or plugin registry.
 
-The versioned manifest declares public/trusted files, reference, bindings, operations,
-legacy experiment task configuration, callable entrypoints, dependencies, budgets and
-controls. Benchmark-specific world, completion and scoring declarations live in its
-opaque `config`. See [Versioned benchmark loading](#versioned-benchmark-loading).
-Commands select `Benchmark` descriptors per call and pass them explicitly through
-packaging, controls, generation and live execution; there is no import-time default
-catalog, provider table or evaluator table.
+Fixture evaluators own cases, business checks, output schemas and optional rubrics.
+World-backed tasks own preparation, observations and independent scoring. Shared
+mechanisms receive explicit callbacks, bindings and operation sources. Public
+images contain author material; trusted verifiers contain private fixtures, worlds
+and scoring; oracle solutions contain references.
 
-A fixture evaluator owns its cases, independent business checks, role contract,
-output schemas and optional rubric. It supplies an explicit `FixtureEvaluator` to
-generic verification planning and scoring. These mechanisms never select business
-code or schemas by benchmark name. A world-backed benchmark declares its own
-`prepare` and `snapshot` hooks and independent evaluator. Adding a benchmark needs
-only its directory and declared dependencies; provenance is data, not dispatch.
+Transitional compilation, packaging and legacy tests still use `scenario.json`
+and `legacy-task.toml` over these same assets. Controls, generation, live replay
+and current evaluation use native tasks directly. Their remaining consumers and
+removal sequence are tracked under `reports/phase2/`.
 
 ## One run mechanism
 
@@ -74,15 +73,15 @@ Every Harbor experiment (`harbor`, `generate`, `live`) runs through `coordinate/
 
 - a new report directory and source manifest; native controls bind checked-in task
   paths to the exact source-verified public/verifier image IDs; generation uses the
-  same native directories with task-owned exact prompt composition, while live
-  currently retains its staged task packages;
+  same native directories with task-owned exact prompt composition; live uploads
+  the fixed selected YAML bytes through the same direct task path;
 - each phase re-checks sources, image and pinned inputs;
-- `Run.harbor` submits versioned packages through `harbor_integration/runner.py` directly into the report's `jobs/` tree. Harbor owns phase limits and resources; partial trial references remain in the report on failure. Selected descriptors supply the trusted entrypoints and budgets;
+- `Run.harbor` submits native task directories through `harbor_integration/runner.py` directly into the report's `jobs/` tree. Harbor owns phase limits and resources; partial trial references remain in the report on failure. Task-owned entrypoints supply domain composition and policy supplies budgets;
 - `Run.transport` uses the same integration argv builder for its shared-verifier control; Harbor writes directly into durable output and owns its phase limits. Task input snapshots remain separate from the authoritative trial tree;
 - `Run.bridge` runs the budgeted Agency bridge;
 - the report is always written, cleanup errors included.
 
-Native control selection reads only task.toml policy (defaults, budgets, reward
+Native experiment selection reads only task.toml policy (defaults, budgets, reward
 expectations and catalog arms). It neither loads descriptors nor creates task
 directories. A reusable image build record must match the complete current source
 manifest and all selected base-image IDs. Run guards recheck images and task/input
@@ -100,9 +99,25 @@ workflow deadline and evidence finalization. Checkout's simulator, scorer and
 calibration modules live in its declared benchmark package.
 
 `evaluate/records.py` validates one result shape at worker, re-evaluation and read
-boundaries: execution, acceptance and optional quality (`null` is not zero). Controls use explicit descriptor controls
-and normalized results, with no hosted/verifier taxonomy. Re-evaluation verifies
-the recorded source/options identity before calling the selected evaluator.
+boundaries: execution, acceptance and optional quality (`null` is not zero). Controls use native task policy and normalized results, with no hosted/verifier taxonomy. Re-evaluation verifies the complete recorded source, options and submission
+identity before calling the fixed task evaluator. `native-task.json` records these
+identities; `native-sources.sha256` independently audits trusted container bytes.
+The trusted image embeds the complete build source manifest. Harbor trial results
+remain authoritative; host judging writes derived results beside recorded evidence.
+
+Live replay rebuilds the plan and compiled graph from the exact selected YAML,
+checks the ordered cases and full evidence inventory, then reconciles runtime
+request/completion/response audit triples. Runtime accounting closes before judge
+reservation. Ambiguous runtime or judge timeouts leave the reservation unknown.
+A host-reserved judge passes its exact pending ledger event into the task process;
+that process does not reserve a second call.
+
+Matching archived source snapshots support native and older versioned evaluation.
+An isolated captured source tree invokes the original evaluator, preserving its
+source-bound shared ledger and saved-reply/fresh-authorized-judge behavior. Current
+Python and installed dependencies are used; this preserves source identity rather
+than reconstructing a complete historic runtime. Phase 1 native records without
+complete identity remain readable but cannot claim guarded offline re-evaluation.
 Native and terminal completion observations remain separate from acceptance; older
 records lacking those observations remain readable with null values.
 

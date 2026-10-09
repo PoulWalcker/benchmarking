@@ -122,11 +122,11 @@ def select_submission(source_report: Path, scenarios: tuple[str, ...]) -> dict:
                 **entry,
                 "attempts": attempts,
                 "provenance": {name: sha256(directory / name) for name in PROVENANCE_FILES}
-                | (
-                    {"verifier/result.json": sha256(directory / "verifier/result.json")}
-                    if (directory / "verifier/result.json").exists()
-                    else {}
-                ),
+                | {
+                    name: sha256(directory / name)
+                    for name in ("verifier/result.json", "verifier/native-task.json")
+                    if (directory / name).exists()
+                },
             }
         )
     return {

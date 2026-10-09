@@ -2,7 +2,6 @@
 
 import contextlib
 import copy
-from dataclasses import replace
 from functools import partial
 import hashlib
 import io
@@ -15,7 +14,6 @@ from unittest.mock import patch
 
 import yaml
 
-from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.live import audit_records, check_trials, main, validate_control
 from sapi_config_lab.coordinate.live_evidence import reconcile_dispatches
 from sapi_config_lab.coordinate.replay import load_selection, read_json
@@ -189,12 +187,13 @@ class HostedTrialCheckTests(unittest.TestCase):
     """A hosted live trial must be evaluated; it must be scored only where a reference reward is declared."""
 
     def check(self, result: dict, reference_reward: float | None) -> None:
-        scenario = replace(
-            select_benchmarks(workspace_root() / "tasks", ("checkout-recovery",))[0],
-            controls=replace(
-                select_benchmarks(workspace_root() / "tasks", ("checkout-recovery",))[0].controls,
-                reference_reward=reference_reward,
-            ),
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        scenario = Path(temporary.name) / "checkout-recovery"
+        scenario.mkdir()
+        (scenario / "task.toml").write_text(
+            '[metadata.sapi]\nadmission = "compile"\n'
+            + (f"reference_reward = {reference_reward}\n" if reference_reward is not None else "")
         )
         acceptance = {
             "schema": "sapi-lab-upstream-acceptance/v1",
@@ -317,12 +316,11 @@ class NativeLiveReservationTests(unittest.TestCase):
     def test_runtime_closes_before_judge_and_invalid_trials_never_dispatch_judge(self):
         from unittest.mock import Mock
 
-        from sapi_config_lab.coordinate.packages import stage_tasks
         from sapi_config_lab.evidence import write_json
 
-        scenario = select_benchmarks(workspace_root() / "tasks", ("checkout-recovery",))[0]
-        submission_hash = sha256(scenario.reference.source)
-        for fault in (None, "duplicate", "submission"):
+        scenario = workspace_root() / "tasks/checkout-recovery"
+        submission_hash = sha256(scenario / "solution/config.yaml")
+        for fault in (None, "duplicate", "submission", "runtime-timeout"):
             with self.subTest(fault=fault), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 output = root / "run"
@@ -341,7 +339,7 @@ class NativeLiveReservationTests(unittest.TestCase):
                         "result_path": str(record.parent / "result.json"),
                         "exception": None,
                         "rewards": {"reward": 1.0},
-                        "result": result,
+                        "result": {"execution": None, "acceptance": None, "quality": None} if admission else result,
                         "acceptance": {
                             "schema": "sapi-lab-admission/v1" if admission else "sapi-lab-upstream-acceptance/v1",
                             "mode": mode,
@@ -354,11 +352,14 @@ class NativeLiveReservationTests(unittest.TestCase):
                 run = Mock()
                 run.output, run.sources, run.tasks, run.image = output, {}, output / "tasks", "frozen:image"
                 run.use_image.return_value = "sha256:stub"
-                run.stage.side_effect = lambda mode, names, run=run, **options: stage_tasks(
-                    run.tasks, root=workspace_root(), mode=mode, benchmarks=names, **options
-                )
                 run.bridge.return_value = contextlib.nullcontext(output / "audit.jsonl")
                 live_trial = trial("live")
+                if fault == "runtime-timeout":
+                    audit = DispatchAudit(
+                        output / "audit.jsonl",
+                        {"max_attempts": 1, "operations": {"SummarizeIncident": 1}, "model": "mocked-only"},
+                    )
+                    audit.fail({}, "timeout_unknown_outcome", outcome="unknown")
                 if fault == "submission":
                     live_trial["acceptance"]["submission_sha256"] = "0" * 64
                 run.harbor.side_effect = [
@@ -388,7 +389,9 @@ class NativeLiveReservationTests(unittest.TestCase):
                     patch("sapi_config_lab.coordinate.live.wrapper_identity", return_value={"model": "gpt-6-astra"}),
                     patch("sapi_config_lab.coordinate.live.collect_native", return_value=[]),
                     patch("sapi_config_lab.coordinate.live.reconcile_dispatches", return_value=[]),
-                    patch("sapi_config_lab.coordinate.evaluation.reevaluate_benchmark", side_effect=judge) as dispatch,
+                    patch(
+                        "sapi_config_lab.coordinate.native_evaluation.reevaluate_native", side_effect=judge
+                    ) as dispatch,
                     contextlib.redirect_stderr(io.StringIO()),
                     contextlib.redirect_stdout(io.StringIO()),
                 ):
@@ -411,6 +414,16 @@ class NativeLiveReservationTests(unittest.TestCase):
                         dispatch.assert_called_once()
                         self.assertTrue(
                             all(event["status"] == "passed" for event in read_json(output / "ledger.json")["events"])
+                        )
+                    elif fault == "runtime-timeout":
+                        import subprocess
+
+                        with self.assertRaises(subprocess.TimeoutExpired):
+                            main(arguments)
+                        dispatch.assert_not_called()
+                        events = read_json(output / "ledger.json")["events"]
+                        self.assertEqual(
+                            [(event["phase"], event["status"]) for event in events], [("runtime", "unknown")]
                         )
                     else:
                         with self.assertRaises(SystemExit):
