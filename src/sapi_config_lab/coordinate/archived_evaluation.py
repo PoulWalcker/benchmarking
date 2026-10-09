@@ -1,4 +1,4 @@
-"""Re-evaluate versioned records through an explicitly supplied frozen checkout."""
+"""Re-evaluate recorded evidence through an explicitly supplied frozen checkout."""
 
 import hashlib
 import json
@@ -17,15 +17,22 @@ from sapi_config_lab.evaluate.records import validate_result
 _PROGRAM = """
 import json, os, sys
 from pathlib import Path
-root, original, manifest, dependencies, arguments = json.loads(sys.argv[1])
+root, original, manifest, dependencies, arguments, native_task = json.loads(sys.argv[1])
 sys.path[:0] = [str(Path(root) / 'src'), root, *dependencies]
 os.environ['SAPI_LAB_ROOT'] = root
 from sapi_config_lab.coordinate.provenance import source_manifest
 expected = json.loads(Path(manifest).read_text())
 if source_manifest(Path(original)) != expected or source_manifest(Path(root)) != expected:
     raise ValueError('Archived source manifest is incomplete or changed')
-from sapi_config_lab.coordinate.evaluation import main
-raise SystemExit(main(arguments))
+if native_task is not None:
+    import runpy
+    script = Path(root) / 'tasks' / native_task / 'experiment.py'
+    sys.path.insert(0, str(script.parent))
+    sys.argv = [str(script)]
+    runpy.run_path(str(script), run_name='__main__')
+else:
+    from sapi_config_lab.coordinate.evaluation import main
+    raise SystemExit(main(arguments))
 """
 
 
@@ -153,6 +160,78 @@ def reevaluate_versioned(
         arguments.append("--dispatch-judge")
     for ceiling in series_ceiling or []:
         arguments.extend(("--series-ceiling", ceiling))
+    return _invoke_snapshot(record, output, source_root, manifest, captured, arguments)
+
+
+def invoke_native_snapshot(
+    record: Path,
+    output: Path,
+    source_root: Path | None,
+    source_manifest: Path | None,
+    request: dict,
+) -> dict:
+    """Replay a native record through its matching archived task-owned evaluator."""
+    if source_root is None or source_manifest is None:
+        raise ValueError("Native archived evaluation requires --source-root and --source-manifest")
+    record, output, source_root = record.resolve(), output.resolve(), source_root.resolve()
+    if output.exists():
+        raise FileExistsError(output)
+    if output.is_relative_to(record / "evidence"):
+        raise ValueError("Derived evaluation output must be outside recorded evidence")
+    allowed = {
+        "action",
+        "record",
+        "output",
+        "judgement",
+        "dispatch",
+        "calibration",
+        "judge_model",
+        "series_dir",
+        "series_ceiling",
+    }
+    if not isinstance(request, dict) or set(request) - allowed:
+        raise ValueError("Unsupported archived native evaluation request")
+    if type(request.get("dispatch", False)) is not bool:
+        raise ValueError("Judge dispatch must be boolean")
+    if request.get("judgement") and request.get("dispatch"):
+        raise ValueError("Supply a saved judgement or dispatch the judge, not both")
+    if request.get("calibration") and not request.get("judge_model"):
+        raise ValueError("Calibration needs a judge model")
+    manifest = json.loads(source_manifest.read_text())
+    metadata = json.loads((record / "native-task.json").read_text())
+    name = metadata.get("name")
+    if (
+        metadata.get("schema") != "sapi-lab-native-task/v1"
+        or not isinstance(name, str)
+        or re.fullmatch(r"[a-z][a-z0-9-]*", name) is None
+    ):
+        raise ValueError("Unsupported archived native task identity")
+    if metadata.get("sources") != manifest:
+        raise ValueError("Recorded native source identity differs from supplied manifest")
+    captured = _capture(source_root, manifest)
+    for required in (
+        "src/sapi_config_lab/__init__.py",
+        "src/sapi_config_lab/coordinate/__init__.py",
+        "src/sapi_config_lab/coordinate/provenance.py",
+        f"tasks/{name}/experiment.py",
+    ):
+        if required not in captured:
+            raise ValueError("Archived native evaluation source is unavailable: " + required)
+    request = {**request, "action": "evaluate", "record": str(record), "output": str(output)}
+    return _invoke_snapshot(record, output, source_root, manifest, captured, [], native_task=name, request=request)
+
+
+def _invoke_snapshot(
+    record: Path,
+    output: Path,
+    source_root: Path,
+    manifest: dict,
+    captured: dict[str, bytes],
+    arguments: list[str],
+    *,
+    native_task: str | None = None,
+    request: dict | None = None,
+) -> dict:
     with tempfile.TemporaryDirectory(prefix="sapi-archived-") as temporary:
         root = Path(temporary).resolve() / "snapshot"
         root.mkdir()
@@ -185,12 +264,13 @@ def reevaluate_versioned(
                 "-B",
                 "-c",
                 _PROGRAM,
-                json.dumps([str(root), str(source_root), str(frozen), dependencies, arguments]),
+                json.dumps([str(root), str(source_root), str(frozen), dependencies, arguments, native_task]),
             ],
             cwd=root,
             env=environment,
             text=True,
             capture_output=True,
+            input=json.dumps(request) if request is not None else None,
             check=False,
         )
         if completed.returncode not in (0, 1) or not (output / "result.json").is_file():

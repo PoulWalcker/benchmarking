@@ -11,7 +11,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.coordinate.archived_evaluation import reevaluate_versioned
+from sapi_config_lab.coordinate.archived_evaluation import invoke_native_snapshot, reevaluate_versioned
 
 
 def save(path, value):
@@ -168,7 +168,7 @@ class ArchivedBoundaryTests(unittest.TestCase):
         save(reply, {"saved": True})
 
         def run(command, **kwargs):
-            root, _, _, _, arguments = json.loads(command[-1])
+            root, _, _, _, arguments, _ = json.loads(command[-1])
             self.assertEqual(command[1:4], ["-I", "-S", "-B"])
             self.assertNotIn("PYTHONPATH", kwargs["env"])
             self.assertFalse((Path(root) / "__pycache__").exists())
@@ -190,7 +190,7 @@ class ArchivedBoundaryTests(unittest.TestCase):
         before = (series / "ledger.json").read_bytes()
 
         def run(command, **kwargs):
-            arguments = json.loads(command[-1])[-1]
+            arguments = json.loads(command[-1])[4]
             self.assertEqual(arguments.count("--dispatch-judge"), 1)
             for flag, value in (
                 ("--calibration", "contentless"),
@@ -324,3 +324,134 @@ def evaluate(evidence, options):
         events = json.loads((unknown / "ledger.json").read_text())["events"]
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0]["status"], "unknown")
+
+
+class NativeArchivedSnapshotTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name).resolve()
+        self.snapshot = self.root / "snapshot"
+        self.record = self.root / "record"
+        self.output = self.root / "derived"
+        self.manifest = self.root / "manifest.json"
+        for name in ("src/sapi_config_lab/__init__.py", "src/sapi_config_lab/coordinate/__init__.py"):
+            target = self.snapshot / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("")
+        (self.snapshot / "src/sapi_config_lab/coordinate/provenance.py").write_text("""import hashlib, os
+from pathlib import Path
+
+def source_manifest(root=None):
+    root = root or Path(os.environ['SAPI_LAB_ROOT'])
+    return {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in root.rglob('*') if p.is_file() and '__pycache__' not in p.parts}
+""")
+        script = self.snapshot / "tasks/native-example/experiment.py"
+        script.parent.mkdir(parents=True)
+        script.write_text("""import json, sys
+from pathlib import Path
+from sapi_config_lab.coordinate.provenance import source_manifest
+
+request = json.load(sys.stdin)
+assert sys.argv == [__file__]
+assert request['action'] == 'evaluate'
+metadata = json.loads((Path(request['record']) / 'native-task.json').read_text())
+assert metadata['sources'] == source_manifest()
+output = Path(request['output'])
+output.mkdir()
+(output / 'request.json').write_text(json.dumps(request))
+result = {'execution': True, 'acceptance': True, 'quality': None}
+(output / 'result.json').write_text(json.dumps(result))
+print(json.dumps(result))
+""")
+        self.sources = hashes(self.snapshot)
+        save(self.manifest, self.sources)
+        self.metadata = {
+            "schema": "sapi-lab-native-task/v1",
+            "name": "native-example",
+            "sources": self.sources,
+            "options": {"mode": "stub"},
+            "submission_sha256": None,
+        }
+        save(self.record / "native-task.json", self.metadata)
+
+    def evaluate(self, request=None):
+        return invoke_native_snapshot(self.record, self.output, self.snapshot, self.manifest, request or {})
+
+    def test_real_child_uses_fixed_native_entrypoint_and_canonical_request_paths(self):
+        request = {
+            "action": "unchecked",
+            "record": "/unchecked",
+            "output": "/unchecked",
+            "judgement": str(self.root / "saved.json"),
+            "dispatch": False,
+            "calibration": None,
+            "judge_model": None,
+            "series_dir": None,
+            "series_ceiling": None,
+        }
+        before = hashes(self.record)
+        with patch.dict(os.environ, {"PYTHONPATH": "/unchecked"}):
+            self.assertTrue(self.evaluate(request)["acceptance"])
+        captured = json.loads((self.output / "request.json").read_text())
+        self.assertEqual(
+            captured, {**request, "action": "evaluate", "record": str(self.record), "output": str(self.output)}
+        )
+        self.assertEqual(hashes(self.record), before)
+        self.assertFalse((self.output / "ledger.json").exists())
+
+    def test_native_manifest_mismatch_or_changed_source_refuses_before_any_child(self):
+        for mutate in ("record", "source"):
+            with self.subTest(mutate=mutate):
+                if mutate == "record":
+                    save(self.record / "native-task.json", {**self.metadata, "sources": {}})
+                else:
+                    save(self.record / "native-task.json", self.metadata)
+                    (self.snapshot / "tasks/native-example/experiment.py").write_text("changed")
+                with patch("sapi_config_lab.coordinate.archived_evaluation.subprocess.run") as run:
+                    with self.assertRaises(ValueError):
+                        self.evaluate({"dispatch": True})
+                    run.assert_not_called()
+        self.assertFalse(self.output.exists())
+
+    def test_unsafe_native_task_and_unknown_request_keys_are_rejected(self):
+        for name in ("../outside", "native-example/other", "/outside"):
+            save(self.record / "native-task.json", {**self.metadata, "name": name})
+            with self.subTest(name=name), self.assertRaisesRegex(ValueError, "task identity"):
+                self.evaluate()
+        save(self.record / "native-task.json", self.metadata)
+        for request in (
+            {"entrypoint": "/unchecked.py"},
+            {"dispatch": "yes"},
+            {"dispatch": True, "judgement": "/saved.json"},
+            {"calibration": "contentless"},
+        ):
+            with self.subTest(request=request), self.assertRaises(ValueError):
+                self.evaluate(request)
+
+    def test_mock_authorized_native_request_does_not_reset_shared_ledger(self):
+        series = self.root / "series"
+        save(series / "ledger.json", {"source_manifest": self.sources, "events": [{"status": "unknown"}]})
+        before = hashes(series)
+        request = {
+            "dispatch": True,
+            "calibration": "contentless",
+            "judge_model": "mock-only",
+            "series_dir": str(series),
+            "series_ceiling": ["judge=2"],
+        }
+        self.evaluate(request)
+        captured = json.loads((self.output / "request.json").read_text())
+        self.assertEqual({key: captured[key] for key in request}, request)
+        self.assertEqual(hashes(series), before)
+        self.assertFalse((self.output / "ledger.json").exists())
+
+    def test_native_output_is_new_and_outside_recorded_evidence(self):
+        self.output.mkdir()
+        with self.assertRaises(FileExistsError):
+            self.evaluate()
+        with self.assertRaisesRegex(ValueError, "outside recorded evidence"):
+            invoke_native_snapshot(self.record, self.record / "evidence/derived", self.snapshot, self.manifest, {})
+        with self.assertRaisesRegex(ValueError, "--source-root"):
+            invoke_native_snapshot(self.record, self.root / "missing", None, self.manifest, {})
