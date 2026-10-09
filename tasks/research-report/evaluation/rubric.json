@@ -1,7 +1,8 @@
 {
   "id": "research-report",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "origin": "local",
+  "prompt_version": "fixture-judge/v1",
   "criteria": [
     {
       "id": "acceptance",
@@ -30,9 +31,9 @@
       "weight": 2,
       "evaluator": "llm",
       "anchors": {
-        "yes": "Clear, concise and logically organized.",
-        "maybe": "Understandable but repetitive or confusing in places.",
-        "no": "Difficult to follow or unusable."
+        "yes": "Concise, organized and internally coherent. Fluency alone does not establish usefulness.",
+        "maybe": "Understandable, but repetitive or confusingly organized.",
+        "no": "Seriously confusing or contradictory."
       },
       "required_evidence": [
         "candidate"
@@ -44,9 +45,9 @@
       "weight": 2,
       "evaluator": "llm",
       "anchors": {
-        "yes": "Useful synthesis grounded in the given material.",
-        "maybe": "Partially useful but limited synthesis.",
-        "no": "Little useful synthesis or mostly irrelevant."
+        "yes": "A faithful synthesis of the product, audience and channels that preserves all important source information and adds no unsupported factual claims.",
+        "maybe": "Faithful, but mostly copied or only weakly synthesized.",
+        "no": "Material unsupported claims, contradictions, important omissions, or irrelevant or instructional filler that makes the report unreliable."
       },
       "required_evidence": [
         "environment",

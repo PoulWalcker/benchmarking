@@ -139,8 +139,10 @@ uv run --locked sapi-lab live --stub-report <control>/report.json \
 
 Before paid work, controls must match current sources and all selected image IDs.
 Fixture replay or world compilation admission must pass. `--preflight-only` stops
-before runtime/judge dispatch. Total runtime plus judge cost is checked before any
-reservation. Every call is durably reserved before dispatch; an unknown outcome
+before runtime/judge dispatch. Each admitted case adds its runtime grant and its task's
+judge cost (one Research case: 3+1=4); a larger total than `--max-calls` refuses before
+any reservation. `report.json` `budget` lists exactly the per-case allocation the ledger
+reserves. Every call is durably reserved before dispatch; an unknown outcome
 is never released. `--series-dir` and fixed `--series-ceiling PHASE=N` share budgets
 across runs. Failed and unknown outcomes remain distinguishable.
 
@@ -189,6 +191,23 @@ mismatch refuses before evaluation; use the exact recorded source revision when
 reproducing a current native experiment. Archived snapshot execution is deferred.
 Older or Phase 1 native records lacking complete identity remain readable, but
 cannot claim current guarded re-evaluation.
+
+## Research Judge calibration
+
+```bash
+echo '{"action": "calibrate", "record": "<trial>/verifier", "output": "<new-directory>",
+  "variant": "a-faithful", "judge_model": "<model>"}' \
+  | uv run --locked python tasks/research-report/experiment.py
+```
+
+Variants are the six IDs in `tasks/research-report/evaluation/calibration.json`. The
+base record must verify as one run of the frozen Orion source. Without `"judgement"` or
+`"dispatch": true` nothing is judged. A saved bundle replays offline and must match the
+exact variant bytes. A dispatch also takes `"judge": {"upstream", "inspection", "files"}`
+and reserves one Judge call in its own or a `"series_dir"` ledger (fixed by
+`"series_ceiling": ["judge=6"]`) that stops after any failed or unknown attempt.
+`calibration.json` in the output reports `simulated` for mocked replies and `measured`
+for wrapper replies; native execution and acceptance stay null.
 
 ## Reading a run
 

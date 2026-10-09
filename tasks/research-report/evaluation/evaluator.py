@@ -82,6 +82,8 @@ def card() -> RubricCard:
         version=document["version"],
         origin=document["origin"],
         criteria=tuple(Criterion(**criterion) for criterion in document["criteria"]),
+        # The fixture Judge template version; the card digest, and so every saved reply, binds it.
+        prompt_version=document["prompt_version"],
     )
 
 

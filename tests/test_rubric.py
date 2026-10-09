@@ -1022,7 +1022,8 @@ class ArithmeticTests(unittest.TestCase):
                 )
                 self.assertEqual(total, 10)
                 self.assertGreaterEqual(determined, total - determined)
-                self.assertEqual(card.version, "1.0.0")
+                # Research re-anchored its semantic criteria for the fixture Judge; ids and weights are unchanged.
+                self.assertEqual(card.version, "2.0.0" if scenario == "research-report" else "1.0.0")
                 self.assertEqual(card.origin, "local")
 
     def test_the_digest_covers_every_field_the_document_prints_beside_it(self):

@@ -56,7 +56,7 @@ def validate_record(record: Path, task: Path, sources: dict) -> dict:
     return metadata
 
 
-def _judge_endpoint(value: object) -> dict | None:
+def judge_endpoint(value: object) -> dict | None:
     """The host-owned Judge wrapper a fixture dispatch may use; never native configuration."""
     if value is None:
         return None
@@ -134,7 +134,7 @@ def evaluate_record(task: Path, evaluator: Callable, request: dict, *, judge_fac
     cost = policy(task).get("judge_calls", 0)
     if (options["dispatch"] or request.get("calibration") or request.get("judgement")) and not cost:
         raise ValueError("This task has no semantic judge")
-    endpoint = _judge_endpoint(request.get("judge"))
+    endpoint = judge_endpoint(request.get("judge"))
     if endpoint is not None and (judge_factory is None or not options["dispatch"]):
         raise ValueError("A Judge endpoint needs a requested dispatch by a task that composes a fixture Judge")
     _resolve_judge(options, metadata["options"], request, composed=judge_factory is not None)
@@ -147,12 +147,9 @@ def evaluate_record(task: Path, evaluator: Callable, request: dict, *, judge_fac
     def settle(call: Callable, ledger: Path, index: int, event: dict) -> dict:
         if receipts is None:
             return call()
-        fixture_judge.stamp(receipts, ledger, index, event)
-        with fixture_judge.unknown_while_unsettled(receipts):
-            call()
-        # The receipt and its artifacts, not the call's return value, prove what was dispatched.
-        return fixture_judge.dispatch_outcome(
+        return fixture_judge.dispatch_reserved(
             receipts,
+            call,
             ledger,
             index,
             event,

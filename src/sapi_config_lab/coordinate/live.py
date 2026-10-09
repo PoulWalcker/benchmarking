@@ -324,13 +324,13 @@ def main(argv: list[str] | None = None) -> int:
         for name in scenarios:
             benchmark = benchmarks[name]
             judge_calls[name] = policy(benchmark).get("judge_calls", 0)
-        judge_total = sum(judge_calls.values())
-        require(not judge_total or args.preflight_only or args.judge_model, "Hosted evaluation needs --judge-model")
+        judged = any(judge_calls.values())
+        require(not judged or args.preflight_only or args.judge_model, "Hosted evaluation needs --judge-model")
         grants, planned = cohort_grants(submissions, benchmarks, args.judge_model)
         # Every Judge identity and endpoint is settled here, before the first runtime reservation.
         fixture = {name for name in scenarios if judge_calls[name] and planned[name].get("judge_mode") == "wrapper"}
         require(
-            not judge_total or not args.judge_model or args.judge_model != host.wrapper_model,
+            not judged or not args.judge_model or args.judge_model != host.wrapper_model,
             "The Judge model must differ from the runtime model",
         )
         require(
@@ -355,15 +355,20 @@ def main(argv: list[str] | None = None) -> int:
                 "inspection": str(args.judge_wrapper_evidence.resolve()),
                 "files": {name: str(path.resolve()) for name, path in judge_files.items()},
             }
-        report["budget"]["cases"] = {f"{s}/{c}": grant["max_attempts"] for (s, c), (grant, _) in grants.items()}
-        report["budget"]["judge"] = judge_calls
-        needed = sum(report["budget"]["cases"].values()) + judge_total
+        # Each admitted case reserves its own runtime grant and, afterwards, its task's Judge cost; the
+        # ledger's phase ceilings are exactly this reported allocation.
+        runtime_allocation = {f"{s}/{c}": grant["max_attempts"] for (s, c), (grant, _) in grants.items()}
+        judge_allocation = {f"{s}/{c}": judge_calls[s] for s, c in grants if judge_calls[s]}
+        ceilings = {"runtime": sum(runtime_allocation.values())} | (
+            {"judge": sum(judge_allocation.values())} if judge_allocation else {}
+        )
+        needed = sum(ceilings.values())
+        report["budget"].update(cases=runtime_allocation, judge=judge_allocation, total=needed)
         require(
             needed <= args.max_calls,
             f"The cohort needs up to {needed} model calls; --max-calls allows {args.max_calls}",
         )
         report["human_review"] = {s: policy(benchmarks[s]).get("human_review", False) for s in scenarios}
-        ceilings = {"runtime": args.max_calls} | ({"judge": args.max_calls} if judge_total else {})
         ledger = open_ledger(run.output, args.series_dir, ceilings, args.stop_after_failure, series_ceilings)
         report["ledger"] = str(ledger.path)
         if args.wrapper_evidence:
@@ -430,7 +435,11 @@ def main(argv: list[str] | None = None) -> int:
             wrapper_identity(args.wrapper_evidence, host.wrapper_url, host.wrapper_model, wrapper_files)
             label = f"{scenario}-{name}"
             with ledger.reserved(
-                "runtime", f"{run.output.name}/{scenario}/{name}", grant["max_attempts"], report_path, args.max_calls
+                "runtime",
+                f"{run.output.name}/{scenario}/{name}",
+                grant["max_attempts"],
+                report_path,
+                ceilings["runtime"],
             ) as runtime_outcome:
                 budget = {
                     **{key: value for key, value in grant.items() if key != "minimum_attempts"},
@@ -516,9 +525,9 @@ def main(argv: list[str] | None = None) -> int:
                 with ledger.reserved(
                     "judge",
                     f"{run.output.name}/{scenario}/{name}/judge",
-                    judge_calls[scenario],
+                    judge_allocation[f"{scenario}/{name}"],
                     report_path,
-                    args.max_calls,
+                    ceilings["judge"],
                 ) as judge_outcome:
                     record = Path(trial["result_path"]).parent / "verifier"
                     reservation = {

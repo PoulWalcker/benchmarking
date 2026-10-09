@@ -177,6 +177,23 @@ def dispatch_outcome(
     }
 
 
+def dispatch_reserved(
+    directory: Path,
+    call: Callable[[], Any],
+    ledger: Path,
+    index: int,
+    event: dict,
+    *,
+    model: str | None = None,
+    inspection_sha256: str | None = None,
+) -> dict[str, Any]:
+    """Run one fresh call inside its pending reservation; the receipt, not the call's value, proves it."""
+    stamp(directory, ledger, index, event)
+    with unknown_while_unsettled(directory):
+        call()
+    return dispatch_outcome(directory, ledger, index, event, model=model, inspection_sha256=inspection_sha256)
+
+
 def require_fresh(
     directory: Path, ledger: Path, index: int, event: dict, *, model: str, inspection: Path, quality: Any
 ) -> dict[str, Any]:

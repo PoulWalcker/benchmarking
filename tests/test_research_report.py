@@ -189,6 +189,41 @@ class ResearchReportTests(unittest.TestCase):
         self.assertGreaterEqual(sum(c["weight"] for c in card["criteria"] if c["evaluator"] == "deterministic"), 6)
         self.assertTrue(any(c["evaluator"] == "llm" for c in card["criteria"]))
 
+    def test_the_versioned_card_keeps_ids_and_weights_and_binds_the_fixture_judge_prompt(self):
+        from sapi_config_lab.coordinate import fixture_judge
+
+        card = task_evaluator(ROOT).card()
+        self.assertEqual((card.id, card.version, card.origin), ("research-report", "2.0.0", "local"))
+        self.assertEqual(card.prompt_version, fixture_judge.PROMPT_VERSION)
+        self.assertEqual(
+            [(c.id, c.weight, c.evaluator) for c in card.criteria],
+            [
+                ("acceptance", 4, "deterministic"),
+                ("grounding", 1, "deterministic"),
+                ("coverage", 1, "deterministic"),
+                ("clarity", 2, "llm"),
+                ("usefulness", 2, "llm"),
+            ],
+        )
+        anchors = {c.id: dict(c.anchors) for c in card.criteria if c.evaluator == "llm"}
+        self.assertEqual(
+            anchors,
+            {
+                "clarity": {
+                    "yes": "Concise, organized and internally coherent. Fluency alone does not establish usefulness.",
+                    "maybe": "Understandable, but repetitive or confusingly organized.",
+                    "no": "Seriously confusing or contradictory.",
+                },
+                "usefulness": {
+                    "yes": "A faithful synthesis of the product, audience and channels that preserves all important"
+                    " source information and adds no unsupported factual claims.",
+                    "maybe": "Faithful, but mostly copied or only weakly synthesized.",
+                    "no": "Material unsupported claims, contradictions, important omissions, or irrelevant or"
+                    " instructional filler that makes the report unreliable.",
+                },
+            },
+        )
+
     def test_positive_and_negative_fixtures(self):
         cases = json.loads((ROOT / "cases.json").read_text())
         self.assertEqual(len(cases["positive"]), 2)
@@ -202,7 +237,7 @@ class ResearchJudgeIdentityTests(unittest.TestCase):
 
         root = imported(ROOT / "experiment.py", "native_tasks.research-report.experiment", False)
         self.assertTrue({"coordinate.fixture_judge", "harbor_integration.model_wrapper"} <= root)
-        for name in ("evaluation/evaluator.py", "tests/main.py"):
+        for name in ("evaluation/evaluator.py", "evaluation/calibration.py", "tests/main.py"):
             module = "native_tasks.research-report." + name.removesuffix(".py").replace("/", ".")
             stages = {stage_of(edge) for edge in imported(ROOT / name, module, False)}
             self.assertFalse({"execute", "harbor_integration"} & stages, name)
@@ -484,21 +519,33 @@ class ResearchLiveJudgeTests(unittest.TestCase):
         self.control = self.root / "control.json"
         self.control.write_text("{}")
 
-    def live(self, judge_arguments: list[str], fault: str | None = None) -> tuple[Mock, Path]:
+    def live(
+        self,
+        judge_arguments: list[str],
+        fault: str | None = None,
+        *,
+        cases: tuple[str, ...] = (),
+        max_calls: int = 4,
+    ) -> tuple[Mock, Path]:
+        """Default selection (Orion), or an explicit hypothetical cohort of these live cases."""
         from sapi_config_lab.coordinate import native_evaluation
         from sapi_config_lab.coordinate.live import main as live_main
 
         output = self.root / "run"
         output.mkdir()
-        record = fixture_record(
-            output / "jobs/live/trial/verifier",
-            selected_case="orion-clinics",
-            judge_mode="wrapper",
-            judge_model=JUDGE_MODEL,
-        )
-        acceptance = json.loads((record / "evaluation/report.json").read_text())
+        records = {
+            case: fixture_record(
+                output
+                / ("jobs/live/trial/verifier" if case == "orion-clinics" else f"jobs/live-{case}/trial/verifier"),
+                selected_case=case,
+                judge_mode="wrapper",
+                judge_model=JUDGE_MODEL,
+            )
+            for case in cases or ("orion-clinics",)
+        }
 
-        def trial(mode):
+        def trial(mode, record=records["orion-clinics"]):
+            acceptance = json.loads((record / "evaluation/report.json").read_text())
             return {
                 "task_name": ROOT.name,
                 "result_path": str(record.parent / "result.json"),
@@ -517,7 +564,19 @@ class ResearchLiveJudgeTests(unittest.TestCase):
         run.output, run.sources = output, {}
         run.use_image.return_value = "sha256:stub"
         run.bridge.return_value = contextlib.nullcontext(output / "audit.jsonl")
-        run.harbor.side_effect = [(0, [trial("stub")]), (0, [trial("live")])]
+        run.harbor.side_effect = [(0, [trial("stub")])] + [(0, [trial("live", record)]) for record in records.values()]
+        selection = {
+            ROOT.name: {
+                "path": ROOT / "solution/config.yaml",
+                "sha256": sha256(ROOT / "solution/config.yaml"),
+                "cases": {**json.loads((ROOT / "cases.json").read_text()), "live_cases": list(cases)},
+            }
+        }
+
+        def experiment(_path, report, body, **_options):
+            run.report = report
+            body(run)
+
         real = native_evaluation.reevaluate_native
 
         def judged(recorded, derived, judgement, **options):
@@ -537,7 +596,8 @@ class ResearchLiveJudgeTests(unittest.TestCase):
 
         with (
             patch.dict(os.environ, {"SAPI_WRAPPER_MODEL": RUNTIME_MODEL}),
-            patch("sapi_config_lab.coordinate.live.run_experiment", side_effect=lambda _p, _r, body, **_o: body(run)),
+            patch("sapi_config_lab.coordinate.live.run_experiment", side_effect=experiment),
+            patch("sapi_config_lab.coordinate.live.load_selection", return_value=selection),
             patch(
                 "sapi_config_lab.coordinate.live.validate_control",
                 return_value={"oracle": {"trials": [{"task_name": ROOT.name}]}},
@@ -549,8 +609,14 @@ class ResearchLiveJudgeTests(unittest.TestCase):
             contextlib.redirect_stdout(io.StringIO()),
         ):
             arguments = ["--stub-report", str(self.control), "--wrapper-evidence", str(self.runtime)]
-            arguments += ["--upstream", self.RUNTIME_UPSTREAM, "--report-dir", str(output), "--max-calls", "4"]
-            arguments += ["--scenario", ROOT.name, *judge_arguments]
+            arguments += ["--upstream", self.RUNTIME_UPSTREAM, "--report-dir", str(output)]
+            arguments += ["--max-calls", str(max_calls), *judge_arguments]
+            if cases:
+                manifest = self.root / "selection.json"
+                manifest.write_text("{}")
+                arguments += ["--submissions-manifest", str(manifest)]
+            else:
+                arguments += ["--scenario", ROOT.name]
             run.exit_code = live_main(arguments)
         return run, output
 
@@ -565,6 +631,28 @@ class ResearchLiveJudgeTests(unittest.TestCase):
         self.assertEqual([(e["phase"], e["status"]) for e in events], [("runtime", "passed"), ("judge", "passed")])
         receipt = json.loads((output / "jobs/live/trial/verifier/paid-evaluation/judge/receipt.json").read_text())
         self.assertEqual((receipt["expected_model"], receipt["reservation"]["index"]), (JUDGE_MODEL, 1))
+
+    def test_reservations_are_exactly_the_reported_per_case_allocation(self):
+        for cases, max_calls in (((), 4), (("orion-clinics", "beacon-bookings"), 8)):
+            with self.subTest(cases=cases):
+                shutil.rmtree(self.root / "run", ignore_errors=True)
+                self.wrapper.prompts.clear()
+                run, output = self.live(self.judge_arguments(), cases=cases, max_calls=max_calls)
+                self.assertEqual(run.exit_code, 0)
+                budget = run.report["budget"]
+                reserved = {
+                    (event["phase"], event["name"].split("/", 1)[1].removesuffix("/judge")): event["count"]
+                    for event in json.loads((output / "ledger.json").read_text())["events"]
+                }
+                self.assertEqual(
+                    reserved,
+                    {("runtime", name): count for name, count in budget["cases"].items()}
+                    | {("judge", name): count for name, count in budget["judge"].items()},
+                )
+                # V1 selection is Orion alone; a second case exists only when named explicitly.
+                expected = {f"{ROOT.name}/{case}": 3 for case in cases or ("orion-clinics",)}
+                self.assertEqual((budget["cases"], budget["total"]), (expected, max_calls))
+                self.assertEqual(len(self.wrapper.prompts), len(expected))
 
     def test_preflight_validates_the_judge_but_reserves_and_calls_nothing(self):
         run, output = self.live([*self.judge_arguments(), "--preflight-only"])

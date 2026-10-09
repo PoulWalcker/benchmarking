@@ -99,8 +99,10 @@ not persisted. Selection always chooses the first-started attempt; a failed firs
 attempt is never replaced by a later passing one. Replay rechecks all recorded
 hashes and normalized verdict authority and performs no generation call.
 
-Live replay checks total runtime plus judge cost before any reservation or native
-dispatch. Grants bind operations, model and occurrence IDs. Native evidence is
+Live replay sums each admitted case's runtime grant and its task's judge cost, reports
+that per-case allocation and refuses a larger total than `--max-calls` before any
+reservation or native dispatch; a run's own ledger takes that allocation as its phase
+ceilings. Grants bind operations, model and occurrence IDs. Native evidence is
 reconciled against the exact selected YAML, rebuilt plan and compiled graph, ordered
 case set and full file inventory. Runtime request/completion/response triples must
 match input/output hashes, model, occurrence and timing. Runtime accounting closes
@@ -125,6 +127,14 @@ The evaluator reads existing evidence and never starts n8n or a world. Saved rep
 remain offline; explicitly requested fresh judging uses the same source-bound ledger.
 Derived results sit beside immutable evidence. Original Harbor rewards and terminal
 exceptions are preserved even when the host produces a later judged result.
+
+Research calibration is a separate synthetic action of its composition root.
+`evaluation/calibration.json` freezes six counterfactual final reports of the Orion
+source, with expectations that never enter a Judge request. `calibrate` re-verifies one
+source-matched native record, replaces only the final report the Judge reads, binds base
+run digest, variant bytes and card into a new run digest, and reports native execution
+and acceptance as null. Mocked replies compare as `simulated`; label agreement from a
+real Judge still needs human review of its reasons. Native evaluation refuses calibration.
 
 Checkout controls use an explicitly labeled saved calibration adapter rebound to
 each fresh run, plus unpaid fake runtime transport where needed. These scores are
