@@ -208,6 +208,17 @@ def invoke_native_snapshot(
         raise ValueError("Unsupported archived native task identity")
     if metadata.get("sources") != manifest:
         raise ValueError("Recorded native source identity differs from supplied manifest")
+    options = metadata.get("options")
+    allowed_options = {"mode", "deadline_seconds", "selected_case", "cases", "judge_mode", "judge_model", "native_mode"}
+    if not isinstance(options, dict) or set(options) - allowed_options:
+        raise ValueError("Unsupported recorded native evaluation options")
+    encoded = json.dumps(options, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode()
+    if hashlib.sha256(encoded).hexdigest() != metadata.get("options_sha256"):
+        raise ValueError("Recorded native options identity differs")
+    submission = record / "evidence/submission.yaml"
+    actual = hashlib.sha256(submission.read_bytes()).hexdigest() if submission.is_file() else None
+    if "submission_sha256" not in metadata or actual != metadata["submission_sha256"]:
+        raise ValueError("Recorded submission identity differs; admission-only records have no execution evidence")
     captured = _capture(source_root, manifest)
     for required in (
         "src/sapi_config_lab/__init__.py",

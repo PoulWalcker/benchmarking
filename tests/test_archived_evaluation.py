@@ -372,12 +372,16 @@ print(json.dumps(result))
 """)
         self.sources = hashes(self.snapshot)
         save(self.manifest, self.sources)
+        submission = self.record / "evidence/submission.yaml"
+        submission.parent.mkdir(parents=True)
+        submission.write_text("workflow: recorded-native-example\n")
         self.metadata = {
             "schema": "sapi-lab-native-task/v1",
             "name": "native-example",
             "sources": self.sources,
             "options": {"mode": "stub"},
-            "submission_sha256": None,
+            "options_sha256": hashlib.sha256(b'{"mode":"stub"}').hexdigest(),
+            "submission_sha256": hashlib.sha256(submission.read_bytes()).hexdigest(),
         }
         save(self.record / "native-task.json", self.metadata)
 
@@ -475,3 +479,31 @@ print(json.dumps(result))
         self.assertEqual(hashes(series), before)
         self.assertEqual(json.loads(reply.read_text()), {"saved": True})
         self.assertFalse((self.output / "ledger.json").exists())
+
+    def test_native_options_and_submission_mismatch_refuse_before_archived_python(self):
+        mutations = (
+            {"options": {"mode": "live"}},
+            {"options": {"source_root": "/unchecked"}},
+            {"options_sha256": "0" * 64},
+            {"submission_sha256": "0" * 64},
+        )
+        for mutation in mutations:
+            save(self.record / "native-task.json", {**self.metadata, **mutation})
+            with (
+                self.subTest(mutation=mutation),
+                patch("sapi_config_lab.coordinate.archived_evaluation.subprocess.run") as run,
+            ):
+                with self.assertRaises(ValueError):
+                    self.evaluate({"dispatch": True})
+                run.assert_not_called()
+        save(self.record / "native-task.json", self.metadata)
+        (self.record / "evidence/submission.yaml").unlink()
+        with patch("sapi_config_lab.coordinate.archived_evaluation.subprocess.run") as run:
+            with self.assertRaisesRegex(ValueError, "admission-only records"):
+                self.evaluate()
+            run.assert_not_called()
+
+    def test_absent_nop_submission_matches_null_recorded_identity(self):
+        (self.record / "evidence/submission.yaml").unlink()
+        save(self.record / "native-task.json", {**self.metadata, "submission_sha256": None})
+        self.assertTrue(self.evaluate()["acceptance"])
