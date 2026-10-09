@@ -1,4 +1,4 @@
-"""Build disposable archives and reject private evidence in either distribution."""
+"""Check ordinary Python distributions without installing benchmark task resources."""
 
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ import tarfile
 import tempfile
 import zipfile
 
-from sapi_config_lab.benchmark import discover_benchmarks
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.paths import workspace_root
 
@@ -28,59 +27,30 @@ PRIVATE_PATHS = (
     "provenance/future-local-snapshot.json",
     ".env",
     "src/sapi_config_lab/.env.private",
+    "tasks/invoice-total/.env",
+)
+RUNTIME_FILES = (
+    "sapi_config_lab/execute/agency-prompt.md",
+    "sapi_config_lab/compile/runtime-fragment.js",
+    "sapi_config_lab/harbor_integration/runtime/Dockerfile",
+    "sapi_config_lab/harbor_integration/submission.py",
+    "verification/__init__.py",
+    "verification/fixture.py",
+    "verification/verify.py",
 )
 
-
-def shared_fixture(root: Path) -> None:
-    """Exercise declared shared resources without adding a production benchmark."""
-    source = next(item for item in discover_benchmarks(root / "tasks") if item.name == "invoice-total")
-    directory = root / "tasks/distribution-shared"
-    shutil.copytree(source.directory, directory)
-    metadata = json.loads((directory / "scenario.json").read_text())
-    metadata.update(id="distribution-shared", default=False)
-    metadata["dependencies"] = {
-        "sample": {"path": "_shared/distribution", "public": ["public.txt"], "trusted": ["rules.py"]}
-    }
-    (directory / "scenario.json").write_text(json.dumps(metadata))
-    shared = root / "tasks/_shared/distribution"
-    shared.mkdir(parents=True)
-    (shared / "public.txt").write_text("DECLARED_PUBLIC_DEPENDENCY\n")
-    (shared / "rules.py").write_text("EXPECTED = 'DECLARED_PRIVATE_DEPENDENCY'\n")
-    evaluator = directory / "evaluation/evaluator.py"
-    evaluator.write_text("from ..dependencies.sample.rules import EXPECTED\n" + evaluator.read_text())
-    (shared / ".env").write_text("PRIVATE_EVIDENCE_SENTINEL\n")
-
-
 INSTALLED_PROBE = """
-import hashlib, json, os
+import hashlib, json, shutil, subprocess, sys
 from pathlib import Path
-import subprocess, sys
-from sapi_config_lab.benchmark import discover_benchmarks
-from sapi_config_lab.coordinate.benchmark_packages import CORE_FILES, VERIFIER_FILES
-from sapi_config_lab.coordinate.packages import stage_tasks
-from sapi_config_lab.paths import resource_root, workspace_root
-root = resource_root()
-assert not (root / 'src').exists()
-assert (root / 'infra/native/build.sh').is_file()
-mock_bin = Path.cwd() / 'mock-bin'
-mock_bin.mkdir()
-docker = mock_bin / 'docker'
-build_calls = Path.cwd() / 'build-calls.jsonl'
-docker.write_text('#!' + sys.executable + '\\nimport json, os, sys\\n'
-                  'with open(os.environ["BUILD_CALLS"], "a") as out: out.write(json.dumps(sys.argv[1:]) + "\\\\n")\\n')
-docker.chmod(0o755)
-environment = {**os.environ, 'BUILD_CALLS': str(build_calls),
-               'PATH': str(mock_bin) + os.pathsep + str(Path(sys.executable).parent) + os.pathsep + os.environ['PATH']}
-subprocess.run(['sh', str(root / 'infra/native/build.sh')], env=environment, check=True)
-calls = [json.loads(line) for line in build_calls.read_text().splitlines()]
-assert len(calls) == 5
 import sapi_config_lab, verification
+from sapi_config_lab.compile import n8n
+from sapi_config_lab.execute import n8n as runtime
+from sapi_config_lab.evaluate.records import validate_result
+from sapi_config_lab.paths import workspace_root
+from verification.fixture import FixtureEvaluator
+from verification import verify
 core = Path(sapi_config_lab.__file__).parent
-independent = Path(verification.__file__).parent
-assert str(core / 'harbor_integration/runtime/Dockerfile') in calls[0]
-for call in calls[1:]:
-    assert 'sapi-core=' + str(core) in call
-    assert 'sapi-verification=' + str(independent) in call
+assert not (core / 'resources').exists()
 try:
     workspace_root()
 except RuntimeError:
@@ -89,50 +59,28 @@ else:
     raise AssertionError('installed runtime admitted an editable experiment')
 expected = json.loads(Path(sys.argv[1]).read_text())
 for relative, digest in expected.items():
-    assert hashlib.sha256((root / relative).read_bytes()).hexdigest() == digest, relative
-items = discover_benchmarks(root / 'tasks')
-assert {item.name for item in items} == {'invoice-total', 'checkout-recovery', 'distribution-shared'}
+    assert hashlib.sha256((core.parent / relative).read_bytes()).hexdigest() == digest, relative
+for name in ('config.yaml', 'bindings.yaml', 'operations.js'):
+    shutil.copyfile(Path(sys.argv[2]) / name, name)
 cli = [sys.executable, '-I', '-m', 'sapi_config_lab']
-subprocess.run([*cli, 'benchmarks'], check=True, stdout=subprocess.DEVNULL)
-for item in items:
-    native = root / 'tasks' / item.name
-    assert not (native / 'environment/docker-compose.yaml').exists()
-    for path in ('task.toml', 'instruction.md', 'environment/Dockerfile', 'tests/test.sh', 'tests/main.py', 'tests/Dockerfile', 'solution/solve.sh', 'solution/config.yaml'):
-        assert (native / path).is_file(), native / path
-    subprocess.run([*cli, 'compile', str(item.reference.source), '--scenario', item.name,
-                    '--output', str(Path.cwd() / (item.name + '.json'))], check=True, stdout=subprocess.DEVNULL)
-destination = Path.cwd() / 'tasks'
-subprocess.run([*cli, 'package-tasks', str(destination), '--scenario', 'invoice-total',
-                '--scenario', 'checkout-recovery', '--scenario', 'distribution-shared'], check=True,
-               stdout=subprocess.DEVNULL)
-for item in items:
-    task = destination / item.name
-    for declared in item.files:
-        if declared.visibility == 'reference':
-            assert (task / 'solution/config.yaml').read_bytes() == declared.source.read_bytes()
-        else:
-            assert (task / 'tests/payload' / declared.destination).read_bytes() == declared.source.read_bytes()
-            public = task / 'environment/payload' / declared.destination
-            if declared.visibility == 'public':
-                assert public.read_bytes() == declared.source.read_bytes()
-            else:
-                assert not public.exists(), declared.destination
-    for relative in CORE_FILES:
-        assert (task / 'tests/core/sapi_config_lab' / relative).is_file(), relative
-    for relative in VERIFIER_FILES:
-        assert (task / 'tests/core/verification' / relative).is_file(), relative
-    tests = task / 'tests'
-    code = 'import sys; sys.path[:0] = ' + repr([str(tests / 'core'), str(tests)]) + '; exec(' + repr((tests / 'check_imports.py').read_text()) + ')'
-    subprocess.run([sys.executable, '-I', '-c', code], check=True)
-stage_tasks(Path.cwd() / 'generation', root=root, benchmarks=items, mode='generation')
-print(json.dumps({'installed': True, 'staged': [item.name for item in items], 'declared_resources': len(expected)}))
+compiled = subprocess.run([*cli, 'compile', 'config.yaml', '--bindings', 'bindings.yaml',
+                           '--operations', 'operations.js', '--output', 'compiled.json',
+                           '--llm-mode', 'live', '--bridge-url', 'http://127.0.0.1:1'],
+                          text=True, capture_output=True, check=True)
+assert json.loads(compiled.stdout)['executed'] is False
+assert json.loads(Path('compiled.json').read_text())['nodes']
+assert 'classify' in json.loads(Path('compiled.map.json').read_text())
+assert validate_result({'execution': None, 'acceptance': None, 'quality': None})['quality'] is None
+print(json.dumps({'installed': True, 'detached_compile': True, 'runtime_resources': len(expected)}))
 """
 
 
-def inspect_installation(wheel: Path, work: Path, requirements: Path, expected: Path) -> None:
-    """Probe a fresh installation outside checkout paths and inherited Python settings."""
+def inspect_installation(wheel: Path, work: Path, requirements: Path, expected: Path, inputs: Path) -> None:
+    """Compile explicit inputs from a clean base-dependency install outside the checkout."""
     environment = {
-        key: value for key, value in os.environ.items() if key not in {"PYTHONPATH", "SAPI_LAB_ROOT", "VIRTUAL_ENV"}
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith("PYTHON") and key not in {"SAPI_LAB_ROOT", "VIRTUAL_ENV"}
     }
     subprocess.run(["uv", "venv", "--python", sys.executable, str(work / "venv")], env=environment, check=True)
     python = work / "venv/bin/python"
@@ -143,7 +91,12 @@ def inspect_installation(wheel: Path, work: Path, requirements: Path, expected: 
     )
     outside = work / "outside"
     outside.mkdir()
-    subprocess.run([str(python), "-I", "-c", INSTALLED_PROBE, str(expected)], cwd=outside, env=environment, check=True)
+    subprocess.run(
+        [str(python), "-I", "-c", INSTALLED_PROBE, str(expected), str(inputs)],
+        cwd=outside,
+        env=environment,
+        check=True,
+    )
 
 
 def main() -> int:
@@ -156,11 +109,11 @@ def main() -> int:
             target = checkout / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(root / relative, target)
+        sentinel = b"PRIVATE_EVIDENCE_SENTINEL:" + os.urandom(16).hex().encode()
         for relative in PRIVATE_PATHS:
             target = checkout / relative
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text("PRIVATE_EVIDENCE_SENTINEL\n")
-        shared_fixture(checkout)
+            target.write_bytes(sentinel + b"\n")
         subprocess.run(
             ["uv", "build", "--python", sys.executable, "--out-dir", str(work / "dist"), str(checkout)],
             check=True,
@@ -169,12 +122,17 @@ def main() -> int:
         wheel = next((work / "dist").glob("*.whl"))
         with tarfile.open(sdist) as archive:
             source_members = {"/".join(Path(member.name).parts[1:]) for member in archive if member.isfile()}
+            for member in archive:
+                if member.isfile():
+                    archived_file = archive.extractfile(member)
+                    assert archived_file is not None
+                    if sentinel in archived_file.read():
+                        raise RuntimeError("Private sentinel leaked into source distribution")
         with zipfile.ZipFile(wheel) as archive:
             wheel_members = set(archive.namelist())
-            if any(b"PRIVATE_EVIDENCE_SENTINEL" in archive.read(name) for name in wheel_members):
+            if any(sentinel in archive.read(name) for name in wheel_members):
                 raise RuntimeError("Private sentinel leaked into wheel")
-        forbidden = {*PRIVATE_PATHS, "tasks/_shared/distribution/.env"}
-        leaked = forbidden & source_members
+        leaked = set(PRIVATE_PATHS) & source_members
         leaked |= {name for name in wheel_members if name.endswith(".env.private")}
         if leaked:
             raise RuntimeError(f"Private files leaked into a distribution: {sorted(leaked)}")
@@ -189,53 +147,22 @@ def main() -> int:
             if required not in source_members:
                 raise RuntimeError(f"Missing reproducibility source: {required}")
         expected_resources = {}
-        for benchmark in discover_benchmarks(checkout / "tasks"):
-            declared = (
-                benchmark.directory / "scenario.json",
-                *(item.source for item in benchmark.files),
-                *(
-                    path
-                    for path in benchmark.directory.rglob("*")
-                    if path.is_file() and "__pycache__" not in path.parts and not path.name.startswith(".")
-                ),
-            )
-            for source in declared:
-                required = source.relative_to(checkout).as_posix()
-                if required not in source_members:
-                    raise RuntimeError(f"Missing declared benchmark dependency: {required}")
-                installed = "sapi_config_lab/resources/" + required
-                if installed not in wheel_members:
-                    raise RuntimeError(f"Missing installed benchmark dependency: {required}")
-                expected_resources[required] = hashlib.sha256(source.read_bytes()).hexdigest()
-        native_inputs = list((checkout / "infra/native").glob("*"))
-        for source in native_inputs:
-            relative = source.relative_to(checkout).as_posix()
-            if "sapi_config_lab/resources/" + relative not in wheel_members:
-                raise RuntimeError("Missing native image build resource: " + relative)
-            expected_resources[relative] = hashlib.sha256(source.read_bytes()).hexdigest()
-        for name in ("FORMAT.md", "PROFILE.md"):
-            relative = "generation/" + name
-            expected_resources[relative] = hashlib.sha256((checkout / relative).read_bytes()).hexdigest()
-        for required in (
-            "sapi_config_lab/execute/agency-prompt.md",
-            "sapi_config_lab/compile/runtime-fragment.js",
-            "sapi_config_lab/harbor_integration/runtime/Dockerfile",
-            "sapi_config_lab/harbor_integration/submission.py",
-            "verification/__init__.py",
-            "verification/fixture.py",
-            "verification/verify.py",
-        ):
+        for required in RUNTIME_FILES:
             if required not in wheel_members:
                 raise RuntimeError(f"Missing installed runtime resource: {required}")
+            source = checkout / ("src" if required.startswith("sapi_config_lab/") else "") / required
+            expected_resources[required] = hashlib.sha256(source.read_bytes()).hexdigest()
         unexpected = [
             name
             for name in wheel_members
             if not name.startswith(("sapi_config_lab/", "sapi_config_lab-", "verification/"))
+            or name.startswith("sapi_config_lab/resources/")
         ]
         if unexpected:
             raise RuntimeError(f"Unexpected wheel entries: {unexpected}")
         expected = work / "resources.json"
         expected.write_text(json.dumps(expected_resources))
+        inputs = root / "tests/support/native-transport/tests"
         requirements = work / "requirements.txt"
         with requirements.open("w") as stream:
             subprocess.run(
@@ -246,10 +173,6 @@ def main() -> int:
                     str(checkout),
                     "--locked",
                     "--no-dev",
-                    "--extra",
-                    "harbor",
-                    "--extra",
-                    "benchmark",
                     "--no-emit-project",
                     "--format",
                     "requirements-txt",
@@ -257,17 +180,19 @@ def main() -> int:
                 stdout=stream,
                 check=True,
             )
-        inspect_installation(wheel, work / "from-sdist", requirements, expected)
+        inspect_installation(wheel, work / "from-sdist", requirements, expected, inputs)
         subprocess.run(
             ["uv", "build", "--wheel", "--python", sys.executable, "--out-dir", str(work / "direct"), str(checkout)],
             check=True,
         )
-        inspect_installation(next((work / "direct").glob("*.whl")), work / "direct-wheel", requirements, expected)
+        inspect_installation(
+            next((work / "direct").glob("*.whl")), work / "direct-wheel", requirements, expected, inputs
+        )
         print(
             json.dumps(
                 {
                     "status": "passed",
-                    "private_sentinels_excluded": len(forbidden),
+                    "private_sentinels_excluded": len(PRIVATE_PATHS),
                     "sdist_files": len(source_members),
                     "wheel_files": len(wheel_members),
                 }

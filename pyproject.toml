@@ -20,9 +20,6 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/sapi_config_lab", "verification"]
 
-[tool.hatch.build.hooks.custom]
-path = "infra/build_resources.py"
-
 [tool.hatch.build.targets.sdist]
 include = ["/tasks", "/NATIVE_PARITY.md", "/src", "/tests", "/verification", "/docs", "/evidence", "/generation", "/harbor", "/infra", "/.github", "/README.md", "/AGENTS.md", "/pyproject.toml", "/uv.lock", "/.python-version", "/.gitignore", "/.dockerignore", "/provenance/SapiensSpecNotation.hs", "/provenance/spec-comparison.json", "/provenance/spec-source.json", "/run.sh", "/run-generation.sh"]
 exclude = ["/reports", "/generated", "/validation", "/review", "/reviews", "/.scratch", "/.python", "/.cache", "/.venv", "/provenance/environment.json", "**/__pycache__", "*.py[cod]", ".env", ".env.*"]

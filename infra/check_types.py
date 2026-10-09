@@ -1,20 +1,21 @@
-"""Check generic packages and each declared benchmark's independent Python namespace."""
+"""Check generic code and each native task's independent Python namespace."""
 
 import subprocess
 import sys
 
-from sapi_config_lab.benchmark import discover_benchmarks
 from sapi_config_lab.paths import workspace_root
 
 
 def main() -> int:
     root = workspace_root()
-    targets = [("src", "verification")]
-    targets.extend(
-        tuple(str(item.source) for item in benchmark.files if item.source.suffix == ".py")
-        for benchmark in discover_benchmarks(root / "tasks")
-        if any(item.source.suffix == ".py" for item in benchmark.files)
-    )
+    targets: list[tuple[str, ...]] = [("src", "verification")]
+    for manifest in sorted((root / "tasks").glob("*/task.toml")):
+        task = manifest.parent
+        sources = [task / "experiment.py"]
+        sources.extend(path for area in ("evaluation", "environment") for path in (task / area).rglob("*.py"))
+        target = tuple(str(path) for path in sorted(sources) if path.is_file())
+        if target:
+            targets.append(target)
     failed = False
     for target in targets:
         failed |= subprocess.run([sys.executable, "-m", "mypy", *target], cwd=root, check=False).returncode != 0
