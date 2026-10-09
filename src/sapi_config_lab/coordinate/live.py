@@ -197,9 +197,10 @@ def failure_category(trials: list[dict], audit: list[dict], default: str) -> str
 
 def cohort_grants(
     submissions: dict, benchmarks: dict, judge_model: str | None = None
-) -> dict[tuple[str, str], tuple[dict, dict]]:
-    """Reserve the occurrences of each selected benchmark's live observation plan."""
+) -> tuple[dict[tuple[str, str], tuple[dict, dict]], dict[str, dict]]:
+    """Reserve the occurrences of each selected benchmark's live observation plan, and return its frozen options."""
     grants = {}
+    planned = {}
     for scenario, submission in submissions.items():
         benchmark = benchmarks[scenario]
         options = {"mode": "live", "judge_model": judge_model}
@@ -214,10 +215,11 @@ def cohort_grants(
             )
         if "cases" in submission:
             options["cases"] = submission["cases"]
-        plan = invoke(
+        bundle = invoke(
             benchmark, {"action": "plan", "submission": str(submission["path"]), "options": options}, source_manifest()
-        )["plan"]
-        for entry in plan["entries"]:
+        )
+        planned[scenario] = bundle["options"]
+        for entry in bundle["plan"]["entries"]:
             config = entry["config"]
             grant = model_grant(benchmark, config)
             minimum = entry.get(
@@ -227,7 +229,7 @@ def cohort_grants(
             require(type(minimum) is int and 0 <= minimum <= grant["max_attempts"], "Invalid planned model minimum")
             grant["minimum_attempts"] = minimum
             grants[scenario, entry["name"]] = (grant, config)
-    return grants
+    return grants, planned
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -249,14 +251,26 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--series-ceiling", action="append", help="PHASE=N, fixed when a series ledger is created")
     parser.add_argument("--stop-after-failure", action="store_true", help="A failed case blocks later reservations")
     parser.add_argument("--judge-model", help="Judge model for hosted evaluators that call one")
+    parser.add_argument("--judge-upstream", help="Fixture Judge wrapper URL; never the runtime wrapper")
+    parser.add_argument("--judge-wrapper-evidence", type=Path, help="The inspected Judge wrapper identity record")
+    parser.add_argument(
+        "--judge-wrapper-file", action="append", help="NAME=PATH: where an inspected Judge wrapper file is here"
+    )
     args = parser.parse_args(argv)
     if args.submissions_manifest and args.scenario:
         parser.error("A manifest selects its own scenarios")
     if not args.preflight_only and args.wrapper_evidence is None:
         parser.error("Live dispatch requires --wrapper-evidence")
+    if (args.judge_upstream is None) != (args.judge_wrapper_evidence is None) or (
+        args.judge_wrapper_file and args.judge_wrapper_evidence is None
+    ):
+        parser.error("--judge-upstream and --judge-wrapper-evidence name one inspected Judge wrapper together")
+    if args.judge_upstream and not args.judge_model:
+        parser.error("A Judge endpoint needs an explicit --judge-model")
     try:
         series_ceilings = parse_ceilings(args.series_ceiling)
         wrapper_files = parse_wrapper_files(args.wrapper_file)
+        judge_files = parse_wrapper_files(args.judge_wrapper_file)
         reference = (
             {item.name: item for item in select_tasks(ROOT / "tasks", args.scenario)}
             if not args.submissions_manifest
@@ -312,7 +326,35 @@ def main(argv: list[str] | None = None) -> int:
             judge_calls[name] = policy(benchmark).get("judge_calls", 0)
         judge_total = sum(judge_calls.values())
         require(not judge_total or args.preflight_only or args.judge_model, "Hosted evaluation needs --judge-model")
-        grants = cohort_grants(submissions, benchmarks, args.judge_model)
+        grants, planned = cohort_grants(submissions, benchmarks, args.judge_model)
+        # Every Judge identity and endpoint is settled here, before the first runtime reservation.
+        fixture = {name for name in scenarios if judge_calls[name] and planned[name].get("judge_mode") == "wrapper"}
+        require(
+            not judge_total or not args.judge_model or args.judge_model != host.wrapper_model,
+            "The Judge model must differ from the runtime model",
+        )
+        require(
+            args.preflight_only or not fixture or args.judge_upstream is not None,
+            "A fixture Judge needs --judge-upstream and --judge-wrapper-evidence",
+        )
+        require(
+            all(planned[name].get("judge_model") == args.judge_model for name in fixture),
+            "Planned Judge identity differs from --judge-model",
+        )
+        judge_endpoint = None
+        if args.judge_upstream is not None:
+            require(args.judge_upstream != host.wrapper_url, "The Judge endpoint must not be the runtime wrapper")
+            report["judge_wrapper_identity"] = wrapper_identity(
+                args.judge_wrapper_evidence, args.judge_upstream, args.judge_model, judge_files
+            )
+            report["judge_wrapper_files_relocated"] = sorted(judge_files)
+            shutil.copyfile(args.judge_wrapper_evidence, run.output / "judge-wrapper-identity.json")
+            run.pin("judge wrapper identity", args.judge_wrapper_evidence)
+            judge_endpoint = {
+                "upstream": args.judge_upstream,
+                "inspection": str(args.judge_wrapper_evidence.resolve()),
+                "files": {name: str(path.resolve()) for name, path in judge_files.items()},
+            }
         report["budget"]["cases"] = {f"{s}/{c}": grant["max_attempts"] for (s, c), (grant, _) in grants.items()}
         report["budget"]["judge"] = judge_calls
         needed = sum(report["budget"]["cases"].values()) + judge_total
@@ -487,8 +529,13 @@ def main(argv: list[str] | None = None) -> int:
                     derived = record / "paid-evaluation"
                     report_file = derived / "evaluation/report.json"
                     result_file = derived / "result.json"
+                    composition = (
+                        {"judge": judge_endpoint, "judge_model": args.judge_model} if scenario in fixture else {}
+                    )
                     try:
-                        result = reevaluate_native(record, derived, None, dispatch=True, reservation=reservation)
+                        result = reevaluate_native(
+                            record, derived, None, dispatch=True, reservation=reservation, **composition
+                        )
                     finally:
                         # The evaluator can fail its Judge postcondition after recording acceptance.
                         if result_file.is_file():
@@ -508,7 +555,19 @@ def main(argv: list[str] | None = None) -> int:
                         (result["quality"] or {}).get("status") == "complete",
                         "Judge dispatch incomplete: quality is not complete",
                     )
-                    if fixture_judge.receipt_state(derived / "judge") is not None:
+                    if scenario in fixture:
+                        # The host composed this Judge, so its own receipt check decides; the child's success does not.
+                        assert args.judge_model is not None and args.judge_wrapper_evidence is not None
+                        fixture_judge.require_fresh(
+                            derived / "judge",
+                            ledger.path,
+                            reservation["index"],
+                            reservation["event"],
+                            model=args.judge_model,
+                            inspection=args.judge_wrapper_evidence,
+                            quality=result["quality"],
+                        )
+                    elif fixture_judge.receipt_state(derived / "judge") is not None:
                         # A fixture receipt must prove one fresh dispatch for this host event, not another's.
                         fixture_judge.dispatch_outcome(
                             derived / "judge", ledger.path, reservation["index"], reservation["event"]

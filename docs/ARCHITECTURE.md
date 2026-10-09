@@ -108,6 +108,13 @@ before judge reservation. Ambiguous runtime or judge timeout remains unknown and
 blocks subsequent spending. A host-reserved judge forwards its exact pending event
 to the task process without reserving a second call.
 
+A fixture task's trusted composition root supplies `coordinate/fixture_judge.py` to
+native evaluation; its evaluator receives only the Judge, never the host-owned endpoint,
+and the native verifier records Judge identity without constructing one. Whichever
+host command composed fresh fixture judging verifies the durable receipt against its
+own reservation, model and inspection, and the quality against that reply, instead
+of trusting the task process's success.
+
 ## Evaluation and historical reads
 
 `evaluate/records.py` validates execution, acceptance and optional quality separately.

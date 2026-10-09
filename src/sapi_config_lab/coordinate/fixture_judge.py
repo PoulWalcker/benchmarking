@@ -140,13 +140,28 @@ def skip(directory: Path, reason: str) -> None:
         durable_json(directory / "receipt.json", {**receipt, "state": "skipped", "failure": reason})
 
 
-def dispatch_outcome(directory: Path, ledger: Path, index: int, event: dict) -> dict[str, Any]:
-    """Prove one fresh dispatch for this reservation completed, from its durable artifacts alone."""
+def dispatch_outcome(
+    directory: Path,
+    ledger: Path,
+    index: int,
+    event: dict,
+    *,
+    model: str | None = None,
+    inspection_sha256: str | None = None,
+) -> dict[str, Any]:
+    """Prove one fresh dispatch for this reservation completed, from its durable artifacts alone.
+
+    A given `model` or `inspection_sha256` is the caller's own expectation, never the receipt's.
+    """
     receipt = _read_receipt(directory)
     if receipt.get("state") in UNSETTLED:
         raise _unknown(directory)
     if receipt.get("origin") != "fresh" or receipt.get("reservation") != _stamp(ledger, index, event):
         raise ValueError("Judge receipt is not a fresh dispatch for this reservation")
+    if (model is not None and receipt.get("expected_model") != model) or (
+        inspection_sha256 is not None and receipt.get("wrapper_inspection_digest") != inspection_sha256
+    ):
+        raise ValueError("Judge receipt is for another model or wrapper inspection")
     if receipt.get("state") != "completed":
         raise ValueError(f"Judge invocation {receipt.get('state')}: {receipt.get('failure')}")
     context = _strict_json((directory / "context.json").read_bytes())
@@ -160,6 +175,42 @@ def dispatch_outcome(directory: Path, ledger: Path, index: int, event: dict) -> 
         "receipt_sha256": _sha((directory / "receipt.json").read_bytes()),
         "artifacts": {name: _sha((directory / name).read_bytes()) for name in names},
     }
+
+
+def require_fresh(
+    directory: Path, ledger: Path, index: int, event: dict, *, model: str, inspection: Path, quality: Any
+) -> dict[str, Any]:
+    """A host's own proof that the fresh judging it requested produced exactly this quality.
+
+    The task process's success is not evidence: a missing, saved, mocked, substituted or
+    foreign receipt, or quality scored from another reply, fails here.
+    """
+    if receipt_state(directory) is None:
+        raise ValueError("Requested fresh Judge left no receipt")
+    try:
+        proof = dispatch_outcome(
+            directory, ledger, index, event, model=model, inspection_sha256=_sha(inspection.read_bytes())
+        )
+    except OSError as error:
+        raise ValueError("Fresh Judge artifacts missing") from error
+    judged = quality.get("judge") if isinstance(quality, dict) else None
+    if (
+        not isinstance(judged, dict)
+        or quality.get("status") != "complete"
+        or judged.get("model") != model
+        or judged.get("response_digest") != proof["artifacts"]["response.txt"]
+    ):
+        raise ValueError("Judge quality is not the verified fresh reply")
+    return proof
+
+
+def saved_model(bundle: Path) -> str:
+    """The Judge identity that answered a saved bundle; its replay verifies every other byte."""
+    context = _strict_json((bundle / "context.json").read_bytes())
+    model = context.get("requested_model") if isinstance(context, dict) else None
+    if not isinstance(model, str) or not model:
+        raise ValueError("Saved Judge identity missing")
+    return model
 
 
 def _verify_artifacts(directory: Path, context: dict[str, Any]) -> None:
@@ -239,7 +290,7 @@ class FixtureJudge:
         bundle: Path,
         native_identity: bytes | dict[str, Any],
         card: RubricCard,
-        model: str,
+        model: str | None,
         *,
         origin: str,
         response: Callable[[str], bytes] | None = None,
@@ -302,16 +353,19 @@ class FixtureJudge:
         directory: Path,
         native_identity: bytes | dict[str, Any],
         card: RubricCard,
-        model: str,
+        model: str | None,
         *,
         reserved: Callable[[Callable[[], dict]], Any],
         transport: Callable[..., Any],
-        upstream: str,
-        inspection: Path,
+        upstream: str | None,
+        inspection: Path | None,
         wrapper_files: dict[str, Path] | None = None,
         timeout: float = JUDGE_TIMEOUT_SECONDS,
     ) -> FixtureJudge:
-        """Dispatch at most one request through the inspected wrapper inside its one-use reservation."""
+        """Dispatch at most one request through the inspected wrapper inside its one-use reservation.
+
+        A missing model, endpoint or inspection refuses here, before any reservation exists.
+        """
         return cls(
             directory,
             native_identity,

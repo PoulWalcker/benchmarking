@@ -39,6 +39,11 @@ def validate_record(record: Path, task: Path, sources: dict) -> dict:
         or ("native_mode" in options and options["native_mode"] not in {"control", "admission", "live"})
     ):
         raise ValueError("Invalid native recorded runtime options")
+    judge = (options.get("judge_mode"), options.get("judge_model"))
+    if ("judge_mode" in options or "judge_model" in options) and not (
+        judge == ("demo", None) or (judge[0] in {"codex", "wrapper"} and isinstance(judge[1], str) and judge[1].strip())
+    ):
+        raise ValueError("Invalid native recorded Judge identity")
     submission = record / "evidence/submission.yaml"
     actual = sha256(submission) if submission.is_file() else None
     if "submission_sha256" not in metadata or actual != metadata["submission_sha256"]:
@@ -51,11 +56,57 @@ def validate_record(record: Path, task: Path, sources: dict) -> dict:
     return metadata
 
 
+def _judge_endpoint(value: object) -> dict | None:
+    """The host-owned Judge wrapper a fixture dispatch may use; never native configuration."""
+    if value is None:
+        return None
+    if (
+        not isinstance(value, dict)
+        or set(value) != {"upstream", "inspection", "files"}
+        or not isinstance(value["upstream"], str)
+        or not value["upstream"]
+        or not isinstance(value["inspection"], str)
+        or not isinstance(value["files"], dict)
+        or not all(isinstance(name, str) and isinstance(path, str) for name, path in value["files"].items())
+    ):
+        raise ValueError("Invalid Judge endpoint")
+    return {
+        "upstream": value["upstream"],
+        "inspection": Path(value["inspection"]),
+        "wrapper_files": {name: Path(path) for name, path in value["files"].items()},
+    }
+
+
+def _resolve_judge(options: dict, recorded: dict, request: dict, *, composed: bool) -> None:
+    """Bind the derived Judge identity: a frozen one is never overridden and the runtime model never fills in."""
+    if request.get("calibration"):
+        return
+    named, frozen = request.get("judge_model"), recorded.get("judge_model")
+    if named is not None and frozen is not None and named != frozen:
+        raise ValueError("The recorded Judge model is frozen and cannot be overridden")
+    if not composed:
+        if named is not None and frozen is None:
+            raise ValueError("This task composes no Judge for an explicitly named model")
+        return
+    if request.get("judgement"):
+        answered = fixture_judge.saved_model(Path(request["judgement"]))
+        if any(model not in (None, answered) for model in (named, frozen)):
+            raise ValueError("The saved Judge identity differs from the requested or recorded Judge")
+        named = answered
+    model = frozen or named
+    if model is not None:
+        if options.get("judge_mode", "wrapper") != "wrapper":
+            raise ValueError("A fixture Judge dispatches only through the inspected wrapper")
+        # Derived options only; the native record and its options digest stay unchanged.
+        options.update(judge_mode="wrapper", judge_model=model)
+
+
 def evaluate_record(task: Path, evaluator: Callable, request: dict, *, judge_factory: Callable | None = None) -> dict:
     """Task-owned composition calls its evaluator with the original reservation rules.
 
     An explicit `judge_factory` builds the Judge from the one-use reservation callback and the
     stronger fixture receipt contract applies; without one the evaluator receives the callback.
+    For a saved judgement the same factory receives `saved` instead and nothing is reserved.
     """
     record, output = Path(request["record"]).resolve(), Path(request["output"]).resolve()
     sources = source_manifest()
@@ -83,10 +134,15 @@ def evaluate_record(task: Path, evaluator: Callable, request: dict, *, judge_fac
     cost = policy(task).get("judge_calls", 0)
     if (options["dispatch"] or request.get("calibration") or request.get("judgement")) and not cost:
         raise ValueError("This task has no semantic judge")
+    endpoint = _judge_endpoint(request.get("judge"))
+    if endpoint is not None and (judge_factory is None or not options["dispatch"]):
+        raise ValueError("A Judge endpoint needs a requested dispatch by a task that composes a fixture Judge")
+    _resolve_judge(options, metadata["options"], request, composed=judge_factory is not None)
     consumed = False
     duplicate = False
     work_complete = False
     receipts = output / "judge" if judge_factory is not None and options["dispatch"] else None
+    saved = Path(request["judgement"]) if judge_factory is not None and request.get("judgement") else None
 
     def settle(call: Callable, ledger: Path, index: int, event: dict) -> dict:
         if receipts is None:
@@ -95,7 +151,14 @@ def evaluate_record(task: Path, evaluator: Callable, request: dict, *, judge_fac
         with fixture_judge.unknown_while_unsettled(receipts):
             call()
         # The receipt and its artifacts, not the call's return value, prove what was dispatched.
-        return fixture_judge.dispatch_outcome(receipts, ledger, index, event)
+        return fixture_judge.dispatch_outcome(
+            receipts,
+            ledger,
+            index,
+            event,
+            model=options.get("judge_model"),
+            inspection_sha256=sha256(endpoint["inspection"]) if endpoint else None,
+        )
 
     def reserved(call: Callable) -> dict:
         nonlocal consumed, duplicate, work_complete
@@ -134,7 +197,24 @@ def evaluate_record(task: Path, evaluator: Callable, request: dict, *, judge_fac
     if options["dispatch"] and receipts is None:
         options["reserved_judge"] = reserved
     output.mkdir(parents=True, exist_ok=False)
-    if receipts is None:
+    if saved is not None:
+        assert judge_factory is not None
+        (output / "judge").mkdir()
+        # A saved Judge replays `saved` exactly and writes only its replay receipt into `directory`.
+        replay = judge_factory(
+            directory=output / "judge",
+            native_identity=(record / "native-task.json").read_bytes(),
+            options=dict(options),
+            saved=saved,
+        )
+        returned = evaluator(record / "evidence", options, judge=replay)
+        if (
+            isinstance(returned, dict)
+            and (returned.get("quality") or {}).get("status") == "complete"
+            and not (output / "judge/replay-receipt.json").is_file()
+        ):
+            raise ValueError("Saved Judge quality without a replay")
+    elif receipts is None:
         returned = evaluator(record / "evidence", options)
     else:
         assert judge_factory is not None
@@ -143,6 +223,7 @@ def evaluate_record(task: Path, evaluator: Callable, request: dict, *, judge_fac
             native_identity=(record / "native-task.json").read_bytes(),
             options=dict(options),
             reserved=reserved,
+            wrapper=endpoint or {"upstream": None, "inspection": None, "wrapper_files": None},
         )
         if fixture_judge.receipt_state(receipts) != "not_dispatched":
             raise ValueError("Judge factory must initialize an undispatched fresh receipt")

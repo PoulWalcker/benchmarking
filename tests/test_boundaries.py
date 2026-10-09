@@ -121,6 +121,18 @@ class StageBoundaryTests(unittest.TestCase):
     def test_imports_follow_stage_rules(self):
         self.assertEqual(self.violations(), set(), "Cross-stage import; see docs/ARCHITECTURE.md")
 
+    def test_the_fixture_judge_adapter_is_reachable_only_from_coordination_and_composition_roots(self):
+        self.assertEqual(stage_of("coordinate.fixture_judge"), "coordinate")
+        importers = {
+            module
+            for module, path, verifier in modules()
+            if "coordinate.fixture_judge" in imported(path, module, verifier)
+        }
+        self.assertTrue(importers)
+        self.assertEqual({stage_of(module) for module in importers} - {"coordinate", "native_coordinate"}, set())
+        for stage in (SHARED, "execute", "evaluate", "verification", "benchmark_domain"):
+            self.assertNotIn("coordinate", ALLOWED[stage], stage)
+
     def test_dynamic_imports_have_explicit_boundaries(self):
         # The selected benchmark loader is the only neutral dynamic-import seam.
         for module, path, _ in modules():

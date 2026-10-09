@@ -150,12 +150,21 @@ bind operation and occurrence, and evidence/audit reconciliation checks the exac
 compiled graph, cases and request/completion/response identities. Runtime reservation
 closes before judging; a host reservation is forwarded without double accounting.
 
+A task whose plan freezes `judge_mode: wrapper` (Research Report) is judged by the
+host fixture Judge. It needs `--judge-upstream URL --judge-wrapper-evidence
+<judge-identity.json>`, plus `--judge-wrapper-file NAME=PATH` for relocated files.
+Before any reservation, the Judge model must differ from the runtime model, the
+endpoint from the runtime wrapper, and the separate inspection must bind both.
+
 ## Current offline evaluation
 
 ```bash
 uv run --locked sapi-lab evaluate --record <trial>/verifier --output <new-directory>
 uv run --locked sapi-lab evaluate --record <trial>/verifier --output <new-directory> \
   --judgement <saved-reply.json>
+uv run --locked sapi-lab evaluate --record <trial>/verifier --output <new-directory> \
+  --dispatch-judge --judge-model <model> --judge-upstream <url> \
+  --judge-wrapper-evidence <judge-identity.json> [--judge-wrapper-file NAME=PATH]
 ```
 
 The current task evaluator reads frozen evidence; it never starts n8n or a world.
@@ -165,6 +174,14 @@ judge reply with matching contract/run identity. Fresh judging requires explicit
 `--dispatch-judge`; calibration additionally requires `--calibration CASE
 --judge-model MODEL`. Shared-series options preserve existing source-bound budgets.
 An actual judge timeout leaves the reservation unknown and blocks retry.
+
+Eligibility is the task's `judge_calls` policy plus its explicit composition. A Judge
+endpoint is refused by a task that composes no fixture Judge. `--judge-model` must
+equal a frozen native Judge identity; for an identity-free record it names the Judge
+in derived evidence only, never by runtime-model fallback. `--judgement <bundle>`
+replays a fixture bundle offline under the identity it was answered by. With any
+requested judging, the command exits nonzero unless acceptance holds and quality is
+complete; a failed or unknown Judge still prints the recorded acceptance.
 
 Original Harbor result/reward and execution evidence stay untouched. Derived judged
 results live beside them and remain explicitly associated with the trial. Source

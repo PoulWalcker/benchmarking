@@ -247,6 +247,16 @@ class NativeEvaluationTests(unittest.TestCase):
         for deadline in (0, -1, True):
             options = {**original["options"], "deadline_seconds": deadline}
             mutations.append({**original, "options": options, "options_sha256": digest(options)})
+        for judge in (
+            {"judge_mode": "fixture", "judge_model": "judge-sol"},
+            {"judge_mode": "wrapper", "judge_model": None},
+            {"judge_mode": "wrapper"},
+            {"judge_mode": "codex", "judge_model": " "},
+            {"judge_mode": "codex", "judge_model": 7},
+            {"judge_model": "judge-sol"},
+        ):
+            options = {**original["options"], **judge}
+            mutations.append({**original, "options": options, "options_sha256": digest(options)})
         with patch("sapi_config_lab.coordinate.native_evaluation.invoke") as call:
             for index, metadata in enumerate(mutations):
                 write_json(path, metadata)

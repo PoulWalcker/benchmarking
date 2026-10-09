@@ -1,10 +1,12 @@
 """Offline fixture Judge at the public Judge Interface."""
 
+import contextlib
 from dataclasses import replace
 from functools import partial
 import hashlib
 from http.client import RemoteDisconnected
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import io
 import json
 from pathlib import Path
 import shutil
@@ -765,3 +767,96 @@ class FreshDispatchTests(unittest.TestCase):
         )
         assert refused is not None
         self.assertEqual((refused["status"], refused["score_0_10"]), ("judge_failed", None))
+
+
+def scored_evaluator(evidence, options, *, judge):
+    """Like a verifier-backed task: quality is the full rubric document, including its Judge attribution."""
+    result = rubric_evaluator(evidence, options, judge=judge)
+    return {**result, "quality": json.loads((Path(options["evaluation"]) / "evaluation.json").read_text())}
+
+
+class HostReceiptProofTests(unittest.TestCase):
+    """`sapi-lab evaluate` proves requested fresh judging itself; the task process's success is not evidence."""
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.record, self.inspection = judge_world(self.root)
+        self.native = (self.record / "native-task.json").read_bytes()
+
+    def child(self, fault):
+        """The task composition in-process, then the fault a lying or substituted child would leave behind."""
+
+        def run(record, output, judgement, **options):
+            request = {"record": str(record), "output": str(output), "dispatch": True, **options}
+            if fault == "no-dispatch":
+                output.mkdir()
+                return {
+                    "execution": True,
+                    "acceptance": True,
+                    "quality": {
+                        "status": "complete",
+                        "score_0_10": 10,
+                        "normalized_reward": 1,
+                        "judge": {"model": MODEL},
+                    },
+                }
+            result = evaluate_record(
+                TASK, scored_evaluator, request, judge_factory=fresh_factory(self.inspection, valid_wrapper)
+            )
+            judged = output / "judge"
+            if fault == "deleted-receipt":
+                (judged / "receipt.json").unlink()
+            elif fault == "deleted-response":
+                (judged / "response.txt").unlink()
+            elif fault == "mocked":
+                shutil.rmtree(judged)
+                FixtureJudge.mock(judged, self.native, CARD, MODEL, answer).judge(REQUEST)
+            elif fault == "saved":
+                earlier = self.root / "earlier"
+                evaluate_record(
+                    TASK,
+                    scored_evaluator,
+                    {**request, "output": str(earlier)},
+                    judge_factory=fresh_factory(self.inspection, valid_wrapper),
+                )
+                shutil.rmtree(judged)
+                shutil.copytree(earlier / "judge", judged)
+            elif fault == "other-quality":
+                result["quality"] = {
+                    **result["quality"],
+                    "judge": {**result["quality"]["judge"], "response_digest": "0" * 64},
+                }
+            return result
+
+        return run
+
+    def evaluate(self, fault, name):
+        from sapi_config_lab.coordinate.evaluation import main
+
+        arguments = ["--record", str(self.record), "--output", str(self.root / name), "--dispatch-judge"]
+        arguments += [
+            "--judge-model",
+            MODEL,
+            "--judge-upstream",
+            UPSTREAM,
+            "--judge-wrapper-evidence",
+            str(self.inspection),
+        ]
+        printed = io.StringIO()
+        with (
+            patch("sapi_config_lab.coordinate.native_evaluation.reevaluate_native", side_effect=self.child(fault)),
+            contextlib.redirect_stdout(printed),
+        ):
+            code = main(arguments)
+        return code, json.loads(printed.getvalue())
+
+    def test_only_a_verified_fresh_receipt_for_this_command_lets_requested_judging_succeed(self):
+        code, result = self.evaluate(None, "honest")
+        self.assertEqual((code, result["quality"]["status"]), (0, "complete"))
+        for fault in ("no-dispatch", "deleted-receipt", "deleted-response", "mocked", "saved", "other-quality"):
+            with self.subTest(fault=fault):
+                code, printed = self.evaluate(fault, fault)
+                self.assertEqual((code, printed["judge"]), (1, "failed"))
+        self.assertEqual((self.record / "native-task.json").read_bytes(), self.native)
