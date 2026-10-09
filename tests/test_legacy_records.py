@@ -98,6 +98,21 @@ for row in json.loads((root / "historical-files.json").read_text()):
                     evaluation.main(["--record", str(record), "--output", str(root / "derived")])
                 self.assertEqual(inventory(record), before)
 
+    def test_embedded_results_survive_report_relocation_without_trial_files(self):
+        original = (BASELINE / "control-report.json").read_bytes()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            path = root / "report.json"
+            path.write_bytes(original)
+            document = json.loads(original)
+            for group in ("oracle", "nop"):
+                for trial in document[group]["trials"]:
+                    with self.subTest(group=group, task=trial["task_name"]):
+                        self.assertEqual(trial_result(trial, root=root), trial["result"])
+            view = read_report(path, root=root)
+            self.assertEqual(view["recorded"], document)
+            self.assertEqual(path.read_bytes(), original)
+
     def test_relative_and_old_absolute_associations_resolve_after_run_relocation(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

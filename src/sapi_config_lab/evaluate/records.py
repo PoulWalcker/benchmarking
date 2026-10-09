@@ -86,6 +86,9 @@ def trial_result(trial: dict, *, root: Path | None = None) -> dict:
         return acceptance["result"]
     if acceptance.get("schema") == ADMISSION_REPORT:
         return dict(NOT_EVALUATED)
+    # Historical summaries retain facts even when the original trial files are unavailable.
+    if trial.get("result") is not None:
+        return validate_result(trial["result"])
     rubric = recorded_path(trial["result_path"], root).parent / "verifier/evaluation/evaluation.json"
     return verifier_result(acceptance, json.loads(rubric.read_text()) if rubric.exists() else None)
 
