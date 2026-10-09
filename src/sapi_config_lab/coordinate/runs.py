@@ -8,14 +8,11 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 import json
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 from typing import Any
 
-from sapi_config_lab.benchmark import Benchmark
 from sapi_config_lab.coordinate.native_tasks import image_tags
-from sapi_config_lab.coordinate.packages import UPLOAD_ONLY_AGENTS, stage_tasks, verifier_bounds
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.evaluate.records import load_trials as load_trials
 from sapi_config_lab.evaluate.records import trial_seconds as trial_seconds
@@ -27,9 +24,8 @@ from sapi_config_lab.execute.host import (
     image_id,
     pin_base_image,
     running_containers,
-    staging_dir,
 )
-from sapi_config_lab.harbor_integration.runner import job_args, run_job
+from sapi_config_lab.harbor_integration.runner import UPLOAD_ONLY_AGENTS, job_args, run_job
 from sapi_config_lab.paths import workspace_root
 
 
@@ -45,10 +41,6 @@ def progress(message: str) -> None:
     print(message, file=sys.stderr, flush=True)
 
 
-def task_dirs(tasks: Path) -> list[Path]:
-    return [tasks] if (tasks / "task.toml").is_file() else sorted(path for path in tasks.iterdir() if path.is_dir())
-
-
 @dataclass
 class Run:
     output: Path
@@ -59,11 +51,8 @@ class Run:
     harbor_argv: list[str] = field(default_factory=list)
     identity: str | None = None
     image: str | None = None
-    staging: Path | None = None
     bridge_process: subprocess.Popen | None = None
     pinned: dict[str, tuple[Path, dict[str, str]]] = field(default_factory=dict)
-    bounds: dict[str, int] = field(default_factory=dict)
-    benchmarks: tuple[Benchmark, ...] = ()
     native_tasks: tuple[Path, ...] = ()
     native_images: dict[str, str] = field(default_factory=dict)
 
@@ -101,12 +90,6 @@ class Run:
         write_json(self.output / "native-inputs.json", {task.name: fingerprint(task) for task in tasks})
         self.pin("native inputs", self.output / "native-inputs.json")
 
-    @property
-    def tasks(self) -> Path:
-        if self.staging is None:
-            raise RuntimeError("No task packages were staged")
-        return self.staging / "tasks"
-
     def use_image(self, tag: str) -> str:
         """Pin the content identity behind `tag` under a run-specific tag."""
         self.identity = image_id(tag)
@@ -114,25 +97,12 @@ class Run:
         self.report.update(image_id=self.identity, frozen_image=self.image)
         return self.identity
 
-    def stage(self, mode: str, benchmarks: tuple[Benchmark, ...], **inputs: Any) -> dict:
-        """Stage task packages from the pinned image and keep a copy beside the report."""
-        if self.image is None:
-            raise RuntimeError("Pin an image before staging task packages")
-        self.staging = staging_dir(self.prefix + "-", self.host)
-        self.benchmarks = benchmarks
-        prompts = stage_tasks(self.tasks, root=workspace_root(), mode=mode, benchmarks=benchmarks, **inputs)
-        self.bounds = verifier_bounds(benchmarks, mode, inputs.get("submissions"), inputs.get("cases"))
-        shutil.copytree(self.tasks, self.output / "task-packages")
-        self.pin("task-packages", self.output / "task-packages")
-        write_json(self.output / "task-package-hashes.json", self.pinned["task-packages"][1])
-        return prompts
-
     def pin(self, name: str, path: Path) -> None:
         """Record bytes that must not change for the rest of the run."""
         self.pinned[name] = (path, fingerprint(path))
 
     def check(self, phase: str) -> None:
-        """Sources, image, staged packages and every pinned input are as recorded."""
+        """Sources, images, selected tasks and every pinned input are as recorded."""
         if source_manifest() != self.sources:
             raise RuntimeError(f"Sources changed ({phase})")
         if self.identity is not None and image_id(self.image or "") != self.identity:
@@ -142,12 +112,6 @@ class Run:
         for name, (path, recorded) in self.pinned.items():
             if fingerprint(path) != recorded:
                 raise RuntimeError(f"Pinned {name} changed ({phase})")
-        if (
-            self.staging is not None
-            and "task-packages" in self.pinned
-            and fingerprint(self.tasks) != self.pinned["task-packages"][1]
-        ):
-            raise RuntimeError(f"Staged task packages changed ({phase})")
         self.report.setdefault("phases", []).append({"phase": phase, "unchanged": True})
 
     def harbor(
@@ -160,32 +124,14 @@ class Run:
         **arguments: Any,
     ) -> tuple[int, list[dict]]:
         """Submit declared native packages durably under Harbor phase limits."""
-        if self.native_tasks:
-            if tasks not in self.native_tasks:
-                raise ValueError("Only a selected native task can be dispatched")
-            if int(arguments.get("attempts") or 1) != 1:
-                raise ValueError("Native execution requires one attempt per fresh environment")
-        elif self.staging is None:
-            raise RuntimeError("No task packages were staged")
+        if tasks not in self.native_tasks:
+            raise ValueError("Only a selected native task can be dispatched")
+        if int(arguments.get("attempts") or 1) != 1:
+            raise ValueError("Native execution requires one attempt per fresh environment")
         if agent not in UPLOAD_ONLY_AGENTS:
             raise RuntimeError(f"Agent {agent} may run commands beside the shared verifier environment")
-        names = [task.name for task in task_dirs(tasks)]
-        if (
-            not admission
-            and any("prepare" in item.entrypoints for item in self.benchmarks if item.name in names)
-            and int(arguments.get("attempts") or 1) != 1
-        ):
-            raise ValueError("Hosted execution requires exactly one attempt per fresh environment")
-        if not self.native_tasks and not set(names) <= set(self.bounds):
-            raise RuntimeError(
-                "Tasks this run did not stage have no time bound: " + ", ".join(sorted(set(names) - set(self.bounds)))
-            )
         if admission:
-            # Each worker selects world admission or fixture replay from its declared hooks.
             arguments["verifier_env"] = [*arguments.get("verifier_env", []), "SAPI_HOSTED_ADMISSION=1"]
-        native = bool(self.native_tasks) or all((task / "tests/benchmark.json").is_file() for task in task_dirs(tasks))
-        if not native:
-            raise ValueError("Only declared native benchmark packages are supported")
         self.check("before " + job)
         dispatched = self.report.setdefault("harbor_jobs", {})
         if job in dispatched:
@@ -198,9 +144,26 @@ class Run:
             code = run_job(self.harbor_argv, tasks, jobs, job, agent, self.output / (job + ".log"), **arguments)
             dispatched[job]["exit_code"] = code
             dispatched[job]["status"] = "finished"
-            return code, load_trials(jobs / job)
         finally:
-            dispatched[job]["trials"] = load_trials(jobs / job)
+            trials = load_trials(jobs / job)
+            dispatched[job]["trials"] = [
+                {
+                    key: row[key]
+                    for key in (
+                        "task_name",
+                        "trial_id",
+                        "trial_path",
+                        "result_path",
+                        "verdict_path",
+                        "evidence_path",
+                        "evaluation_path",
+                        "partial",
+                    )
+                    if key in row
+                }
+                for row in trials
+            ]
+        return code, trials
 
     def transport(self, task: Path, *, skip_build: bool = False) -> int:
         """Run the trusted transport control with native Harbor phase limits."""
@@ -257,15 +220,6 @@ class Run:
                 )
                 self.report["status"] = "failed"
 
-        def collect() -> None:
-            if self.staging is None or not self.staging.exists():
-                return
-            try:
-                shutil.rmtree(self.staging)
-            except OSError:
-                self.report["retained_staging"] = str(self.staging)
-                raise
-
         def containers() -> None:
             before = (self.output / "existing-containers.txt").read_text().splitlines()
             after = running_containers()
@@ -282,7 +236,6 @@ class Run:
         cleanup("bridge_stop", lambda: stop_bridge(self.bridge_process))
         cleanup("source_manifest", unchanged_sources)
         cleanup("final_check", lambda: self.check("final"))
-        cleanup("staging_remove", collect)
         cleanup("containers", containers)
         self.report["finished_at"] = datetime.now(UTC).isoformat()
         write_json(self.output / "report.json", self.report)

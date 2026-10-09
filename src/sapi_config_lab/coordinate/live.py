@@ -19,7 +19,6 @@ from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, NOT_EVALUATE
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.live_evidence import collect_native, reconcile_dispatches
 from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
-from sapi_config_lab.coordinate.packages import REPLAY_AGENT
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.replay import load_selection, read_json, require
 from sapi_config_lab.coordinate.runs import Run, progress, run_experiment
@@ -27,6 +26,7 @@ from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_iden
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.agency import strict_json
 from sapi_config_lab.execute.host import LAB_IMAGE, HostConfig
+from sapi_config_lab.harbor_integration.runner import REPLAY_AGENT
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import read
 
@@ -61,16 +61,6 @@ def validate_control(path: Path, current: dict[str, str], identity: str, *, nati
             "Control report native image mismatch",
         )
     return gate
-
-
-def validate_packages(path: Path, submissions: dict, benchmarks: dict):
-    from sapi_config_lab.coordinate.benchmark_packages import validate_selected
-    from sapi_config_lab.coordinate.packages import selected_cases
-
-    for name, selected in submissions.items():
-        benchmark = benchmarks[name]
-        cases = selected.get("cases", selected_cases(benchmark))
-        validate_selected(benchmark, path / name, ROOT, {**selected, "cases": cases})
 
 
 def runtime_grant_seconds(task: Path) -> int:
@@ -501,7 +491,6 @@ def main(argv: list[str] | None = None) -> int:
                         trial["exception"] = None
                     trial["result"] = result
                     trial["verdict_path"] = str(record / "paid-evaluation/result.json")
-                    write_json(Path(trial["verdict_path"]), result)
                     report_file = record / "paid-evaluation/evaluation/report.json"
                     trial["acceptance"] = json.loads(report_file.read_text()) if report_file.exists() else None
                     trial["evaluation_path"] = str(record / "paid-evaluation/evaluation/report.json")

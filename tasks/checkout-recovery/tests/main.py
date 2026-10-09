@@ -16,8 +16,8 @@ import yaml
 
 from sapi_config_lab.contracts import CompileOptions, OutputArtifact
 from sapi_config_lab.coordinate.backend import N8nBackend
-from sapi_config_lab.coordinate.benchmark_worker import admit, run_task
 from sapi_config_lab.coordinate.native_record import record
+from sapi_config_lab.coordinate.task_worker import admit, run_task
 from sapi_config_lab.evaluate.records import NOT_EVALUATED, validate_result
 from sapi_config_lab.evidence import write_json
 from sapi_config_lab.execute.agency import make_handler

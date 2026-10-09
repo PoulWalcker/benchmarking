@@ -6,6 +6,10 @@ import subprocess
 
 from sapi_config_lab.paths import workspace_root
 
+AUTHOR_AGENT = "sapi_config_lab.harbor_integration.yaml_agent:WrapperYamlAgent"
+REPLAY_AGENT = "sapi_config_lab.harbor_integration.yaml_agent:ReplayYamlAgent"
+UPLOAD_ONLY_AGENTS = frozenset({"oracle", "nop", AUTHOR_AGENT, REPLAY_AGENT})
+
 
 def job_args(
     harbor: Sequence[str],
@@ -47,7 +51,7 @@ def run_job(
     verifier_env: Sequence[str] = (),
 ) -> int:
     """Dispatch once with native phase limits and no aggregate watchdog or output copy."""
-    from sapi_config_lab.harbor_integration.tasks import validate_config
+    from sapi_config_lab.harbor_integration.task_config import validate_config
 
     if Path(job_name).name != job_name or job_name in {"", ".", ".."}:
         raise ValueError("Job name must be a basename")

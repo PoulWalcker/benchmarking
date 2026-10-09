@@ -2,7 +2,7 @@
 
 Read this file first, then only the document the change needs:
 
-- ownership, benchmark loading, runs or evidence -> `docs/ARCHITECTURE.md`
+- ownership, native tasks, runs or evidence -> `docs/ARCHITECTURE.md`
 - commands, configuration or adding a benchmark -> `docs/DEVELOPMENT.md`
 - YAML semantics -> `docs/PROFILE.md`
 - independent verifier contracts -> `verification/README.md`
@@ -22,14 +22,13 @@ adapts tasks to external Harbor 0.21.0, which owns trial infrastructure.
 | Concern | Location | Rule |
 | --- | --- | --- |
 | Shared contracts | `src/sapi_config_lab/*.py` | backend-neutral; imports no stage |
-| Author | `author/` | produces definitions only |
 | Compile | `compile/` | artifacts only: no execution, no verdicts |
 | Execute | `execute/` | runs artifacts, records engine evidence; owns host tools and `HostConfig` |
 | Evaluate | `evaluate/` | scores recorded evidence; never reruns |
-| Coordinate | `coordinate/` | orchestration; nothing imports it |
+| Coordinate | `coordinate/` | orchestration; task composition roots may call it |
 | Verifier | `verification/` | generic independent evidence checks with explicit callbacks; imports only itself |
-| Integration | `harbor_integration/` | task translation and invocation; only it imports Harbor |
-| Tasks | `tasks/<name>/` | Own domain assets and native Harbor configuration; current experiment descriptors declare their public/trusted/reference closure |
+| Integration | `harbor_integration/` | native invocation and YAML transfer; only it imports Harbor |
+| Tasks | `tasks/<name>/` | Own domain assets, native Harbor configuration and explicit composition roots |
 
 `tests/test_boundaries.py` enforces import direction; change it together with `docs/ARCHITECTURE.md` when a boundary intentionally moves.
 
@@ -38,7 +37,7 @@ adapts tasks to external Harbor 0.21.0, which owns trial infrastructure.
 - Execution, acceptance and quality stay separate facts; `not_evaluated` is null, never zero.
 - Evaluation reads recorded evidence; evidence is written once and derived files sit beside it.
 - Candidates receive declared public material. Trusted evaluator/world code and private fixtures belong to the verifier; references belong to oracle solutions.
-- Select descriptors and trusted entrypoints explicitly; benchmark configuration stays opaque to generic core mechanisms.
+- Select native task directories and fixed trusted composition roots; keep domain rules in their task.
 - Machine-specific values come from `HostConfig` (`SAPI_*`) or CLI options; reproducibility pins live beside their owner.
 - Model calls are reserved in the ledger before dispatch, live dispatch fails closed on any identity or source mismatch, and oracle/nop controls gate paid work.
 - A shared helper needs two real callers; a second backend precedes any registry or abstract base.

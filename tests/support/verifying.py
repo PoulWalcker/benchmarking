@@ -1,6 +1,6 @@
 """Plan, observe and evaluate in one call, with an injected runner.
 
-The container runs these as three processes (harbor/templates/test.sh). Tests
+Native task composition calls these as separate stages. Tests
 compose them here so a fake runner can stand in for n8n; the verifier itself
 never receives the runner.
 """

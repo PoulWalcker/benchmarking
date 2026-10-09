@@ -5,9 +5,9 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.evaluation import control_passed
 from sapi_config_lab.coordinate.live import check_trials
+from sapi_config_lab.coordinate.native_tasks import policy, select_tasks
 from sapi_config_lab.evaluate.records import NOT_EVALUATED, load_trials, read_report, trial_accepted, trial_result
 from sapi_config_lab.evidence import sha256
 from sapi_config_lab.paths import workspace_root
@@ -27,7 +27,7 @@ class NormalizedRecordTests(unittest.TestCase):
         }
         (self.verifier.parent / "result.json").write_text(json.dumps(self.native))
         (self.verifier / "benchmark.json").write_text("{}")
-        self.benchmark = select_benchmarks(workspace_root() / "tasks", ("invoice-total",))[0]
+        self.benchmark = select_tasks(workspace_root() / "tasks", ("invoice-total",))[0]
 
     def test_normalized_only_verdict_reaches_actual_control_reader(self):
         verdict = {"execution": True, "acceptance": True, "quality": None}
@@ -35,7 +35,9 @@ class NormalizedRecordTests(unittest.TestCase):
         trial = load_trials(self.job)[0]
         self.assertEqual(trial["result"], verdict)
         self.assertTrue(trial_accepted(trial))
-        self.assertTrue(control_passed("oracle", trial, self.benchmark))
+        self.assertTrue(
+            control_passed("oracle", trial, reference_reward=policy(self.benchmark).get("reference_reward"))
+        )
         self.assertEqual(trial["rewards"], self.native["verifier_result"]["rewards"])
         self.assertEqual(trial["exception"], self.native["exception_info"])
 
@@ -58,7 +60,9 @@ class NormalizedRecordTests(unittest.TestCase):
         trial = load_trials(self.job)[0]
         self.assertEqual(trial["result"], NOT_EVALUATED)
         self.assertFalse(trial_accepted(trial))
-        self.assertFalse(control_passed("oracle", trial, self.benchmark))
+        self.assertFalse(
+            control_passed("oracle", trial, reference_reward=policy(self.benchmark).get("reference_reward"))
+        )
 
     def test_admission_is_not_evaluated_acceptance(self):
         (self.verifier / "evaluation/report.json").write_text(
@@ -67,7 +71,9 @@ class NormalizedRecordTests(unittest.TestCase):
         trial = load_trials(self.job)[0]
         self.assertEqual(trial["result"], NOT_EVALUATED)
         self.assertFalse(trial_accepted(trial))
-        self.assertFalse(control_passed("oracle", trial, self.benchmark))
+        self.assertFalse(
+            control_passed("oracle", trial, reference_reward=policy(self.benchmark).get("reference_reward"))
+        )
 
     def test_recorded_reward_and_exception_remain_separate_from_verdict(self):
         result = {"execution": True, "acceptance": True, "quality": None}
@@ -98,7 +104,7 @@ class NormalizedRecordTests(unittest.TestCase):
     def test_normalized_live_gate_checks_metadata_submission_and_observed_cases(self):
         evidence = self.verifier / "evidence"
         evidence.mkdir()
-        (evidence / "submission.yaml").write_bytes(self.benchmark.reference.source.read_bytes())
+        (evidence / "submission.yaml").write_bytes((self.benchmark / "solution/config.yaml").read_bytes())
         selected = {self.benchmark.name: {"sha256": sha256(evidence / "submission.yaml")}}
         metadata = {
             "name": self.benchmark.name,
@@ -110,7 +116,7 @@ class NormalizedRecordTests(unittest.TestCase):
         (evidence / "observation.json").write_text(json.dumps({"entries": [{"name": "selected-case"}]}))
         trial = load_trials(self.job)[0]
         arguments = {
-            "benchmarks": {self.benchmark.name: self.benchmark.directory},
+            "benchmarks": {self.benchmark.name: self.benchmark},
             "mode": "live",
             "expected_cases": {self.benchmark.name: {"selected-case"}},
         }
@@ -141,7 +147,9 @@ class NormalizedRecordTests(unittest.TestCase):
         report.write_text(json.dumps({"trials": [trial]}))
         original = report.read_bytes()
         self.assertEqual(read_report(report)["trials"][0]["result"], NOT_EVALUATED)
-        self.assertFalse(control_passed("oracle", trial, self.benchmark))
+        self.assertFalse(
+            control_passed("oracle", trial, reference_reward=policy(self.benchmark).get("reference_reward"))
+        )
         self.assertEqual(report.read_bytes(), original)
 
     def test_admission_cannot_carry_evaluated_facts(self):

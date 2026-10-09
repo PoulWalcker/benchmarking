@@ -15,7 +15,6 @@ ALLOWED = {
     "compile": {SHARED, "compile"},
     "execute": {SHARED, "execute"},
     "evaluate": {SHARED, "evaluate"},
-    "author": {SHARED, "author"},
     "verification": {"verification"},
     "harbor_integration": {SHARED, "execute", "harbor_integration"},
     "coordinate": {
@@ -23,7 +22,6 @@ ALLOWED = {
         "compile",
         "execute",
         "evaluate",
-        "author",
         "verification",
         "coordinate",
         "harbor_integration",
@@ -52,8 +50,6 @@ ALLOWED["native_coordinate"] = ALLOWED["coordinate"] | {"benchmark_domain", "nat
 # longest matching prefix wins; anything unmatched in the package coordinates.
 STAGES = {
     "contracts": SHARED,
-    "benchmark": SHARED,
-    "benchmark_loading": SHARED,
     "profile": SHARED,
     "evidence": SHARED,
     "paths": SHARED,
@@ -63,7 +59,6 @@ STAGES = {
     "compile": "compile",
     "execute": "execute",
     "evaluate": "evaluate",
-    "author": "author",
     "coordinate": "coordinate",
     "harbor_integration": "harbor_integration",
 }
@@ -129,7 +124,7 @@ class StageBoundaryTests(unittest.TestCase):
     def test_dynamic_imports_have_explicit_boundaries(self):
         # The selected benchmark loader is the only neutral dynamic-import seam.
         for module, path, _ in modules():
-            if stage_of(module) == "coordinate" or module == "benchmark_loading":
+            if stage_of(module) == "coordinate":
                 continue
             tree = ast.parse(path.read_text())
             names = {alias.name for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names}
@@ -144,7 +139,7 @@ class StageBoundaryTests(unittest.TestCase):
 
     def test_every_module_has_a_stage(self):
         # A module outside the stage directories would silently be "coordinate".
-        stages = ("compile", "execute", "evaluate", "author", "coordinate", "harbor_integration")
+        stages = ("compile", "execute", "evaluate", "coordinate", "harbor_integration")
         loose = {module for module, _, verifier in modules() if not verifier and "." not in module}
         shared = {name for name, stage in STAGES.items() if stage == SHARED}
         self.assertEqual(loose - shared - set(stages) - {"__main__", ""}, set())
@@ -158,7 +153,7 @@ class StageBoundaryTests(unittest.TestCase):
             self.assertTrue((ROOT / "src" / PACKAGE / stage).is_dir(), stage)
 
     def test_experiments_reach_harbor_bridges_and_staging_only_through_a_run(self):
-        owned = {"job_args", "run_job", "staging_dir", "pin_base_image", "start_bridge", "stop_bridge"}
+        owned = {"job_args", "run_job", "pin_base_image", "start_bridge", "stop_bridge"}
         for module, path, _ in modules():
             if stage_of(module) != "coordinate" or module == "coordinate.runs":
                 continue
@@ -270,6 +265,6 @@ class OwnershipTests(unittest.TestCase):
             ownership_imports("from ..execute import agency", "sapi_config_lab.compile", package=True),
         )
         self.assertFalse(
-            ownership_edges("sapi_config_lab.harbor_integration.tasks", "from harbor.models.task import Task")
+            ownership_edges("sapi_config_lab.harbor_integration.task_config", "from harbor.models.task import Task")
         )
         self.assertFalse(ownership_edges("sapi_config_lab.compile.n8n", "from sapi_config_lab import contracts"))

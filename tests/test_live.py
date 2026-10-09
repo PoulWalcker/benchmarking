@@ -266,12 +266,9 @@ class WrapperIdentityTests(unittest.TestCase):
 class HostConfigTests(unittest.TestCase):
     def test_every_machine_setting_has_an_environment_override(self):
         defaults = HostConfig()
-        configured = HostConfig.from_environment(
-            {"SAPI_CONTAINER_HOST": "172.17.0.1", "SAPI_BRIDGE_PORT": "19000", "SAPI_STAGING_DIR": "/srv/stage"}
-        )
+        configured = HostConfig.from_environment({"SAPI_CONTAINER_HOST": "172.17.0.1", "SAPI_BRIDGE_PORT": "19000"})
         self.assertEqual(configured.container_host, "172.17.0.1")
         self.assertEqual(configured.bridge_port, 19000)
-        self.assertEqual(configured.staging_dir, "/srv/stage")
         self.assertEqual(configured.wrapper_url, defaults.wrapper_url)
         self.assertEqual(HostConfig.from_environment({}), defaults)
 

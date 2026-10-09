@@ -1,25 +1,25 @@
 """Admission compiles explicit benchmark inputs without starting its world."""
 
 import copy
-from dataclasses import asdict
 import json
 import os
 from pathlib import Path
 import re
+import runpy
 import subprocess
+import sys
 import tempfile
-from types import SimpleNamespace
+from types import ModuleType
 import unittest
 from unittest.mock import Mock, patch
 
 import yaml
 
-from sapi_config_lab.benchmark import load_benchmark, python_module
-from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
 from sapi_config_lab.compile.n8n import compile_n8n
-from sapi_config_lab.coordinate import benchmark_worker
+from sapi_config_lab.coordinate import native_record, task_worker
 from sapi_config_lab.coordinate.backend import N8nBackend
 from sapi_config_lab.coordinate.live import check_trials
+from sapi_config_lab.coordinate.native_tasks import policy
 from sapi_config_lab.evaluate.records import load_trials
 from sapi_config_lab.evidence import sha256
 from sapi_config_lab.paths import workspace_root
@@ -29,13 +29,12 @@ from tests.support.native import SimulatedN8n
 
 
 def checkout():
-    root = workspace_root() / "tasks"
-    return load_benchmark(root, root / "checkout-recovery")
+    return workspace_root() / "tasks/checkout-recovery"
 
 
 def model_config(benchmark, operation):
-    config = copy.deepcopy(read(benchmark.reference.source))
-    binding = read_bindings(benchmark.directory / benchmark.bindings)[operation]
+    config = copy.deepcopy(read(benchmark / "solution/config.yaml"))
+    binding = read_bindings(benchmark / "bindings.yaml")[operation]
     config["workflow"]["kind"] = "Gantt"
     config["workflow"]["steps"] = [
         {
@@ -53,17 +52,58 @@ def model_config(benchmark, operation):
 def metadata(benchmark):
     return {
         "name": benchmark.name,
-        "operations": benchmark.operations,
-        "bindings": benchmark.bindings,
-        "budgets": asdict(benchmark.budgets),
+        "operations": "operations.js",
+        "bindings": "bindings.yaml",
+        "budgets": {"runtime_model_calls": policy(benchmark).get("runtime_model_calls")},
     }
+
+
+def native_main(task, submission, output):
+    """Execute the real trusted task composition against an in-process test engine."""
+    with patch.dict(sys.modules), patch.object(sys, "path", [str(task / "tests"), *sys.path]):
+        for name in list(sys.modules):
+            if name == "payload" or name.startswith("payload."):
+                del sys.modules[name]
+        package = ModuleType("payload")
+        package.__path__ = [str(task)]
+        sys.modules["payload"] = package
+        namespace = runpy.run_path(str(task / "tests/main.py"))
+        globals_ = namespace["main"].__globals__
+        globals_.update(ROOT=task, OUT=output, SUBMISSION=submission)
+        manifest = output.parent / "source-manifest.json"
+        manifest.write_text(json.dumps({"test": "frozen"}))
+        engine = SimulatedN8n((task / "operations.js").read_text())
+        with (
+            patch.object(
+                native_record,
+                "Path",
+                side_effect=lambda value: manifest if value == "/opt/source-manifest.json" else Path(value),
+            ),
+            patch.object(N8nBackend, "execute", side_effect=engine.execute) as execute,
+            patch.dict(
+                os.environ,
+                {
+                    "SAPI_NATIVE_MODE": "admission",
+                    "SAPI_HOSTED_ADMISSION": "1",
+                    "SAPI_LLM_MODE": "stub",
+                    "SAPI_EXPECTED_SUBMISSION_SHA256": sha256(submission),
+                },
+            ),
+        ):
+            if task.name == "checkout-recovery":
+                dispatch = Mock(side_effect=AssertionError("world started"))
+                globals_["run_task"] = dispatch
+            assert namespace["main"]() == 0
+            if task.name == "checkout-recovery":
+                dispatch.assert_not_called()
+            return execute.call_count
 
 
 class HostedPreflightTests(unittest.TestCase):
     def test_advertised_model_operations_fail_clearly_in_stub_mode_and_compile_live(self):
         benchmark = checkout()
-        bindings = read_bindings(benchmark.directory / benchmark.bindings)
-        source = (benchmark.directory / benchmark.operations).read_text()
+        bindings = read_bindings(benchmark / "bindings.yaml")
+        source = (benchmark / "operations.js").read_text()
         for operation in ("incident.plan", "incident.summarize"):
             config = model_config(benchmark, operation)
             with self.subTest(operation=operation):
@@ -81,9 +121,7 @@ class HostedPreflightTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             submission = Path(directory) / "config.yaml"
             submission.write_text(yaml.safe_dump(model_config(benchmark, "incident.plan")))
-            report = benchmark_worker.admit(
-                metadata(benchmark), benchmark.directory, submission, {"deadline_seconds": 120}
-            )
+            report = task_worker.admit(metadata(benchmark), benchmark, submission, {"deadline_seconds": 120})
             self.assertTrue(report["passed"], report)
             trial = {
                 "task_name": benchmark.name,
@@ -93,7 +131,7 @@ class HostedPreflightTests(unittest.TestCase):
                 "result": {"execution": None, "acceptance": None, "quality": None},
             }
             selected = {benchmark.name: {"sha256": report["submission_sha256"]}}
-            benchmarks = {benchmark.name: benchmark.directory}
+            benchmarks = {benchmark.name: benchmark}
             check_trials([trial], selected, benchmarks=benchmarks, mode="stub", admission=True)
             with self.assertRaises(ValueError):
                 check_trials([trial], selected, benchmarks=benchmarks, mode="live")
@@ -109,14 +147,12 @@ class HostedPreflightTests(unittest.TestCase):
             submission.write_text(yaml.safe_dump(config))
             limited = metadata(benchmark)
             limited["budgets"]["runtime_model_calls"] = 0
-            report = benchmark_worker.admit(limited, benchmark.directory, submission, {"deadline_seconds": 120})
+            report = task_worker.admit(limited, benchmark, submission, {"deadline_seconds": 120})
             self.assertFalse(report["passed"])
             self.assertIn("Runtime cap exceeded", report["error"])
             config["execution"]["deadline_seconds"] = 121
             submission.write_text(yaml.safe_dump(config))
-            report = benchmark_worker.admit(
-                metadata(benchmark), benchmark.directory, submission, {"deadline_seconds": 120}
-            )
+            report = task_worker.admit(metadata(benchmark), benchmark, submission, {"deadline_seconds": 120})
             self.assertFalse(report["passed"])
             self.assertIn("Original deadline required", report["error"])
 
@@ -124,50 +160,23 @@ class HostedPreflightTests(unittest.TestCase):
 class PreflightExecutionTests(unittest.TestCase):
     def test_hosted_admission_never_starts_a_world(self):
         benchmark = checkout()
-        hooks = SimpleNamespace(**{role: Mock() for role in benchmark.entrypoints})
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             submission = root / "config.yaml"
             submission.write_text(yaml.safe_dump(model_config(benchmark, "incident.plan")))
-            declaration = {
-                **metadata(benchmark),
-                "identity": {},
-                "core_files": {},
-                "payload_files": {},
-                "options": {"admission": True, "deadline_seconds": 120},
-                "entrypoints": {
-                    role: {"module": python_module(entry.path), "symbol": role}
-                    for role, entry in benchmark.entrypoints.items()
-                },
-            }
-            manifest = root / "benchmark.json"
-            manifest.write_text(json.dumps(declaration))
-            paths = {
-                "/tests/benchmark.json": manifest,
-                "/tests/payload": benchmark.directory,
-                "/logs/verifier": root / "verifier",
-                "/submission/config.yaml": submission,
-            }
-            with (
-                patch.object(
-                    benchmark_worker, "Path", side_effect=lambda path, paths=paths: paths.get(str(path), Path(path))
-                ),
-                patch.object(benchmark_worker.importlib, "import_module", return_value=hooks),
-                patch.object(benchmark_worker, "observe") as observe,
-                patch.dict(os.environ, {"SAPI_LLM_MODE": "stub", "SAPI_EXPECTED_SUBMISSION_SHA256": ""}),
-            ):
-                self.assertEqual(benchmark_worker.main(), 0)
-            for role in benchmark.entrypoints:
-                getattr(hooks, role).assert_not_called()
-            observe.assert_not_called()
+            self.assertEqual(native_main(benchmark, submission, root / "verifier"), 0)
             self.assertEqual((root / "verifier/reward.txt").read_text(), "1\n")
             self.assertTrue(json.loads((root / "verifier/evaluation/report.json").read_text())["passed"])
+            self.assertEqual(
+                json.loads((root / "verifier/result.json").read_text()),
+                {"execution": None, "acceptance": None, "quality": None},
+            )
 
     def test_mixed_preflight_replays_fixture_and_only_admits_world(self):
         root = workspace_root() / "tasks"
-        invoice = load_benchmark(root, root / "invoice-total")
+        invoice = root / "invoice-total"
         world = checkout()
-        benchmarks = {item.name: item.directory for item in (invoice, world)}
+        benchmarks = {item.name: item for item in (invoice, world)}
         for incorrect in (False, True):
             with self.subTest(incorrect=incorrect), tempfile.TemporaryDirectory() as directory:
                 job = Path(directory) / "jobs/preflight"
@@ -176,69 +185,24 @@ class PreflightExecutionTests(unittest.TestCase):
                     trial = job / benchmark.name
                     trial.mkdir(parents=True)
                     submission = trial / "config.yaml"
-                    config = read(benchmark.reference.source)
+                    config = read(benchmark / "solution/config.yaml")
                     if benchmark is invoice and incorrect:
                         config["workflow"]["output"] = {
                             "literal": {"total_minor": 999, "invoice_count": 999, "currency": "USD"}
                         }
                     submission.write_text(yaml.safe_dump(config))
                     options = {"mode": "stub", "deadline_seconds": config["execution"]["deadline_seconds"]}
-                    self.assertTrue(
-                        benchmark_worker.admit(metadata(benchmark), benchmark.directory, submission, options)["passed"]
-                    )
-                    hooks = load_entrypoints(benchmark, freeze_identity(benchmark, options))
-                    module = SimpleNamespace(**{role: getattr(hooks, role) for role in benchmark.entrypoints})
-                    if benchmark is world:
-                        module = SimpleNamespace(
-                            **{
-                                role: Mock(side_effect=AssertionError("world started"))
-                                for role in benchmark.entrypoints
-                            }
-                        )
-                    declaration = {
-                        **metadata(benchmark),
-                        "identity": {},
-                        "core_files": {},
-                        "payload_files": {},
-                        "options": options,
-                        "entrypoints": {role: {"module": "selected", "symbol": role} for role in benchmark.entrypoints},
-                    }
-                    manifest = trial / "benchmark.json"
-                    manifest.write_text(json.dumps(declaration))
-                    paths = {
-                        "/tests/benchmark.json": manifest,
-                        "/tests/payload": benchmark.directory,
-                        "/logs/verifier": trial / "verifier",
-                        "/submission/config.yaml": submission,
-                    }
-                    engine = SimulatedN8n((benchmark.directory / benchmark.operations).read_text())
-                    with (
-                        patch.object(
-                            benchmark_worker,
-                            "Path",
-                            side_effect=lambda path, paths=paths: paths.get(str(path), Path(path)),
-                        ),
-                        patch.object(benchmark_worker.importlib, "import_module", return_value=module),
-                        patch.object(N8nBackend, "execute", side_effect=engine.execute) as execute,
-                        patch.dict(
-                            os.environ,
-                            {
-                                "SAPI_HOSTED_ADMISSION": "1",
-                                "SAPI_LLM_MODE": "stub",
-                                "SAPI_EXPECTED_SUBMISSION_SHA256": "",
-                            },
-                        ),
-                    ):
-                        self.assertEqual(benchmark_worker.main(), 0)
+                    self.assertTrue(task_worker.admit(metadata(benchmark), benchmark, submission, options)["passed"])
+                    calls = native_main(benchmark, submission, trial / "verifier")
                     if benchmark is invoice:
-                        self.assertGreater(execute.call_count, 0, "Fixture preflight skipped independent replay")
+                        self.assertGreater(calls, 0, "Fixture preflight skipped independent replay")
                         verdict = json.loads((trial / "verifier/result.json").read_text())
                         self.assertIs(verdict["execution"], True)
                         self.assertIs(verdict["acceptance"], not incorrect)
                         # The gate must not depend on the benchmark's legacy report format.
                         (trial / "verifier/evaluation/report.json").unlink()
                     else:
-                        execute.assert_not_called()
+                        self.assertEqual(calls, 0)
                         verdict = json.loads((trial / "verifier/result.json").read_text())
                         self.assertEqual(verdict, {"execution": None, "acceptance": None, "quality": None})
                     reward = float((trial / "verifier/reward.txt").read_text())
@@ -261,16 +225,16 @@ class PreflightExecutionTests(unittest.TestCase):
 
     def test_fixture_admission_report_cannot_pass_preflight(self):
         root = workspace_root() / "tasks"
-        invoice = load_benchmark(root, root / "invoice-total")
-        report = benchmark_worker.admit(
-            metadata(invoice), invoice.directory, invoice.reference.source, {"deadline_seconds": 30}
+        invoice = root / "invoice-total"
+        report = task_worker.admit(
+            metadata(invoice), invoice, (invoice / "solution/config.yaml"), {"deadline_seconds": 30}
         )
         trial = {"task_name": invoice.name, "acceptance": report, "exception": None, "rewards": {"reward": 1.0}}
         with self.assertRaises(ValueError):
             check_trials(
                 [trial],
                 {invoice.name: {"sha256": report["submission_sha256"]}},
-                benchmarks={invoice.name: invoice.directory},
+                benchmarks={invoice.name: invoice},
                 mode="stub",
                 admission=True,
             )

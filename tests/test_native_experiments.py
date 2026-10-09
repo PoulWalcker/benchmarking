@@ -58,7 +58,7 @@ class NativeExperimentTests(unittest.TestCase):
             self.assertEqual(dispatch.call_args.args[2], self.output / "jobs")
             with self.assertRaisesRegex(ValueError, "twice"):
                 self.run.harbor("oracle-invoice", self.task, "oracle")
-        self.assertIsNone(self.run.staging)
+        self.assertFalse(hasattr(self.run, "staging"))
         self.assertFalse((self.output / "task-packages").exists())
         self.assertEqual(self.run.report["native_images"], self.images)
 

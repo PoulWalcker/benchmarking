@@ -20,7 +20,7 @@ COPY --from=sapi-core __init__.py contracts.py evidence.py paths.py profile.py p
 COPY --from=sapi-core compile/__init__.py compile/n8n.py compile/refinement.py compile/runtime-fragment.js /tests/core/sapi_config_lab/compile/
 COPY --from=sapi-core execute/__init__.py execute/n8n.py execute/agency.py execute/host.py execute/agency-prompt.md /tests/core/sapi_config_lab/execute/
 COPY --from=sapi-core evaluate/__init__.py evaluate/records.py /tests/core/sapi_config_lab/evaluate/
-COPY --from=sapi-core coordinate/__init__.py coordinate/backend.py coordinate/cases.py coordinate/observe.py coordinate/benchmark_worker.py coordinate/native_record.py /tests/core/sapi_config_lab/coordinate/
+COPY --from=sapi-core coordinate/__init__.py coordinate/backend.py coordinate/cases.py coordinate/observe.py coordinate/task_worker.py coordinate/native_record.py /tests/core/sapi_config_lab/coordinate/
 COPY --from=sapi-verification *.py /tests/core/verification/
 COPY --from=sapi-core harbor_integration/submission.py /opt/sapi-submission.py
 ENV PYTHONPATH=/tests/core:/tests PYTHONDONTWRITEBYTECODE=1 PYTHONNOUSERSITE=1
@@ -30,7 +30,7 @@ FROM core AS invoice-total-verifier
 COPY tasks/invoice-total/experiment.py /tests/payload/experiment.py
 COPY tasks/invoice-total/bindings.yaml tasks/invoice-total/operations.js tasks/invoice-total/cases.json /tests/payload/
 COPY tasks/invoice-total/evaluation /tests/payload/evaluation
-RUN python3 -c "from payload.evaluation.evaluator import plan, evaluate; from sapi_config_lab.coordinate.benchmark_worker import run_task"
+RUN python3 -c "from payload.evaluation.evaluator import plan, evaluate; from sapi_config_lab.coordinate.task_worker import run_task"
 
 FROM core AS checkout-recovery-verifier
 COPY tasks/checkout-recovery/experiment.py /tests/payload/experiment.py

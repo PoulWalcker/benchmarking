@@ -7,13 +7,9 @@ quality score (null is never zero); they share no scoring semantics.
 from __future__ import annotations
 
 import argparse
-from collections.abc import Callable
-from dataclasses import asdict
 import json
 from pathlib import Path
 
-from sapi_config_lab.benchmark import Benchmark, discover_benchmarks
-from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
 from sapi_config_lab.evaluate.records import (
     ADMISSION_REPORT as ADMISSION_REPORT,
 )
@@ -38,27 +34,14 @@ from sapi_config_lab.evaluate.records import (
 from sapi_config_lab.evaluate.records import (
     verifier_result as verifier_result,
 )
-from sapi_config_lab.evidence import sha256
-from sapi_config_lab.paths import workspace_root
 
 
-def recorded_benchmark(name: str) -> Benchmark:
-    """Select trusted local metadata; recorded names never nominate executable paths."""
-    matches = [item for item in discover_benchmarks(workspace_root() / "tasks") if item.name == name]
-    if len(matches) != 1:
-        raise ValueError("Recorded versioned benchmark is unavailable")
-    return matches[0]
-
-
-def control_passed(
-    agent: str, trial: dict, benchmark: Benchmark | None = None, *, reference_reward: float | None = None
-) -> bool:
+def control_passed(agent: str, trial: dict, *, reference_reward: float | None = None) -> bool:
     """Gate controls using independent acceptance and the declared reference reward."""
     if (trial.get("acceptance") or {}).get("schema") == ADMISSION_REPORT:
         return False
     result = trial["result"]
     quality = result["quality"]
-    reference_reward = benchmark.controls.reference_reward if benchmark is not None else reference_reward
     if agent == "oracle":
         expected = reference_reward
         if expected is not None and (quality or {}).get("status") != "complete":
@@ -85,49 +68,6 @@ def control_passed(
         and trial["rewards"] is None
         and (not exception or exception.get("exception_type") == "RewardFileNotFoundError")
     )
-
-
-def reevaluate_benchmark(
-    record: Path,
-    output: Path,
-    judgement: Path | None,
-    *,
-    dispatch: bool = False,
-    calibration: str | None = None,
-    judge_model: str | None = None,
-    reserved: Callable | None = None,
-) -> dict:
-    """Replay the selected recorded evaluator only after its complete source identity matches."""
-    metadata = json.loads((record / "benchmark.json").read_text())
-    benchmark = recorded_benchmark(metadata["name"])
-    identity = freeze_identity(benchmark, metadata["options"])
-    if json.loads(json.dumps(asdict(identity))) != metadata["identity"]:
-        raise ValueError("Recorded benchmark source or options identity differs")
-    root = workspace_root()
-    for relative, expected in metadata["core_files"].items():
-        source = root / ("src" if relative.startswith("sapi_config_lab/") else "") / relative
-        if sha256(source) != expected:
-            raise ValueError("Recorded trusted core source identity differs: " + relative)
-    options = {
-        **metadata["options"],
-        **metadata.get("runtime_options", {}),
-        "evaluation": str(output / "evaluation"),
-        "submission": str(record / "evidence/submission.yaml"),
-        "identity": {"benchmark": metadata["identity"], "core_files": metadata["core_files"]},
-        "dispatch": dispatch,
-    }
-    contract = record / "evaluation/task-contract.json"
-    if contract.is_file():
-        options["contract"] = str(contract)
-    if judgement is not None:
-        options["judgement"] = str(judgement)
-    if calibration is not None:
-        options.update(calibration=calibration, judge_mode="codex", judge_model=judge_model)
-    if dispatch:
-        if benchmark.budgets.judge_calls == 0 or reserved is None:
-            raise ValueError("Judge dispatch requires a declared cost and host reservation")
-        options["reserved_judge"] = reserved
-    return validate_result(load_entrypoints(benchmark, identity).evaluate(record / "evidence", options))
 
 
 def main(argv: list[str] | None = None) -> int:

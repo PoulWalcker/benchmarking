@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from sapi_config_lab.harbor_integration.runner import run_job
-from sapi_config_lab.harbor_integration.tasks import validate_config
+from sapi_config_lab.harbor_integration.task_config import validate_config
 
 TASK = """schema_version = "1.4"
 artifacts = [

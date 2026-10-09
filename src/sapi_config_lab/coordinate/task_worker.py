@@ -1,8 +1,7 @@
-"""Compile, observe and evaluate a selected manifest inside Harbor's trusted verifier."""
+"""Compile, observe and evaluate explicit task callbacks inside Harbor's trusted verifier."""
 
 from functools import partial
 import hashlib
-import importlib
 import json
 import os
 from pathlib import Path
@@ -13,7 +12,7 @@ from sapi_config_lab.contracts import CompileOptions, RunBinding
 from sapi_config_lab.coordinate.backend import N8nBackend
 from sapi_config_lab.coordinate.cases import run_case
 from sapi_config_lab.coordinate.observe import observe
-from sapi_config_lab.evaluate.records import NOT_EVALUATED, validate_result
+from sapi_config_lab.evaluate.records import validate_result
 from sapi_config_lab.evidence import write_json
 from sapi_config_lab.profile import Invalid, Unsupported, check, read, read_bindings
 
@@ -43,57 +42,6 @@ def admit(metadata: dict, root: Path, submission: Path, options: dict) -> dict:
         report["error_type"] = type(error).__name__
         report["error"] = str(error)
     return report
-
-
-def main() -> int:
-    metadata = json.loads(Path("/tests/benchmark.json").read_text())
-    root, output = Path("/tests/payload"), Path("/logs/verifier")
-    output.mkdir(parents=True, exist_ok=True)
-    reward = output / "reward.txt"
-    identity = metadata["identity"]
-    for relative, expected in metadata["core_files"].items():
-        if hashlib.sha256((Path("/tests/core") / relative).read_bytes()).hexdigest() != expected:
-            raise ValueError("Trusted runtime differs from staged identity: " + relative)
-    for relative, expected in metadata["payload_files"].items():
-        path = root / relative
-        if path.is_symlink() or not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
-            raise ValueError("Benchmark differs from staged identity: " + relative)
-    functions = {}
-    for role, entry in metadata["entrypoints"].items():
-        module = importlib.import_module(entry["module"])
-        functions[role] = getattr(module, entry["symbol"])
-    submission = Path("/submission/config.yaml")
-    options = {
-        **metadata["options"],
-        "submission": str(submission),
-        "evaluation": str(output / "evaluation"),
-        "identity": {"benchmark": identity, "core_files": metadata["core_files"]},
-        "config": metadata.get("config", {}),
-    }
-    options["mode"] = os.environ.get("SAPI_LLM_MODE", options.get("mode", "stub"))
-    options["selected_case"] = os.environ.get("SAPI_CASE_NAME", options.get("selected_case"))
-    if options["mode"] == "live" and "prepare" not in functions:
-        options["deadline_seconds"] = 600
-    metadata["runtime_options"] = {
-        key: options[key] for key in ("mode", "selected_case", "deadline_seconds") if key in options
-    }
-    metadata["submission_sha256"] = (
-        hashlib.sha256(submission.read_bytes()).hexdigest() if submission.is_file() else None
-    )
-    write_json(output / "benchmark.json", metadata)
-    expected = options.get("submission_sha256") or os.environ.get("SAPI_EXPECTED_SUBMISSION_SHA256")
-    if expected and submission.is_file() and hashlib.sha256(submission.read_bytes()).hexdigest() != expected:
-        raise ValueError("Container submission hash mismatch")
-    if "prepare" in functions and (options.get("admission") or os.environ.get("SAPI_HOSTED_ADMISSION") == "1"):
-        report = admit(metadata, root, submission, options)
-        (output / "evaluation").mkdir(exist_ok=True)
-        write_json(output / "evaluation/report.json", report)
-        write_json(output / "result.json", NOT_EVALUATED)
-        reward.write_text("1\n" if report["passed"] else "0\n")
-        return 0
-    return run_task(
-        root, output, submission, options, functions, operations=metadata["operations"], bindings=metadata["bindings"]
-    )
 
 
 def run_task(
@@ -160,7 +108,3 @@ def run_task(
     if projected is not None:
         (output / "reward.txt").write_text(str(projected) + "\n")
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

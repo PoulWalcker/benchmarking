@@ -7,11 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
-from sapi_config_lab.coordinate.packages import stage_tasks
 from sapi_config_lab.coordinate.replay import load_selection, select_submission
-from sapi_config_lab.paths import workspace_root
-from tests.support.invoice import cases as invoice_cases
 
 SOURCES = {"source.py": "frozen"}
 
@@ -131,36 +127,3 @@ class SelectionTests(unittest.TestCase):
         with patch("sapi_config_lab.coordinate.replay.source_manifest", return_value={"source.py": "edited"}):
             with self.assertRaisesRegex(ValueError, "Sources changed"):
                 load_selection(self.root / "selection.json")
-
-
-class PackageTests(unittest.TestCase):
-    def test_generation_package_holds_only_its_prompt_and_given_cases(self):
-        scenario = "invoice-total"
-        fresh = {"invoice-total": invoice_cases()}[scenario]
-        fresh["positive"][0]["inputs"]["invoices"][0]["id"] = "FRESH-PRIVATE"
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "tasks"
-            stage_tasks(
-                path,
-                mode="generation",
-                root=workspace_root(),
-                benchmarks=select_benchmarks(workspace_root() / "tasks", (scenario,)),
-                cases={scenario: fresh},
-            )
-            self.assertEqual([p.name for p in path.iterdir()], [scenario])
-            self.assertFalse(any(p.name == "config.yaml" for p in path.rglob("*.yaml")))
-            self.assertEqual(json.loads((path / scenario / "tests/cases.json").read_text()), {scenario: fresh})
-            for invalid in ((), ("unknown",), (scenario, scenario)):
-                with self.subTest(invalid=invalid), self.assertRaises(ValueError):
-                    stage_tasks(
-                        Path(directory) / "invalid",
-                        root=workspace_root(),
-                        benchmarks=select_benchmarks(workspace_root() / "tasks", invalid),
-                    )
-            with self.assertRaises(ValueError):
-                stage_tasks(
-                    Path(directory) / "other",
-                    root=workspace_root(),
-                    benchmarks=select_benchmarks(workspace_root() / "tasks", ("checkout-recovery",)),
-                    cases={scenario: fresh},
-                )

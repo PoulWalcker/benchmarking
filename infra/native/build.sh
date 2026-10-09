@@ -2,13 +2,8 @@
 # Build explicit images only; Harbor owns all trial lifecycle and task directories.
 set -eu
 cd "$(dirname "$0")/../.."
-if [ -d src/sapi_config_lab ]; then
-  task_core="$PWD/src/sapi_config_lab"
-  task_verification="$PWD/verification"
-else
-  task_core=$(python -c 'import pathlib, sapi_config_lab; print(pathlib.Path(sapi_config_lab.__file__).parent)')
-  task_verification=$(python -c 'import pathlib, verification; print(pathlib.Path(verification.__file__).parent)')
-fi
+task_core="$PWD/src/sapi_config_lab"
+task_verification="$PWD/verification"
 task_identity=$(mktemp -d)
 trap 'rm -rf "$task_identity"' EXIT HUP INT TERM
 python -c 'import json,sys; from sapi_config_lab.coordinate.provenance import source_manifest; json.dump(source_manifest(), sys.stdout, sort_keys=True)' > "$task_identity/source-manifest.json"

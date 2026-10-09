@@ -6,7 +6,6 @@ import json
 import os
 from pathlib import Path
 import subprocess
-import sys
 import tarfile
 import tempfile
 import unittest
@@ -15,14 +14,7 @@ import uuid
 
 import yaml
 
-from sapi_config_lab.benchmark import load_benchmark
-from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.evaluation import main as evaluate_main
-from sapi_config_lab.coordinate.evaluation import reevaluate_benchmark
-from sapi_config_lab.coordinate.live import validate_packages
-from sapi_config_lab.coordinate.packages import stage_tasks
-from sapi_config_lab.coordinate.runs import Run, load_trials
-from sapi_config_lab.harbor_integration.tasks import validate_config
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.pinned_source import PinnedSource
 
@@ -65,129 +57,11 @@ class CheckoutHarborPackageTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
-        self.tasks = self.root / "tasks"
-        stage_tasks(self.tasks, root=ROOT, benchmarks=select_benchmarks(ROOT / "tasks", ("checkout-recovery",)))
-        self.task = self.tasks / "checkout-recovery"
-
-    def test_manifest_and_native_contexts_keep_the_full_pin_private(self):
-        benchmark = load_benchmark(ROOT / "tasks", DIRECTORY)
-        public = {item.destination for item in benchmark.public}
-        self.assertEqual(public, {"instruction.md", "authoring-notes.md", "bindings.yaml", "authoring-prompt.txt"})
-        metadata = read(self.task / "tests/benchmark.json")
-        expected = {item.destination for item in (*benchmark.public, *benchmark.trusted)}
-        self.assertEqual(set(metadata["payload_files"]), expected)
-        self.assertEqual(metadata["identity"]["benchmark_id"], "checkout-recovery")
-        for relative, expected_hash in metadata["payload_files"].items():
-            self.assertEqual(
-                hashlib.sha256((self.task / "tests/payload" / relative).read_bytes()).hexdigest(), expected_hash
-            )
-        staged_public = self.task / "environment/payload"
-        self.assertEqual(
-            {p.relative_to(staged_public).as_posix() for p in staged_public.rglob("*") if p.is_file()}, public
-        )
-        pin = self.task / "tests/payload/provenance/autowfbench-source.json"
-        self.assertEqual(pin.read_bytes(), (DIRECTORY / "provenance/autowfbench-source.json").read_bytes())
-        self.assertEqual(
-            (self.task / "solution/config.yaml").read_bytes(), (DIRECTORY / "solution/config.yaml").read_bytes()
-        )
-        config = validate_config((self.task / "task.toml").read_text())
-        self.assertEqual(config.verifier.environment_mode, "separate")
-        self.assertFalse((self.task / "environment/docker-compose.yaml").exists())
-        compose = yaml.safe_load((self.task / "tests/docker-compose.yaml").read_text())
-        self.assertEqual(set(compose["services"]), {"main", "simulator"})
-        self.assertTrue(compose["networks"]["verification"]["internal"])
-        self.assertEqual(compose["services"]["simulator"]["build"]["context"], "${CONTEXT_DIR}")
-        for name in ("environment.json", "connection.json"):
-            self.assertFalse((self.task / "tests" / name).exists())
-        public_bytes = b"\n".join(p.read_bytes() for p in (self.task / "environment").rglob("*") if p.is_file())
-        for private in (*PRIVATE_MARKERS, (DIRECTORY / "solution/config.yaml").read_bytes()):
-            self.assertNotIn(private, public_bytes)
-
-    def test_staged_worker_and_entrypoints_import_without_legacy_host_or_evaluator(self):
-        core = self.task / "tests/core"
-        excluded = (
-            "sapi_config_lab.execute.hosting",
-            "sapi_config_lab.execute.autowfbench",
-            "sapi_config_lab.evaluate.autowfbench",
-            "sapi_config_lab.coordinate.providers",
-            "sapi_config_lab.coordinate.hosted_worker",
-            "sapi_config_lab.coordinate.scenarios",
-        )
-        for module in excluded:
-            self.assertFalse((core / (module.replace(".", "/") + ".py")).exists())
-        script = (
-            "import sys,importlib\n"
-            f"sys.path[:0] = {[str(core), str(self.task / 'tests')]!r}\n"
-            f"for name in {excluded!r}: sys.modules[name] = None\n"
-            "importlib.import_module('sapi_config_lab.coordinate.benchmark_worker')\n"
-            + (self.task / "tests/check_imports.py").read_text()
-        )
-        result = subprocess.run([sys.executable, "-I", "-c", script], cwd=self.root, capture_output=True, text=True)
-        self.assertEqual(result.returncode, 0, result.stderr)
-
-    def test_versioned_task_bypasses_trialhost_and_legacy_connection_material(self):
-        run = Run(self.root, {}, {}, "checkout-native-test", staging=self.root)
-        self.assertFalse(hasattr(run, "hosted"))
-        self.assertFalse((self.task / "tests/connection.json").exists())
-        self.assertFalse((self.root / "records").exists())
-        self.assertFalse((self.root / "hosted").exists())
-
-    def test_native_live_staging_pins_the_judge_and_refuses_missing_metadata(self):
-        scenario = load_benchmark(ROOT / "tasks", DIRECTORY)
-        selection = {
-            scenario.name: {
-                "path": scenario.reference.source,
-                "sha256": hashlib.sha256(scenario.reference.source.read_bytes()).hexdigest(),
-            }
-        }
-        native = self.root / "native-live"
-        stage_tasks(native, root=ROOT, benchmarks=(scenario,), judge_model="judge-pinned")
-        task = native / scenario.name
-        metadata = read(task / "tests/benchmark.json")
-        self.assertEqual(metadata["options"]["judge_mode"], "codex")
-        self.assertEqual(metadata["options"]["judge_model"], "judge-pinned")
-        self.assertFalse((task / "tests/environment.json").exists())
-        validate_packages(native, selection, {scenario.name: scenario})
-        (task / "tests/benchmark.json").unlink()
-        with self.assertRaises(OSError):
-            validate_packages(native, selection, {scenario.name: scenario})
-
-    def test_offline_evaluation_requires_recorded_identity_and_never_dispatches_implicitly(self):
-        record = self.root / "record"
-        (record / "evidence").mkdir(parents=True)
-        (record / "evaluation").mkdir()
-        archive_path = ROOT / "evidence/migration-01-baseline/historical/hosted-before-native-fields.tar.gz"
-        with tarfile.open(archive_path) as archive:
-            prefix = "hosted-before-native-fields/"
-            for entry in archive.getmembers():
-                if entry.isfile():
-                    relative = entry.name.removeprefix(prefix)
-                    target = record / relative
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    target.write_bytes(archive.extractfile(entry).read())
-        metadata = (self.task / "tests/benchmark.json").read_text()
-        (record / "benchmark.json").write_text(metadata)
-        before = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (record / "evidence").iterdir()}
-        result = reevaluate_benchmark(record, self.root / "plain", None)
-        self.assertIsNone(result["quality"]["normalized_reward"])
-        self.assertFalse((self.root / "plain/evaluation/judge-dispatch.json").exists())
-        replay = reevaluate_benchmark(record, self.root / "saved", record / "evaluation/judge-reply.json")
-        self.assertEqual(replay["quality"]["normalized_reward"], 0.732)
-        after = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (record / "evidence").iterdir()}
-        self.assertEqual(before, after)
-        changed = json.loads(metadata)
-        changed["identity"]["sha256"] = "0" * 64
-        (record / "benchmark.json").write_text(json.dumps(changed))
-        with self.assertRaisesRegex(ValueError, "identity differs"):
-            reevaluate_benchmark(record, self.root / "changed", None)
-        with self.assertRaisesRegex(ValueError, "Historical evaluator execution is deferred"):
-            evaluate_main(["--record", str(record), "--output", str(self.root / "paid"), "--dispatch-judge"])
 
     def test_calibration_dispatch_is_stubbed_reserved_and_preserves_original_evidence(self):
         import copy
         import importlib
 
-        from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
         from sapi_config_lab.coordinate.native_evaluation import evaluate_record
         from sapi_config_lab.coordinate.provenance import source_manifest
         from sapi_config_lab.evidence import digest
@@ -200,21 +74,28 @@ class CheckoutHarborPackageTests(unittest.TestCase):
                     target = record / entry.name.removeprefix("hosted-before-native-fields/")
                     target.parent.mkdir(parents=True, exist_ok=True)
                     target.write_bytes(archive.extractfile(entry).read())
-        metadata = read(self.task / "tests/benchmark.json")
+        options = {
+            "mode": "stub",
+            "native_mode": "control",
+            "deadline_seconds": 120,
+            "judge_mode": "demo",
+            "judge_model": None,
+            "selected_case": None,
+        }
         (record / "evidence/submission.yaml").write_bytes((DIRECTORY / "solution/config.yaml").read_bytes())
         native = {
             "schema": "sapi-lab-native-task/v1",
             "name": "checkout-recovery",
             "sources": source_manifest(),
-            "options": metadata["options"],
-            "options_sha256": digest(metadata["options"]),
+            "options": options,
+            "options_sha256": digest(options),
             "submission_sha256": hashlib.sha256((record / "evidence/submission.yaml").read_bytes()).hexdigest(),
         }
         (record / "native-task.json").write_text(json.dumps(native))
-        benchmark = load_benchmark(ROOT / "tasks", DIRECTORY)
-        identity = freeze_identity(benchmark, metadata["options"])
-        evaluator = load_entrypoints(benchmark, identity).evaluate
-        scoring = importlib.import_module(evaluator.__module__.rsplit(".", 1)[0] + ".scoring")
+        from tests.support.checkout_evaluation import SCORING
+
+        evaluator = importlib.import_module("checkout_task.evaluation.evaluator").evaluate
+        scoring = SCORING
         reply = read(record / "evaluation/judge-reply.json")
         before = {
             path.relative_to(record).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
@@ -382,119 +263,6 @@ class DockerCheckoutHarborTests(unittest.TestCase):
             (run / "public-inspection.json").write_text(
                 json.dumps({"image": public["Image"], "layers": layers, "filesystem_files": count}, indent=2)
             )
-
-    def test_oracle_and_nop_use_fresh_private_worlds_and_preserve_reference_reward(self):
-        run = ROOT / "reports/migration-05" / ("docker-" + uuid.uuid4().hex[:10])
-        run.mkdir(parents=True)
-        stage_tasks(run / "tasks", root=ROOT, benchmarks=select_benchmarks(ROOT / "tasks", ("checkout-recovery",)))
-        task = run / "tasks/checkout-recovery"
-        before = {
-            p.relative_to(task).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
-            for p in task.rglob("*")
-            if p.is_file()
-        }
-        reference = (DIRECTORY / "solution/config.yaml").read_bytes()
-        observed, initial, worlds = [], [], []
-        for agent in ("nop", "oracle"):
-            command = [
-                str(ROOT / ".venv/bin/harbor"),
-                "run",
-                "--path",
-                str(task),
-                "--agent",
-                agent,
-                "--jobs-dir",
-                str(run / "jobs"),
-                "--job-name",
-                agent,
-                "--n-concurrent",
-                "1",
-                "--max-retries",
-                "0",
-                "--no-delete",
-                "--ek",
-                "keep_containers=true",
-            ]
-            (run / (agent + "-command.json")).write_text(json.dumps(command))
-            inspection = []
-            try:
-                with (run / (agent + ".log")).open("w") as log:
-                    result = subprocess.run(
-                        command,
-                        env={**os.environ, "MIGRATION_CREDENTIAL_SENTINEL": PRIVATE_MARKERS[-1].decode()},
-                        stdout=log,
-                        stderr=subprocess.STDOUT,
-                        timeout=2400,
-                    )
-                paths = list((run / "jobs" / agent).glob("*/result.json"))
-                if paths:
-                    inspection = self.containers(paths[0].parent.name)
-                    (run / (agent + "-inspect.json")).write_text(json.dumps(inspection, indent=2))
-                self.assertEqual(result.returncode, 0, (run / (agent + ".log")).read_text())
-                self.assertEqual(len(paths), 1)
-                trial = paths[0].parent
-                recorded = read(paths[0])
-                verdict = load_trials(run / "jobs" / agent)[0]
-                self.assertIs(verdict["result"]["acceptance"], agent == "oracle")
-                evidence = trial / "verifier/evidence"
-                terminal = read(evidence / "trial.json")
-                environment = read(evidence / "environment-evidence.json")
-                observed.append(terminal["run_id"])
-                initial.append(environment["initial"])
-                self.assertEqual(environment["tool_calls"], 5 if agent == "oracle" else 0)
-                self.assertEqual(terminal["terminal_completion"], agent == "oracle")
-                self.assertFalse((task / "tests/connection.json").exists())
-                self.assertFalse((run / "environments").exists())
-                if agent == "oracle":
-                    self.assertIsNone(recorded["exception_info"])
-                    self.assertEqual(recorded["verifier_result"]["rewards"], {"reward": 0.732})
-                    self.assertIs(terminal["native_execution"], True)
-                    self.assertTrue(all(environment["checks"].values()))
-                    self.assertEqual((trial / "verifier/evaluation/reward.txt").read_text(), "0.732\n")
-                    with tarfile.open(
-                        ROOT / "evidence/migration-01-baseline/historical/hosted-before-native-fields.tar.gz"
-                    ) as archive:
-                        baseline = json.load(archive.extractfile("hosted-before-native-fields/evidence/trial.json"))
-                    self.assertEqual(terminal["submission"]["artifacts"], baseline["submission"]["artifacts"])
-                else:
-                    self.assertEqual(recorded["exception_info"]["exception_type"], "RewardFileNotFoundError")
-                    self.assertIsNone((recorded.get("verifier_result") or {}).get("rewards"))
-                    self.assertIsNone(verdict["result"]["quality"]["score_0_10"])
-                    self.assertIsNone(verdict["result"]["quality"]["normalized_reward"])
-                    self.assertFalse((trial / "verifier/reward.txt").exists())
-                self.inspect_containers(run, agent, inspection, reference)
-                worlds.extend(
-                    item["Id"]
-                    for item in inspection
-                    if item["Config"]["Labels"]["com.docker.compose.service"] == "simulator"
-                )
-            finally:
-                if not inspection:
-                    for directory in (run / "jobs" / agent).glob("checkout-recovery*"):
-                        if directory.is_dir():
-                            inspection.extend(self.containers(directory.name))
-                self.cleanup(inspection)
-        self.assertEqual(len(set(observed)), 2)
-        self.assertEqual(len(set(worlds)), 2)
-        self.assertEqual(initial[0], initial[1])
-        after = {
-            p.relative_to(task).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
-            for p in task.rglob("*")
-            if p.is_file()
-        }
-        self.assertEqual(before, after)
-        self.assertEqual((DIRECTORY / "solution/config.yaml").read_bytes(), reference)
-        (run / "proof.json").write_text(
-            json.dumps(
-                {
-                    "status": "passed",
-                    "fresh_run_ids": observed,
-                    "fresh_simulator_ids": worlds,
-                    "same_initial_state": True,
-                },
-                indent=2,
-            )
-        )
 
 
 @unittest.skipUnless(os.environ.get("SAPI_RUN_DOCKER_TESTS") == "1", "Set SAPI_RUN_DOCKER_TESTS=1 for fault matrix")

@@ -5,15 +5,8 @@ from pathlib import Path
 
 
 def resource_root() -> Path:
-    """Resolve packaged task material without relaxing editable experiment identity."""
-    package = Path(__file__).resolve().parent
-    source = package.parent.parent
-    if package == source / "src/sapi_config_lab" and (source / "generation/PROFILE.md").is_file():
-        return workspace_root()
-    resources = package / "resources"
-    if not (resources / "tasks").is_dir() or not (resources / "generation/PROFILE.md").is_file():
-        raise RuntimeError("Installed benchmark resources are missing")
-    return resources
+    """Native task assets belong to the editable experiment checkout."""
+    return workspace_root()
 
 
 def benchmark_root() -> Path:

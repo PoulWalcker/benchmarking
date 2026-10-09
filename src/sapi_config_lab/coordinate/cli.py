@@ -41,7 +41,7 @@ PUBLIC = {
 INTERNAL = {
     "execute": "Run one config through the engine. Needs the real n8n CLI on PATH.",
     "transport": "HTTP transport probes. Runs inside the lab image; run.sh invokes it there.",
-    "bridge": "Foreground Agency HTTP adapter. live and ui start it themselves.",
+    "bridge": "Foreground Agency HTTP adapter. live starts it.",
 }
 
 

@@ -8,9 +8,7 @@ from pathlib import Path
 import platform
 import sys
 
-import sapi_config_lab
 from sapi_config_lab.paths import resource_root
-import verification
 
 SOURCE_DIRECTORIES = (
     "src",
@@ -20,7 +18,6 @@ SOURCE_DIRECTORIES = (
     "generation",
     "infra",
     "verification",
-    "harbor",
     ".github",
 )
 SOURCE_FILES = (
@@ -70,21 +67,6 @@ def source_manifest(root: Path | None = None) -> dict[str, str]:
         for path in sorted(files)
         if path.is_file()
     }
-    if root == resource_root() and not (root / "src/sapi_config_lab").is_dir():
-        for prefix, installed_directory in (
-            ("src/sapi_config_lab", Path(sapi_config_lab.__file__).parent),
-            ("verification", Path(verification.__file__).parent),
-        ):
-            for path in sorted(installed_directory.rglob("*")):
-                if (
-                    path.is_file()
-                    and "__pycache__" not in path.parts
-                    and "resources" not in path.relative_to(installed_directory).parts
-                    and path.suffix in SOURCE_SUFFIXES
-                ):
-                    result[prefix + "/" + path.relative_to(installed_directory).as_posix()] = hashlib.sha256(
-                        path.read_bytes()
-                    ).hexdigest()
     return result
 
 

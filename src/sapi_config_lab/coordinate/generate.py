@@ -19,10 +19,10 @@ from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, NOT_EVALUATE
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.live import validate_control
 from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
-from sapi_config_lab.coordinate.packages import AUTHOR_AGENT, CATALOG_VARIANTS
 from sapi_config_lab.coordinate.runs import Run, load_trials, progress, run_experiment, trial_seconds
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.host import LAB_IMAGE, HostConfig, run_logged
+from sapi_config_lab.harbor_integration.runner import AUTHOR_AGENT
 from sapi_config_lab.paths import workspace_root
 
 ROOT = workspace_root()
@@ -119,7 +119,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--stop-after-failure", action="store_true", help="A failed attempt blocks later ones")
     parser.add_argument(
         "--catalog",
-        choices=CATALOG_VARIANTS,
+        choices=("full", "scenario"),
         default="full",
         help="Experiment arm: the full operation catalog (default) or only the operations the scenario's reference uses",
     )

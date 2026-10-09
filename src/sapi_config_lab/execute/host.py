@@ -9,7 +9,6 @@ import os
 from pathlib import Path
 import subprocess
 import sys
-import tempfile
 from typing import Any
 
 from sapi_config_lab.execute.n8n import PINNED_N8N_VERSION
@@ -28,10 +27,6 @@ class HostConfig:
     container_host: str = "host.docker.internal"  # SAPI_CONTAINER_HOST: how a container reaches the host
     listen_host: str = "127.0.0.1"  # SAPI_LISTEN_HOST: where host services for containers listen
     bridge_port: int = 18765  # SAPI_BRIDGE_PORT: Agency bridge for live experiments
-    ui_bridge_port: int = 18766  # SAPI_UI_BRIDGE_PORT: Agency bridge for manual UI runs
-    n8n_url: str = "http://localhost:5678"  # SAPI_N8N_URL: the local n8n editor
-    n8n_container: str = "n8n-n8n-1"  # SAPI_N8N_CONTAINER: the local n8n container
-    staging_dir: str = ""  # SAPI_STAGING_DIR: a directory Docker can mount; empty means the system temp
 
     @classmethod
     def from_environment(cls, environ: Mapping[str, str] = os.environ) -> HostConfig:
@@ -78,11 +73,6 @@ def run_logged(command: Sequence[str], log: Path, *, timeout: float | None) -> i
             list(command), cwd=workspace_root(), stdout=stream, stderr=subprocess.STDOUT, timeout=timeout
         )
     return completed.returncode
-
-
-def staging_dir(prefix: str, host: HostConfig) -> Path:
-    """A fresh directory for task packages and Harbor jobs, outside the checkout."""
-    return Path(tempfile.mkdtemp(prefix=prefix, dir=host.staging_dir or None))
 
 
 def image_id(image: str) -> str:

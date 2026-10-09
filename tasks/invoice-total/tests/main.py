@@ -7,8 +7,8 @@ from pathlib import Path
 from payload.evaluation.evaluator import evaluate, plan
 from payload.experiment import runtime_options
 
-from sapi_config_lab.coordinate.benchmark_worker import run_task
 from sapi_config_lab.coordinate.native_record import record
+from sapi_config_lab.coordinate.task_worker import run_task
 
 ROOT = Path("/tests/payload")
 OUT = Path("/logs/verifier")

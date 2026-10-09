@@ -13,8 +13,8 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 
 from sapi_config_lab.coordinate import controls, transport
-from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
 from sapi_config_lab.coordinate.evaluation import control_passed as selected_control_passed
+from sapi_config_lab.coordinate.native_tasks import policy, select_tasks
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.runs import Run
 from sapi_config_lab.execute.host import checked_harbor, running_containers
@@ -23,7 +23,11 @@ from sapi_config_lab.paths import workspace_root
 
 def control_passed(agent, trial):
     return selected_control_passed(
-        agent, trial, select_benchmarks(workspace_root() / "tasks", (trial["task_name"],))[0]
+        agent,
+        trial,
+        reference_reward=policy(select_tasks(workspace_root() / "tasks", (trial["task_name"],))[0]).get(
+            "reference_reward"
+        ),
     )
 
 

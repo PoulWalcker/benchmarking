@@ -69,7 +69,7 @@ def evaluate_facts(runs, **options):
 
 
 def reward(report):
-    """What harbor/templates/test.sh writes: the verifier's exit status, nothing else."""
+    """Project acceptance alone; optional rubric quality remains separate."""
     return 1.0 if report["passed"] else 0.0
 
 
@@ -325,30 +325,19 @@ class VerifierSeamTests(unittest.TestCase):
         self.assertEqual(document["status"], rubric_facts.NOT_EVALUATED)
         self.assertIn("broken rubric", document["reason"])
 
-    def test_the_container_derives_its_reward_from_acceptance_alone(self):
-        script = (ROOT / "harbor/templates/test.sh").read_text()
-        self.assertIn("printf '0\\n' > /logs/verifier/reward.txt", script)
-        self.assertIn("printf '1\\n' > /logs/verifier/reward.txt", script)
-        self.assertEqual(script.count("reward.txt"), 2)
-        for forbidden in ("evaluation", "score", "rubric", "normalized"):
-            self.assertNotIn(forbidden, script)
-
     def test_every_control_run_reads_the_reward_gate_from_one_place(self):
-        from sapi_config_lab.benchmark import load_benchmark
         from sapi_config_lab.coordinate.evaluation import control_passed
-
-        benchmark = load_benchmark(ROOT / "tasks", ROOT / "tasks/invoice-total")
 
         def trial(agent, reward, exception=None):
             row = {"task_name": "invoice-total", "rewards": {"reward": reward}, "exception": exception}
             return {**row, "result": {"execution": agent == "oracle", "acceptance": agent == "oracle", "quality": None}}
 
         for agent, expected in (("oracle", 1.0), ("nop", 0.0)):
-            self.assertTrue(control_passed(agent, trial(agent, expected), benchmark))
+            self.assertTrue(control_passed(agent, trial(agent, expected), reference_reward=None))
             # A rubric score is a separate document; it must never read as a reward.
             for intruder in (0.732, 1.0 - expected, None, "1.0"):
-                self.assertFalse(control_passed(agent, trial(agent, intruder), benchmark))
-            self.assertFalse(control_passed(agent, trial(agent, expected, "boom"), benchmark))
+                self.assertFalse(control_passed(agent, trial(agent, intruder), reference_reward=None))
+            self.assertFalse(control_passed(agent, trial(agent, expected, "boom"), reference_reward=None))
 
 
 class StandaloneDistributionTests(unittest.TestCase):
