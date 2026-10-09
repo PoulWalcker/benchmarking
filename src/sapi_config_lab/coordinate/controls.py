@@ -13,7 +13,7 @@ import sys
 from typing import Any
 
 from sapi_config_lab.coordinate.evaluation import control_passed
-from sapi_config_lab.coordinate.native_tasks import policy, select_tasks
+from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
 from sapi_config_lab.coordinate.provenance import host_environment
 from sapi_config_lab.coordinate.runs import Run, progress, run_experiment
 from sapi_config_lab.execute.host import LAB_IMAGE, run_logged
@@ -101,6 +101,12 @@ def main(argv: list[str] | None = None) -> int:
             timeout=LOCAL_TESTS_SECONDS,
         )
         check("local_tests", exit_code == 0, exit_code=exit_code)
+        for task in tasks:
+            invoke(
+                task,
+                {"action": "plan", "submission": str(task / "solution/config.yaml"), "options": {"mode": "stub"}},
+                run.sources,
+            )
         progress("transport: Harbor builds and runs real n8n HTTP transport and rejection probes")
         report["transport"] = transport_probe(run, skip_build=args.skip_build)
         check("real_n8n_transport", report["transport"]["exit_code"] == 0 and report["transport"].get("passed") is True)

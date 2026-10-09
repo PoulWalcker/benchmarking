@@ -75,6 +75,13 @@ def image_tags(tasks: tuple[Path, ...]) -> tuple[str, ...]:
     return tuple(sorted(tags))
 
 
+def require_verifier_phase(task: Path, seconds: int) -> None:
+    """Admit the task's computed observation ceiling without overriding Harbor's phase."""
+    limit = tomllib.loads((task / "task.toml").read_text())["verifier"]["timeout_sec"]
+    if seconds > limit:
+        raise ValueError("Planned observations exceed the native verifier phase")
+
+
 def invoke(task: Path, request: dict, sources: dict) -> dict:
     """Run the fixed task-owned trusted composition after verifying all source bytes."""
     root = resource_root()

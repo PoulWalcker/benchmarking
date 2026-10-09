@@ -213,6 +213,15 @@ def cohort_grants(
     for scenario, submission in submissions.items():
         benchmark = benchmarks[scenario]
         options = {"mode": "live", "judge_model": judge_model}
+        if policy(benchmark).get("admission", "evaluate") != "compile":
+            preflight = {"mode": "stub", "deadline_seconds": read(submission["path"])["execution"]["deadline_seconds"]}
+            if "cases" in submission:
+                preflight["cases"] = submission["cases"]
+            invoke(
+                benchmark,
+                {"action": "plan", "submission": str(submission["path"]), "options": preflight},
+                source_manifest(),
+            )
         if "cases" in submission:
             options["cases"] = submission["cases"]
         plan = invoke(

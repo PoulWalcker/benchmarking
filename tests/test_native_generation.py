@@ -42,7 +42,7 @@ class NativeGenerationTests(unittest.TestCase):
             invoke(ROOT / "tasks/invoice-total", {"action": "prompt", "catalog": "full"}, {})
 
     def test_generation_cli_reserves_before_exact_wrapper_call_and_uses_native_task(self):
-        for fault in (None, "control", "native-image", "source", "prompt"):
+        for fault in (None, "control", "native-image", "source", "prompt", "phase"):
             with self.subTest(fault=fault), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 output = root / "run"
@@ -116,6 +116,11 @@ class NativeGenerationTests(unittest.TestCase):
                     save(trial / "verifier/result.json", {**NOT_EVALUATED, "execution": True, "acceptance": True})
                     return 0
 
+                def task_invoke(task, request, sources, *, fault=fault):
+                    if fault == "phase":
+                        raise ValueError("Planned observations exceed the native verifier phase")
+                    return invoke(task, request, sources)
+
                 original_check = Run.check
 
                 def check(run, phase, *, fault=fault, output=output, original_check=original_check):
@@ -131,6 +136,7 @@ class NativeGenerationTests(unittest.TestCase):
                     patch.object(Run, "use_image", return_value="sha256:transport"),
                     patch.object(Run, "check", check),
                     patch("sapi_config_lab.coordinate.generate.run_logged", side_effect=controls),
+                    patch("sapi_config_lab.coordinate.generate.invoke", side_effect=task_invoke),
                     patch("sapi_config_lab.coordinate.runs.run_job", side_effect=harbor),
                     patch("sapi_config_lab.harbor_integration.yaml_agent.request_wrapper", side_effect=wrapper),
                     contextlib.redirect_stdout(io.StringIO()),
@@ -140,6 +146,9 @@ class NativeGenerationTests(unittest.TestCase):
                 self.assertEqual(code, int(fault is not None))
                 self.assertEqual(len(calls), int(fault is None))
                 self.assertFalse((output / "task-packages").exists())
+                if fault == "phase":
+                    self.assertFalse((output / "ledger.json").exists())
+                    self.assertFalse((output / "jobs").exists())
                 if fault is None:
                     report = json.loads((output / "report.json").read_text())
                     self.assertEqual(report["authoring_attempts_spent"], 1)

@@ -62,9 +62,16 @@ def authoring(catalog: str) -> dict:
 
 
 if __name__ == "__main__":
+    from sapi_config_lab.coordinate.native_tasks import require_verifier_phase
+    from sapi_config_lab.execute.n8n import execution_ceiling
+
     request = json.load(sys.stdin)
     if request["action"] == "prompt":
         result = authoring(request["catalog"])
+        count = len(plan(ROOT / "solution/config.yaml", {"deadline_seconds": 120})["entries"])
+        require_verifier_phase(
+            ROOT, max(count * execution_ceiling(120, bound=False), execution_ceiling(600, bound=False)) + 120
+        )
     elif request["action"] == "plan":
         from sapi_config_lab.coordinate.provenance import source_manifest
         from sapi_config_lab.evidence import digest
@@ -77,6 +84,14 @@ if __name__ == "__main__":
                 {**options, "identity": {"task": ROOT.name, "sources_sha256": digest(source_manifest())}},
             ),
         }
+        require_verifier_phase(
+            ROOT,
+            max(
+                len(result["plan"]["entries"]) * execution_ceiling(options["deadline_seconds"], bound=False),
+                execution_ceiling(600, bound=False),
+            )
+            + 120,
+        )
     elif request["action"] == "evaluate":
         from sapi_config_lab.coordinate.native_evaluation import evaluate_record
 

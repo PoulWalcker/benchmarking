@@ -17,8 +17,11 @@ ROOT = Path(__file__).resolve().parent
 
 def runtime_options(request: dict) -> dict:
     native_mode = request.get("native_mode", "live" if request.get("mode") == "live" else "admission")
+    mode = "live" if native_mode == "live" else "stub"
+    if native_mode == "control":
+        mode = request.get("mode", "stub")
     return {
-        "mode": "stub" if native_mode == "admission" else "live",
+        "mode": mode,
         "native_mode": native_mode,
         "deadline_seconds": 120,
         "selected_case": request.get("selected_case"),
@@ -28,7 +31,12 @@ def runtime_options(request: dict) -> dict:
 
 
 if __name__ == "__main__":
+    from sapi_config_lab.coordinate.native_tasks import require_verifier_phase
+    from sapi_config_lab.execute.n8n import execution_ceiling
+
     request = json.load(sys.stdin)
+    if request["action"] in {"prompt", "plan"}:
+        require_verifier_phase(ROOT, execution_ceiling(120, bound=False) + 120)
     if request["action"] == "prompt" and request["catalog"] == "full":
         result = {"prompt": (ROOT / "authoring-prompt.txt").read_text()}
     elif request["action"] == "plan":

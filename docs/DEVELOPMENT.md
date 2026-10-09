@@ -487,8 +487,8 @@ only by that staging path. Experiment controls and paid dispatch continue to req
 a matching editable checkout.
 
 
-Native checkout mode is explicit: `control` uses unpaid fake runtime transport and
-saved calibration projection, `admission` compiles only, and `live` requires the
+Native checkout mode is explicit: `control` uses stub execution for zero-model
+workflows and unpaid fake transport for model steps, with saved calibration projection, `admission` compiles only, and `live` requires the
 protected bridge plus an explicit judge model. Real model transport remains
 paid-unverified in this migration; tests use mocked binaries and wrapper replies.
 Runtime grants retain per-operation and occurrence limits. Aggregate runtime/judge
@@ -496,3 +496,9 @@ cost is checked before dispatch; every attempt is durably reserved first. A time
 with ambiguous outcome stays unknown and blocks further spending, even when the
 series otherwise permits retry after failure. Offline saved-reply scoring makes no
 model call. Host judging never rewrites Harbor's original reward or result.
+
+Task-owned host planning checks the aggregate observation ceiling (including import,
+execution and verifier overhead) against the existing native verifier phase before
+Harbor dispatch or model reservation. Generation checks its fixed 120-second
+workflow budget; live preflight checks the exact selected YAML and fixture cohort.
+Harbor retains the declared phase limit; the coordinator does not extend it.

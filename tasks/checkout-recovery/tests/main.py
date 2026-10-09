@@ -57,6 +57,11 @@ def main() -> int:
         raise ValueError("Unknown checkout native mode")
     admission = native_mode == "admission" or os.environ.get("SAPI_HOSTED_ADMISSION") == "1"
     native_mode = "admission" if admission else native_mode
+    try:
+        config = read(SUBMISSION)
+        llms = [step for step in config["workflow"]["steps"] if step["kind"] == "LLM"]
+    except OSError, ValueError, KeyError, TypeError, yaml.YAMLError:
+        config, llms = None, []
     options = record(
         "checkout-recovery",
         OUT,
@@ -64,6 +69,7 @@ def main() -> int:
         runtime_options(
             {
                 "native_mode": native_mode,
+                "mode": "live" if llms else "stub",
                 "selected_case": os.environ.get("SAPI_CASE_NAME"),
                 "judge_model": os.environ.get("SAPI_NATIVE_JUDGE_MODEL"),
             }
@@ -89,7 +95,6 @@ def main() -> int:
         (OUT / "reward.txt").write_text("1\n" if report["passed"] else "0\n")
         return 0
     try:
-        config = read(SUBMISSION)
         bindings = read_bindings(ROOT / "bindings.yaml")
         N8nBackend(operation_source=(ROOT / "operations.js").read_text()).compile(
             config,
@@ -98,7 +103,6 @@ def main() -> int:
                 llm_mode="live", bridge_url="http://127.0.0.1:8765", operation_url="http://simulator:8000/tools"
             ),
         )
-        llms = [step for step in config["workflow"]["steps"] if step["kind"] == "LLM"]
         check(len(llms) <= 4, "Runtime cap exceeded")
         check(config["execution"]["deadline_seconds"] == 120, "Original deadline required")
     except (OSError, ValueError, KeyError, TypeError, yaml.YAMLError) as error:
