@@ -290,7 +290,7 @@ class NativeRefinementDockerTests(unittest.TestCase):
             "[environment]\nbuild_timeout_sec = 1200\ncpus = 1\nmemory_mb = 2048\n"
             "[verifier]\ntimeout_sec = 1800\n"
         )
-        dockerfile = (root / "infra/Dockerfile").read_text().replace("COPY benchmarks /app/lab/benchmarks/\n", "")
+        dockerfile = (root / "infra/Dockerfile").read_text().replace("COPY tasks /app/lab/tasks/\n", "")
         (environment / "Dockerfile").write_text(dockerfile)
         shutil.copyfile(root / ".dockerignore", environment / ".dockerignore")
         for name in ("src", "generation"):
