@@ -153,10 +153,7 @@ class Run:
                         "task_name",
                         "trial_id",
                         "trial_path",
-                        "result_path",
-                        "verdict_path",
                         "evidence_path",
-                        "evaluation_path",
                         "partial",
                     )
                     if key in row

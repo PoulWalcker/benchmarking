@@ -14,6 +14,7 @@ from sapi_config_lab.coordinate.ledger import Ledger
 from sapi_config_lab.coordinate.live import main as live
 from sapi_config_lab.coordinate.native_tasks import select_tasks
 from sapi_config_lab.coordinate.runs import Run, run_experiment
+from sapi_config_lab.evaluate.records import read_report
 from sapi_config_lab.paths import workspace_root
 
 
@@ -128,6 +129,50 @@ class RunTests(unittest.TestCase):
         self.assertNotIn("result", row)
         self.assertTrue((self.output / row["evidence_path"] / "world/receipt.json").exists())
         self.assertNotIn("harbor_timeouts", saved)
+
+    def test_job_references_do_not_duplicate_the_authoritative_derived_trial(self):
+        FakeHost(self)
+        original = {"execution": True, "acceptance": True, "quality": None}
+        derived = {
+            "execution": True,
+            "acceptance": True,
+            "quality": {"status": "complete", "score_0_10": 7.32, "normalized_reward": 0.732},
+        }
+
+        def dispatch(harbor, task, jobs, job, agent, log, **kw):
+            trial = jobs / job / "native-trial"
+            (trial / "verifier/evaluation").mkdir(parents=True)
+            (trial / "result.json").write_text(
+                json.dumps(
+                    {"task_name": task.name, "verifier_result": {"rewards": {"reward": 1.0}}, "exception_info": None}
+                )
+            )
+            (trial / "verifier/result.json").write_text(json.dumps(original))
+            return 0
+
+        def body(run):
+            run.native_tasks = select_tasks(workspace_root() / "tasks", ("invoice-total",))
+            _, trials = run.harbor("live", run.native_tasks[0], "oracle")
+            trial = trials[0]
+            output = Path(trial["verdict_path"]).parent / "paid-evaluation"
+            output.mkdir()
+            (output / "result.json").write_text(json.dumps(derived))
+            trial.update(
+                result=derived,
+                verdict_path=str(output / "result.json"),
+                evaluation_path=str(output / "evaluation/report.json"),
+            )
+            run.report.update(status="passed", trials=trials)
+
+        with patch("sapi_config_lab.coordinate.runs.run_job", side_effect=dispatch):
+            run_experiment(self.output, {}, body, prefix="t")
+        saved = read_report(self.output / "report.json", root=self.output)
+        self.assertEqual(len(saved["trials"]), 1)
+        self.assertEqual(saved["trials"][0]["result"], derived)
+        self.assertEqual(saved["trials"][0]["rewards"], {"reward": 1.0})
+        reference = saved["recorded"]["harbor_jobs"]["live"]["trials"][0]
+        self.assertNotIn("result_path", reference)
+        self.assertEqual(json.loads((self.output / reference["evidence_path"] / "result.json").read_text()), original)
 
     def test_native_source_mismatch_prevents_dispatch(self):
         host = FakeHost(self)
