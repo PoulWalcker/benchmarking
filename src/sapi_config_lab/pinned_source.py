@@ -82,19 +82,19 @@ class PinnedSource:
 
 def pinned_source(name: str, *, cache: Path | None = None) -> PinnedSource:
     """Resolve a declared trusted source pin and its host-owned cache."""
-    from sapi_config_lab.benchmark import discover_benchmarks
-
     root = workspace_root()
-    destination = f"provenance/{name}-source.json"
+    if re.fullmatch(r"[a-z][a-z0-9-]*", name) is None:
+        raise ValueError("Invalid pinned source name")
     matches = {
-        item.source
-        for benchmark in discover_benchmarks(benchmark_root())
-        for item in benchmark.trusted
-        if item.destination == destination
+        task.parent / "provenance" / (name + "-source.json")
+        for task in benchmark_root().glob("*/task.toml")
+        if (task.parent / "provenance" / (name + "-source.json")).is_file()
     }
     if len(matches) != 1:
-        raise ValueError("Source pin must be declared by exactly one benchmark: " + name)
+        raise ValueError("Source pin must be owned by exactly one native task: " + name)
     manifest = matches.pop()
+    if any(path.is_symlink() for path in (manifest, manifest.parent, manifest.parent.parent)):
+        raise ValueError("Native source pin must not use symlinks")
     revision = read_manifest(manifest)["revision"]
     return PinnedSource(manifest, (cache or root / ".cache" / name) / revision)
 

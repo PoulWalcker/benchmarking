@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from sapi_config_lab.benchmark import discover_benchmarks
 from sapi_config_lab.coordinate.backend import N8nBackend
+from sapi_config_lab.coordinate.native_tasks import select_tasks
 from sapi_config_lab.paths import benchmark_root
 from sapi_config_lab.profile import read_bindings
 
@@ -40,19 +40,18 @@ def compose_compilation(
             root = benchmark_root()
         except RuntimeError as error:
             if scenario is not None:
-                raise ValueError("Explicit benchmark selection requires installed benchmark resources") from error
-    items = discover_benchmarks(root) if root is not None else ()
+                raise ValueError("Explicit task selection requires an editable task workspace") from error
+    items = select_tasks(root, [p.parent.name for p in sorted(root.glob("*/task.toml"))]) if root is not None else ()
     matches = (
         [item for item in items if item.name == scenario]
         if scenario is not None
-        else [item for item in items if item.reference.source.resolve() == config.resolve()]
+        else [item for item in items if (item / "solution/config.yaml").resolve() == config.resolve()]
     )
     if scenario is not None and len(matches) != 1:
         raise ValueError("Unknown scenario selection: " + scenario)
     if matches:
-        benchmark = matches[0]
-        files = {item.destination: item.source for item in benchmark.files}
-        return CompilationContext(bindings or files[benchmark.bindings], files[benchmark.operations].read_text())
+        task = matches[0]
+        return CompilationContext(bindings or task / "bindings.yaml", (task / "operations.js").read_text())
     if bindings is None or operations is None:
         raise ValueError("Detached compilation requires explicit --bindings and --operations trusted files")
     return CompilationContext(bindings, operations.read_text())

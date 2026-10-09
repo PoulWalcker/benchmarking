@@ -1,14 +1,15 @@
-"""Trusted checkout modules selected through their declared manifest closure."""
+"""Explicit checkout domain modules for tests of retained behavior."""
 
 from importlib import import_module
+import sys
+from types import ModuleType
 
-from sapi_config_lab.benchmark import load_benchmark
-from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
 from sapi_config_lab.paths import workspace_root
 
 ROOT = workspace_root()
-BENCHMARK = load_benchmark(ROOT / "tasks", ROOT / "tasks/checkout-recovery")
-ENTRYPOINTS = load_entrypoints(BENCHMARK, freeze_identity(BENCHMARK, {}))
-SCORING = import_module(ENTRYPOINTS.package + ".evaluation.scoring")
-CALIBRATION = import_module(ENTRYPOINTS.package + ".evaluation.calibration")
-SERVER = import_module(ENTRYPOINTS.package + ".environment.server")
+package = ModuleType("checkout_task")
+package.__path__ = [str(ROOT / "tasks/checkout-recovery")]
+sys.modules[package.__name__] = package
+SCORING = import_module("checkout_task.evaluation.scoring")
+CALIBRATION = import_module("checkout_task.evaluation.calibration")
+SERVER = import_module("checkout_task.environment.server")

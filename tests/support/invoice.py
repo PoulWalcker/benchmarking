@@ -1,9 +1,10 @@
 """Explicit retained benchmark inputs for tests of generic mechanisms."""
 
+from importlib import import_module
 import json
+import sys
+from types import ModuleType
 
-from sapi_config_lab.benchmark import load_benchmark
-from sapi_config_lab.benchmark_loading import freeze_identity, load_entrypoints
 from sapi_config_lab.paths import workspace_root
 
 DIRECTORY = workspace_root() / "tasks/invoice-total"
@@ -11,10 +12,14 @@ CATALOG = DIRECTORY / "bindings.yaml"
 OPERATION_SOURCE = (DIRECTORY / "operations.js").read_text()
 
 
+package = ModuleType("invoice_task")
+package.__path__ = [str(DIRECTORY)]
+sys.modules[package.__name__] = package
+EVALUATOR = import_module("invoice_task.evaluation.evaluator")
+
+
 def fixture():
-    benchmark = load_benchmark(DIRECTORY.parent, DIRECTORY)
-    hooks = load_entrypoints(benchmark, freeze_identity(benchmark, {}))
-    return hooks.plan.__globals__["_fixture"]({})
+    return EVALUATOR._fixture({})
 
 
 def cases():

@@ -140,17 +140,17 @@ class BackendContractTests(unittest.TestCase):
         self.assertNotIn("Traceback", stderr.getvalue())
 
     def test_n8n_adapter_preserves_supported_and_unsupported_profile(self):
-        from sapi_config_lab.benchmark import discover_benchmarks
+        from sapi_config_lab.coordinate.native_tasks import policy, select_tasks
 
-        for scenario in discover_benchmarks(workspace_root() / "tasks"):
-            path, bindings = scenario.reference.source, profile.read_bindings(scenario.directory / scenario.bindings)
+        for scenario in select_tasks(workspace_root() / "tasks", ["invoice-total", "checkout-recovery"]):
+            path, bindings = scenario / "solution/config.yaml", profile.read_bindings(scenario / "bindings.yaml")
             config = profile.read(path)
             # Both environments compile through the same backend; a simulator's tools are bound at run time.
-            options = CompileOptions(operation_url="http://tools/tools" if "prepare" in scenario.entrypoints else None)
+            options = CompileOptions(
+                operation_url="http://tools/tools" if policy(scenario).get("admission") == "compile" else None
+            )
             with self.subTest(config=path.parent.name):
-                compiled = N8nBackend((scenario.directory / scenario.operations).read_text()).compile(
-                    config, bindings, options
-                )
+                compiled = N8nBackend((scenario / "operations.js").read_text()).compile(config, bindings, options)
                 self.assertNotIn("not-persisted", str(compiled.document))
                 self.assertEqual(compiled.engine, "n8n")
                 attempts = config["execution"].get("refinement", {}).get("max_attempts", 1)

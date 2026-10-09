@@ -7,12 +7,11 @@ from pathlib import Path
 import subprocess
 import sys
 
-from sapi_config_lab.benchmark import discover_benchmarks
 from sapi_config_lab.contracts import CompileOptions, WorkflowBackend
 from sapi_config_lab.coordinate.compilation import compose_compilation
+from sapi_config_lab.coordinate.native_tasks import policy, select_tasks
 from sapi_config_lab.evidence import write_json
-from sapi_config_lab.execute.host import LAB_IMAGE
-from sapi_config_lab.paths import benchmark_root, resource_root, workspace_root
+from sapi_config_lab.paths import benchmark_root, workspace_root
 from sapi_config_lab.profile import Invalid, Unsupported, read, read_bindings, validate
 
 MODULES = {
@@ -47,7 +46,6 @@ PUBLIC = {
 # Run by a container or another command; each needs an environment a host checkout lacks.
 INTERNAL = {
     "execute": "Run one config through the engine. Needs the real n8n CLI on PATH.",
-    "package-tasks": "Assemble Harbor task packages into a new directory; runs nothing.",
     "transport": "HTTP transport probes. Runs inside the lab image; run.sh invokes it there.",
     "bridge": "Foreground Agency HTTP adapter. live and ui start it themselves.",
 }
@@ -88,19 +86,14 @@ def check_command(argv: list[str]) -> int:
 
 
 def benchmarks_command(argv: list[str]) -> int:
-    from sapi_config_lab.benchmark import discover_benchmarks
-
-    parser = argparse.ArgumentParser(description="List benchmark metadata without loading trusted code.")
-    parser.add_argument(
-        "--root", type=Path, help="explicit benchmark search root; defaults to this installation's benchmarks"
-    )
-    parser.add_argument("--defaults", action="store_true", help="list only default-selected benchmarks")
+    parser = argparse.ArgumentParser(description="List native task metadata without loading trusted code.")
+    parser.add_argument("--defaults", action="store_true", help="list only default-selected tasks")
     args = parser.parse_args(argv)
-    root = args.root if args.root is not None else benchmark_root()
+    root = benchmark_root()
+    names = None if args.defaults else [p.parent.name for p in sorted(root.glob("*/task.toml"))]
     rows = [
-        {"id": item.name, "default": item.default, "version": item.version, "directory": str(item.directory)}
-        for item in discover_benchmarks(root)
-        if not args.defaults or item.default
+        {"id": task.name, "default": policy(task).get("default", False), "directory": str(task)}
+        for task in select_tasks(root, names)
     ]
     print(json.dumps(rows, indent=2))
     return 0
@@ -143,8 +136,8 @@ def build_command(argv: list[str], *, backend: WorkflowBackend | None = None) ->
     rows = []
     args.output_dir.mkdir(parents=True, exist_ok=True)
     root = benchmark_root()
-    for scenario in discover_benchmarks(root):
-        path = scenario.reference.source
+    for scenario in select_tasks(root, [p.parent.name for p in sorted(root.glob("*/task.toml"))]):
+        path = scenario / "solution/config.yaml"
         context = compose_compilation(path, root, scenario=scenario.name)
         bindings = read_bindings(context.bindings)
         selected = backend if backend is not None else context.backend()
@@ -169,35 +162,6 @@ def build_command(argv: list[str], *, backend: WorkflowBackend | None = None) ->
         rows.append(row)
     write_json(args.output_dir / "build-results.json", rows, ensure_ascii=True)
     print(json.dumps(rows, ensure_ascii=False, indent=2))
-    return 0
-
-
-def package_tasks_command(argv: list[str]) -> int:
-    options = argparse.ArgumentParser(description="Assemble disposable Harbor task packages.")
-    options.add_argument("destination", type=Path)
-    options.add_argument(
-        "--mode",
-        choices=["oracle", "generation"],
-        default="oracle",
-        help=(
-            "stage_tasks also has a replay mode, deliberately not offered here: a replay package is "
-            "only meaningful with a validated submissions manifest and the image that run freezes. "
-            "Use 'sapi-lab live --submissions-manifest' for it."
-        ),
-    )
-    options.add_argument("--image", default=LAB_IMAGE)
-    options.add_argument("--scenario", action="append", dest="scenarios")
-    options.add_argument("--catalog", choices=["full", "scenario"], default="full", help="generation catalog arm")
-    selected = options.parse_args(argv)
-    if selected.catalog != "full" and selected.mode != "generation":
-        raise ValueError("A catalog variant changes generation prompts only")
-    from sapi_config_lab.coordinate.benchmark_discovery import select_benchmarks
-    from sapi_config_lab.coordinate.packages import stage_tasks
-
-    root = resource_root()
-    items = select_benchmarks(root / "tasks", selected.scenarios)
-    stage_tasks(selected.destination, root=root, benchmarks=items, mode=selected.mode, catalog=selected.catalog)
-    print(selected.destination)
     return 0
 
 
@@ -232,8 +196,6 @@ def dispatch(argv: list[str] | None = None, *, backend: WorkflowBackend | None =
         from sapi_config_lab.coordinate.cases import main as execute_command
 
         return execute_command(args.arguments, backend=backend)
-    if command == "package-tasks":
-        return package_tasks_command(args.arguments)
     if command == "fetch-source":
         return fetch_source_command(args.arguments)
     module = importlib.import_module("sapi_config_lab." + MODULES[command])
