@@ -492,8 +492,8 @@ class DockerCheckoutFaultTests(DockerCheckoutHarborTests):
 
         run = ROOT / "reports/migration-06" / ("faults-" + uuid.uuid4().hex[:10])
         run.mkdir(parents=True)
-        stage_tasks(run / "template", root=ROOT, benchmarks=select_benchmarks(ROOT / "tasks", ("checkout-recovery",)))
         template = run / "template/checkout-recovery"
+        shutil.copytree(ROOT / "tasks/checkout-recovery", template)
         from tests.test_checkout_isolation import DOCKER_CANDIDATE_PROBE, DOCKER_REDIRECT_PROBE
 
         shutil.copyfile(ROOT / "tests/checkout_fault_probe.py", template / "tests/fault_probe.py")
@@ -613,6 +613,9 @@ class DockerCheckoutFaultTests(DockerCheckoutHarborTests):
                             },
                         )
                         self.assertTrue(read(evidence / "trial.json")["terminal_completion"])
+                        from sapi_config_lab.evaluate.records import NOT_EVALUATED, trial_result
+
+                        self.assertEqual(trial_result({"verdict_path": str(verifier / "result.json")}), NOT_EVALUATED)
                     else:
                         terminal = read(evidence / "trial.json")
                         self.assertFalse(terminal["terminal_completion"])

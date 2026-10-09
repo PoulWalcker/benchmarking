@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import runpy
 import signal
 import subprocess
 import sys
@@ -72,8 +73,6 @@ def simulator(mode):
 def attempt(mode):
     from payload.environment import hooks
 
-    from sapi_config_lab.coordinate import benchmark_worker
-
     if mode == "evaluator-failure":
         from payload.evaluation import evaluator
 
@@ -85,7 +84,9 @@ def attempt(mode):
             raise RuntimeError("injected evaluator failure after immutable observations")
 
         evaluator.evaluate = fail
-        return benchmark_worker.main()
+        # Native main binds the evaluator on import, after the fault is installed.
+        native = runpy.run_path("/tests/main.py", run_name="_checkout_fault_native")
+        return native["main"]()
     context = {
         "output": OUTPUT,
         "evidence": OUTPUT / "evidence",
