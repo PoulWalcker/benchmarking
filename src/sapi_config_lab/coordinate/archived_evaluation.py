@@ -287,6 +287,8 @@ def _invoke_snapshot(
             input=json.dumps(request) if request is not None else None,
             check=False,
         )
+        if completed.returncode == 124:
+            raise subprocess.TimeoutExpired(completed.args, 0, output=completed.stdout, stderr=completed.stderr)
         if completed.returncode not in (0, 1) or not (output / "result.json").is_file():
             raise ValueError("Archived evaluation failed: " + completed.stderr.strip())
         return validate_result(json.loads((output / "result.json").read_text()))

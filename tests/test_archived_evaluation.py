@@ -507,3 +507,30 @@ print(json.dumps(result))
         (self.record / "evidence/submission.yaml").unlink()
         save(self.record / "native-task.json", {**self.metadata, "submission_sha256": None})
         self.assertTrue(self.evaluate()["acceptance"])
+
+    def test_native_child_timeout_propagates_without_releasing_unknown_series_reservation(self):
+        script = self.snapshot / "tasks/native-example/experiment.py"
+        script.write_text("""import json, sys
+from pathlib import Path
+request = json.load(sys.stdin)
+path = Path(request['series_dir']) / 'ledger.json'
+ledger = json.loads(path.read_text())
+ledger['events'].append({'status': 'unknown', 'count': 1})
+path.write_text(json.dumps(ledger))
+print('ambiguous judge outcome', file=sys.stderr)
+raise SystemExit(124)
+""")
+        self.sources = hashes(self.snapshot)
+        save(self.manifest, self.sources)
+        save(self.record / "native-task.json", {**self.metadata, "sources": self.sources})
+        series = self.root / "series"
+        save(series / "ledger.json", {"source_manifest": self.sources, "events": [{"status": "passed", "count": 1}]})
+        with self.assertRaises(subprocess.TimeoutExpired) as failure:
+            self.evaluate({"dispatch": True, "series_dir": str(series)})
+        self.assertEqual(failure.exception.stderr, "ambiguous judge outcome\n")
+        self.assertEqual(
+            json.loads((series / "ledger.json").read_text())["events"],
+            [{"status": "passed", "count": 1}, {"status": "unknown", "count": 1}],
+        )
+        self.assertFalse((self.output / "result.json").exists())
+        self.assertFalse((self.output / "ledger.json").exists())
