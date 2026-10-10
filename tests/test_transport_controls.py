@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import subprocess
 import tempfile
 import threading
 import unittest
@@ -37,21 +38,106 @@ class NativeTransportTaskTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "run"
 
-            def experiment(path, report, body, **kwargs):
-                report["status"] = "failed"
-                run = type("LocalRun", (), {"output": path})()
-                with contextlib.suppress(RuntimeError):
-                    body(run)
+            def local_tests(argv, log, **kwargs):
+                log.write_text("local test reason\n")
+                return 1
 
             with (
-                patch("sapi_config_lab.coordinate.controls.run_experiment", side_effect=experiment),
+                patch("sapi_config_lab.coordinate.runs.running_containers", return_value=""),
+                patch("sapi_config_lab.coordinate.runs.checked_harbor", return_value=(["harbor"], "0.21.0")),
                 patch("sapi_config_lab.coordinate.controls.subprocess.check_output", return_value="27.0\n"),
-                patch("sapi_config_lab.coordinate.controls.run_logged", return_value=1) as dispatch,
+                patch("sapi_config_lab.coordinate.controls.run_logged", side_effect=local_tests) as dispatch,
                 contextlib.redirect_stdout(io.StringIO()),
+                contextlib.redirect_stderr(io.StringIO()) as stderr,
             ):
                 self.assertEqual(controls.main(["--report-dir", str(output), "--scenario", "invoice-total"]), 1)
-            self.assertEqual(dispatch.call_args.args[1], output / "local-tests.log")
+            self.assertEqual(dispatch.call_args.args[1], output.resolve() / "local-tests.log")
             self.assertEqual(dispatch.call_args.kwargs, {"stage": "local tests", "timeout": 300})
+            report = json.loads((output / "report.json").read_text())
+            self.assertEqual(report["failure_stage"], "local tests")
+            self.assertEqual(report["log"], "local-tests.log")
+            self.assertEqual(report["log_tail"], ["local test reason"])
+            self.assertIn("failed at local tests: Control check failed: local_tests", stderr.getvalue())
+
+    def test_plan_failure_records_task_stderr_before_dispatch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "run"
+            error = subprocess.CalledProcessError(7, ["task plan"], stderr=b"plan reason\n")
+            with (
+                patch("sapi_config_lab.coordinate.runs.running_containers", return_value=""),
+                patch("sapi_config_lab.coordinate.runs.checked_harbor", return_value=(["harbor"], "0.21.0")),
+                patch("sapi_config_lab.coordinate.controls.subprocess.check_output", return_value="27.0\n"),
+                patch("sapi_config_lab.coordinate.controls.run_logged", return_value=0),
+                patch("sapi_config_lab.coordinate.controls.invoke", side_effect=error),
+                patch("sapi_config_lab.coordinate.runs.run_job") as dispatch,
+                contextlib.redirect_stdout(io.StringIO()),
+                contextlib.redirect_stderr(io.StringIO()),
+            ):
+                self.assertEqual(controls.main(["--report-dir", str(output)]), 1)
+            report = json.loads((output / "report.json").read_text())
+            self.assertEqual(report["failure_stage"], "plan invoice-total")
+            self.assertIsNone(report["log"])
+            self.assertEqual(report["log_tail"], ["plan reason"])
+            dispatch.assert_not_called()
+
+    def test_failed_oracle_and_nop_keep_the_control_check_and_job_log(self):
+        for failed_agent in ("oracle", "nop"):
+            with self.subTest(agent=failed_agent), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "run"
+
+                def native_tasks(run, tasks, **kwargs):
+                    run.native_tasks = tasks
+
+                def harbor(argv, task, jobs, job, agent, log, *, failed_agent=failed_agent, **kwargs):
+                    trial = jobs / job / "trial"
+                    (trial / "verifier").mkdir(parents=True)
+                    (trial / "result.json").write_text(
+                        json.dumps(
+                            {
+                                "task_name": task.name,
+                                "verifier_result": {"rewards": {"reward": 1.0 if agent == "oracle" else 0.0}},
+                                "exception_info": None,
+                            }
+                        )
+                    )
+                    (trial / "verifier/result.json").write_text(
+                        json.dumps(
+                            {
+                                "execution": True,
+                                "acceptance": agent == "oracle",
+                                "quality": None,
+                            }
+                        )
+                    )
+                    log.write_text(agent + " reason\n")
+                    return 7 if agent == failed_agent else 0
+
+                with (
+                    patch("sapi_config_lab.coordinate.runs.running_containers", return_value=""),
+                    patch("sapi_config_lab.coordinate.runs.checked_harbor", return_value=(["harbor"], "0.21.0")),
+                    patch("sapi_config_lab.coordinate.controls.subprocess.check_output", return_value="27.0\n"),
+                    patch("sapi_config_lab.coordinate.controls.run_logged", return_value=0),
+                    patch("sapi_config_lab.coordinate.controls.invoke", return_value={}),
+                    patch(
+                        "sapi_config_lab.coordinate.controls.transport_probe",
+                        return_value={"exit_code": 0, "passed": True},
+                    ),
+                    patch.object(Run, "use_image"),
+                    patch.object(Run, "use_native_tasks", native_tasks),
+                    patch("sapi_config_lab.coordinate.runs.run_job", side_effect=harbor),
+                    contextlib.redirect_stdout(io.StringIO()),
+                    contextlib.redirect_stderr(io.StringIO()) as stderr,
+                ):
+                    self.assertEqual(controls.main(["--report-dir", str(output)]), 1)
+                report = json.loads((output / "report.json").read_text())
+                self.assertEqual(report["failure_stage"], "harbor_" + failed_agent)
+                self.assertEqual(report["log"], failed_agent + "-invoice-total.log")
+                self.assertEqual(report["log_tail"], [failed_agent + " reason"])
+                self.assertEqual(report[failed_agent]["harbor_exit_code"], 7)
+                self.assertIn("Control check failed: harbor_" + failed_agent, report["error"])
+                self.assertIn(
+                    f"  jobs: {output.resolve() / 'jobs' / (failed_agent + '-invoice-total')}", stderr.getvalue()
+                )
 
     def test_independent_fixture_compiles_without_the_global_catalog(self):
         from sapi_config_lab.contracts import CompileOptions

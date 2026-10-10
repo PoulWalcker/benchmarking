@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -15,7 +16,7 @@ from sapi_config_lab.coordinate.generate import main, summarize_trials
 from sapi_config_lab.coordinate.native_tasks import image_tags, invoke, select_tasks
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.replay import load_selection, select_submission
-from sapi_config_lab.coordinate.runs import Run
+from sapi_config_lab.coordinate.runs import Run, run_experiment
 from sapi_config_lab.evaluate.records import NOT_EVALUATED
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.harbor_integration.yaml_agent import ReplayYamlAgent, WrapperYamlAgent
@@ -26,6 +27,84 @@ ROOT = workspace_root()
 
 
 class NativeGenerationTests(unittest.TestCase):
+    def test_failed_task_invoke_preserves_stderr_in_the_run_report(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            task = root / "tasks/invoice-total"
+            task.mkdir(parents=True)
+            (task / "task.toml").write_text("[metadata.sapi]\ndefault = true\n")
+            (task / "experiment.py").write_text(
+                "import sys\nsys.stderr.write('old\\r\\x1b[31mtask reason\\x1b[0m\\n')\nsys.exit(7)\n"
+            )
+            output = root / "run"
+            seen = []
+
+            def body(run):
+                with self.assertRaises(subprocess.CalledProcessError) as raised:
+                    with run.step("plan invoice-total"):
+                        invoke(task, {"action": "plan"}, run.sources)
+                self.assertEqual(raised.exception.returncode, 7)
+                seen.append(raised.exception)
+                raise raised.exception
+
+            with (
+                patch("sapi_config_lab.coordinate.native_tasks.resource_root", return_value=root),
+                patch("sapi_config_lab.coordinate.runs.running_containers", return_value=""),
+                patch("sapi_config_lab.coordinate.runs.checked_harbor", return_value=(["harbor"], "0.21.0")),
+                contextlib.redirect_stderr(io.StringIO()) as stderr,
+            ):
+                report = run_experiment(
+                    output, {}, body, prefix="t", classify=lambda error: self.assertIs(error, seen[0]) or "task"
+                )
+            self.assertEqual(report["failure_stage"], "plan invoice-total")
+            self.assertIsNone(report["log"])
+            self.assertEqual(report["log_tail"], ["old", "task reason"])
+            self.assertNotIn("  log:", stderr.getvalue())
+            self.assertNotIn("  inspect:", stderr.getvalue())
+
+    def test_control_child_failure_names_its_stage_without_starting_generation(self):
+        for child_stage in (None, "native build", "missing", "invalid", "list"):
+            with self.subTest(child_stage=child_stage), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "run"
+                stderr, stdout = io.StringIO(), io.StringIO()
+
+                def controls(argv, log, *, child_stage=child_stage, **kwargs):
+                    child = log.parent / "control"
+                    child.mkdir()
+                    report = {"status": "failed"}
+                    if child_stage == "native build":
+                        report["failure_stage"] = child_stage
+                    if child_stage == "invalid":
+                        (child / "report.json").write_text("invalid json")
+                    elif child_stage == "list":
+                        write_json(child / "report.json", [])
+                    elif child_stage != "missing":
+                        write_json(child / "report.json", report)
+                    log.write_text("child reason\n")
+                    return 3
+
+                with (
+                    patch("sapi_config_lab.coordinate.runs.running_containers", return_value=""),
+                    patch("sapi_config_lab.coordinate.runs.checked_harbor", return_value=(["harbor"], "0.21.0")),
+                    patch("sapi_config_lab.coordinate.generate.run_logged", side_effect=controls),
+                    patch("sapi_config_lab.coordinate.runs.run_job") as harbor,
+                    contextlib.redirect_stderr(stderr),
+                    contextlib.redirect_stdout(stdout),
+                ):
+                    self.assertEqual(main(["--attempts", "1", "--report-dir", str(output)]), 1)
+                report = json.loads((output / "report.json").read_text())
+                self.assertEqual(report["failure_stage"], "controls")
+                self.assertEqual(report["log"], "control.log")
+                self.assertEqual(report["log_tail"], ["child reason"])
+                self.assertIn(
+                    "control suite failed at native build" if child_stage == "native build" else "Control suite failed",
+                    stderr.getvalue(),
+                )
+                harbor.assert_not_called()
+                self.assertFalse((output / "ledger.json").exists())
+                self.assertEqual(len(stdout.getvalue().splitlines()), 1)
+                self.assertEqual(json.loads(stdout.getvalue())["status"], "failed")
+
     def test_task_owned_prompts_preserve_every_original_arm_byte(self):
         expected = {
             ("invoice-total", "full"): "d1e72a8298a682f09c6198beb8e26f54beaf086f56a65a79a7cc68e0a0625f49",

@@ -8,12 +8,12 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from sapi_config_lab.coordinate.ledger import Ledger
 from sapi_config_lab.coordinate.live import main as live
 from sapi_config_lab.coordinate.native_tasks import select_tasks
-from sapi_config_lab.coordinate.runs import Run, run_experiment
+from sapi_config_lab.coordinate.runs import Run, progress, run_experiment
 from sapi_config_lab.evaluate.records import load_trials, read_report
 from sapi_config_lab.paths import workspace_root
 
@@ -227,6 +227,258 @@ class RunTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "never overwritten"):
             run_experiment(self.output, {}, body, prefix="t")
 
+    def test_nested_failure_keeps_the_inner_stage_log_and_exception(self):
+        FakeHost(self)
+        error = subprocess.CalledProcessError(7, ["child"])
+        stderr, stdout = io.StringIO(), io.StringIO()
+
+        def body(run):
+            with self.assertRaises(subprocess.CalledProcessError) as raised:
+                with run.step("outer", log="outer"):
+                    with run.step("inner", log="inner") as log:
+                        log.write_bytes(b"old\r\x1b[31mreason\x1b[0m\n\xff\n\n")
+                        raise error
+            self.assertIs(raised.exception, error)
+            raise raised.exception
+
+        with (
+            patch("sapi_config_lab.coordinate.runs.progress", progress),
+            contextlib.redirect_stderr(stderr),
+            contextlib.redirect_stdout(stdout),
+            patch("sapi_config_lab.coordinate.runs.checked_harbor", return_value=(["harbor"], "0.21.0")),
+        ):
+            run_experiment(
+                self.output, {}, body, prefix="t", classify=lambda seen: self.assertIs(seen, error) or "child"
+            )
+        report = self.saved()
+        self.assertEqual(report["failure_stage"], "inner")
+        self.assertEqual(report["log"], "inner.log")
+        self.assertEqual(report["log_tail"], ["old", "reason", "�"])
+        self.assertEqual(report["logs"], {"outer": "outer.log", "inner": "inner.log"})
+        self.assertEqual(report["error"], str(type(error).__name__) + ": " + str(error))
+        self.assertIn("failed at inner: exit 7\n", stderr.getvalue())
+        self.assertIn(f"  log: {self.output.resolve() / 'inner.log'}\n", stderr.getvalue())
+        self.assertIn("  last lines:\n    old\n    reason\n    �\n", stderr.getvalue())
+        self.assertIn(f"  inspect: tail -n 200 {self.output.resolve() / 'inner.log'}\n", stderr.getvalue())
+        self.assertEqual(stdout.getvalue(), "")
+
+    def test_log_tail_and_terminal_are_bounded(self):
+        FakeHost(self)
+        stderr = io.StringIO()
+
+        def body(run):
+            with run.step("bounded", log="bounded") as log:
+                log.write_text("discard me\n" + "\n".join(f"{n}:" + "界" * 500 for n in range(80)))
+                raise RuntimeError("first line\nsecond line")
+
+        with patch("sapi_config_lab.coordinate.runs.progress", progress), contextlib.redirect_stderr(stderr):
+            run_experiment(self.output, {}, body, prefix="t")
+        tail = self.saved()["log_tail"]
+        self.assertTrue(tail)
+        self.assertTrue(tail[-1].startswith("79:"))
+        self.assertLessEqual(len(tail), 40)
+        self.assertTrue(all(len(line) <= 300 for line in tail))
+        self.assertLessEqual(len("\n".join(tail).encode()), 8192)
+        self.assertNotIn("discard me", "\n".join(tail))
+        self.assertIn("failed at bounded: first line second line\n", stderr.getvalue())
+
+    def test_terminal_shows_only_the_last_twenty_of_forty_tail_lines(self):
+        FakeHost(self)
+        stderr = io.StringIO()
+
+        def body(run):
+            with run.step("many lines", log="many") as log:
+                log.write_text("\n".join(f"line {n}" for n in range(60)))
+                raise RuntimeError("boom")
+
+        with patch("sapi_config_lab.coordinate.runs.progress", progress), contextlib.redirect_stderr(stderr):
+            run_experiment(self.output, {}, body, prefix="t")
+        self.assertEqual(self.saved()["log_tail"], [f"line {n}" for n in range(20, 60)])
+        self.assertNotIn("    line 39\n", stderr.getvalue())
+        self.assertIn("    line 40\n", stderr.getvalue())
+        self.assertIn("    line 59\n", stderr.getvalue())
+
+    def test_removed_or_unreadable_log_does_not_replace_the_error(self):
+        FakeHost(self)
+        for unreadable in (False, True):
+            with self.subTest(unreadable=unreadable):
+                output = self.root / str(unreadable)
+                run = Run(output, {}, {}, "t")
+                output.mkdir()
+                error = subprocess.CalledProcessError(9, ["child"], stderr="do not substitute stderr")
+                with self.assertRaises(subprocess.CalledProcessError) as raised:
+                    with run.step("removed", log="gone") as log:
+                        if unreadable:
+                            log.mkdir()
+                        raise error
+                self.assertIs(raised.exception, error)
+                self.assertEqual(run.report["log_tail"], [])
+
+    def test_timeout_stage_and_reservation_keep_an_unknown_outcome(self):
+        FakeHost(self)
+        stderr = io.StringIO()
+        error = subprocess.TimeoutExpired("paid child", 2.5)
+        ledger = Ledger.open(self.root / "ledger.json", ceilings={"runtime": 1}, stop_after_failure=False)
+
+        def body(run):
+            with ledger.reserved("runtime", "slow", 1, run.output / "report.json", 1):
+                with run.step("runtime", log="runtime") as log:
+                    log.write_text("possibly dispatched\n")
+                    raise error
+
+        with (
+            patch("sapi_config_lab.coordinate.runs.progress", progress),
+            contextlib.redirect_stderr(stderr),
+            patch("sapi_config_lab.coordinate.runs.checked_harbor", return_value=(["harbor"], "0.21.0")),
+        ):
+            run_experiment(self.output, {}, body, prefix="t")
+        report = self.saved()
+        self.assertEqual(report["failure_category"], "timeout_unknown_outcome")
+        self.assertEqual(report["failure_stage"], "runtime")
+        self.assertEqual(report["log_tail"], ["possibly dispatched"])
+        self.assertIn("outcome unknown at runtime: timed out after 2.5s (not a failure verdict)", stderr.getvalue())
+        self.assertNotIn("failed", stderr.getvalue())
+        self.assertEqual(ledger.data["events"][0]["status"], "unknown")
+        self.assertEqual(ledger.spent("runtime"), 1)
+
+    def test_classified_unknown_outcome_is_never_printed_as_a_failure_verdict(self):
+        FakeHost(self)
+        stderr = io.StringIO()
+
+        def body(run):
+            with run.step("runtime"):
+                raise RuntimeError("wrapper completion is missing")
+
+        with patch("sapi_config_lab.coordinate.runs.progress", progress), contextlib.redirect_stderr(stderr):
+            run_experiment(self.output, {}, body, prefix="t", classify=lambda error: "timeout_unknown_outcome")
+        self.assertEqual(self.saved()["failure_category"], "timeout_unknown_outcome")
+        self.assertIn(
+            "outcome unknown at runtime: wrapper completion is missing (not a failure verdict)", stderr.getvalue()
+        )
+        self.assertNotIn("failed", stderr.getvalue())
+
+    def test_interrupt_keeps_the_inner_stage_and_same_object_without_classifying(self):
+        FakeHost(self)
+        interrupt = KeyboardInterrupt()
+        stderr = io.StringIO()
+        classify = Mock()
+
+        def body(run):
+            with run.step("outer"):
+                with run.step("x", log="x"):
+                    raise interrupt
+
+        with (
+            patch("sapi_config_lab.coordinate.runs.progress", progress),
+            contextlib.redirect_stderr(stderr),
+            self.assertRaises(KeyboardInterrupt) as raised,
+        ):
+            run_experiment(self.output, {}, body, prefix="t", classify=classify)
+        self.assertIs(raised.exception, interrupt)
+        report = self.saved()
+        self.assertEqual(report["status"], "interrupted")
+        self.assertEqual(report["interrupted_stage"], "x")
+        self.assertEqual(report["logs"], {"x": "x.log"})
+        for key in ("failure_stage", "log", "log_tail", "error", "failure_category"):
+            self.assertNotIn(key, report)
+        classify.assert_not_called()
+        self.assertIn("interrupted at x; in-flight work has an unknown outcome", stderr.getvalue())
+
+    def test_setup_interrupt_survives_cleanup_errors(self):
+        FakeHost(self)
+        interrupt = KeyboardInterrupt()
+        with (
+            patch("sapi_config_lab.coordinate.runs.running_containers", side_effect=interrupt),
+            self.assertRaises(KeyboardInterrupt) as raised,
+        ):
+            run_experiment(self.output, {}, lambda run: None, prefix="t")
+        self.assertIs(raised.exception, interrupt)
+        report = self.saved()
+        self.assertEqual(report["status"], "interrupted")
+        self.assertEqual([row["stage"] for row in report["cleanup_errors"]], ["containers"])
+        self.assertNotIn("error", report)
+
+    def test_other_base_exceptions_pass_through_steps_without_diagnostics(self):
+        FakeHost(self)
+        error = SystemExit(9)
+
+        def body(run):
+            with run.step("exit", log="exit"):
+                raise error
+
+        with self.assertRaises(SystemExit) as raised:
+            run_experiment(self.output, {}, body, prefix="t")
+        self.assertIs(raised.exception, error)
+        report = self.saved()
+        for key in ("interrupted_stage", "failure_stage", "log", "log_tail", "error", "failure_category"):
+            self.assertNotIn(key, report)
+
+    def test_native_build_transport_and_harbor_failures_name_their_logs(self):
+        task = select_tasks(workspace_root() / "tasks", ("invoice-total",))[0]
+        cases = (
+            ("native build", "native-build"),
+            ("transport", "transport"),
+            ("oracle-invoice-total", "oracle-invoice-total"),
+        )
+        for stage, stem in cases:
+            with self.subTest(stage=stage):
+                FakeHost(self)
+                output = self.root / stem
+                error = subprocess.CalledProcessError(7, ["host child"])
+                stderr = io.StringIO()
+
+                def dispatch(*args, stage=stage, error=error, **kwargs):
+                    log = args[5] if stage == "oracle-invoice-total" else args[1]
+                    log.write_text("host child reason\n")
+                    if stage == "native build":
+                        return 7
+                    raise error
+
+                def body(run, stage=stage):
+                    run.native_tasks = (task,)
+                    if stage == "native build":
+                        run.use_native_tasks((task,), build=True)
+                    elif stage == "transport":
+                        run.transport(task)
+                    else:
+                        run.harbor(stage, task, "oracle")
+
+                with (
+                    patch("sapi_config_lab.coordinate.runs.run_logged", side_effect=dispatch),
+                    patch("sapi_config_lab.coordinate.runs.run_job", side_effect=dispatch),
+                    patch("sapi_config_lab.coordinate.runs.progress", progress),
+                    contextlib.redirect_stderr(stderr),
+                ):
+                    report = run_experiment(output, {}, body, prefix="t")
+                self.assertEqual(report["failure_stage"], stage)
+                self.assertEqual(report["log"], stem + ".log")
+                self.assertEqual(report["log_tail"], ["host child reason"])
+                self.assertEqual(report["logs"], {stem: stem + ".log"})
+                self.assertIn(f"failed at {stage}: exit 7", stderr.getvalue())
+                if stage in ("transport", "oracle-invoice-total"):
+                    self.assertIn(f"  jobs: {output.resolve() / 'jobs' / stem}", stderr.getvalue())
+
+    def test_report_lists_bridge_and_other_top_level_logs_even_when_empty(self):
+        FakeHost(self, containers=("one", "one", "one", "one"))
+
+        def body(run):
+            (run.output / "other.log").write_text("other")
+            with run.bridge({}, "case", bindings=self.root / "unused"):
+                pass
+            run.report["status"] = "passed"
+
+        def start(*args, **kwargs):
+            args[5].write_text("bridge")
+
+        with (
+            patch("sapi_config_lab.coordinate.runs.start_bridge", side_effect=start),
+            patch("sapi_config_lab.coordinate.runs.stop_bridge"),
+        ):
+            run_experiment(self.output, {}, body, prefix="t")
+        self.assertEqual(self.saved()["logs"], {"case-bridge": "case-bridge.log", "other": "other.log"})
+        run_experiment(self.root / "empty", {}, lambda run: None, prefix="t")
+        self.assertEqual(json.loads((self.root / "empty/report.json").read_text())["logs"], {})
+
 
 class LedgerTests(unittest.TestCase):
     def setUp(self):
@@ -258,6 +510,18 @@ class LedgerTests(unittest.TestCase):
             raise subprocess.TimeoutExpired("harbor", 1)
         self.assertEqual(other.data["events"][0]["status"], "unknown")
         self.assertEqual(other.spent("runtime"), 1)
+
+    def test_interrupted_reservation_stays_unknown_and_blocks_retry(self):
+        ledger = self.ledger()
+        interrupt = KeyboardInterrupt()
+        with self.assertRaises(KeyboardInterrupt) as raised:
+            with ledger.reserved("runtime", "interrupted", 1, self.report, 4):
+                raise interrupt
+        self.assertIs(raised.exception, interrupt)
+        self.assertEqual(ledger.data["events"][0]["status"], "unknown")
+        self.assertEqual(ledger.spent("runtime"), 1)
+        with self.assertRaisesRegex(ValueError, "unknown outcome"):
+            self.ledger().reserve("runtime", "retry", 1, self.report, 4)
 
     def test_failure_policy_repeats_and_reopening_are_fixed(self):
         continuing = self.ledger(stop=False)
@@ -323,5 +587,6 @@ class LiveCeilingTests(unittest.TestCase):
         self.assertEqual(json.loads(stdout.getvalue())["status"], "failed")
         self.assertEqual(len(stdout.getvalue().splitlines()), 1)
         self.assertIn("controls: checking", stderr.getvalue())
-        self.assertIn("failed: ValueError", stderr.getvalue())
+        self.assertEqual(report["failure_stage"], "preflight")
+        self.assertIn("failed at preflight: The cohort needs", stderr.getvalue())
         self.assertIn("finalizing", stderr.getvalue())

@@ -70,18 +70,41 @@ def checked_harbor() -> tuple[list[str], str]:
     return harbor, reported
 
 
+def log_tail(log: Path | None, *, stderr: str | bytes | None = None, lines: int = 40, width: int = 300) -> list[str]:
+    """Read bounded, normalized log lines for progress and failure diagnostics."""
+    if log is not None:
+        try:
+            with log.open("rb") as stream:
+                stream.seek(0, os.SEEK_END)
+                stream.seek(max(0, stream.tell() - 8192))
+                tail = stream.read(8192)
+        except OSError:
+            return []
+    else:
+        tail = stderr.encode("utf-8", errors="replace") if isinstance(stderr, str) else stderr or b""
+        tail = tail[-8192:]
+    segments = re.split(r"[\r\n]", ANSI_CSI.sub("", tail.decode("utf-8", errors="replace")))
+    result: list[str] = []
+    size = 0
+    for segment in reversed(segments):
+        line = segment.strip()
+        if not line:
+            continue
+        if len(line) > width:
+            line = line[: width - 1] + "…"
+        size += len(line.encode("utf-8")) + bool(result)
+        if size > 8192:
+            break
+        result.append(line)
+        if len(result) == lines:
+            break
+    return list(reversed(result))
+
+
 def last_log_line(log: Path) -> str:
     """Read one bounded, printable progress line from a subprocess log."""
-    try:
-        with log.open("rb") as stream:
-            stream.seek(0, os.SEEK_END)
-            stream.seek(max(0, stream.tell() - 8192))
-            tail = stream.read()
-    except OSError:
-        return "(no output yet)"
-    segments = re.split(r"[\r\n]", ANSI_CSI.sub("", tail.decode("utf-8", errors="replace")))
-    line = next((segment.strip() for segment in reversed(segments) if segment.strip()), "(no output yet)")
-    return line[:159] + "…" if len(line) > 160 else line
+    lines = log_tail(log, lines=1, width=160)
+    return lines[0] if lines else "(no output yet)"
 
 
 def run_logged(

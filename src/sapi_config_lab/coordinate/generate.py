@@ -164,15 +164,35 @@ def main(argv: list[str] | None = None) -> int:
     def body(run: Run) -> None:
         progress(f"controls: unpaid control suite first; log {run.output / 'control.log'}")
         started = time.monotonic()
-        control = run_logged(
-            [sys.executable, "-m", "sapi_config_lab.coordinate.controls", "--report-dir", str(run.output / "control")]
-            + [arg for scenario in scenarios for arg in ("--scenario", scenario)],
-            run.output / "control.log",
-            stage="controls",
-            timeout=None,
-        )
-        if control or json.loads((run.output / "control/report.json").read_text()).get("status") != "passed":
-            raise RuntimeError("Control suite failed; model generation was not started")
+        with run.step("controls", log="control"):
+            control = run_logged(
+                [
+                    sys.executable,
+                    "-m",
+                    "sapi_config_lab.coordinate.controls",
+                    "--report-dir",
+                    str(run.output / "control"),
+                ]
+                + [arg for scenario in scenarios for arg in ("--scenario", scenario)],
+                run.output / "control.log",
+                stage="controls",
+                timeout=None,
+            )
+            try:
+                child = json.loads((run.output / "control/report.json").read_text())
+            except OSError, ValueError:
+                if not control:
+                    raise
+                child = {}
+            if control and not isinstance(child, dict):
+                child = {}
+            if control or child.get("status") != "passed":
+                cause = (
+                    f"control suite failed at {child['failure_stage']}"
+                    if child.get("failure_stage")
+                    else "Control suite failed"
+                )
+                raise RuntimeError(cause + "; model generation was not started")
         progress(f"controls: passed ({round(time.monotonic() - started)}s)")
         run.check("after-controls")
         identity = run.use_image(LAB_IMAGE)
@@ -181,23 +201,26 @@ def main(argv: list[str] | None = None) -> int:
         report["prompt_sha256"], report["private_cases_sha256"], report["private_cases_paths"] = {}, {}, {}
         prompts = {}
         for task in tasks:
-            run.check("before-prompt-" + task.name)
-            material = invoke(task, {"action": "prompt", "catalog": args.catalog}, run.sources)
-            inputs = run.output / "inputs" / task.name
-            inputs.mkdir(parents=True)
-            prompt = inputs / "prompt.txt"
-            prompt.write_bytes(material["prompt"].encode())
-            prompts[task.name] = prompt
-            report["prompt_sha256"][task.name] = sha256(prompt)
-            if "cases" in material:
-                cases = inputs / "cases.json"
-                write_json(cases, {task.name: material["cases"]})
-                report["private_cases_sha256"][task.name] = sha256(cases)
-                report["private_cases_paths"][task.name] = str(cases.relative_to(run.output))
-            if args.catalog == "scenario":
-                text = material["catalog"]
-                report["catalog"].setdefault("operations", {})[task.name] = sorted(yaml.safe_load(text)["operations"])
-                report["catalog"].setdefault("sha256", {})[task.name] = hashlib.sha256(text.encode()).hexdigest()
+            with run.step("prompt " + task.name):
+                run.check("before-prompt-" + task.name)
+                material = invoke(task, {"action": "prompt", "catalog": args.catalog}, run.sources)
+                inputs = run.output / "inputs" / task.name
+                inputs.mkdir(parents=True)
+                prompt = inputs / "prompt.txt"
+                prompt.write_bytes(material["prompt"].encode())
+                prompts[task.name] = prompt
+                report["prompt_sha256"][task.name] = sha256(prompt)
+                if "cases" in material:
+                    cases = inputs / "cases.json"
+                    write_json(cases, {task.name: material["cases"]})
+                    report["private_cases_sha256"][task.name] = sha256(cases)
+                    report["private_cases_paths"][task.name] = str(cases.relative_to(run.output))
+                if args.catalog == "scenario":
+                    text = material["catalog"]
+                    report["catalog"].setdefault("operations", {})[task.name] = sorted(
+                        yaml.safe_load(text)["operations"]
+                    )
+                    report["catalog"].setdefault("sha256", {})[task.name] = hashlib.sha256(text.encode()).hexdigest()
         run.pin("authoring inputs", run.output / "inputs")
         run.check("before-authoring-ledger")
         ledger = open_ledger(

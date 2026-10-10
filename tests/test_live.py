@@ -379,6 +379,7 @@ class NativeLiveReservationTests(unittest.TestCase):
                     }
 
                 run = Mock()
+                run.step.side_effect = lambda *args, **kwargs: contextlib.nullcontext()
                 run.output, run.sources, run.tasks, run.image = output, {}, output / "tasks", "frozen:image"
                 run.use_image.return_value = "sha256:stub"
                 run.bridge.return_value = contextlib.nullcontext(output / "audit.jsonl")

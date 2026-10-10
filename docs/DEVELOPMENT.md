@@ -217,6 +217,21 @@ Logged subprocesses report start, elapsed time, the absolute log path, the last 
 log line, and seconds without new output to stderr every 15 seconds; they also report
 exit or timeout there. Their stdout and stderr remain in the named run log.
 
+Every run report includes a `logs` map from log stems to paths relative to the run
+directory. A failed step adds `failure_stage`, `log` (or null) and a bounded
+`log_tail`: at most 40 non-blank lines, 300 characters per line and 8 KiB total.
+The terminal names the stage, cause and log, shows the last 20 tail lines and gives
+an inspection command; Harbor failures also name the job directory. Timeouts keep
+`failure_category = "timeout_unknown_outcome"` and print "outcome unknown", without
+a failure verdict or release of reserved calls.
+
+For a single Ctrl+C after the run directory and `Run` exist, `report.json` is written
+with `status = "interrupted"` and the innermost `interrupted_stage` when inside a step.
+The interrupt propagates; the direct logged child is killed and reaped, and in-flight
+reservations stay unknown. A report is not guaranteed for a second interrupt during
+`close()`, or an interrupt before the run directory exists. There is no signal handler,
+retry or shielding of cleanup.
+
 Harbor owns `reports/<run>/jobs/<job>/<trial>/`. Research `report.json` adds identity,
 ledger and selection facts plus compact references, including partial trials. Use
 `evaluate.records.load_trials(job)` for current native files, or
