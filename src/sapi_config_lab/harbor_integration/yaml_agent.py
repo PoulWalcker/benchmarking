@@ -19,10 +19,17 @@ MAX_ANSWER_CHARACTERS = 100_000
 
 class WrapperYamlAgent(BaseAgent):
     def __init__(
-        self, *args, upstream: str, prompt_path: str | None = None, prompt_sha256: str | None = None, **kwargs
+        self,
+        *args,
+        upstream: str,
+        expected_model: str,
+        prompt_path: str | None = None,
+        prompt_sha256: str | None = None,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.upstream = upstream
+        self.expected_model = expected_model
         self.prompt_path = Path(prompt_path) if prompt_path is not None else None
         self.prompt_sha256 = prompt_sha256
 
@@ -57,6 +64,7 @@ class WrapperYamlAgent(BaseAgent):
             "generation_calls": 1,
             "repairs": 0,
             "runtime_llm_mode": "stub",
+            "expected_model": self.expected_model,
         }
         started = time.monotonic()
         try:
@@ -68,6 +76,12 @@ class WrapperYamlAgent(BaseAgent):
             if wrapper.get("ok") is not True or wrapper.get("exit_code") != 0:
                 record["failure_reason"] = "wrapper_unsuccessful"
                 raise RuntimeError("Existing wrapper did not complete successfully")
+            if record["model"] is None:
+                record["failure_reason"] = "model_identity_unverified"
+                raise RuntimeError("Authoring model identity could not be verified")
+            if record["model"] != self.expected_model:
+                record["failure_reason"] = "model_identity_mismatch"
+                raise RuntimeError("Authoring model identity differs")
             if record["observed_tool_markers"]:
                 record["failure_reason"] = "observed_tool_use"
                 raise RuntimeError("Tool use observed: attempt is not prompt-only")

@@ -179,6 +179,7 @@ class InvoicePackageTests(unittest.TestCase):
                     "generation_calls": 1,
                     "repairs": 0,
                     "model": "mock-record-only",
+                    "expected_model": "mock-record-only",
                     "observed_tool_markers": [],
                     "submission_sha256": sha256(submission),
                     "prompt_sha256": sha256(trial / "agent/prompt.txt"),
@@ -207,6 +208,7 @@ class InvoicePackageTests(unittest.TestCase):
                 "report.json",
                 {
                     "schema": "sapi-lab-generation/v2",
+                    "wrapper_identity": {"model": "mock-record-only"},
                     "source_unchanged": True,
                     "native_tasks": {"invoice-total": str(DIRECTORY)},
                     "trials": [

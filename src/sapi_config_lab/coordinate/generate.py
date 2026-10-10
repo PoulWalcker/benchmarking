@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 import hashlib
 import json
 from pathlib import Path
+import shutil
 import sys
 import time
 from typing import Any
@@ -21,6 +22,7 @@ from sapi_config_lab.coordinate.live import validate_control
 from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
 from sapi_config_lab.coordinate.progress import detail, stage
 from sapi_config_lab.coordinate.runs import Run, load_trials, progress, run_experiment, trial_seconds
+from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.host import LAB_IMAGE, HostConfig, run_logged
 from sapi_config_lab.harbor_integration.runner import AUTHOR_AGENT
@@ -114,6 +116,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--attempts", type=int, default=3, help="Independent calls per task, no feedback/repair")
     parser.add_argument("--report-dir", type=Path)
     parser.add_argument("--upstream", default=host.wrapper_url, help="Model wrapper URL (SAPI_WRAPPER_URL)")
+    parser.add_argument("--wrapper-evidence", type=Path, required=True, help="The inspected wrapper identity record")
+    parser.add_argument(
+        "--wrapper-file", action="append", help="NAME=PATH: where an inspected wrapper file is on this machine"
+    )
     parser.add_argument("--scenario", action="append", help="Explicit selection; defaults to the default scenarios")
     parser.add_argument("--series-dir", type=Path, help="Reserve in a ledger shared with other runs")
     parser.add_argument("--series-ceiling", action="append", help="PHASE=N, fixed when a series ledger is created")
@@ -130,6 +136,7 @@ def main(argv: list[str] | None = None) -> int:
         scenarios = tuple(item.name for item in tasks)
         policies = {item.name: policy(item) for item in tasks}
         series_ceilings = parse_ceilings(args.series_ceiling)
+        wrapper_files = parse_wrapper_files(args.wrapper_file)
     except ValueError as error:
         parser.error(str(error))
     if not 1 <= args.attempts <= MAX_ATTEMPTS:
@@ -163,6 +170,12 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     def body(run: Run) -> None:
+        report["wrapper_identity"] = wrapper_identity(
+            args.wrapper_evidence, args.upstream, host.wrapper_model, wrapper_files
+        )
+        report["wrapper_files_relocated"] = sorted(wrapper_files)
+        shutil.copyfile(args.wrapper_evidence, run.output / "wrapper-identity.json")
+        run.pin("wrapper identity", args.wrapper_evidence)
         started = time.monotonic()
         with stage("controls"), run.step("controls", log="control"):
             # The child's own progress lines go to control.log; its last line is shown as nested context.
@@ -245,6 +258,7 @@ def main(argv: list[str] | None = None) -> int:
                     job = f"generated-{attempt}-{task.name}"
                     jobs.append(run.output / "jobs" / job)
                     run.check("before-reservation-" + job)
+                    wrapper_identity(args.wrapper_evidence, args.upstream, host.wrapper_model, wrapper_files)
                     with (
                         ledger.reserved("authoring", f"{run.output.name}/{job}", 1, report_path, ceiling) as outcome,
                         detail("1 authoring call reserved"),
@@ -255,6 +269,7 @@ def main(argv: list[str] | None = None) -> int:
                             AUTHOR_AGENT,
                             agent_keys=[
                                 "upstream=" + args.upstream,
+                                "expected_model=" + host.wrapper_model,
                                 "prompt_path=" + str(prompts[task.name]),
                                 "prompt_sha256=" + report["prompt_sha256"][task.name],
                             ],

@@ -104,6 +104,8 @@ lifecycle. The report is finalized even when dispatch or cleanup fails; pre-exis
 container identities are checked. The transport control uses the same argv builder.
 
 Generation reserves a durable unknown ledger event before each single wrapper call.
+It binds the inspected wrapper before controls, rechecks it before every reservation,
+and requires the reported authoring model to match that identity for upload and selection.
 There is no repair loop or fence stripping: exact valid answer bytes are uploaded.
 Empty, oversized, failed or tool-marked answers cannot upload. Raw wrapper stderr is
 not persisted. Selection always chooses the first-started attempt; a failed first

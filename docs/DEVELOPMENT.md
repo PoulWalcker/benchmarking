@@ -113,6 +113,11 @@ The calibration adapter records its provenance separately from measured quality.
 
 ## Generation and fixed selection
 
+```bash
+./run-generation.sh --wrapper-evidence <identity.json> \
+  [--wrapper-file NAME=PATH] --attempts 3
+```
+
 `./run-generation.sh` gives the model the task, unchanged generation contracts and
 catalog once per attempt. There is no repair or feedback. `--catalog scenario` is
 a separately hash-pinned invoice arm containing reference-used operations; full is
@@ -120,9 +125,22 @@ the default and checkout has no reduced arm. `tests/test_native_generation.py` a
 `tests/test_packaging.py` pin exact prompt bytes. Editing prompt material changes
 the experiment.
 
+`generate` requires `--wrapper-evidence`; the script forwards this flag unchanged.
+Before controls and again before each authoring reservation, the inspection must
+match `--upstream`, `SAPI_WRAPPER_MODEL` and every inspected file hash.
+Repeatable `--wrapper-file NAME=PATH` relocates inspected files as in live.
+The inspection is copied to `wrapper-identity.json` and pinned; the generation
+report records `wrapper_identity` and `wrapper_files_relocated`.
+
 The wrapper's JSON and bounded answer are validated before upload; exact answer
-bytes are preserved. Recognized tool markers in stderr reject an attempt. This is
-an audit, not a sandbox disabling the wrapper's CLI tools. Raw stderr is not saved.
+bytes are preserved. The reported model must equal the required `expected_model`;
+`generation.json` records both, with `model_identity_unverified` for a missing or
+invalid model line and `model_identity_mismatch` for a different model. These
+refusals upload nothing and close the reserved call as failed. Recognized tool
+markers in stderr reject an attempt. This is an audit, not a sandbox disabling
+the wrapper's CLI tools. Raw stderr is not saved.
+The model identity is the wrapper CLI's self-report bound to byte-identical
+inspected wrapper files, not a provider receipt.
 Invoice generation executes independent fixture evaluation. Checkout generation
 only admits compilation/call cap/deadline; its verdict facts remain null.
 
@@ -132,6 +150,8 @@ uv run --locked sapi-lab select --source-report <generation>/report.json \
 ```
 
 Selection chooses the first-started attempt, never the first passing replacement.
+It requires a bound authoring identity and matching reported and expected models;
+older generation reports without that identity cannot be selected.
 It rejects tied ordering, contradictory/missing current normalized verdicts and
 changed YAML, prompt, generation, native or case bytes. Loading the selection
 recomputes the choice from the frozen source report. Upload-only replay calls no

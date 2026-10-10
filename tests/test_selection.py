@@ -49,6 +49,7 @@ def generation_run(root: Path, attempts: dict[str, list[tuple[str, str, bool]]])
                 "generation_calls": 1,
                 "repairs": 0,
                 "model": "m",
+                "expected_model": "m",
                 "observed_tool_markers": [],
             }
             save(
@@ -62,6 +63,7 @@ def generation_run(root: Path, attempts: dict[str, list[tuple[str, str, bool]]])
             trials.append({"scenario": scenario, "passed": passed, "result_path": str(trial / "result.json")})
     report = {
         "schema": "sapi-lab-generation/v2",
+        "wrapper_identity": {"model": "m"},
         "source_unchanged": True,
         "trials": trials,
         "prompt_sha256": prompts,
@@ -77,6 +79,39 @@ class SelectionTests(unittest.TestCase):
         patcher = patch("sapi_config_lab.coordinate.replay.source_manifest", return_value=SOURCES)
         patcher.start()
         self.addCleanup(patcher.stop)
+
+    def test_unbound_authoring_identity_is_refused(self):
+        path = generation_run(self.root, {"invoice-total": [("only", "2026-10-04T10:00:00Z", True)]})
+        report = json.loads(path.read_text())
+        for identity in (None, {}, {"model": None}, {"model": ""}, {"model": 42}, {"model": "   "}):
+            with self.subTest(identity=identity):
+                changed = dict(report)
+                if identity is None:
+                    changed.pop("wrapper_identity")
+                else:
+                    changed["wrapper_identity"] = identity
+                save(path, changed)
+                with self.assertRaisesRegex(ValueError, "Authoring identity was not bound"):
+                    select_submission(path, ("invoice-total",))
+
+    def test_a_different_authoring_model_is_refused_without_replacing_the_first(self):
+        path = generation_run(
+            self.root,
+            {"invoice-total": [("first", "2026-10-04T10:00:00Z", True), ("later", "2026-10-04T10:01:00Z", True)]},
+        )
+        audit_path = self.root / "jobs/generated-1/first/agent/generation.json"
+        audit = json.loads(audit_path.read_text())
+        for fields in (
+            {"model": "other"},
+            {"expected_model": "other"},
+            {"model": "other", "expected_model": "other"},
+            {"model": None},
+            {"expected_model": None},
+        ):
+            with self.subTest(fields=fields):
+                save(audit_path, audit | fields)
+                with self.assertRaisesRegex(ValueError, "Authoring model differs from the bound identity"):
+                    select_submission(path, ("invoice-total",))
 
     def test_the_first_started_attempt_is_selected_for_every_scenario(self):
         report = generation_run(

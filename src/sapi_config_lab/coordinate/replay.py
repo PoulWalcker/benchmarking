@@ -26,13 +26,13 @@ def read_json(path: Path):
     return strict_json(path.read_bytes())
 
 
-def authored_once(generation: dict, submission_sha256: str, prompt_sha256: str) -> bool:
+def authored_once(generation: dict, submission_sha256: str, prompt_sha256: str, model: str) -> bool:
     """One wrapper call, no repair, no tools, and the exact recorded prompt and answer."""
     return (
         generation.get("status") == "submitted"
         and generation.get("generation_calls") == 1
         and generation.get("repairs") == 0
-        and isinstance(generation.get("model"), str)
+        and generation.get("model") == generation.get("expected_model") == model
         and generation.get("observed_tool_markers") == []
         and generation.get("submission_sha256") == submission_sha256
         and generation.get("prompt_sha256") == prompt_sha256
@@ -50,6 +50,10 @@ def select_submission(source_report: Path, scenarios: tuple[str, ...]) -> dict:
     )
     frozen = root / "source-manifest.json"
     require(read_json(frozen) == source_manifest(), "Sources changed since the submissions were generated")
+    identity = report.get("wrapper_identity")
+    model = identity.get("model") if isinstance(identity, dict) else None
+    if not isinstance(model, str) or not model.strip():
+        raise ValueError("Authoring identity was not bound")
     require(scenarios and len(set(scenarios)) == len(scenarios), "Select each scenario once")
     entries = []
     for scenario in scenarios:
@@ -95,8 +99,13 @@ def select_submission(source_report: Path, scenarios: tuple[str, ...]) -> dict:
                 validate_result(read_json(verdict))["acceptance"] is True,
                 "Normalized verdict rejected the first attempt",
             )
+        generation = read_json(directory / "agent/generation.json")
         require(
-            authored_once(read_json(directory / "agent/generation.json"), sha256(submission), sha256(prompt)),
+            generation.get("model") == generation.get("expected_model") == model,
+            "Authoring model differs from the bound identity",
+        )
+        require(
+            authored_once(generation, sha256(submission), sha256(prompt), model),
             "Authoring provenance mismatch",
         )
         require(sha256(prompt) == report.get("prompt_sha256", {}).get(scenario), "Prompt drift")
