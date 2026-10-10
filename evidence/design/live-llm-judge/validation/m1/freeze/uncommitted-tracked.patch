@@ -1,0 +1,177 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 6cd47cc..81b6d8e 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -58,3 +58,20 @@ adapts tasks to external Harbor 0.21.0, which owns trial infrastructure.
+ uv run --locked sapi-lab check   # tests, ruff, ruff format, mypy, distribution
+ ./run.sh --scenario <name>       # when execution, packaging, containers, evidence or verification change
+ ```
++
++## Agent skills
++
++### Issue tracker
++
++Track issues and specs as local Markdown under `.scratch/`.
++Before creating, reading or updating tickets, read `docs/agents/issue-tracker.md`.
++
++### Triage labels
++
++Use the five default triage roles.
++Before triaging, read `docs/agents/triage-labels.md`.
++
++### Domain docs
++
++Use a single-context layout: root `GLOSSARY.md` and `docs/adr/`.
++Before exploring domain concepts or decisions, read `docs/agents/domain.md`.
+diff --git a/docs/ARCHITECTURE.md b/docs/ARCHITECTURE.md
+index f251a10..6f2b016 100644
+--- a/docs/ARCHITECTURE.md
++++ b/docs/ARCHITECTURE.md
+@@ -34,7 +34,7 @@ file reads; those still require review.
+ 
+ ## Native task ownership
+ 
+-`tasks/invoice-total/` and `tasks/checkout-recovery/` own their public instructions,
++`tasks/invoice-total/`, `tasks/checkout-recovery/` and `tasks/ticket-routing/` own their public instructions,
+ bindings, operations, private evaluation, source pins, calibration and oracle
+ solutions. Native `task.toml` owns Harbor configuration. Its small `metadata.sapi`
+ table contains research policy: default selection, model budgets, catalog arms,
+diff --git a/docs/DEVELOPMENT.md b/docs/DEVELOPMENT.md
+index 3bf8bc5..44ff48d 100644
+--- a/docs/DEVELOPMENT.md
++++ b/docs/DEVELOPMENT.md
+@@ -257,3 +257,11 @@ lifecycle/WBS repair execution is deferred. Custom n8n UI, Markdown review expor
+ archived evaluator execution and task wheel resources are also deferred. Their code
+ and historical evidence remain in Git; current native evaluation/judging remains
+ active. See [ARCHITECTURE.md](ARCHITECTURE.md) for ownership and trust boundaries.
++
++Refactoring backlog observation: onboarding `ticket-routing` exposed hardcoded task
++sets in retirement/build expectations, rubric coverage and the explicit native
++composition-root permissions in `tests/test_boundaries.py`. Discovery already reads
++native task directories, but these separate lists require coordinated edits. Review
++that duplication in a future change while preserving exact inventory assertions,
++explicit trust boundaries and invoice-only default selection; no registration
++refactoring is part of this onboarding fix.
+diff --git a/infra/native/Dockerfile b/infra/native/Dockerfile
+index 047ee7b..d0385c1 100644
+--- a/infra/native/Dockerfile
++++ b/infra/native/Dockerfile
+@@ -16,6 +16,12 @@ COPY tasks/research-report/instruction.md tasks/research-report/task.md tasks/re
+ FROM public AS checkout-recovery-public
+ COPY tasks/checkout-recovery/instruction.md tasks/checkout-recovery/authoring-notes.md tasks/checkout-recovery/bindings.yaml tasks/checkout-recovery/authoring-prompt.txt /app/public/
+ 
++FROM public AS ticket-routing-public
++COPY tasks/ticket-routing/instruction.md \
++     tasks/ticket-routing/task.md \
++     tasks/ticket-routing/bindings.yaml \
++     /app/public/
++
+ # Trusted stages use the existing pinned n8n runtime, never a public descendant.
+ FROM sapi-native-runtime:phase1 AS core
+ COPY --from=sapi-identity source-manifest.json /opt/source-manifest.json
+@@ -51,3 +57,11 @@ COPY tasks/checkout-recovery/provenance/autowfbench-source.json /tests/payload/p
+ RUN python3 /tests/payload/environment/install.py
+ ENV PYTHONPATH=/tests/core:/tests:/tests/payload/vendor/autowfbench AUTOWFBENCH_ROOT=/tests/payload/vendor/autowfbench
+ RUN python3 -c "from payload.environment.hooks import plan, prepare, snapshot; from payload.evaluation.evaluator import evaluate; from sapi_config_lab.execute.agency import make_handler"
++
++FROM core AS ticket-routing-verifier
++COPY tasks/ticket-routing/experiment.py /tests/payload/experiment.py
++COPY tasks/ticket-routing/bindings.yaml \
++     tasks/ticket-routing/operations.js \
++     tasks/ticket-routing/cases.json \
++     /tests/payload/
++COPY tasks/ticket-routing/evaluation /tests/payload/evaluation
+\ No newline at end of file
+diff --git a/infra/native/build.sh b/infra/native/build.sh
+index fbfaf59..bcc1634 100755
+--- a/infra/native/build.sh
++++ b/infra/native/build.sh
+@@ -8,7 +8,13 @@ task_identity=$(mktemp -d)
+ trap 'rm -rf "$task_identity"' EXIT HUP INT TERM
+ python -c 'import json,sys; from sapi_config_lab.coordinate.provenance import source_manifest; json.dump(source_manifest(), sys.stdout, sort_keys=True)' > "$task_identity/source-manifest.json"
+ docker build -f "$task_core/harbor_integration/runtime/Dockerfile" -t sapi-native-runtime:phase1 .
+-for target in invoice-total-public checkout-recovery-public invoice-total-verifier checkout-recovery-verifier; do
++for target in \
++  invoice-total-public \
++  checkout-recovery-public \
++  ticket-routing-public \
++  invoice-total-verifier \
++  checkout-recovery-verifier \
++  ticket-routing-verifier; do
+   docker build -f infra/native/Dockerfile --build-context "sapi-identity=$task_identity" --build-context "sapi-core=$task_core" --build-context "sapi-verification=$task_verification" --target "$target" -t "sapi-native-$target:phase1" .
+ done
+ 
+diff --git a/tests/test_boundaries.py b/tests/test_boundaries.py
+index a1d93a1..830bad6 100644
+--- a/tests/test_boundaries.py
++++ b/tests/test_boundaries.py
+@@ -31,9 +31,11 @@ ALLOWED = {
+ # Native trusted scripts are explicit composition roots, not lower-stage modules.
+ NATIVE_COORDINATORS = {
+     "native_tasks.invoice-total.experiment": set(),
++    "native_tasks.ticket-routing.experiment": set(),
+     "native_tasks.research-report.experiment": set(),
+     "native_tasks.checkout-recovery.experiment": set(),
+     "native_tasks.invoice-total.tests.main": {"payload.evaluation.evaluator", "payload.experiment"},
++    "native_tasks.ticket-routing.tests.main": {"payload.evaluation.evaluator", "payload.experiment"},
+     "native_tasks.research-report.tests.main": {"payload.evaluation.evaluator", "payload.experiment"},
+     "native_tasks.checkout-recovery.tests.main": {
+         "payload.environment.hooks",
+diff --git a/tests/test_retirement.py b/tests/test_retirement.py
+index be18148..0d14e61 100644
+--- a/tests/test_retirement.py
++++ b/tests/test_retirement.py
+@@ -12,7 +12,6 @@ from sapi_config_lab.coordinate.native_tasks import select_tasks
+ from sapi_config_lab.paths import workspace_root
+ 
+ RETIRED = (
+-    "ticket-routing",
+     "competitor-report",
+     "revise-answer",
+     "daily-digest",
+@@ -28,12 +27,17 @@ class RetirementTests(unittest.TestCase):
+     def test_production_selection_includes_retained_tasks_and_default_is_invoice_only(self):
+         root = workspace_root() / "tasks"
+         self.assertEqual(
+-            {item.name for item in select_tasks(root, ["invoice-total", "checkout-recovery", "research-report"])},
+-            {"invoice-total", "checkout-recovery", "research-report"},
++            {
++                item.name
++                for item in select_tasks(
++                    root, ["invoice-total", "checkout-recovery", "ticket-routing", "research-report"]
++                )
++            },
++            {"invoice-total", "checkout-recovery", "ticket-routing", "research-report"},
+         )
+         self.assertEqual({item.name for item in select_tasks(root)}, {"invoice-total"})
+         for options, expected in (
+-            ([], {"invoice-total", "checkout-recovery", "research-report"}),
++            ([], {"invoice-total", "checkout-recovery", "ticket-routing", "research-report"}),
+             (["--defaults"], {"invoice-total"}),
+         ):
+             output = io.StringIO()
+@@ -60,9 +64,9 @@ class RetirementTests(unittest.TestCase):
+             self.assertEqual(main(["build", "--output-dir", temporary]), 0)
+             self.assertEqual(
+                 {row["config"] for row in json.loads(output.getvalue())},
+-                {"invoice-total", "checkout-recovery", "research-report"},
++                {"invoice-total", "checkout-recovery", "ticket-routing", "research-report"},
+             )
+             self.assertEqual(
+                 {path.name.split(".", 1)[0] for path in Path(temporary).glob("*.n8n.json")},
+-                {"invoice-total", "checkout-recovery", "research-report"},
++                {"invoice-total", "checkout-recovery", "ticket-routing", "research-report"},
+             )
+diff --git a/tests/test_rubric.py b/tests/test_rubric.py
+index e589179..c21962c 100644
+--- a/tests/test_rubric.py
++++ b/tests/test_rubric.py
+@@ -25,7 +25,7 @@ from verification.rubric import (
+ 
+ ANCHORS = {"yes": "a", "maybe": "b", "no": "c"}
+ 
+-CARDED = {"invoice-total", "research-report"}
++CARDED = {"invoice-total", "ticket-routing", "research-report"}
+ # The scenarios that ship a card file today.
+ CARDS = {path.parent.parent.name for path in (workspace_root() / "tasks").glob("*/evaluation/rubric.json")}
+ 

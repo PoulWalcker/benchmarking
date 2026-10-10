@@ -1,0 +1,40 @@
+{
+  "files": 275,
+  "manifest_digest": "e7f2d8c62e2440fefe3ab58f22ae2f27ad131fab4d1196dcc4bcf3febf92d06e",
+  "commit_manifest_digest": "ac12394abd17f18f18225ad041f16b24e1dc5bbc04242a0bc7bbd0818d909301",
+  "equal_to_commit": false,
+  "only_working_tree": [
+    "docs/agents/domain.md",
+    "docs/agents/issue-tracker.md",
+    "docs/agents/triage-labels.md",
+    "tasks/ticket-routing/bindings.yaml",
+    "tasks/ticket-routing/cases.json",
+    "tasks/ticket-routing/environment/Dockerfile",
+    "tasks/ticket-routing/evaluation/__init__.py",
+    "tasks/ticket-routing/evaluation/contract.json",
+    "tasks/ticket-routing/evaluation/evaluator.py",
+    "tasks/ticket-routing/evaluation/outputs.json",
+    "tasks/ticket-routing/evaluation/rubric.json",
+    "tasks/ticket-routing/experiment.py",
+    "tasks/ticket-routing/instruction.md",
+    "tasks/ticket-routing/operations.js",
+    "tasks/ticket-routing/solution/config.yaml",
+    "tasks/ticket-routing/solution/solve.sh",
+    "tasks/ticket-routing/task.md",
+    "tasks/ticket-routing/task.toml",
+    "tasks/ticket-routing/tests/Dockerfile",
+    "tasks/ticket-routing/tests/main.py",
+    "tasks/ticket-routing/tests/test.sh"
+  ],
+  "only_commit": [],
+  "different_bytes": [
+    "AGENTS.md",
+    "docs/ARCHITECTURE.md",
+    "docs/DEVELOPMENT.md",
+    "infra/native/Dockerfile",
+    "infra/native/build.sh",
+    "tests/test_boundaries.py",
+    "tests/test_retirement.py",
+    "tests/test_rubric.py"
+  ]
+}

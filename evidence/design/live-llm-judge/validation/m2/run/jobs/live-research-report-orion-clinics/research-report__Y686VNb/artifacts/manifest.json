@@ -1,0 +1,16 @@
+[
+  {
+    "source": "/logs/artifacts",
+    "destination": "artifacts/discarded-convention",
+    "type": "directory",
+    "status": "ok",
+    "service": null
+  },
+  {
+    "source": "/submission/config.yaml",
+    "destination": "artifacts/submission/config.yaml",
+    "type": "file",
+    "status": "ok",
+    "service": null
+  }
+]

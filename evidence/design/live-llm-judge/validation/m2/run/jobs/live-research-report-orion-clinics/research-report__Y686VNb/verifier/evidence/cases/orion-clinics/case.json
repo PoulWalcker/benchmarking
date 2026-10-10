@@ -1,0 +1,1486 @@
+{
+  "status": "success",
+  "output": {
+    "report": "Orion offers CSV export and SSO for clinics and retailers, using email and partner referrals as channels.",
+    "evidence": [
+      "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals.",
+      "Customers: clinics and retailers. Channels: email and partner referrals."
+    ]
+  },
+  "execution_id": "1",
+  "workflow_id": "b4eee4cf052240cc",
+  "n8n_version": "2.41.5",
+  "engine_version": "2.41.5",
+  "run_data": {
+    "Demo start": [
+      {
+        "startTime": 1791581041463,
+        "executionIndex": 0,
+        "source": [],
+        "hints": [],
+        "executionTime": 1,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {},
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Fixture": [
+      {
+        "startTime": 1791581041464,
+        "executionIndex": 1,
+        "source": [
+          {
+            "previousNode": "Demo start",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 652,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                  },
+                  "steps": {},
+                  "statuses": {},
+                  "events": {},
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "validate": [
+      {
+        "startTime": 1791581042116,
+        "executionIndex": 2,
+        "source": [
+          {
+            "previousNode": "Fixture",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 12,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                  },
+                  "steps": {
+                    "validate": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    }
+                  },
+                  "statuses": {
+                    "validate": "completed"
+                  },
+                  "events": {
+                    "validate": {
+                      "step_id": "validate",
+                      "operation": "research.validate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Prepare product": [
+      {
+        "startTime": 1791581042128,
+        "executionIndex": 3,
+        "source": [
+          {
+            "previousNode": "validate",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 8,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "envelope": {
+                    "inputs": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "steps": {
+                      "validate": {
+                        "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                      }
+                    },
+                    "statuses": {
+                      "validate": "completed"
+                    },
+                    "events": {
+                      "validate": {
+                        "step_id": "validate",
+                        "operation": "research.validate",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "should_run": true,
+                  "request": {
+                    "invocation_id": "research-report/r1/product/b4eee4cf052240cc/1",
+                    "operation": "research.product",
+                    "actor": null,
+                    "inputs": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    }
+                  }
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Guard product": [
+      {
+        "startTime": 1791581042136,
+        "executionIndex": 4,
+        "source": [
+          {
+            "previousNode": "Prepare product",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 28,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "envelope": {
+                    "inputs": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "steps": {
+                      "validate": {
+                        "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                      }
+                    },
+                    "statuses": {
+                      "validate": "completed"
+                    },
+                    "events": {
+                      "validate": {
+                        "step_id": "validate",
+                        "operation": "research.validate",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "should_run": true,
+                  "request": {
+                    "invocation_id": "research-report/r1/product/b4eee4cf052240cc/1",
+                    "operation": "research.product",
+                    "actor": null,
+                    "inputs": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    }
+                  }
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ],
+            []
+          ]
+        }
+      }
+    ],
+    "Agency product": [
+      {
+        "startTime": 1791581042165,
+        "executionIndex": 5,
+        "source": [
+          {
+            "previousNode": "Guard product",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 9998,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "invocation_id": "research-report/r1/product/b4eee4cf052240cc/1",
+                  "status": "completed",
+                  "output": {
+                    "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+                    "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                  },
+                  "usage": null
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "product [LLM LIVE]": [
+      {
+        "startTime": 1791581052163,
+        "executionIndex": 6,
+        "source": [
+          {
+            "previousNode": "Agency product",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 27,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                  },
+                  "steps": {
+                    "validate": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "product": {
+                      "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+                      "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    }
+                  },
+                  "statuses": {
+                    "validate": "completed",
+                    "product": "completed"
+                  },
+                  "events": {
+                    "validate": {
+                      "step_id": "validate",
+                      "operation": "research.validate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "product": {
+                      "step_id": "product",
+                      "operation": "research.product",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "research-report/r1/product/b4eee4cf052240cc/1"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Prepare marketing": [
+      {
+        "startTime": 1791581052190,
+        "executionIndex": 7,
+        "source": [
+          {
+            "previousNode": "validate",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 8,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "envelope": {
+                    "inputs": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "steps": {
+                      "validate": {
+                        "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                      }
+                    },
+                    "statuses": {
+                      "validate": "completed"
+                    },
+                    "events": {
+                      "validate": {
+                        "step_id": "validate",
+                        "operation": "research.validate",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "should_run": true,
+                  "request": {
+                    "invocation_id": "research-report/r1/marketing/b4eee4cf052240cc/1",
+                    "operation": "research.marketing",
+                    "actor": null,
+                    "inputs": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    }
+                  }
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Guard marketing": [
+      {
+        "startTime": 1791581052198,
+        "executionIndex": 8,
+        "source": [
+          {
+            "previousNode": "Prepare marketing",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 1,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "envelope": {
+                    "inputs": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "steps": {
+                      "validate": {
+                        "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                      }
+                    },
+                    "statuses": {
+                      "validate": "completed"
+                    },
+                    "events": {
+                      "validate": {
+                        "step_id": "validate",
+                        "operation": "research.validate",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "should_run": true,
+                  "request": {
+                    "invocation_id": "research-report/r1/marketing/b4eee4cf052240cc/1",
+                    "operation": "research.marketing",
+                    "actor": null,
+                    "inputs": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    }
+                  }
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ],
+            []
+          ]
+        }
+      }
+    ],
+    "Agency marketing": [
+      {
+        "startTime": 1791581052199,
+        "executionIndex": 9,
+        "source": [
+          {
+            "previousNode": "Guard marketing",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 5840,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "invocation_id": "research-report/r1/marketing/b4eee4cf052240cc/1",
+                  "status": "completed",
+                  "output": {
+                    "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+                    "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+                  },
+                  "usage": null
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "marketing [LLM LIVE]": [
+      {
+        "startTime": 1791581058039,
+        "executionIndex": 10,
+        "source": [
+          {
+            "previousNode": "Agency marketing",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 17,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                  },
+                  "steps": {
+                    "validate": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "marketing": {
+                      "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+                      "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+                    }
+                  },
+                  "statuses": {
+                    "validate": "completed",
+                    "marketing": "completed"
+                  },
+                  "events": {
+                    "validate": {
+                      "step_id": "validate",
+                      "operation": "research.validate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "marketing": {
+                      "step_id": "marketing",
+                      "operation": "research.marketing",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "research-report/r1/marketing/b4eee4cf052240cc/1"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Join combine": [
+      {
+        "startTime": 1791581058057,
+        "executionIndex": 11,
+        "source": [
+          {
+            "previousNode": "product [LLM LIVE]",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          },
+          {
+            "previousNode": "marketing [LLM LIVE]",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 14,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                  },
+                  "steps": {
+                    "validate": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "product": {
+                      "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+                      "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    }
+                  },
+                  "statuses": {
+                    "validate": "completed",
+                    "product": "completed"
+                  },
+                  "events": {
+                    "validate": {
+                      "step_id": "validate",
+                      "operation": "research.validate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "product": {
+                      "step_id": "product",
+                      "operation": "research.product",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "research-report/r1/product/b4eee4cf052240cc/1"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              },
+              {
+                "json": {
+                  "inputs": {
+                    "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                  },
+                  "steps": {
+                    "validate": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "marketing": {
+                      "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+                      "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+                    }
+                  },
+                  "statuses": {
+                    "validate": "completed",
+                    "marketing": "completed"
+                  },
+                  "events": {
+                    "validate": {
+                      "step_id": "validate",
+                      "operation": "research.validate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "marketing": {
+                      "step_id": "marketing",
+                      "operation": "research.marketing",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "research-report/r1/marketing/b4eee4cf052240cc/1"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0,
+                  "input": 1
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "combine": [
+      {
+        "startTime": 1791581058071,
+        "executionIndex": 12,
+        "source": [
+          {
+            "previousNode": "Join combine",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 10,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                  },
+                  "steps": {
+                    "validate": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "product": {
+                      "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+                      "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "marketing": {
+                      "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+                      "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "combine": {
+                      "product": {
+                        "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+                        "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                      },
+                      "marketing": {
+                        "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+                        "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+                      }
+                    }
+                  },
+                  "statuses": {
+                    "validate": "completed",
+                    "product": "completed",
+                    "marketing": "completed",
+                    "combine": "completed"
+                  },
+                  "events": {
+                    "validate": {
+                      "step_id": "validate",
+                      "operation": "research.validate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "product": {
+                      "step_id": "product",
+                      "operation": "research.product",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "research-report/r1/product/b4eee4cf052240cc/1"
+                    },
+                    "marketing": {
+                      "step_id": "marketing",
+                      "operation": "research.marketing",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "research-report/r1/marketing/b4eee4cf052240cc/1"
+                    },
+                    "combine": {
+                      "step_id": "combine",
+                      "operation": "research.combine",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Prepare write": [
+      {
+        "startTime": 1791581058081,
+        "executionIndex": 13,
+        "source": [
+          {
+            "previousNode": "combine",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 7,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "envelope": {
+                    "inputs": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "steps": {
+                      "validate": {
+                        "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                      },
+                      "product": {
+                        "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+                        "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                      },
+                      "marketing": {
+                        "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+                        "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+                      },
+                      "combine": {
+                        "product": {
+                          "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+                          "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                        },
+                        "marketing": {
+                          "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+                          "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+                        }
+                      }
+                    },
+                    "statuses": {
+                      "validate": "completed",
+                      "product": "completed",
+                      "marketing": "completed",
+                      "combine": "completed"
+                    },
+                    "events": {
+                      "validate": {
+                        "step_id": "validate",
+                        "operation": "research.validate",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "product": {
+                        "step_id": "product",
+                        "operation": "research.product",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "research-report/r1/product/b4eee4cf052240cc/1"
+                      },
+                      "marketing": {
+                        "step_id": "marketing",
+                        "operation": "research.marketing",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "research-report/r1/marketing/b4eee4cf052240cc/1"
+                      },
+                      "combine": {
+                        "step_id": "combine",
+                        "operation": "research.combine",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "should_run": true,
+                  "request": {
+                    "invocation_id": "research-report/r1/write/b4eee4cf052240cc/1",
+                    "operation": "research.write",
+                    "actor": null,
+                    "inputs": {
+                      "brief": {
+                        "product": {
+                          "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+                          "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                        },
+                        "marketing": {
+                          "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+                          "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+                        }
+                      }
+                    }
+                  }
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Guard write": [
+      {
+        "startTime": 1791581058088,
+        "executionIndex": 14,
+        "source": [
+          {
+            "previousNode": "Prepare write",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 1,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "envelope": {
+                    "inputs": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "steps": {
+                      "validate": {
+                        "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                      },
+                      "product": {
+                        "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+                        "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                      },
+                      "marketing": {
+                        "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+                        "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+                      },
+                      "combine": {
+                        "product": {
+                          "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+                          "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                        },
+                        "marketing": {
+                          "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+                          "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+                        }
+                      }
+                    },
+                    "statuses": {
+                      "validate": "completed",
+                      "product": "completed",
+                      "marketing": "completed",
+                      "combine": "completed"
+                    },
+                    "events": {
+                      "validate": {
+                        "step_id": "validate",
+                        "operation": "research.validate",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      },
+                      "product": {
+                        "step_id": "product",
+                        "operation": "research.product",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "research-report/r1/product/b4eee4cf052240cc/1"
+                      },
+                      "marketing": {
+                        "step_id": "marketing",
+                        "operation": "research.marketing",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "live",
+                        "invocation_id": "research-report/r1/marketing/b4eee4cf052240cc/1"
+                      },
+                      "combine": {
+                        "step_id": "combine",
+                        "operation": "research.combine",
+                        "status": "completed",
+                        "actor": null,
+                        "implementation": "script"
+                      }
+                    },
+                    "simulation": true,
+                    "input_source": "fixture",
+                    "llm_mode": "live"
+                  },
+                  "should_run": true,
+                  "request": {
+                    "invocation_id": "research-report/r1/write/b4eee4cf052240cc/1",
+                    "operation": "research.write",
+                    "actor": null,
+                    "inputs": {
+                      "brief": {
+                        "product": {
+                          "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+                          "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                        },
+                        "marketing": {
+                          "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+                          "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+                        }
+                      }
+                    }
+                  }
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ],
+            []
+          ]
+        }
+      }
+    ],
+    "Agency write": [
+      {
+        "startTime": 1791581058089,
+        "executionIndex": 15,
+        "source": [
+          {
+            "previousNode": "Guard write",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 7150,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "invocation_id": "research-report/r1/write/b4eee4cf052240cc/1",
+                  "status": "completed",
+                  "output": {
+                    "report": "Orion offers CSV export and SSO for clinics and retailers, using email and partner referrals as channels.",
+                    "evidence": [
+                      "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals.",
+                      "Customers: clinics and retailers. Channels: email and partner referrals."
+                    ]
+                  },
+                  "usage": null
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "write [LLM LIVE]": [
+      {
+        "startTime": 1791581065240,
+        "executionIndex": 16,
+        "source": [
+          {
+            "previousNode": "Agency write",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 16,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "inputs": {
+                    "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                  },
+                  "steps": {
+                    "validate": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "product": {
+                      "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+                      "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "marketing": {
+                      "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+                      "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "combine": {
+                      "product": {
+                        "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+                        "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                      },
+                      "marketing": {
+                        "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+                        "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+                      }
+                    },
+                    "write": {
+                      "report": "Orion offers CSV export and SSO for clinics and retailers, using email and partner referrals as channels.",
+                      "evidence": [
+                        "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals.",
+                        "Customers: clinics and retailers. Channels: email and partner referrals."
+                      ]
+                    }
+                  },
+                  "statuses": {
+                    "validate": "completed",
+                    "product": "completed",
+                    "marketing": "completed",
+                    "combine": "completed",
+                    "write": "completed"
+                  },
+                  "events": {
+                    "validate": {
+                      "step_id": "validate",
+                      "operation": "research.validate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "product": {
+                      "step_id": "product",
+                      "operation": "research.product",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "research-report/r1/product/b4eee4cf052240cc/1"
+                    },
+                    "marketing": {
+                      "step_id": "marketing",
+                      "operation": "research.marketing",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "research-report/r1/marketing/b4eee4cf052240cc/1"
+                    },
+                    "combine": {
+                      "step_id": "combine",
+                      "operation": "research.combine",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    "write": {
+                      "step_id": "write",
+                      "operation": "research.write",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "research-report/r1/write/b4eee4cf052240cc/1"
+                    }
+                  },
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live"
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ],
+    "Result": [
+      {
+        "startTime": 1791581065256,
+        "executionIndex": 17,
+        "source": [
+          {
+            "previousNode": "write [LLM LIVE]",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": 12,
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "simulation": true,
+                  "input_source": "fixture",
+                  "llm_mode": "live",
+                  "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+                  "workflow_ref": {
+                    "id": "research-report",
+                    "revision": 1
+                  },
+                  "output": {
+                    "report": "Orion offers CSV export and SSO for clinics and retailers, using email and partner referrals as channels.",
+                    "evidence": [
+                      "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals.",
+                      "Customers: clinics and retailers. Channels: email and partner referrals."
+                    ]
+                  },
+                  "trace": [
+                    {
+                      "step_id": "validate",
+                      "operation": "research.validate",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    {
+                      "step_id": "product",
+                      "operation": "research.product",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "research-report/r1/product/b4eee4cf052240cc/1"
+                    },
+                    {
+                      "step_id": "marketing",
+                      "operation": "research.marketing",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "research-report/r1/marketing/b4eee4cf052240cc/1"
+                    },
+                    {
+                      "step_id": "combine",
+                      "operation": "research.combine",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "script"
+                    },
+                    {
+                      "step_id": "write",
+                      "operation": "research.write",
+                      "status": "completed",
+                      "actor": null,
+                      "implementation": "live",
+                      "invocation_id": "research-report/r1/write/b4eee4cf052240cc/1"
+                    }
+                  ],
+                  "steps": {
+                    "validate": {
+                      "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "product": {
+                      "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+                      "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "marketing": {
+                      "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+                      "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+                    },
+                    "combine": {
+                      "product": {
+                        "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+                        "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+                      },
+                      "marketing": {
+                        "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+                        "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+                      }
+                    },
+                    "write": {
+                      "report": "Orion offers CSV export and SSO for clinics and retailers, using email and partner referrals as channels.",
+                      "evidence": [
+                        "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals.",
+                        "Customers: clinics and retailers. Channels: email and partner referrals."
+                      ]
+                    }
+                  },
+                  "statuses": {
+                    "validate": "completed",
+                    "product": "completed",
+                    "marketing": "completed",
+                    "combine": "completed",
+                    "write": "completed"
+                  }
+                },
+                "pairedItem": {
+                  "item": 0
+                }
+              }
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "error": null,
+  "import_exit_code": 0,
+  "execute_exit_code": 0,
+  "result_node_present": true,
+  "mapping": {
+    "validate": "validate",
+    "product": "product [LLM LIVE]",
+    "marketing": "marketing [LLM LIVE]",
+    "combine": "combine",
+    "write": "write [LLM LIVE]"
+  },
+  "llm_mode": "live",
+  "workflow_sha256": "05b8c1f00a33e9181564b2d38e2bcfb7cf21f0ec2084c11ec94fac2e424123a6",
+  "result": {
+    "simulation": true,
+    "input_source": "fixture",
+    "llm_mode": "live",
+    "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+    "workflow_ref": {
+      "id": "research-report",
+      "revision": 1
+    },
+    "output": {
+      "report": "Orion offers CSV export and SSO for clinics and retailers, using email and partner referrals as channels.",
+      "evidence": [
+        "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals.",
+        "Customers: clinics and retailers. Channels: email and partner referrals."
+      ]
+    },
+    "trace": [
+      {
+        "step_id": "validate",
+        "operation": "research.validate",
+        "status": "completed",
+        "actor": null,
+        "implementation": "script"
+      },
+      {
+        "step_id": "product",
+        "operation": "research.product",
+        "status": "completed",
+        "actor": null,
+        "implementation": "live",
+        "invocation_id": "research-report/r1/product/b4eee4cf052240cc/1"
+      },
+      {
+        "step_id": "marketing",
+        "operation": "research.marketing",
+        "status": "completed",
+        "actor": null,
+        "implementation": "live",
+        "invocation_id": "research-report/r1/marketing/b4eee4cf052240cc/1"
+      },
+      {
+        "step_id": "combine",
+        "operation": "research.combine",
+        "status": "completed",
+        "actor": null,
+        "implementation": "script"
+      },
+      {
+        "step_id": "write",
+        "operation": "research.write",
+        "status": "completed",
+        "actor": null,
+        "implementation": "live",
+        "invocation_id": "research-report/r1/write/b4eee4cf052240cc/1"
+      }
+    ],
+    "steps": {
+      "validate": {
+        "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+      },
+      "product": {
+        "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+        "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+      },
+      "marketing": {
+        "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+        "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+      },
+      "combine": {
+        "product": {
+          "summary": "Orion offers CSV export and SSO, serves clinics and retailers, and uses email and partner referrals as channels.",
+          "evidence": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+        },
+        "marketing": {
+          "summary": "Named audiences: clinics and retailers. Named channels: email and partner referrals.",
+          "evidence": "Customers: clinics and retailers. Channels: email and partner referrals."
+        }
+      },
+      "write": {
+        "report": "Orion offers CSV export and SSO for clinics and retailers, using email and partner referrals as channels.",
+        "evidence": [
+          "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals.",
+          "Customers: clinics and retailers. Channels: email and partner referrals."
+        ]
+      }
+    },
+    "statuses": {
+      "validate": "completed",
+      "product": "completed",
+      "marketing": "completed",
+      "combine": "completed",
+      "write": "completed"
+    }
+  },
+  "persisted_status": "success",
+  "llm": {
+    "selected_mode": "live",
+    "agency_http_call_count": 3,
+    "count_source": "n8n_agency_http_node_executions",
+    "provider_call_count": null
+  },
+  "evidence": {
+    "engine": {
+      "kind": "n8n",
+      "source": "engine_execution_records",
+      "run_data_field": "run_data",
+      "execution_artifact": "execution.json",
+      "persisted_artifact": "execution.persisted.json",
+      "metadata_artifact": "execution.metadata.json"
+    },
+    "workflow_trace": {
+      "source": "workflow_authored",
+      "events": [
+        {
+          "step_id": "validate",
+          "operation": "research.validate",
+          "status": "completed",
+          "actor": null,
+          "implementation": "script"
+        },
+        {
+          "step_id": "product",
+          "operation": "research.product",
+          "status": "completed",
+          "actor": null,
+          "implementation": "live",
+          "invocation_id": "research-report/r1/product/b4eee4cf052240cc/1"
+        },
+        {
+          "step_id": "marketing",
+          "operation": "research.marketing",
+          "status": "completed",
+          "actor": null,
+          "implementation": "live",
+          "invocation_id": "research-report/r1/marketing/b4eee4cf052240cc/1"
+        },
+        {
+          "step_id": "combine",
+          "operation": "research.combine",
+          "status": "completed",
+          "actor": null,
+          "implementation": "script"
+        },
+        {
+          "step_id": "write",
+          "operation": "research.write",
+          "status": "completed",
+          "actor": null,
+          "implementation": "live",
+          "invocation_id": "research-report/r1/write/b4eee4cf052240cc/1"
+        }
+      ]
+    }
+  },
+  "report_schema": "sapi-lab-execution/v1",
+  "artifact_dir": "/logs/verifier/evidence/cases/orion-clinics",
+  "duration_seconds": 28.43,
+  "execution": {
+    "status": "success",
+    "succeeded": true,
+    "engine": {
+      "name": "n8n",
+      "version": "2.41.5"
+    }
+  },
+  "acceptance": {
+    "status": "not_evaluated",
+    "passed": null
+  },
+  "input": {
+    "source": "fixture",
+    "activation": "injected",
+    "config_artifact": "config.json"
+  }
+}

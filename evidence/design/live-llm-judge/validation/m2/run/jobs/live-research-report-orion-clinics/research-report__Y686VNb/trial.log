@@ -1,0 +1,5 @@
+Skipping image OS validation for hb__efc578d1a710e2bbabaa3f444398691e: docker inspect returned 1
+Collecting main service artifacts
+Running collect hook in service 'main': 'python3 /opt/sapi-submission.py collect'
+Collect hook in service 'main' completed
+Skipping image OS validation for hb__84ca663abcd507d9398b6291c9ce2a56: docker inspect returned 1

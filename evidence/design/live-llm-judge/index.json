@@ -1,0 +1,3064 @@
+{
+  "schema": "sapi-lab-evidence-extract/v2",
+  "source_root": "reports/design/live-llm-judge",
+  "extracted_from_commit": "7b70724f4187b5d8e9483a8434bc60a02361af02",
+  "source_manifest_digest": "e7f2d8c62e2440fefe3ab58f22ae2f27ad131fab4d1196dcc4bcf3febf92d06e",
+  "files": [
+    {
+      "path": "validation/m1/freeze/manifest-vs-commit.json",
+      "sha256": "e2c578d2bc6aa54e01b3d3520cb11bbb0454859254e5416fe39464a717fd95e2",
+      "bytes": 1450,
+      "reasons": [
+        "identity:source"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m1/freeze/source-manifest.json",
+      "sha256": "07feaf1fa90613e60d07942d6dec17c1a857a509eb4d907ee657f588cc0afa56",
+      "bytes": 29951,
+      "reasons": [
+        "cited:m1:/source/manifest",
+        "identity:source"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m1/freeze/uncommitted-tracked.patch",
+      "sha256": "f790c9cb83e424ac1aceb969e0bb0e10ca529ba2d2fbdcded01b67846e05eea5",
+      "bytes": 9003,
+      "reasons": [
+        "cited:m1:/source/checkpoint/tracked_patch"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "pre-commit-source"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/gate.json",
+      "sha256": "4bebf446ff39ab12d3d4f3d43244e1f394ca7823657837f6882116c6f9e4bcfb",
+      "bytes": 3541,
+      "reasons": [
+        "claim"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/agent/replay.json",
+      "sha256": "33ee01182052e474dab8d3bb13ec8a9732ab6ca75159d6fa49093a04799ff87a",
+      "bytes": 160,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/agent/submission.yaml",
+      "sha256": "9c9b59245e67e988f0b259db492a82c840da34afbc79e7b1e99effe56682d81c",
+      "bytes": 1783,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/artifacts/manifest.json",
+      "sha256": "d988aa48de1884c24a6e929ac6650ba40be7b4b4582ea50a3cbc394e40f590b0",
+      "bytes": 327,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/artifacts/submission/config.yaml",
+      "sha256": "9c9b59245e67e988f0b259db492a82c840da34afbc79e7b1e99effe56682d81c",
+      "bytes": 1783,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/trial.log",
+      "sha256": "9095c488aac398dd82fa4431ccd33aa9acc24880da7c7f18eaa35044f60c7193",
+      "bytes": 351,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evaluation/cases/orion-clinics/acceptance.json",
+      "sha256": "fb1cedc9e6d2ddad23084eaa1f2355d61fe60e6d06b613aff5b80e9005ff4fd9",
+      "bytes": 1157,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evaluation/evaluation.json",
+      "sha256": "699ef3fc0ee01427fcede7145253907bf44f8638c99d95e3d2a9a76e5028e277",
+      "bytes": 503,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evaluation/report.json",
+      "sha256": "36ea0c6b0dd2564a613ad6e45866c9422d07191d005a72e08fa5376e13f2adc6",
+      "bytes": 2687,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/case.json",
+      "sha256": "04a7ba1ac0edf8cad8737a626e06fafa3d67cec3dffebb7cccf65527d7650fa0",
+      "bytes": 56279,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/config.json",
+      "sha256": "92ef2596352e29429774e4b9453ad1daedfe46bf59b975273247621fc971b517",
+      "bytes": 2522,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/execution.metadata.json",
+      "sha256": "5a3ad9b19a0e1e15cf3c47dc76dfd129eaa48ce067adfb8053c796963379e750",
+      "bytes": 542,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/execution.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/import.log",
+      "sha256": "1a159c4ad66dcb290ae879aa60d026685f75eef00f13c4f414284b20068801f6",
+      "bytes": 33421,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "host-config"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/mapping.json",
+      "sha256": "7893bb1f651d7ea758d4f9d998e462649a87f8e1bad18a70bedbfcaa86ca1335",
+      "bytes": 158,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/observation.json",
+      "sha256": "4ac252506355a99143086d6b95b0dfc5ce28e56091b6474a06ddefe21bb657aa",
+      "bytes": 1170,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/submission.yaml",
+      "sha256": "9c9b59245e67e988f0b259db492a82c840da34afbc79e7b1e99effe56682d81c",
+      "bytes": 1783,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/native-sources.sha256",
+      "sha256": "b095a12d3b1722ecc30c93588126fd5be3cecc5052ddc9582fc129f629bedbd2",
+      "bytes": 5677,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/native-task.json",
+      "sha256": "2939caeb6d63c12f4641325934bd57786911da4d2b6e9ca267cc5d025c566025",
+      "bytes": 30936,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/evaluation/cases/orion-clinics/acceptance.json",
+      "sha256": "fb1cedc9e6d2ddad23084eaa1f2355d61fe60e6d06b613aff5b80e9005ff4fd9",
+      "bytes": 1157,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/evaluation/evaluation.json",
+      "sha256": "27f5e0fe7c450db68e93b0a70a86cae77652d19afad43f2729f609db37521fe7",
+      "bytes": 3075,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/context.json",
+      "sha256": "993c88b19603a3e045f10905b12e891c45e2fe2d4bc8d5cb349e835b70685bb7",
+      "bytes": 920,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/prompt.txt",
+      "sha256": "7454d0b00cea7ea898f9e13dc0bddd42b32ea713b82732d922856e1c263b0743",
+      "bytes": 2132,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/reply.json",
+      "sha256": "5822637c807478117bc651a70470a5d5a962ca22f22c33330145c95b486cea19",
+      "bytes": 1009,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/request.json",
+      "sha256": "c1c3a0369b0dd75514f2d66b06974ed7d9dd098342bdc589c028418e55e4369e",
+      "bytes": 1501,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/response.txt",
+      "sha256": "8131ae18e29c38a70d2367527b91675e2f5a67d72e445760b6914930d4b0f004",
+      "bytes": 496,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/wrapper.json",
+      "sha256": "f668d644e6a7a44c2d737997ece2f5b599366ef30707ec2eb40464d740f08dd6",
+      "bytes": 401,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/result.json",
+      "sha256": "4b39acc1e86485d6d6a68ce79952798cb960de7bb373cc3353f78ff146394436",
+      "bytes": 3315,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/plan.json",
+      "sha256": "37e04fd00145f33e897f23519042c1ade677586a3dfa5601e4c8764c47c1dff1",
+      "bytes": 3585,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/result.json",
+      "sha256": "43ae9b98139e3cd11f5776394862866e1168ce822b0b8629d60261a1ccd5b848",
+      "bytes": 65,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/reward.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "bytes": 2,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/test-stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/native-inputs.json",
+      "sha256": "44b91c2b77992d04c606306744e1bfea49ed56722ebea4d9d8060db6bcf74f4f",
+      "bytes": 2269,
+      "reasons": [
+        "identity:image"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "host-config"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/run/source-manifest.json",
+      "sha256": "07feaf1fa90613e60d07942d6dec17c1a857a509eb4d907ee657f588cc0afa56",
+      "bytes": 29951,
+      "reasons": [
+        "identity:source"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m2/verification/summary.json",
+      "sha256": "504cd1f250490a3bbef3aa6879fa131d22cf92dd48810941167f5455557e2be9",
+      "bytes": 2163,
+      "reasons": [
+        "cited:m2:/verification"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/analysis-data.json",
+      "sha256": "690594f07f2502c376a36ef77ded3ae2ca157dbb9e812e6422d319052d880f08",
+      "bytes": 6227,
+      "reasons": [
+        "cited:m3:/artifacts/analysis_data"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/base-snapshot.json",
+      "sha256": "a3797293c7dc754a40e406c8afbee9e4b09bb889e57bc485625b63a6ff406d98",
+      "bytes": 3445,
+      "reasons": [
+        "cited:08-completion.md"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/expected-snapshot.json",
+      "sha256": "727e9aba1ec03e781b78dcb4fc7d0c5dae9e9203a1b36e43dbd00c470dd0fc01",
+      "bytes": 1458,
+      "reasons": [
+        "cited:m3:/artifacts/expected_snapshot"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/a-faithful/base-verification/cases/orion-clinics/acceptance.json",
+      "sha256": "fb1cedc9e6d2ddad23084eaa1f2355d61fe60e6d06b613aff5b80e9005ff4fd9",
+      "bytes": 1157,
+      "reasons": [
+        "cited:m3:/results/0/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/a-faithful/base-verification/evaluation.json",
+      "sha256": "74429c42529ec2f5817bee7184744e3e02d518f8f24945b7d6f28562f2fcdc5a",
+      "bytes": 2337,
+      "reasons": [
+        "cited:m3:/results/0/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/a-faithful/judge/context.json",
+      "sha256": "9dd21355b1e859ac74af95c912895fe9da8386453a676f384276b6b5ce291a2c",
+      "bytes": 920,
+      "reasons": [
+        "cited:m3:/results/0/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/a-faithful/judge/prompt.txt",
+      "sha256": "ac88988f5526be77daa4b2a5091975cd2120eb543e1dbc6a0a5ab2680c68155f",
+      "bytes": 2276,
+      "reasons": [
+        "cited:m3:/results/0/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/a-faithful/judge/reply.json",
+      "sha256": "c6b95f8f31fb9223232b1846966b82b5d434bbd9ba200e2830e39c93e6d231f6",
+      "bytes": 1104,
+      "reasons": [
+        "cited:m3:/results/0/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/a-faithful/judge/request.json",
+      "sha256": "42f00f46031b921032dce69bce02130db86dd5aa5d8f51cf41f08d89afd2c04e",
+      "bytes": 1645,
+      "reasons": [
+        "cited:m3:/results/0/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/a-faithful/judge/response.txt",
+      "sha256": "6d6db984eb492e90cd9daf83615c3b82102cada79e5a4d24a86024db68d4e58a",
+      "bytes": 591,
+      "reasons": [
+        "cited:m3:/results/0/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/a-faithful/judge/wrapper.json",
+      "sha256": "1d08dd2931fa944e450320bcf410d47e665c805260cd00a68d5734eeac9ac223",
+      "bytes": 401,
+      "reasons": [
+        "cited:m3:/results/0/artifact",
+        "identity:model"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "host-config"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/b-copied/base-verification/cases/orion-clinics/acceptance.json",
+      "sha256": "fb1cedc9e6d2ddad23084eaa1f2355d61fe60e6d06b613aff5b80e9005ff4fd9",
+      "bytes": 1157,
+      "reasons": [
+        "cited:m3:/results/1/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/b-copied/base-verification/evaluation.json",
+      "sha256": "74429c42529ec2f5817bee7184744e3e02d518f8f24945b7d6f28562f2fcdc5a",
+      "bytes": 2337,
+      "reasons": [
+        "cited:m3:/results/1/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/b-copied/judge/context.json",
+      "sha256": "c8eec491e1570ea24b60b9b59bd80d9df2adc23df22029faa31967e2e5c6f0b4",
+      "bytes": 920,
+      "reasons": [
+        "cited:m3:/results/1/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/b-copied/judge/prompt.txt",
+      "sha256": "b24e11271152e09f5e4046f3e4b1ac8b7050d2d58ec67a0ee927efbccedeeefd",
+      "bytes": 2238,
+      "reasons": [
+        "cited:m3:/results/1/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/b-copied/judge/reply.json",
+      "sha256": "7a4fb8f82884f0af2e750fcf2c9137e8c4c65ce3fa653c9ff431a7b63497cc78",
+      "bytes": 1027,
+      "reasons": [
+        "cited:m3:/results/1/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/b-copied/judge/request.json",
+      "sha256": "7b8299e567e938c43b28b91e8a71c66a413e8fb3f586f93f08c1c8f03de206bb",
+      "bytes": 1607,
+      "reasons": [
+        "cited:m3:/results/1/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/b-copied/judge/response.txt",
+      "sha256": "ad55e06d45017efff474371875016ea272bb46c7b1a95e7328014a8caa8a44d0",
+      "bytes": 514,
+      "reasons": [
+        "cited:m3:/results/1/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/b-copied/judge/wrapper.json",
+      "sha256": "83f6988e71f9c7d991d868d36a714e8051074ae336696b966c43093c67ac34b1",
+      "bytes": 401,
+      "reasons": [
+        "cited:m3:/results/1/artifact",
+        "identity:model"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "host-config"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/c-unsupported/base-verification/cases/orion-clinics/acceptance.json",
+      "sha256": "fb1cedc9e6d2ddad23084eaa1f2355d61fe60e6d06b613aff5b80e9005ff4fd9",
+      "bytes": 1157,
+      "reasons": [
+        "cited:m3:/results/2/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/c-unsupported/base-verification/evaluation.json",
+      "sha256": "74429c42529ec2f5817bee7184744e3e02d518f8f24945b7d6f28562f2fcdc5a",
+      "bytes": 2337,
+      "reasons": [
+        "cited:m3:/results/2/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/c-unsupported/judge/context.json",
+      "sha256": "8d909794851f6ab915e73bc6c7e58cfe9d6d708b7d902c5039b7bad232bfa6e2",
+      "bytes": 920,
+      "reasons": [
+        "cited:m3:/results/2/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/c-unsupported/judge/prompt.txt",
+      "sha256": "fded96df5fcb2968ffa17743a3f97532320343ab2149418f6060e29576220a3a",
+      "bytes": 2244,
+      "reasons": [
+        "cited:m3:/results/2/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/c-unsupported/judge/reply.json",
+      "sha256": "27f81e3af92622ec3ab13eaf5228e6afcb71194e19db49c999561b9b903122cc",
+      "bytes": 1073,
+      "reasons": [
+        "cited:m3:/results/2/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/c-unsupported/judge/request.json",
+      "sha256": "279394ad3762367558696d5d5c3d717b80939b4bf9f3cb0d4c8c333b9c9707c6",
+      "bytes": 1613,
+      "reasons": [
+        "cited:m3:/results/2/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/c-unsupported/judge/response.txt",
+      "sha256": "6e879b3caa5f6374ed0b1bf15bb880401fc83c1161f551a4c043076a5b3b1d0e",
+      "bytes": 560,
+      "reasons": [
+        "cited:m3:/results/2/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/c-unsupported/judge/wrapper.json",
+      "sha256": "3c7c7fcadac233ff4cbc2f1d05c29b8f74dee307e35aab81dbe3451011ebbff6",
+      "bytes": 401,
+      "reasons": [
+        "cited:m3:/results/2/artifact",
+        "identity:model"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "host-config"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/d-contradictory/base-verification/cases/orion-clinics/acceptance.json",
+      "sha256": "fb1cedc9e6d2ddad23084eaa1f2355d61fe60e6d06b613aff5b80e9005ff4fd9",
+      "bytes": 1157,
+      "reasons": [
+        "cited:m3:/results/3/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/d-contradictory/base-verification/evaluation.json",
+      "sha256": "74429c42529ec2f5817bee7184744e3e02d518f8f24945b7d6f28562f2fcdc5a",
+      "bytes": 2337,
+      "reasons": [
+        "cited:m3:/results/3/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/d-contradictory/judge/context.json",
+      "sha256": "afb530984694230aed338c584ae51d20867ba561a5508f342f1e982eacacb3ae",
+      "bytes": 920,
+      "reasons": [
+        "cited:m3:/results/3/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/d-contradictory/judge/prompt.txt",
+      "sha256": "80f7c885b1c45ecfe793549391596b22a6757fcc8d8fb6d0754b4c863452b64a",
+      "bytes": 2183,
+      "reasons": [
+        "cited:m3:/results/3/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/d-contradictory/judge/reply.json",
+      "sha256": "7097da109b3a034dba038fd80c0f761b3d8a18db031cb0ee27194bcbbf95bc3a",
+      "bytes": 981,
+      "reasons": [
+        "cited:m3:/results/3/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/d-contradictory/judge/request.json",
+      "sha256": "e8965ad0df71773537baa8b747f58d5c738e4352b372daaa2681d2dd5e4f7ab6",
+      "bytes": 1552,
+      "reasons": [
+        "cited:m3:/results/3/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/d-contradictory/judge/response.txt",
+      "sha256": "d8cc70cd11da3fc8c13377a6c65fc48db9c801ea4640a1bdda03b3c6fe0781a9",
+      "bytes": 468,
+      "reasons": [
+        "cited:m3:/results/3/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/d-contradictory/judge/wrapper.json",
+      "sha256": "70b1602e133f6b640bf012de5d9b04610978d6365060d8aab957538d1c8022c5",
+      "bytes": 401,
+      "reasons": [
+        "cited:m3:/results/3/artifact",
+        "identity:model"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "host-config"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/e-omission/base-verification/cases/orion-clinics/acceptance.json",
+      "sha256": "fb1cedc9e6d2ddad23084eaa1f2355d61fe60e6d06b613aff5b80e9005ff4fd9",
+      "bytes": 1157,
+      "reasons": [
+        "cited:m3:/results/4/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/e-omission/base-verification/evaluation.json",
+      "sha256": "74429c42529ec2f5817bee7184744e3e02d518f8f24945b7d6f28562f2fcdc5a",
+      "bytes": 2337,
+      "reasons": [
+        "cited:m3:/results/4/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/e-omission/judge/context.json",
+      "sha256": "8a2f7157fc7ba36ed39376ad14acba3e4f72f28aa83f98d39e631128e8f88589",
+      "bytes": 920,
+      "reasons": [
+        "cited:m3:/results/4/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/e-omission/judge/prompt.txt",
+      "sha256": "962a76a535243f861234f56073316d2146014d2e0c8bd05ac12cae24c4b105bc",
+      "bytes": 2076,
+      "reasons": [
+        "cited:m3:/results/4/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/e-omission/judge/reply.json",
+      "sha256": "5263737026bdf267cd9f07b22b8c2e9def07cdfd25370343cb1b08ed245d4f2a",
+      "bytes": 1004,
+      "reasons": [
+        "cited:m3:/results/4/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/e-omission/judge/request.json",
+      "sha256": "d3317baa031fa9e9d9501a671344f1ae527e231e438839745f217ef6b838f259",
+      "bytes": 1445,
+      "reasons": [
+        "cited:m3:/results/4/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/e-omission/judge/response.txt",
+      "sha256": "46dbf7b96e101c315d4e5d42d49ebec1cccd7e4cd9dc6eb2a3b8a9d30dbf2a7f",
+      "bytes": 491,
+      "reasons": [
+        "cited:m3:/results/4/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/e-omission/judge/wrapper.json",
+      "sha256": "0e0d2c99cc56eff99231c06285964e73fb0bde4f91265f33bedbc3cb470a7b34",
+      "bytes": 401,
+      "reasons": [
+        "cited:m3:/results/4/artifact",
+        "identity:model"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "host-config"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/f-injection/base-verification/cases/orion-clinics/acceptance.json",
+      "sha256": "fb1cedc9e6d2ddad23084eaa1f2355d61fe60e6d06b613aff5b80e9005ff4fd9",
+      "bytes": 1157,
+      "reasons": [
+        "cited:m3:/results/5/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/f-injection/base-verification/evaluation.json",
+      "sha256": "74429c42529ec2f5817bee7184744e3e02d518f8f24945b7d6f28562f2fcdc5a",
+      "bytes": 2337,
+      "reasons": [
+        "cited:m3:/results/5/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/f-injection/judge/context.json",
+      "sha256": "2a091f1638fe3f21405417a53193c1dadc35b6423139d3b723fc2b5f9b5d816b",
+      "bytes": 920,
+      "reasons": [
+        "cited:m3:/results/5/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/f-injection/judge/prompt.txt",
+      "sha256": "2223fcf0f805dd61183fd0a383637b667237fbe61632b3a691138e19d7375f77",
+      "bytes": 2397,
+      "reasons": [
+        "cited:m3:/results/5/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/f-injection/judge/reply.json",
+      "sha256": "67d5ba5bb6a8e7a86ea76a08fa85141dbe44b953791e90bd236c717050f6e0bd",
+      "bytes": 1144,
+      "reasons": [
+        "cited:m3:/results/5/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/f-injection/judge/request.json",
+      "sha256": "62cb4745a4750bf97b0ddd0606c9602c7d1faafc74f754b466b41b58ca666c21",
+      "bytes": 1766,
+      "reasons": [
+        "cited:m3:/results/5/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/f-injection/judge/response.txt",
+      "sha256": "f0eee65c92802f6f704fb0de1729cd79a0753bf1dc6c87cfba2f6772d1c04f0a",
+      "bytes": 631,
+      "reasons": [
+        "cited:m3:/results/5/artifact"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "request-content"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    },
+    {
+      "path": "validation/m3/variants/f-injection/judge/wrapper.json",
+      "sha256": "36234c4083eb3f070a9d5bcac4dede118d5ddcd77d0bbd7c555127e30102f9a4",
+      "bytes": 401,
+      "reasons": [
+        "cited:m3:/results/5/artifact",
+        "identity:model"
+      ],
+      "review": {
+        "read_in_full": true,
+        "categories": [
+          "host-config"
+        ],
+        "approval": "publication_review.approvals[0]"
+      }
+    }
+  ],
+  "withheld": [
+    {
+      "path": "implementation/06-completion.md",
+      "sha256": "646e44f38f60857ba9492e0d184bc547dd181a888d475c58151ab80f2b7067f0",
+      "bytes": 12689,
+      "reasons": [
+        "claim"
+      ],
+      "categories": [
+        "host-config",
+        "other-personal"
+      ],
+      "decision": "withheld: external host-file names and hash prefixes (D3)"
+    },
+    {
+      "path": "implementation/07-completion.md",
+      "sha256": "9d9c03e64245b73b9c8a5c4989e55cd633ff2c9cd9f07229bab629968292af30",
+      "bytes": 7278,
+      "reasons": [
+        "claim"
+      ],
+      "categories": [
+        "credential",
+        "personal-path",
+        "host-config",
+        "request-content",
+        "other-personal"
+      ],
+      "decision": "withheld: personal-path and other-personal (D2, D6); C5 hit recorded, A1 deferred"
+    },
+    {
+      "path": "implementation/08-completion.md",
+      "sha256": "cadf173d0bf4fdc905ba11f25f91a41fb189a340a83e824b66aac703979f43b5",
+      "bytes": 11477,
+      "reasons": [
+        "claim"
+      ],
+      "categories": [
+        "host-config",
+        "request-content"
+      ],
+      "decision": "withheld: host-config loopback endpoint (D4-b); owner decision"
+    },
+    {
+      "path": "implementation/environment/judge-config.json",
+      "sha256": null,
+      "bytes": 225,
+      "reasons": [
+        "cited:m1:/wrapper_identities/judge/files/1/path"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config",
+        "other-personal"
+      ],
+      "decision": "withheld: personal-path with host configuration or other-personal (D2, D3/D5/D6)",
+      "hash": "private-manifest",
+      "guessable": true
+    },
+    {
+      "path": "implementation/environment/judge-wrapper-identity.json",
+      "sha256": "b2bec36cf178f62213bab0290ddcdf213a51949d237c06acb954f11e73151a33",
+      "bytes": 1022,
+      "reasons": [
+        "cited:m1:/wrapper_identities/judge/inspection",
+        "identity:model"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "implementation/environment/judge_bridge.py",
+      "sha256": "9b778f30ec96498384cb5d28245c9a97274ef7265511bdbef0d96ff99604dd52",
+      "bytes": 2802,
+      "reasons": [
+        "cited:m1:/wrapper_identities/judge/files/0/path"
+      ],
+      "categories": [
+        "host-config"
+      ],
+      "decision": "withheld: host-config loopback endpoint (D4-b); owner decision"
+    },
+    {
+      "path": "implementation/environment/runtime-wrapper-identity.json",
+      "sha256": "66298dc02df3a9f85b2d25289bbe72992d525da3dae0fb6fdf7492b57b0bbd37",
+      "bytes": 772,
+      "reasons": [
+        "cited:m1:/wrapper_identities/runtime/inspection",
+        "identity:model"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path with host configuration or other-personal (D2, D3/D5/D6)"
+    },
+    {
+      "path": "validation/m1/calibration-challenge.json",
+      "sha256": "1df39f44f7ea99c4c55452cbbd5ce21ad1e10e5a9f0a824b452412af53a8cdc3",
+      "bytes": 4850,
+      "reasons": [
+        "cited:06-completion.md"
+      ],
+      "categories": [
+        "host-config"
+      ],
+      "decision": "withheld: host-specific temporary path (D4-c)"
+    },
+    {
+      "path": "validation/m1/checks.json",
+      "sha256": "6ba2dcdb96b5ef62d47b28a6f699fcc4d5b7700c35cc6df9efc4a11a6f3231db",
+      "bytes": 10757,
+      "reasons": [
+        "cited:06-completion.md"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m1/controls/report.json",
+      "sha256": "a2fc61d064b0c72058a363b6f8ec717f7b98b55682bf233451d78aeec0db7f4e",
+      "bytes": 126015,
+      "reasons": [
+        "cited:06-completion.md",
+        "identity:image"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m1/freeze/environment.json",
+      "sha256": "ae667d218c9e32ddd78a83bd131d301767943b6c98a8707283bb05f5dd6701f9",
+      "bytes": 14403,
+      "reasons": [
+        "identity:image"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path with host configuration or other-personal (D2, D3/D5/D6)"
+    },
+    {
+      "path": "validation/m1/freeze/uncommitted-untracked.tar",
+      "sha256": "f6c7d59cabc62086523ca251ee7531f3a4ce7ce9559e66461e8bf5badd48da11",
+      "bytes": 80896,
+      "reasons": [
+        "cited:m1:/source/checkpoint/untracked_tar"
+      ],
+      "categories": [
+        "personal-path",
+        "pre-commit-source",
+        "other-personal"
+      ],
+      "decision": "withheld: archive with host metadata (D8)"
+    },
+    {
+      "path": "validation/m1/gate.json",
+      "sha256": "f8e52479f480eda68e3a89a7f412023d849b29f8538a8d7c6bb14dacdcb41427",
+      "bytes": 9498,
+      "reasons": [
+        "claim"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path with host configuration or other-personal (D2, D3/D5/D6)"
+    },
+    {
+      "path": "validation/m1/mocked-live-harness/reconciliation.json",
+      "sha256": "2a6f42c11738fca50f335335e5d8885e5e2bb34449aef803e6652dda431a852e",
+      "bytes": 6193,
+      "reasons": [
+        "cited:m1:/mocked_dispatch/evidence"
+      ],
+      "categories": [
+        "personal-path",
+        "request-content"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m2/authorization.json",
+      "sha256": "9566b6d5849f9aae85e5c8ba18eab4cff2691bdf0d464ea63d1d721047506253",
+      "bytes": 2594,
+      "reasons": [
+        "cited:m2:/authorization/path"
+      ],
+      "categories": [
+        "host-config",
+        "other-personal"
+      ],
+      "decision": "withheld: other-personal finding (D6); reclassification not approved"
+    },
+    {
+      "path": "validation/m2/environment/judge-wrapper-identity.json",
+      "sha256": "026a814c2e6b54c68b0a37b3d8df1779cffd4a75cb895fa6e1a2b8d9fb178c4e",
+      "bytes": 1120,
+      "reasons": [
+        "cited:07-completion.md",
+        "cited:m3-identity:wrapper_inspection_sha256",
+        "identity:model"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config",
+        "other-personal"
+      ],
+      "decision": "withheld: personal-path with host configuration or other-personal (D2, D3/D5/D6)"
+    },
+    {
+      "path": "validation/m2/environment/judge/judge-config.json",
+      "sha256": null,
+      "bytes": 225,
+      "reasons": [
+        "cited:m2-identity:validation/m2/environment/judge-wrapper-identity.json#/files/1",
+        "identity:model"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config",
+        "other-personal"
+      ],
+      "decision": "withheld: personal-path with host configuration or other-personal (D2, D3/D5/D6)",
+      "hash": "private-manifest",
+      "guessable": true
+    },
+    {
+      "path": "validation/m2/environment/judge/judge_bridge.py",
+      "sha256": "9b778f30ec96498384cb5d28245c9a97274ef7265511bdbef0d96ff99604dd52",
+      "bytes": 2802,
+      "reasons": [
+        "cited:m2-identity:validation/m2/environment/judge-wrapper-identity.json#/files/0",
+        "identity:model"
+      ],
+      "categories": [
+        "host-config"
+      ],
+      "decision": "withheld: host-config loopback endpoint (D4-b); owner decision"
+    },
+    {
+      "path": "validation/m2/environment/runtime-wrapper-identity.json",
+      "sha256": "831c0bf003dd1feed48f48aea6354cc3b4b01c0912ac6f79d6ad17ad9a19beb0",
+      "bytes": 965,
+      "reasons": [
+        "cited:07-completion.md",
+        "identity:model"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config",
+        "other-personal"
+      ],
+      "decision": "withheld: personal-path with host configuration or other-personal (D2, D3/D5/D6)"
+    },
+    {
+      "path": "validation/m2/preflight.log",
+      "sha256": null,
+      "bytes": 478,
+      "reasons": [
+        "cited:07-completion.md"
+      ],
+      "categories": [
+        "personal-path"
+      ],
+      "decision": "withheld: personal-path (D2)",
+      "hash": "private-manifest",
+      "guessable": true
+    },
+    {
+      "path": "validation/m2/preflight/report.json",
+      "sha256": "cc503db6718cdd3541702aea9923808dbe05ddbdffd2774c0eab351f572ecdc6",
+      "bytes": 53938,
+      "reasons": [
+        "cited:m2:/preflight/report"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config",
+        "request-content",
+        "other-personal"
+      ],
+      "decision": "withheld: personal-path with host configuration or other-personal (D2, D3/D5/D6)"
+    },
+    {
+      "path": "validation/m2/retry-safety.md",
+      "sha256": "d8df61865216fcf76cf6efa5b0d2766e67bd50880e18f121941564d00cf4c846",
+      "bytes": 4912,
+      "reasons": [
+        "cited:07-completion.md"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config",
+        "other-personal"
+      ],
+      "decision": "withheld: personal-path with host configuration or other-personal (D2, D3/D5/D6)"
+    },
+    {
+      "path": "validation/m2/run.log",
+      "sha256": null,
+      "bytes": 564,
+      "reasons": [
+        "cited:07-completion.md"
+      ],
+      "categories": [
+        "personal-path"
+      ],
+      "decision": "withheld: personal-path (D2)",
+      "hash": "private-manifest",
+      "guessable": true
+    },
+    {
+      "path": "validation/m2/run/control-report.json",
+      "sha256": "a2fc61d064b0c72058a363b6f8ec717f7b98b55682bf233451d78aeec0db7f4e",
+      "bytes": 126015,
+      "reasons": [
+        "identity:image"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config",
+        "request-content",
+        "other-personal"
+      ],
+      "decision": "withheld: personal-path with host configuration or other-personal (D2, D3/D5/D6)"
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/config.json",
+      "sha256": "b60bf6e332eca11f15c386e45219f37e2ac890110385486239d2631b86f17a8e",
+      "bytes": 1255,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/lock.json",
+      "sha256": "d751eb760baf8a54b27888d86c20249420279bf8e0d705729c8eb917380cdb4a",
+      "bytes": 1645,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/result.json",
+      "sha256": "4bbf8f711107db1f670fb15ba53a4d87041517f8f3a9d9483c1d85bd946fdcfd",
+      "bytes": 4855,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/execution.json",
+      "sha256": "30c9fb1928d2eb96528374fd7d682d55fb962048f501181a56f5e567346038a0",
+      "bytes": 55499,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "categories": [
+        "credential",
+        "request-content"
+      ],
+      "decision": "withheld: credential (C5/C6; cannot be approved)"
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/execution.persisted.json",
+      "sha256": "bb61df2f05a45dc1510ea0bffb9b56fdef0b457d56f8aab2adf30e56278299c6",
+      "bytes": 52703,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "categories": [
+        "credential",
+        "request-content"
+      ],
+      "decision": "withheld: credential (C5/C6; cannot be approved)"
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/execution.stdout.log",
+      "sha256": "354f9ffa39e45524a8e9702c10dcfe062d586d4c3f6bc67abe3a3cf68730c6c5",
+      "bytes": 56304,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "categories": [
+        "credential",
+        "host-config",
+        "request-content"
+      ],
+      "decision": "withheld: credential (C5/C6; cannot be approved)"
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/workflow.json",
+      "sha256": "05b8c1f00a33e9181564b2d38e2bcfb7cf21f0ec2084c11ec94fac2e424123a6",
+      "bytes": 108234,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "categories": [
+        "host-config",
+        "request-content"
+      ],
+      "decision": "withheld: host-config loopback endpoint (D4-b); owner decision"
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/evaluation/report.json",
+      "sha256": "881f255e7fdb962b9713ec6e9e06b48998d2308f52a7b9569f011b8ca358a16d",
+      "bytes": 2839,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "categories": [
+        "personal-path"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/receipt.json",
+      "sha256": "8de348de91879c3053b7efcb6f1fa9ca0a91df89603c4110e1a6b07ba759cb9f",
+      "bytes": 1150,
+      "reasons": [
+        "cited:m2:/run/trial"
+      ],
+      "categories": [
+        "personal-path"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m2/run/report.json",
+      "sha256": "fcd281b06f0be3a132bfb394c68bb280f735d84a66a2538a75a62550236948c4",
+      "bytes": 108352,
+      "reasons": [
+        "cited:m2:/run/report",
+        "identity:run"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config",
+        "request-content",
+        "other-personal"
+      ],
+      "decision": "withheld: personal-path with host configuration or other-personal (D2, D3/D5/D6)"
+    },
+    {
+      "path": "validation/m2/series/ledger.json",
+      "sha256": "ddce0764a78bf4cf91011aa9d9ee0614696786dbc49853e6a37e572f7444842a",
+      "bytes": 29390,
+      "reasons": [
+        "identity:run"
+      ],
+      "categories": [
+        "personal-path"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m2/verification/verify.py",
+      "sha256": "6d8417716318fc8dfe86683bbf06b257ddcdff2d9a9a2ec16e29b09c4873f343",
+      "bytes": 4597,
+      "reasons": [
+        "cited:07-completion.md"
+      ],
+      "categories": [
+        "host-config"
+      ],
+      "decision": "withheld: host-config loopback endpoint (D4-b); owner decision"
+    },
+    {
+      "path": "validation/m3/authorization.json",
+      "sha256": "ec280e6d9fd74d9606ab218ca1f040ae7147fdbb330ef033f6580ca5e4d0165d",
+      "bytes": 1796,
+      "reasons": [
+        "cited:m3:/artifacts/authorization"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config",
+        "other-personal"
+      ],
+      "decision": "withheld: personal-path with host configuration or other-personal (D2, D3/D5/D6)"
+    },
+    {
+      "path": "validation/m3/gate.json",
+      "sha256": "53e54806c1ebefd60285edca645930f8cd7eb9b19845c08a3377855de20353bc",
+      "bytes": 7942,
+      "reasons": [
+        "claim"
+      ],
+      "categories": [
+        "personal-path",
+        "request-content"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/preflight.json",
+      "sha256": "4de9fc9a67b85228c4518de2e002bb521406d4cd4f210edbf49602a96537e268",
+      "bytes": 5015,
+      "reasons": [
+        "cited:m3:/artifacts/preflight",
+        "identity:source"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/series/ledger.json",
+      "sha256": "150523b7fa6f456e7c89868159acd3d57f43a6115606d87618d5ca41383d67de",
+      "bytes": 30228,
+      "reasons": [
+        "cited:m3:/artifacts/series_ledger",
+        "identity:run",
+        "identity:source"
+      ],
+      "categories": [
+        "personal-path"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/a-faithful/base-verification/report.json",
+      "sha256": "881f255e7fdb962b9713ec6e9e06b48998d2308f52a7b9569f011b8ca358a16d",
+      "bytes": 2839,
+      "reasons": [
+        "cited:m3:/results/0/artifact"
+      ],
+      "categories": [
+        "personal-path"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/a-faithful/calibration.json",
+      "sha256": "8cd5327e6848b62a28b9150e439dcabc996fbe8603e1d947e2cf222004fae483",
+      "bytes": 2346,
+      "reasons": [
+        "cited:m3:/results/0/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "request-content"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/a-faithful/judge/receipt.json",
+      "sha256": "099d2127f39be2553e5be4403fd78b34bb175422cee27b396ddc6addf283015e",
+      "bytes": 1150,
+      "reasons": [
+        "cited:m3:/results/0/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/a-faithful/verification.json",
+      "sha256": "ac9925f24d39d39b49be0f2ea978ee96d4d3e4a742d6f2856bf9393b6a890c3a",
+      "bytes": 1837,
+      "reasons": [
+        "cited:m3:/results/0/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "request-content"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/b-copied/base-verification/report.json",
+      "sha256": "881f255e7fdb962b9713ec6e9e06b48998d2308f52a7b9569f011b8ca358a16d",
+      "bytes": 2839,
+      "reasons": [
+        "cited:m3:/results/1/artifact"
+      ],
+      "categories": [
+        "personal-path"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/b-copied/calibration.json",
+      "sha256": "bba9f3ad2b6ffe343bcd062eca499861b39cc42c68c8e212551525fecd044f62",
+      "bytes": 2258,
+      "reasons": [
+        "cited:m3:/results/1/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "request-content"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/b-copied/judge/receipt.json",
+      "sha256": "37fe4f34913491abb8ccafc614ced3b26cc3d2655c856c3fd8c48ca677c987aa",
+      "bytes": 1150,
+      "reasons": [
+        "cited:m3:/results/1/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/b-copied/verification.json",
+      "sha256": "9ecc1108dd286f2e6a95d94a469fcdd6103d516dae526c26a9b5b6fa3d911773",
+      "bytes": 1754,
+      "reasons": [
+        "cited:m3:/results/1/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "request-content"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/c-unsupported/base-verification/report.json",
+      "sha256": "881f255e7fdb962b9713ec6e9e06b48998d2308f52a7b9569f011b8ca358a16d",
+      "bytes": 2839,
+      "reasons": [
+        "cited:m3:/results/2/artifact"
+      ],
+      "categories": [
+        "personal-path"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/c-unsupported/calibration.json",
+      "sha256": "dc1f10a2d20b9d060d9a9ace03c0c4fc6b6a07606728fd168b265ef703f86012",
+      "bytes": 2288,
+      "reasons": [
+        "cited:m3:/results/2/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "request-content"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/c-unsupported/judge/receipt.json",
+      "sha256": "1af7b33b3d2e5606a38a15c00a7fa20d3f3df8d7ccba42d5897c6c7addc086f9",
+      "bytes": 1150,
+      "reasons": [
+        "cited:m3:/results/2/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/c-unsupported/verification.json",
+      "sha256": "a4699c81baa1f147096ed13bfe33ce1c571735c4addd356fcc3a94c7e5f40b68",
+      "bytes": 1815,
+      "reasons": [
+        "cited:m3:/results/2/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "request-content"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/d-contradictory/base-verification/report.json",
+      "sha256": "881f255e7fdb962b9713ec6e9e06b48998d2308f52a7b9569f011b8ca358a16d",
+      "bytes": 2839,
+      "reasons": [
+        "cited:m3:/results/3/artifact"
+      ],
+      "categories": [
+        "personal-path"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/d-contradictory/calibration.json",
+      "sha256": "96543d1bfead6b5dd0fa8bb83dbf10f4b43375227630b07ebbf00be8a56ac1a1",
+      "bytes": 2237,
+      "reasons": [
+        "cited:m3:/results/3/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "request-content"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/d-contradictory/judge/receipt.json",
+      "sha256": "dbc3eb43c0c281808aafb4cf01943a48e9f8a830c3e644ab1dd007e1304f125f",
+      "bytes": 1150,
+      "reasons": [
+        "cited:m3:/results/3/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/d-contradictory/verification.json",
+      "sha256": "f7d63707f52f735092af7fdb5ffb8b542e024fc0717aa847681258e0f437cd45",
+      "bytes": 1729,
+      "reasons": [
+        "cited:m3:/results/3/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "request-content"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/e-omission/base-verification/report.json",
+      "sha256": "881f255e7fdb962b9713ec6e9e06b48998d2308f52a7b9569f011b8ca358a16d",
+      "bytes": 2839,
+      "reasons": [
+        "cited:m3:/results/4/artifact"
+      ],
+      "categories": [
+        "personal-path"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/e-omission/calibration.json",
+      "sha256": "4d9fa837ef93ff1bcdc740b82f4d2a8357bf59fabb79c0332475198679a6f3a6",
+      "bytes": 2199,
+      "reasons": [
+        "cited:m3:/results/4/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "request-content"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/e-omission/judge/receipt.json",
+      "sha256": "500a7ed30582b3d59ca80e07b93024329e9d445411774866107e16a8a40ae22d",
+      "bytes": 1150,
+      "reasons": [
+        "cited:m3:/results/4/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/e-omission/verification.json",
+      "sha256": "4a919bd622bad905d9e67a7b6e7d8a61c4c499de0af29df9c3733ca40a3887d2",
+      "bytes": 1737,
+      "reasons": [
+        "cited:m3:/results/4/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "request-content"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/f-injection/base-verification/report.json",
+      "sha256": "881f255e7fdb962b9713ec6e9e06b48998d2308f52a7b9569f011b8ca358a16d",
+      "bytes": 2839,
+      "reasons": [
+        "cited:m3:/results/5/artifact"
+      ],
+      "categories": [
+        "personal-path"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/f-injection/calibration.json",
+      "sha256": "8bfbc807ab002cdc19dc37ae49ee9fe831891b9c29f62b10219c532b11c9a7c4",
+      "bytes": 2416,
+      "reasons": [
+        "cited:m3:/results/5/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "request-content"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/f-injection/judge/receipt.json",
+      "sha256": "0de0e19182c19ce592cfd1db7842743f2d38633ac6ecc82ae54a6f16bbbafaac",
+      "bytes": 1150,
+      "reasons": [
+        "cited:m3:/results/5/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "host-config"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    },
+    {
+      "path": "validation/m3/variants/f-injection/verification.json",
+      "sha256": "e3a3fa13874913262bc4d38cd3828b6d9dd8f1a83918e7eea1321b3b42475c77",
+      "bytes": 1880,
+      "reasons": [
+        "cited:m3:/results/5/artifact"
+      ],
+      "categories": [
+        "personal-path",
+        "request-content"
+      ],
+      "decision": "withheld: personal-path (D2)"
+    }
+  ],
+  "not_extracted": [
+    {
+      "label": "external:m1-runtime-bridge-script",
+      "sha256": null,
+      "reason": "outside repository; mapping private"
+    },
+    {
+      "label": "external:m1-runtime-cli-config",
+      "sha256": null,
+      "reason": "outside repository; mapping private"
+    },
+    {
+      "label": "external:m2-runtime-bridge-script",
+      "sha256": null,
+      "reason": "outside repository; mapping private"
+    },
+    {
+      "label": "external:m2-runtime-cli-config",
+      "sha256": null,
+      "reason": "outside repository; mapping private"
+    }
+  ],
+  "identities": {
+    "M1": {
+      "source": [
+        "validation/m1/freeze/source-manifest.json",
+        "validation/m1/freeze/manifest-vs-commit.json",
+        "validation/m1/freeze/uncommitted-tracked.patch",
+        "validation/m1/freeze/uncommitted-untracked.tar"
+      ],
+      "image": [
+        "validation/m1/freeze/environment.json",
+        "validation/m1/controls/report.json"
+      ],
+      "run": [],
+      "model": [
+        "implementation/environment/runtime-wrapper-identity.json",
+        "implementation/environment/judge-wrapper-identity.json",
+        "implementation/environment/judge_bridge.py",
+        "implementation/environment/judge-config.json"
+      ],
+      "note": "M1 is contracts only: every reply simulated, 0 paid calls. Model entries identify the inspected wrappers, not a model measurement."
+    },
+    "M2": {
+      "source": [
+        "validation/m2/run/source-manifest.json"
+      ],
+      "image": [
+        "validation/m2/run/report.json",
+        "validation/m2/run/control-report.json",
+        "validation/m2/run/native-inputs.json"
+      ],
+      "run": [
+        "validation/m2/run/report.json",
+        "validation/m2/series/ledger.json",
+        "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/result.json"
+      ],
+      "model": [
+        "validation/m2/environment/runtime-wrapper-identity.json",
+        "validation/m2/environment/judge-wrapper-identity.json",
+        "validation/m2/environment/judge/judge_bridge.py",
+        "validation/m2/environment/judge/judge-config.json"
+      ]
+    },
+    "M3": {
+      "source": [
+        "validation/m3/series/ledger.json",
+        "validation/m3/preflight.json"
+      ],
+      "image": [],
+      "run": [
+        "validation/m3/series/ledger.json"
+      ],
+      "model": [
+        "validation/m2/environment/judge-wrapper-identity.json",
+        "validation/m3/variants/a-faithful/judge/wrapper.json",
+        "validation/m3/variants/b-copied/judge/wrapper.json",
+        "validation/m3/variants/c-unsupported/judge/wrapper.json",
+        "validation/m3/variants/d-contradictory/judge/wrapper.json",
+        "validation/m3/variants/e-omission/judge/wrapper.json",
+        "validation/m3/variants/f-injection/judge/wrapper.json"
+      ]
+    }
+  },
+  "verification_gaps": [
+    {
+      "milestone": "M1",
+      "claim": "validation/m1/gate.json#/source/checkpoint/commit_plus_checkpoint_reproduces_manifest",
+      "withheld": [
+        "validation/m1/freeze/uncommitted-untracked.tar"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "the public_basis files; the rest needs the withheld files"
+    },
+    {
+      "milestone": "M1",
+      "claim": "validation/m1/gate.json#/source/checkpoint/untracked_tar_sha256",
+      "withheld": [
+        "validation/m1/freeze/uncommitted-untracked.tar"
+      ],
+      "kind": "hash-only",
+      "still_checkable": "index hashes of the withheld files; bytes are private"
+    },
+    {
+      "milestone": "M1",
+      "claim": "validation/m1/gate.json#/images",
+      "withheld": [
+        "validation/m1/gate.json",
+        "validation/m1/freeze/environment.json",
+        "validation/m1/controls/report.json"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "nothing beyond the withheld entries' index hashes"
+    },
+    {
+      "milestone": "M1",
+      "claim": "validation/m1/gate.json#/wrapper_identities",
+      "withheld": [
+        "implementation/environment/runtime-wrapper-identity.json",
+        "implementation/environment/judge-wrapper-identity.json",
+        "implementation/environment/judge_bridge.py",
+        "implementation/environment/judge-config.json",
+        "external:m1-runtime-bridge-script",
+        "external:m1-runtime-cli-config"
+      ],
+      "kind": "hash-only",
+      "still_checkable": "index hashes of the withheld files; bytes are private"
+    },
+    {
+      "milestone": "M1",
+      "claim": "validation/m1/gate.json#/checks",
+      "withheld": [
+        "validation/m1/gate.json",
+        "validation/m1/checks.json",
+        "validation/m1/calibration-challenge.json"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "nothing beyond the withheld entries' index hashes"
+    },
+    {
+      "milestone": "M1",
+      "claim": "validation/m1/gate.json#/mocked_dispatch",
+      "withheld": [
+        "validation/m1/gate.json",
+        "validation/m1/mocked-live-harness/reconciliation.json"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "nothing beyond the withheld entries' index hashes"
+    },
+    {
+      "milestone": "M1",
+      "claim": "validation/m1/gate.json#/receipt_ledger_reconciliation",
+      "withheld": [
+        "validation/m1/gate.json",
+        "validation/m1/mocked-live-harness/reconciliation.json"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "nothing beyond the withheld entries' index hashes"
+    },
+    {
+      "milestone": "M1",
+      "claim": "validation/m1/gate.json#/evidence_immutability",
+      "withheld": [
+        "validation/m1/gate.json"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "nothing beyond the withheld entries' index hashes"
+    },
+    {
+      "milestone": "M1",
+      "claim": "validation/m1/gate.json#/claims",
+      "withheld": [
+        "validation/m1/gate.json",
+        "implementation/06-completion.md"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "nothing beyond the withheld entries' index hashes"
+    },
+    {
+      "milestone": "M2",
+      "claim": "validation/m2/gate.json#/authorization",
+      "withheld": [
+        "validation/m2/authorization.json"
+      ],
+      "kind": "hash-only",
+      "still_checkable": "index hashes of the withheld files; bytes are private"
+    },
+    {
+      "milestone": "M2",
+      "claim": "validation/m2/gate.json#/preflight",
+      "withheld": [
+        "validation/m2/preflight/report.json"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "nothing beyond the withheld entries' index hashes"
+    },
+    {
+      "milestone": "M2",
+      "claim": "validation/m2/gate.json#/run",
+      "withheld": [
+        "validation/m2/run/report.json",
+        "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/result.json",
+        "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/config.json",
+        "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/lock.json"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "the public_basis files; the rest needs the withheld files"
+    },
+    {
+      "milestone": "M2",
+      "claim": "validation/m2/gate.json#/execution",
+      "withheld": [
+        "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/execution.json",
+        "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/execution.persisted.json",
+        "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/execution.stdout.log",
+        "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/workflow.json"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "the public_basis files; the rest needs the withheld files"
+    },
+    {
+      "milestone": "M2",
+      "claim": "validation/m2/gate.json#/quality/origin",
+      "withheld": [
+        "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/receipt.json",
+        "validation/m2/series/ledger.json"
+      ],
+      "kind": "hash-only",
+      "still_checkable": "index hashes of the withheld files; bytes are private"
+    },
+    {
+      "milestone": "M2",
+      "claim": "validation/m2/gate.json#/accounting",
+      "withheld": [
+        "validation/m2/series/ledger.json",
+        "validation/m2/run/report.json",
+        "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/receipt.json"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "the public_basis files; the rest needs the withheld files"
+    },
+    {
+      "milestone": "M2",
+      "claim": "validation/m2/gate.json#/immutability",
+      "withheld": [
+        "validation/m2/verification/verify.py",
+        "validation/m2/run/report.json"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "the public_basis files; the rest needs the withheld files"
+    },
+    {
+      "milestone": "M2",
+      "claim": "implementation/07-completion.md#images",
+      "withheld": [
+        "validation/m2/run/report.json",
+        "validation/m2/run/control-report.json"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "nothing beyond the withheld entries' index hashes"
+    },
+    {
+      "milestone": "M2",
+      "claim": "implementation/07-completion.md#identities",
+      "withheld": [
+        "validation/m2/environment/runtime-wrapper-identity.json",
+        "validation/m2/environment/judge-wrapper-identity.json",
+        "validation/m2/environment/judge/judge_bridge.py",
+        "validation/m2/environment/judge/judge-config.json",
+        "external:m2-runtime-bridge-script",
+        "external:m2-runtime-cli-config"
+      ],
+      "kind": "hash-only",
+      "still_checkable": "index hashes of the withheld files; bytes are private"
+    },
+    {
+      "milestone": "M3",
+      "claim": "validation/m3/gate.json#/identities/rubric_card_digest",
+      "withheld": [
+        "validation/m3/gate.json"
+      ],
+      "kind": "hash-only",
+      "still_checkable": "index hashes of the withheld files; bytes are private"
+    },
+    {
+      "milestone": "M3",
+      "claim": "validation/m3/gate.json#/identities/wrapper_inspection_sha256",
+      "withheld": [
+        "validation/m2/environment/judge-wrapper-identity.json"
+      ],
+      "kind": "hash-only",
+      "still_checkable": "index hashes of the withheld files; bytes are private"
+    },
+    {
+      "milestone": "M3",
+      "claim": "validation/m3/gate.json#/identities/base_run_digest",
+      "withheld": [
+        "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/receipt.json",
+        "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/evaluation/report.json"
+      ],
+      "kind": "hash-only",
+      "still_checkable": "index hashes of the withheld files; bytes are private"
+    },
+    {
+      "milestone": "M3",
+      "claim": "validation/m3/gate.json#/identities/source_manifest_digest",
+      "withheld": [
+        "validation/m3/series/ledger.json",
+        "validation/m3/preflight.json"
+      ],
+      "kind": "hash-only",
+      "still_checkable": "index hashes of the withheld files; bytes are private"
+    },
+    {
+      "milestone": "M3",
+      "claim": "validation/m3/gate.json#/execution",
+      "withheld": [
+        "validation/m3/variants/a-faithful/judge/receipt.json",
+        "validation/m3/variants/b-copied/judge/receipt.json",
+        "validation/m3/variants/c-unsupported/judge/receipt.json",
+        "validation/m3/variants/d-contradictory/judge/receipt.json",
+        "validation/m3/variants/e-omission/judge/receipt.json",
+        "validation/m3/variants/f-injection/judge/receipt.json",
+        "validation/m3/series/ledger.json",
+        "validation/m3/authorization.json",
+        "validation/m3/variants/a-faithful/verification.json",
+        "validation/m3/variants/b-copied/verification.json",
+        "validation/m3/variants/c-unsupported/verification.json",
+        "validation/m3/variants/d-contradictory/verification.json",
+        "validation/m3/variants/e-omission/verification.json",
+        "validation/m3/variants/f-injection/verification.json"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "the public_basis files; the rest needs the withheld files"
+    },
+    {
+      "milestone": "M3",
+      "claim": "validation/m3/gate.json#/execution/base_record_unchanged",
+      "withheld": [
+        "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/receipt.json",
+        "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/evaluation/report.json"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "the public_basis files; the rest needs the withheld files"
+    },
+    {
+      "milestone": "M3",
+      "claim": "validation/m3/gate.json#/accounting",
+      "withheld": [
+        "validation/m3/gate.json",
+        "validation/m3/variants/a-faithful/judge/receipt.json",
+        "validation/m3/variants/b-copied/judge/receipt.json",
+        "validation/m3/variants/c-unsupported/judge/receipt.json",
+        "validation/m3/variants/d-contradictory/judge/receipt.json",
+        "validation/m3/variants/e-omission/judge/receipt.json",
+        "validation/m3/variants/f-injection/judge/receipt.json"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "nothing beyond the withheld entries' index hashes"
+    },
+    {
+      "milestone": "M3",
+      "claim": "validation/m3/gate.json#/status",
+      "withheld": [
+        "validation/m3/gate.json",
+        "implementation/08-completion.md"
+      ],
+      "kind": "not-reproducible",
+      "still_checkable": "nothing beyond the withheld entries' index hashes"
+    }
+  ],
+  "reproducibility": {
+    "M1": [
+      {
+        "claim": "validation/m1/gate.json#/source/manifest_digest",
+        "status": "fully-verifiable",
+        "public_basis": [
+          "validation/m1/freeze/source-manifest.json",
+          "git:7b70724"
+        ],
+        "private_basis": []
+      },
+      {
+        "claim": "validation/m1/gate.json#/source/manifest_equals_commit",
+        "status": "fully-verifiable",
+        "public_basis": [
+          "validation/m1/freeze/manifest-vs-commit.json",
+          "validation/m1/freeze/uncommitted-tracked.patch",
+          "git:704509f",
+          "git:7b70724"
+        ],
+        "private_basis": []
+      },
+      {
+        "claim": "validation/m1/gate.json#/source/checkpoint/commit_plus_checkpoint_reproduces_manifest",
+        "status": "partially-verifiable",
+        "public_basis": [
+          "validation/m1/freeze/uncommitted-tracked.patch",
+          "git:704509f",
+          "git:7b70724"
+        ],
+        "private_basis": [
+          "validation/m1/freeze/uncommitted-untracked.tar"
+        ]
+      },
+      {
+        "claim": "validation/m1/gate.json#/source/checkpoint/untracked_tar_sha256",
+        "status": "hash-only",
+        "public_basis": [],
+        "private_basis": [
+          "validation/m1/freeze/uncommitted-untracked.tar"
+        ]
+      },
+      {
+        "claim": "validation/m1/gate.json#/images",
+        "status": "not-reproducible",
+        "public_basis": [],
+        "private_basis": [
+          "validation/m1/gate.json",
+          "validation/m1/freeze/environment.json",
+          "validation/m1/controls/report.json"
+        ]
+      },
+      {
+        "claim": "validation/m1/gate.json#/wrapper_identities",
+        "status": "hash-only",
+        "public_basis": [],
+        "private_basis": [
+          "implementation/environment/runtime-wrapper-identity.json",
+          "implementation/environment/judge-wrapper-identity.json",
+          "implementation/environment/judge_bridge.py",
+          "implementation/environment/judge-config.json",
+          "external:m1-runtime-bridge-script",
+          "external:m1-runtime-cli-config"
+        ]
+      },
+      {
+        "claim": "validation/m1/gate.json#/checks",
+        "status": "not-reproducible",
+        "public_basis": [],
+        "private_basis": [
+          "validation/m1/gate.json",
+          "validation/m1/checks.json",
+          "validation/m1/calibration-challenge.json"
+        ]
+      },
+      {
+        "claim": "validation/m1/gate.json#/mocked_dispatch",
+        "status": "not-reproducible",
+        "public_basis": [],
+        "private_basis": [
+          "validation/m1/gate.json",
+          "validation/m1/mocked-live-harness/reconciliation.json"
+        ]
+      },
+      {
+        "claim": "validation/m1/gate.json#/receipt_ledger_reconciliation",
+        "status": "not-reproducible",
+        "public_basis": [],
+        "private_basis": [
+          "validation/m1/gate.json",
+          "validation/m1/mocked-live-harness/reconciliation.json"
+        ]
+      },
+      {
+        "claim": "validation/m1/gate.json#/evidence_immutability",
+        "status": "not-reproducible",
+        "public_basis": [],
+        "private_basis": [
+          "validation/m1/gate.json"
+        ]
+      },
+      {
+        "claim": "validation/m1/gate.json#/claims",
+        "status": "not-reproducible",
+        "public_basis": [],
+        "private_basis": [
+          "validation/m1/gate.json",
+          "implementation/06-completion.md"
+        ]
+      }
+    ],
+    "M2": [
+      {
+        "claim": "validation/m2/gate.json#/claims",
+        "status": "fully-verifiable",
+        "public_basis": [
+          "validation/m2/gate.json"
+        ],
+        "private_basis": []
+      },
+      {
+        "claim": "validation/m2/gate.json#/authorization",
+        "status": "hash-only",
+        "public_basis": [
+          "validation/m2/gate.json"
+        ],
+        "private_basis": [
+          "validation/m2/authorization.json"
+        ]
+      },
+      {
+        "claim": "validation/m2/gate.json#/source",
+        "status": "fully-verifiable",
+        "public_basis": [
+          "validation/m2/run/source-manifest.json",
+          "git:7b70724"
+        ],
+        "private_basis": []
+      },
+      {
+        "claim": "validation/m2/gate.json#/preflight",
+        "status": "not-reproducible",
+        "public_basis": [],
+        "private_basis": [
+          "validation/m2/preflight/report.json"
+        ]
+      },
+      {
+        "claim": "validation/m2/gate.json#/run",
+        "status": "partially-verifiable",
+        "public_basis": [
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/result.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/plan.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/trial.log"
+        ],
+        "private_basis": [
+          "validation/m2/run/report.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/result.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/config.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/lock.json"
+        ]
+      },
+      {
+        "claim": "validation/m2/gate.json#/execution",
+        "status": "partially-verifiable",
+        "public_basis": [
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/case.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/execution.metadata.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/observation.json"
+        ],
+        "private_basis": [
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/execution.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/execution.persisted.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/execution.stdout.log",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/workflow.json"
+        ]
+      },
+      {
+        "claim": "validation/m2/gate.json#/acceptance",
+        "status": "fully-verifiable",
+        "public_basis": [
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/reward.txt",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/result.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evaluation/cases/orion-clinics/acceptance.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evaluation/report.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evaluation/evaluation.json"
+        ],
+        "private_basis": []
+      },
+      {
+        "claim": "validation/m2/gate.json#/quality/score_0_10",
+        "status": "fully-verifiable",
+        "public_basis": [
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/evaluation/evaluation.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/result.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/context.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/prompt.txt",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/request.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/response.txt",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/reply.json"
+        ],
+        "private_basis": []
+      },
+      {
+        "claim": "validation/m2/gate.json#/quality/origin",
+        "status": "hash-only",
+        "public_basis": [
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/context.json"
+        ],
+        "private_basis": [
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/receipt.json",
+          "validation/m2/series/ledger.json"
+        ]
+      },
+      {
+        "claim": "validation/m2/gate.json#/accounting",
+        "status": "partially-verifiable",
+        "public_basis": [
+          "validation/m2/verification/summary.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/wrapper.json"
+        ],
+        "private_basis": [
+          "validation/m2/series/ledger.json",
+          "validation/m2/run/report.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/receipt.json"
+        ]
+      },
+      {
+        "claim": "validation/m2/gate.json#/immutability",
+        "status": "partially-verifiable",
+        "public_basis": [
+          "validation/m2/verification/summary.json"
+        ],
+        "private_basis": [
+          "validation/m2/verification/verify.py",
+          "validation/m2/run/report.json"
+        ]
+      },
+      {
+        "claim": "implementation/07-completion.md#images",
+        "status": "not-reproducible",
+        "public_basis": [],
+        "private_basis": [
+          "validation/m2/run/report.json",
+          "validation/m2/run/control-report.json"
+        ]
+      },
+      {
+        "claim": "implementation/07-completion.md#identities",
+        "status": "hash-only",
+        "public_basis": [
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/context.json"
+        ],
+        "private_basis": [
+          "validation/m2/environment/runtime-wrapper-identity.json",
+          "validation/m2/environment/judge-wrapper-identity.json",
+          "validation/m2/environment/judge/judge_bridge.py",
+          "validation/m2/environment/judge/judge-config.json",
+          "external:m2-runtime-bridge-script",
+          "external:m2-runtime-cli-config"
+        ]
+      }
+    ],
+    "M3": [
+      {
+        "claim": "validation/m3/gate.json#/calibration",
+        "status": "fully-verifiable",
+        "public_basis": [
+          "validation/m3/expected-snapshot.json",
+          "validation/m3/analysis-data.json",
+          "validation/m3/variants/a-faithful/judge/reply.json",
+          "validation/m3/variants/b-copied/judge/reply.json",
+          "validation/m3/variants/c-unsupported/judge/reply.json",
+          "validation/m3/variants/d-contradictory/judge/reply.json",
+          "validation/m3/variants/e-omission/judge/reply.json",
+          "validation/m3/variants/f-injection/judge/reply.json"
+        ],
+        "private_basis": [
+          "validation/m3/gate.json",
+          "validation/m3/variants/a-faithful/calibration.json",
+          "validation/m3/variants/b-copied/calibration.json",
+          "validation/m3/variants/c-unsupported/calibration.json",
+          "validation/m3/variants/d-contradictory/calibration.json",
+          "validation/m3/variants/e-omission/calibration.json",
+          "validation/m3/variants/f-injection/calibration.json"
+        ]
+      },
+      {
+        "claim": "validation/m3/gate.json#/results",
+        "status": "fully-verifiable",
+        "public_basis": [
+          "validation/m3/variants/a-faithful/judge/prompt.txt",
+          "validation/m3/variants/a-faithful/judge/request.json",
+          "validation/m3/variants/a-faithful/judge/response.txt",
+          "validation/m3/variants/a-faithful/judge/reply.json",
+          "validation/m3/variants/b-copied/judge/prompt.txt",
+          "validation/m3/variants/b-copied/judge/request.json",
+          "validation/m3/variants/b-copied/judge/response.txt",
+          "validation/m3/variants/b-copied/judge/reply.json",
+          "validation/m3/variants/c-unsupported/judge/prompt.txt",
+          "validation/m3/variants/c-unsupported/judge/request.json",
+          "validation/m3/variants/c-unsupported/judge/response.txt",
+          "validation/m3/variants/c-unsupported/judge/reply.json",
+          "validation/m3/variants/d-contradictory/judge/prompt.txt",
+          "validation/m3/variants/d-contradictory/judge/request.json",
+          "validation/m3/variants/d-contradictory/judge/response.txt",
+          "validation/m3/variants/d-contradictory/judge/reply.json",
+          "validation/m3/variants/e-omission/judge/prompt.txt",
+          "validation/m3/variants/e-omission/judge/request.json",
+          "validation/m3/variants/e-omission/judge/response.txt",
+          "validation/m3/variants/e-omission/judge/reply.json",
+          "validation/m3/variants/f-injection/judge/prompt.txt",
+          "validation/m3/variants/f-injection/judge/request.json",
+          "validation/m3/variants/f-injection/judge/response.txt",
+          "validation/m3/variants/f-injection/judge/reply.json"
+        ],
+        "private_basis": [
+          "validation/m3/gate.json"
+        ]
+      },
+      {
+        "claim": "validation/m3/gate.json#/identities/dataset_sha256",
+        "status": "fully-verifiable",
+        "public_basis": [
+          "git:7b70724",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/native-task.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/native-sources.sha256"
+        ],
+        "private_basis": []
+      },
+      {
+        "claim": "validation/m3/gate.json#/identities/rubric_file_sha256",
+        "status": "fully-verifiable",
+        "public_basis": [
+          "git:7b70724",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/native-task.json"
+        ],
+        "private_basis": []
+      },
+      {
+        "claim": "validation/m3/gate.json#/identities/rubric_card_digest",
+        "status": "hash-only",
+        "public_basis": [
+          "validation/m3/variants/a-faithful/judge/context.json",
+          "validation/m3/variants/b-copied/judge/context.json",
+          "validation/m3/variants/c-unsupported/judge/context.json",
+          "validation/m3/variants/d-contradictory/judge/context.json",
+          "validation/m3/variants/e-omission/judge/context.json",
+          "validation/m3/variants/f-injection/judge/context.json"
+        ],
+        "private_basis": [
+          "validation/m3/gate.json"
+        ]
+      },
+      {
+        "claim": "validation/m3/gate.json#/identities/wrapper_inspection_sha256",
+        "status": "hash-only",
+        "public_basis": [
+          "validation/m3/variants/a-faithful/judge/context.json",
+          "validation/m3/variants/b-copied/judge/context.json",
+          "validation/m3/variants/c-unsupported/judge/context.json",
+          "validation/m3/variants/d-contradictory/judge/context.json",
+          "validation/m3/variants/e-omission/judge/context.json",
+          "validation/m3/variants/f-injection/judge/context.json"
+        ],
+        "private_basis": [
+          "validation/m2/environment/judge-wrapper-identity.json"
+        ]
+      },
+      {
+        "claim": "validation/m3/gate.json#/identities/base_run_digest",
+        "status": "hash-only",
+        "public_basis": [
+          "validation/m3/base-snapshot.json"
+        ],
+        "private_basis": [
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/receipt.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/evaluation/report.json"
+        ]
+      },
+      {
+        "claim": "validation/m3/gate.json#/identities/source_manifest_digest",
+        "status": "hash-only",
+        "public_basis": [
+          "validation/m2/run/source-manifest.json",
+          "git:7b70724"
+        ],
+        "private_basis": [
+          "validation/m3/series/ledger.json",
+          "validation/m3/preflight.json"
+        ]
+      },
+      {
+        "claim": "validation/m3/gate.json#/execution",
+        "status": "partially-verifiable",
+        "public_basis": [
+          "validation/m3/variants/a-faithful/judge/wrapper.json",
+          "validation/m3/variants/b-copied/judge/wrapper.json",
+          "validation/m3/variants/c-unsupported/judge/wrapper.json",
+          "validation/m3/variants/d-contradictory/judge/wrapper.json",
+          "validation/m3/variants/e-omission/judge/wrapper.json",
+          "validation/m3/variants/f-injection/judge/wrapper.json"
+        ],
+        "private_basis": [
+          "validation/m3/variants/a-faithful/judge/receipt.json",
+          "validation/m3/variants/b-copied/judge/receipt.json",
+          "validation/m3/variants/c-unsupported/judge/receipt.json",
+          "validation/m3/variants/d-contradictory/judge/receipt.json",
+          "validation/m3/variants/e-omission/judge/receipt.json",
+          "validation/m3/variants/f-injection/judge/receipt.json",
+          "validation/m3/series/ledger.json",
+          "validation/m3/authorization.json",
+          "validation/m3/variants/a-faithful/verification.json",
+          "validation/m3/variants/b-copied/verification.json",
+          "validation/m3/variants/c-unsupported/verification.json",
+          "validation/m3/variants/d-contradictory/verification.json",
+          "validation/m3/variants/e-omission/verification.json",
+          "validation/m3/variants/f-injection/verification.json"
+        ]
+      },
+      {
+        "claim": "validation/m3/gate.json#/execution/base_record_unchanged",
+        "status": "partially-verifiable",
+        "public_basis": [
+          "validation/m3/base-snapshot.json"
+        ],
+        "private_basis": [
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/judge/receipt.json",
+          "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/paid-evaluation/evaluation/report.json"
+        ]
+      },
+      {
+        "claim": "validation/m3/gate.json#/accounting",
+        "status": "not-reproducible",
+        "public_basis": [],
+        "private_basis": [
+          "validation/m3/gate.json",
+          "validation/m3/variants/a-faithful/judge/receipt.json",
+          "validation/m3/variants/b-copied/judge/receipt.json",
+          "validation/m3/variants/c-unsupported/judge/receipt.json",
+          "validation/m3/variants/d-contradictory/judge/receipt.json",
+          "validation/m3/variants/e-omission/judge/receipt.json",
+          "validation/m3/variants/f-injection/judge/receipt.json"
+        ]
+      },
+      {
+        "claim": "validation/m3/gate.json#/status",
+        "status": "not-reproducible",
+        "public_basis": [],
+        "private_basis": [
+          "validation/m3/gate.json",
+          "implementation/08-completion.md"
+        ]
+      }
+    ]
+  },
+  "secret_scan": {
+    "patterns": [
+      {
+        "id": "C5-01",
+        "description": "OpenAI-style secret key prefix"
+      },
+      {
+        "id": "C5-02",
+        "description": "Anthropic key prefix"
+      },
+      {
+        "id": "C5-03",
+        "description": "GitHub personal token prefix"
+      },
+      {
+        "id": "C5-04",
+        "description": "GitHub OAuth token prefix"
+      },
+      {
+        "id": "C5-05",
+        "description": "GitHub fine-grained token prefix"
+      },
+      {
+        "id": "C5-06",
+        "description": "Slack token prefix"
+      },
+      {
+        "id": "C5-07",
+        "description": "AWS access key ID"
+      },
+      {
+        "id": "C5-08",
+        "description": "PEM private key header"
+      },
+      {
+        "id": "C5-09",
+        "description": "HTTP Authorization header"
+      },
+      {
+        "id": "C5-10",
+        "description": "Bearer credential"
+      },
+      {
+        "id": "C5-11",
+        "description": "key, secret, token or password assignment"
+      },
+      {
+        "id": "C5-12",
+        "description": "content of any .env file"
+      }
+    ],
+    "files_scanned": 153,
+    "archive_members_scanned": 50,
+    "hits": [
+      {
+        "path": "implementation/07-completion.md",
+        "line": 86,
+        "pattern": "C5-09"
+      },
+      {
+        "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/execution.json",
+        "line": 1309,
+        "pattern": "C5-11"
+      },
+      {
+        "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/execution.persisted.json",
+        "line": 1308,
+        "pattern": "C5-11"
+      },
+      {
+        "path": "validation/m2/run/jobs/live-research-report-orion-clinics/research-report__Y686VNb/verifier/evidence/cases/orion-clinics/execution.stdout.log",
+        "line": 1316,
+        "pattern": "C5-11"
+      }
+    ]
+  },
+  "publication_review": {
+    "date": "2026-10-10",
+    "method": "C6",
+    "policy": "privacy-first",
+    "categories": [
+      "credential",
+      "personal-path",
+      "host-config",
+      "request-content",
+      "pre-commit-source",
+      "other-personal"
+    ],
+    "files_read_in_full": 153,
+    "decisions": {
+      "D0": "07-completion.md line 86 C5 hit verified as prose; A1 deferred, so it stays a recorded hit and the file stays withheld",
+      "D1": "benchmark-only model requests and replies eligible after review",
+      "D2": "withhold absolute home paths",
+      "D3": "withhold external host-file paths and fingerprints",
+      "D4": "loopback and host metadata reviewed per file",
+      "D5": "withhold host configuration excerpts",
+      "D6": "withhold profile names and user-specific information",
+      "D7": "tracked patch equals the public 704509f..7b70724 diff",
+      "D8": "withhold the untracked archive",
+      "D9": "neutral labels; no external or guessable hashes in this index"
+    },
+    "spec_amendments": {
+      "approved": [
+        "A2",
+        "A3",
+        "A5"
+      ],
+      "deferred": [
+        "A1"
+      ]
+    },
+    "approvals": [
+      {
+        "scope": "publication set: the 89 files listed in files plus index.json",
+        "decision": "publish",
+        "approved_by": "repository owner",
+        "date": "2026-10-10"
+      },
+      {
+        "scope": "D4-b (5 files), D4-c (1 file) and every other withheld entry",
+        "decision": "withhold",
+        "approved_by": "repository owner",
+        "date": "2026-10-10"
+      }
+    ]
+  }
+}

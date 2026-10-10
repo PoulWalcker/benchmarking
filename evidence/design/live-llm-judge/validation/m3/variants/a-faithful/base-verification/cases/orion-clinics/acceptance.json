@@ -1,0 +1,19 @@
+{
+  "schema": "sapi-lab-acceptance/v1",
+  "status": "accepted",
+  "passed": true,
+  "evidence": {
+    "case.json": "04a7ba1ac0edf8cad8737a626e06fafa3d67cec3dffebb7cccf65527d7650fa0",
+    "config.json": "92ef2596352e29429774e4b9453ad1daedfe46bf59b975273247621fc971b517",
+    "execution.json": "30c9fb1928d2eb96528374fd7d682d55fb962048f501181a56f5e567346038a0",
+    "execution.metadata.json": "5a3ad9b19a0e1e15cf3c47dc76dfd129eaa48ce067adfb8053c796963379e750",
+    "execution.persisted.json": "bb61df2f05a45dc1510ea0bffb9b56fdef0b457d56f8aab2adf30e56278299c6",
+    "execution.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "execution.stdout.log": "354f9ffa39e45524a8e9702c10dcfe062d586d4c3f6bc67abe3a3cf68730c6c5",
+    "import.log": "1a159c4ad66dcb290ae879aa60d026685f75eef00f13c4f414284b20068801f6",
+    "mapping.json": "7893bb1f651d7ea758d4f9d998e462649a87f8e1bad18a70bedbfcaa86ca1335",
+    "workflow.json": "05b8c1f00a33e9181564b2d38e2bcfb7cf21f0ec2084c11ec94fac2e424123a6"
+  },
+  "evaluator": "sapi-lab-independent-verifier",
+  "evaluator_sha256": "dc109814d621d3ed16ca5d772bd84248178bd35e82fd31ad9182a74ce5ad8222"
+}

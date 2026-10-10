@@ -1,0 +1,124 @@
+{
+  "schema": "sapi-lab-observation-plan/v1",
+  "scenario": "research-report",
+  "mode": "live",
+  "submission_sha256": "9c9b59245e67e988f0b259db492a82c840da34afbc79e7b1e99effe56682d81c",
+  "fixture_sha256": "4daf7d344dea22263bee88b87dfecfb5c114289142f5e749ac422abe92169284",
+  "entries": [
+    {
+      "name": "orion-clinics",
+      "kind": "positive",
+      "procedure": "case",
+      "config": {
+        "schema": "sapi-lab/v0",
+        "spec_revision": "06ddd3333109cea8a2cb3071609070d7a3c0d3ff",
+        "workflow": {
+          "id": "research-report",
+          "revision": 1,
+          "kind": "Gantt",
+          "inputs": {
+            "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+          },
+          "steps": [
+            {
+              "id": "validate",
+              "kind": "Script",
+              "uses": "research.validate",
+              "with": {
+                "material": {
+                  "ref": "inputs.material"
+                }
+              }
+            },
+            {
+              "id": "product",
+              "kind": "LLM",
+              "uses": "research.product",
+              "with": {
+                "material": {
+                  "ref": "steps.validate.material"
+                }
+              }
+            },
+            {
+              "id": "marketing",
+              "kind": "LLM",
+              "uses": "research.marketing",
+              "with": {
+                "material": {
+                  "ref": "steps.validate.material"
+                }
+              }
+            },
+            {
+              "id": "combine",
+              "kind": "Script",
+              "uses": "research.combine",
+              "with": {
+                "product": {
+                  "ref": "steps.product"
+                },
+                "marketing": {
+                  "ref": "steps.marketing"
+                }
+              },
+              "join": "all_terminal"
+            },
+            {
+              "id": "write",
+              "kind": "LLM",
+              "uses": "research.write",
+              "with": {
+                "brief": {
+                  "ref": "steps.combine"
+                }
+              }
+            }
+          ],
+          "dependencies": [
+            [
+              "validate",
+              "product"
+            ],
+            [
+              "validate",
+              "marketing"
+            ],
+            [
+              "product",
+              "combine"
+            ],
+            [
+              "marketing",
+              "combine"
+            ],
+            [
+              "combine",
+              "write"
+            ]
+          ],
+          "acceptance": "Reject empty material; ground both analyses in the provided text; combine both analyses and write a report covering every explicitly named capability, audience and channel without adding unsupported claims. Preserve exact evidence excerpts from both analyses in the final result.",
+          "output": {
+            "ref": "steps.write"
+          }
+        },
+        "activation": {
+          "kind": "Callback",
+          "rule_id": "research-report-requested",
+          "hook": "research.material.received",
+          "condition": "valid_input",
+          "reaction": "Trigger",
+          "workflow_ref": {
+            "id": "research-report",
+            "revision": 1
+          }
+        },
+        "execution": {
+          "concurrency": "independent",
+          "deadline_seconds": 600,
+          "on_step_error": "fail"
+        }
+      }
+    }
+  ]
+}
