@@ -307,11 +307,3 @@ lifecycle/WBS repair execution is deferred. Custom n8n UI, Markdown review expor
 archived evaluator execution and task wheel resources are also deferred. Their code
 and historical evidence remain in Git; current native evaluation/judging remains
 active. See [ARCHITECTURE.md](ARCHITECTURE.md) for ownership and trust boundaries.
-
-Refactoring backlog observation: onboarding `ticket-routing` exposed hardcoded task
-sets in retirement/build expectations, rubric coverage and the explicit native
-composition-root permissions in `tests/test_boundaries.py`. Shared inventory tests
-now discover native task directories; explicit composition-root permissions still
-require coordinated edits. Review that remaining duplication while preserving evaluator/card
-validation, per-task config/isolation and own-image-tag checks, explicit trust
-boundaries and invoice-only default selection.
