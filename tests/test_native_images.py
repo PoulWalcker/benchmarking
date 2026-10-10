@@ -2,15 +2,17 @@
 
 import fnmatch
 import hashlib
+import io
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
 import unittest
+from unittest.mock import patch
 import uuid
 
 from sapi_config_lab.coordinate import native_tasks
@@ -328,9 +330,9 @@ class BuildPreflightTests(unittest.TestCase):
                 )
 
 
-def image_digests(tag: str) -> dict[str, str]:
-    """Read regular image files without executing any image code."""
-    container = subprocess.check_output(["docker", "create", tag], text=True).strip()
+def image_entries(image: str) -> dict[str, dict]:
+    """Read filesystem types, permissions, links and bytes without executing image code."""
+    container = subprocess.check_output(["docker", "create", image], text=True).strip()
     try:
         with tempfile.TemporaryFile() as exported:
             subprocess.run(["docker", "export", container], stdout=exported, check=True)
@@ -338,14 +340,82 @@ def image_digests(tag: str) -> dict[str, str]:
             result = {}
             with tarfile.open(fileobj=exported) as archive:
                 for entry in archive:
-                    if entry.isfile():
+                    path = PurePosixPath(entry.name)
+                    assert not path.is_absolute() and ".." not in path.parts, entry.name
+                    name = "/" + str(path)
+                    assert name not in result, f"Duplicate exported path: {name}"
+                    digest = None
+                    if entry.isfile() or entry.islnk():
                         stream = archive.extractfile(entry)
                         assert stream is not None
                         with stream:
-                            result[entry.name] = hashlib.file_digest(stream, "sha256").hexdigest()
+                            digest = hashlib.file_digest(stream, "sha256").hexdigest()
+                    # COPY changes directory timestamps; they do not represent added task assets.
+                    result[name] = {
+                        "type": entry.type.decode("ascii"),
+                        "mode": entry.mode,
+                        "uid": entry.uid,
+                        "gid": entry.gid,
+                        "link": entry.linkname,
+                        "sha256": digest,
+                    }
             return result
     finally:
         subprocess.run(["docker", "rm", "-f", container], check=True, stdout=subprocess.DEVNULL)
+
+
+def image_digests(tag: str) -> dict[str, str]:
+    """Fingerprint image file bytes for verifier hygiene checks."""
+    return {path: entry["sha256"] for path, entry in image_entries(tag).items() if entry["sha256"] is not None}
+
+
+class ImageExportTests(unittest.TestCase):
+    def test_export_preserves_nonregular_entries_and_hashes_hardlinked_bytes(self):
+        with io.BytesIO() as exported:
+            with tarfile.open(fileobj=exported, mode="w") as archive:
+                for name, kind, link in (
+                    ("app", tarfile.DIRTYPE, ""),
+                    ("app/public.txt", tarfile.REGTYPE, ""),
+                    ("app/link", tarfile.SYMTYPE, "public.txt"),
+                    ("app/hardlink", tarfile.LNKTYPE, "app/public.txt"),
+                    ("app/fifo", tarfile.FIFOTYPE, ""),
+                ):
+                    entry = tarfile.TarInfo(name)
+                    entry.type, entry.linkname = kind, link
+                    entry.mode, entry.uid, entry.gid = 0o640, 1000, 1000
+                    data = b"private bytes" if kind == tarfile.REGTYPE else b""
+                    entry.size = len(data)
+                    archive.addfile(entry, io.BytesIO(data) if data else None)
+            payload = exported.getvalue()
+
+        def docker(command, **kwargs):
+            if command[1] == "export":
+                kwargs["stdout"].write(payload)
+
+        with patch.object(subprocess, "check_output", return_value="container-id\n") as create:
+            with patch.object(subprocess, "run", side_effect=docker) as run:
+                files = image_entries("sha256:identity")
+        create.assert_called_once_with(["docker", "create", "sha256:identity"], text=True)
+        self.assertEqual([call.args[0][1] for call in run.call_args_list], ["export", "rm"])
+        digest = hashlib.sha256(b"private bytes").hexdigest()
+        self.assertEqual(files["/app/public.txt"]["sha256"], digest)
+        self.assertEqual(files["/app/hardlink"]["sha256"], digest)
+        self.assertEqual(files["/app/hardlink"]["type"], "1")
+        self.assertEqual(files["/app/link"]["link"], "public.txt")
+        self.assertEqual(files["/app/fifo"]["type"], "6")
+        self.assertEqual(files["/app"]["type"], "5")
+        self.assertEqual(files["/app/public.txt"]["uid"], 1000)
+
+    def test_failed_export_still_removes_created_container(self):
+        def docker(command, **kwargs):
+            if command[1] == "export":
+                raise subprocess.CalledProcessError(1, command)
+
+        with patch.object(subprocess, "check_output", return_value="container-id\n"):
+            with patch.object(subprocess, "run", side_effect=docker) as run:
+                with self.assertRaises(subprocess.CalledProcessError):
+                    image_entries("sha256:identity")
+        self.assertEqual(run.call_args_list[-1].args[0], ["docker", "rm", "-f", "container-id"])
 
 
 def host_artifacts(task: Path) -> dict[str, str]:

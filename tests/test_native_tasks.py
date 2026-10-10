@@ -16,11 +16,12 @@ from harbor.models.task.task import Task
 import yaml
 
 from sapi_config_lab.contracts import OutputArtifact
-from sapi_config_lab.coordinate.native_tasks import select_tasks
+from sapi_config_lab.coordinate.native_tasks import public_sources, select_tasks
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.paths import workspace_root
 from tests.support.checkout_evaluation import SCORING
 from tests.support.pinned import AVAILABLE, SOURCE
+from tests.test_native_images import image_entries
 
 ROOT = workspace_root()
 REPORTS = ROOT / "reports/native-phase1"
@@ -303,7 +304,10 @@ class NativeHarborTests(unittest.TestCase):
         self.assertFalse((trial / "verifier/evidence/runtime-dispatch.jsonl").exists())
 
     def test_candidate_isolation_and_hostile_transfer(self):
-        for task in ("invoice-total", "checkout-recovery", "research-report"):
+        root = ROOT / "tasks"
+        tasks = select_tasks(root, sorted(path.parent.name for path in root.glob("*/task.toml")))
+        for directory in tasks:
+            task = directory.name
             with self.subTest(task=task):
                 trial, _, result = self.run_native(
                     task,
@@ -313,14 +317,8 @@ class NativeHarborTests(unittest.TestCase):
                 )
                 self.assertTrue(result["acceptance"])
                 self.assertTrue(json.loads((trial / "agent/isolation.json").read_text())["private_paths_absent"])
-        # Research's private rubric, calibration expectations and evaluator never enter its candidate image.
-        command = "docker run --rm --user 0 --entrypoint find sapi-native-research-report-public:phase1 / -path /proc"
-        private = (
-            " -prune -o ( -name calibration* -o -name rubric.json -o -name evaluator.py -o -name solve.sh ) -print"
-        )
-        leaked = subprocess.check_output((command + private).split(), text=True)
-        self.assertEqual(leaked.split(), [])
-        for task in ("invoice-total", "research-report"):
+        for directory in tasks:
+            task = directory.name
             for attack in ("symlink", "fifo", "extra", "artifact"):
                 with self.subTest(task=task, attack=attack):
                     args = ["--ak", "attack=" + attack]
@@ -329,3 +327,118 @@ class NativeHarborTests(unittest.TestCase):
                     trial, _, result = self.run_native(task, "tests.native.control_agent:ControlAgent", *args)
                     self.assertEqual(result["acceptance"], attack == "artifact")
                     self.assertFalse((trial / "artifacts/discarded-convention/reward.txt").exists())
+
+
+def public_image_result(base, files, expected, private):
+    """Compare exported contents with declared sources and private task digests."""
+    changed = sorted(path for path, entry in files.items() if base.get(path) != entry)
+    removed = sorted(base.keys() - files.keys())
+    base_digests = {entry["sha256"] for entry in base.values() if entry["sha256"] is not None}
+    excluded = {path: digest for path, digest in private.items() if digest in base_digests}
+    forbidden = set(private.values()) - base_digests
+    leaks = {path: entry["sha256"] for path, entry in files.items() if entry["sha256"] in forbidden}
+    return {
+        "expected": expected,
+        "changed": changed,
+        "removed": removed,
+        "files": {path: files.get(path) for path in expected},
+        "private_sources": private,
+        "excluded_base_digests": sorted(set(excluded.values())),
+        "excluded_private_sources": excluded,
+        "leaks": leaks,
+    }
+
+
+def assert_public_image(result):
+    """Require an exact regular-file public diff and no non-base private bytes."""
+    case = unittest.TestCase()
+    case.assertEqual(set(result["changed"]), set(result["expected"]), "D1: unexpected filesystem diff")
+    case.assertEqual(result["removed"], [], "D1: base entries removed")
+    for path, digest in result["expected"].items():
+        entry = result["files"][path]
+        case.assertIsNotNone(entry, f"D1: missing public asset {path}")
+        case.assertEqual(entry["type"], "0", f"D1: non-regular public asset {path}")
+        case.assertEqual(entry["sha256"], digest, f"D1: differing public asset {path}")
+    case.assertEqual(result["leaks"], {}, "D2: private task bytes entered the public image")
+
+
+class PublicImageProofTests(unittest.TestCase):
+    def test_exported_filesystem_proof_rejects_content_and_type_mutations(self):
+        entry = {"type": "0", "mode": 0o644, "uid": 0, "gid": 0, "link": "", "sha256": "base"}
+        base = {"/base": entry, "/empty": {**entry, "sha256": "empty"}}
+        path = "/app/public/instruction.md"
+        files = {**base, path: {**entry, "sha256": "public"}}
+        expected = {path: "public"}
+        private = {"solution/config.yaml": "private", "evaluation/__init__.py": "empty"}
+        valid = public_image_result(base, files, expected, private)
+        assert_public_image(valid)
+        self.assertEqual(valid["excluded_base_digests"], ["empty"])
+        self.assertEqual(valid["excluded_private_sources"], {"evaluation/__init__.py": "empty"})
+        for label, changed in (
+            ("extra", {**files, "/renamed-secret": {**entry, "sha256": "private"}}),
+            ("extra directory", {**files, "/extra": {**entry, "type": "5", "sha256": None}}),
+            ("missing", base),
+            ("differing", {**files, path: {**entry, "sha256": "wrong"}}),
+            ("removed base", {path: files[path]}),
+            ("changed base permissions", {**files, "/base": {**entry, "mode": 0o777}}),
+            ("symlink", {**files, path: {**entry, "type": "2", "link": "/base", "sha256": None}}),
+            ("fifo", {**files, path: {**entry, "type": "6", "sha256": None}}),
+            ("hardlink", {**files, path: {**entry, "type": "1", "link": "base", "sha256": "public"}}),
+        ):
+            with self.subTest(mutation=label), self.assertRaisesRegex(AssertionError, "D1:"):
+                assert_public_image(public_image_result(base, changed, expected, private))
+        # An allowlisted file can still disclose private bytes; D1 alone cannot catch that.
+        with self.assertRaisesRegex(AssertionError, "D2:"):
+            assert_public_image(public_image_result(base, files, expected, {"solution/copy": "public"}))
+        self.assertEqual(
+            public_image_result(base, {**files, "/renamed": {**entry, "sha256": "private"}}, expected, private)[
+                "leaks"
+            ],
+            {"/renamed": "private"},
+        )
+
+
+@unittest.skipUnless(
+    os.environ.get("SAPI_RUN_NATIVE_TESTS") == "1", "Set SAPI_RUN_NATIVE_TESTS=1 for unpaid Docker image checks"
+)
+class NativePublicImageTests(unittest.TestCase):
+    def test_public_images_contain_exact_declared_bytes_and_no_private_bytes(self):
+        sources = source_manifest(ROOT)
+        record = json.loads((ROOT / "reports/native-image-build.json").read_text())
+        self.assertEqual(record["sources"], sources, "Run ./run.sh with all discovered scenarios first")
+        base_tag = "sapi-native-public-base:phase1"
+        base_id = subprocess.check_output(
+            ["docker", "image", "inspect", "--format", "{{.Id}}", base_tag], text=True
+        ).strip()
+        base = image_entries(base_id)
+        identities = {base_tag: base_id}
+        root = ROOT / "tasks"
+        tasks = select_tasks(root, sorted(path.parent.name for path in root.glob("*/task.toml")))
+        REPORTS.mkdir(parents=True, exist_ok=True)
+        for task in tasks:
+            with self.subTest(task=task.name):
+                allowed = public_sources(task)
+                prefix = f"tasks/{task.name}/"
+                expected = {f"/app/public/{Path(path).name}": sources[prefix + path] for path in allowed}
+                private = {
+                    path: digest
+                    for path, digest in sources.items()
+                    if path.startswith(prefix) and path.removeprefix(prefix) not in allowed
+                }
+                tag = f"sapi-native-{task.name}-public:phase1"
+                image_id = subprocess.check_output(
+                    ["docker", "image", "inspect", "--format", "{{.Id}}", tag], text=True
+                ).strip()
+                self.assertEqual(image_id, record["images"][tag], "Public image differs from verified build")
+                identities[tag] = image_id
+                result = public_image_result(base, image_entries(image_id), expected, private)
+                result.update(image=tag, image_id=image_id, base_image=base_tag, base_image_id=base_id)
+                (REPORTS / f"{task.name}-public-image.json").write_text(json.dumps(result, indent=2) + "\n")
+                assert_public_image(result)
+        self.assertEqual(source_manifest(ROOT), sources, "Sources changed during public-image proof")
+        for tag, identity in identities.items():
+            self.assertEqual(
+                subprocess.check_output(["docker", "image", "inspect", "--format", "{{.Id}}", tag], text=True).strip(),
+                identity,
+                "Image tag changed during public-image proof",
+            )
