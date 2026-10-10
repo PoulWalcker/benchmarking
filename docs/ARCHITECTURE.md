@@ -26,8 +26,8 @@ Unavailable facts remain null.
 Neutral contracts under `src/sapi_config_lab/*.py` import no stage. Independent
 verification imports only itself. Task `evaluation/` and `environment/` modules
 may import neutral contracts and verification, but not compiler/runtime or
-coordination implementations. Their fixed `experiment.py` and `tests/main.py`
-are composition roots and may call coordination mechanisms. Only integration
+coordination implementations. Their fixed `experiment.py` and direct `tests/*.py` modules
+are discovered composition roots and may call coordination mechanisms. Only integration
 imports Harbor. `tests/test_boundaries.py` checks these edges, including literal
 dynamic imports. It does not detect computed imports or business logic hidden in
 file reads; those still require review.
