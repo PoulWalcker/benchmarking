@@ -24,7 +24,10 @@ uv run --locked sapi-lab check
 checks. It uses no Docker or models. `run.sh` additionally builds source-identified
 native images, runs transport controls and submits direct Harbor oracle/nop trials.
 Invoice is the sole default when scenarios are omitted. `--skip-build` requires an
-existing build record matching every current source and selected image ID.
+existing build record matching every current source and selected image ID. Controls
+build the shared bases and only the selected tasks' public/verifier images; the build
+record contains exactly those task tags. Selecting an unrecorded task requires rebuilding
+without `--skip-build`.
 
 Freeze all source-manifest files, including documentation, before guarded controls.
 Write progress only under `reports/` until the run finalizes. Oracle acceptance and
@@ -89,14 +92,17 @@ does not bundle task resources.
 
 ```bash
 uv run --locked sh infra/native/build.sh
+uv run --locked sh infra/native/build.sh invoice-total research-report
 uv run --locked harbor run -p tasks/invoice-total -a oracle --max-retries 0 --force-build
 uv run --locked harbor run -p tasks/checkout-recovery -a oracle --max-retries 0 --force-build
 ```
 
-The build script creates images only. Harbor receives canonical task directories,
+The build script creates images only. Names select task images; omitting names builds
+all discovered tasks. Both paths build the runtime and shared public/core bases.
+Harbor receives canonical task directories,
 without generation or materialization. Rebuild after changing sources: Harbor's
 `--force-build` rebuilds task layers, not their local base images. Research CLI
-controls record all base-image identities and the full source manifest.
+controls record selected task-image identities and the full source manifest.
 
 Checkout native modes are explicit: `control` uses stub execution for zero-model
 workflows and fake runtime transport for model steps; `admission` compiles only;

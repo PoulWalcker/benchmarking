@@ -90,17 +90,19 @@ class Run:
             cache = root / "reports/native-image-build.json"
             self.check("before-native-images")
             if build:
-                argv = ["sh", str(root / "infra/native/build.sh")]
+                argv = ["sh", str(root / "infra/native/build.sh"), *[task.name for task in tasks]]
                 code = run_logged(argv, self.output / "native-build.log", stage="native build", timeout=None)
                 if code:
                     raise subprocess.CalledProcessError(code, argv)
                 self.check("after-native-build")
-                all_tasks = tuple(sorted(path.parent for path in (root / "tasks").glob("*/task.toml")))
-                built = {tag: image_id(tag) for tag in image_tags(all_tasks)}
+                built = {tag: image_id(tag) for tag in image_tags(tasks)}
                 write_json(cache, {"sources": self.sources, "images": built})
             recorded = json.loads(cache.read_text())
             if recorded.get("sources") != self.sources:
                 raise ValueError("Native image build sources differ; rebuild through the control suite")
+            for tag in image_tags(tasks):
+                if tag not in recorded.get("images", {}):
+                    raise ValueError(f"Native image {tag} is not in the verified build; rebuild without --skip-build")
             self.native_images = {tag: image_id(tag) for tag in image_tags(tasks)}
             if any(recorded.get("images", {}).get(tag) != identity for tag, identity in self.native_images.items()):
                 raise ValueError("Native image differs from its verified build")
