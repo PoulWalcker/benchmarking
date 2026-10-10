@@ -473,7 +473,7 @@ class NativeLiveReservationTests(unittest.TestCase):
                         dispatch.assert_called_once()
                         lines = display.getvalue().splitlines()
                         # Cases become known stages only after preflight admitted them.
-                        self.assertIn("[sapi-lab live] 1/1 preflight · done 0m00s", lines)
+                        self.assertIn("[sapi-lab live] 1/1 preflight · done <1s", lines)
                         self.assertTrue(any(line.startswith(f"[sapi-lab live] 2/2 {case}") for line in lines))
                         self.assertRegex(display.getvalue(), r"\] 2/2 case 1/1 [^\n]+ · done")
                         self.assertIn(f"[1/1] {scenario.name}/workflow: live, up to 0 model calls reserved", lines)

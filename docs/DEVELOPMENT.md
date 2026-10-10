@@ -234,20 +234,25 @@ finished), outcome unknown, or interrupted, and lists stages that did not run. O
 `evaluate` shows nothing.
 
 On a terminal (stderr is a TTY and `TERM` is not `dumb`) the display redraws one compact
-frame in place: header, ordered stages, elapsed times, the running stage's job or
-reservation context and its logged subprocess's last line, quiet time and log path. It
-uses no colour and truncates to the terminal width; durable messages print above it, and
-the final frame stays without a spinner on every outcome, including Ctrl+C. Otherwise the
+frame in place: header with total elapsed time, ordered stages with one timer each, the
+running stage's job or reservation context and its logged subprocess's last output, quiet
+time and log path. The subprocess's own timer appears only when it started at least one
+heartbeat after its stage. It uses no colour and truncates live lines to the terminal
+width; durable messages print above it, and the final frame stays without a spinner on
+every outcome, including Ctrl+C. The final frame leads with command, status, elapsed time
+and completed stages, puts failed, unknown, interrupted and unrun stages on their own
+lines, and wraps rather than truncates them. Durations read `<1s`, `7s` or `1m52s`; paths
+inside the working directory are shown relative to it. Otherwise the
 display prints plain lines: `[<command>] N/total <stage> · <state>`, nested context,
 the logged subprocess lines below, and a heartbeat every 15 seconds only while a stage
 waits without a logged subprocess.
 
 Stages change only at orchestration boundaries the host owns. A Harbor job or other
 subprocess stays running until it returns; its heartbeat proves only that the parent is
-waiting, and `last:` is a diagnostic, not a phase. `generate`'s control suite is a child
-whose stderr is `control.log`, so its stage lines appear only as the parent's `last:`.
+waiting, and its last output is a diagnostic, not a phase. `generate`'s control suite is a
+child whose stderr is `control.log`, so its stage lines appear only as the parent's last output.
 
-Logged subprocesses report start, elapsed time, the absolute log path, the last readable
+Logged subprocesses report start, elapsed time, the log path, the last readable
 log line, and seconds without new output every 15 seconds; they also report exit or
 timeout. Without a display these are stderr lines; on a terminal display they update the
 frame, and only a non-zero exit or timeout is printed. Their stdout and stderr remain in

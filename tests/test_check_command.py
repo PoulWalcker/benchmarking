@@ -49,7 +49,7 @@ class CheckCommandTests(unittest.TestCase):
         )
         self.assertIn(f"logs: {logs}", stderr)
         self.assertIn("[sapi-lab check] 3/5 ruff format · done", stderr)
-        self.assertRegex(stderr, r"\[sapi-lab check\] passed after \dm\d\ds · 5/5 stages done\n$")
+        self.assertRegex(stderr, r"\[sapi-lab check\] PASSED · (?:<1s|\d+s|\d+m\d\ds) · 5/5 stages done\n$")
 
     def test_a_failed_stage_is_named_with_its_log_and_later_stages_still_run(self):
         code, ran, stderr, _ = run_check({"ruff format", "mypy"})
@@ -64,7 +64,7 @@ class CheckCommandTests(unittest.TestCase):
         )
         self.assertIn("failed at mypy: exit 2\n", stderr)
         self.assertIn("[sapi-lab check] 5/5 distribution · done", stderr)
-        self.assertRegex(stderr, r"failed after \dm\d\ds · 3/5 stages done · failed: ruff format, mypy\n$")
+        self.assertRegex(stderr, r"FAILED · (?:<1s|\d+s|\d+m\d\ds) · 3/5 stages done · Failed: ruff format, mypy\n$")
 
 
 if __name__ == "__main__":

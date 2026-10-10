@@ -14,22 +14,21 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import textwrap
 import threading
 import time
 from typing import TextIO
 
-from sapi_config_lab.execute.host import HEARTBEAT_SECONDS, LOGGED_OBSERVER, LoggedEvent
+from sapi_config_lab.execute.host import HEARTBEAT_SECONDS, LOGGED_OBSERVER, LoggedEvent, duration
+from sapi_config_lab.paths import display_path
 
 SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 MARKS = {"pending": "·", "done": "✓", "failed": "✗", "unknown": "?", "interrupted": "!"}
 ENDED = frozenset({"done", "failed", "unknown", "interrupted"})
 OUTCOMES = {"passed": "✓", "failed": "✗", "unknown": "?", "interrupted": "!"}
+STATUS = {"passed": "PASSED", "failed": "FAILED", "unknown": "OUTCOME UNKNOWN", "interrupted": "INTERRUPTED"}
 REFRESH_SECONDS = 0.1
-
-
-def duration(seconds: float) -> str:
-    whole = max(0, int(seconds))
-    return f"{whole // 60}m{whole % 60:02d}s"
+NESTED = "      "
 
 
 @dataclass
@@ -224,7 +223,7 @@ class Tracker:
             if self.interactive:
                 self._draw()
             else:
-                self._line(self._summary(now))
+                self._line(" · ".join(self._summary(now)))
 
     # Rendering.
 
@@ -238,22 +237,21 @@ class Tracker:
     def _position(self, stage: Stage) -> str:
         return f"{self.stages.index(stage) + 1}/{len(self.stages)} {stage.name}"
 
-    def _summary(self, now: float) -> str:
+    def _summary(self, now: float) -> list[str]:
+        """The essential final status first, then one further fact per line."""
+        assert self.outcome is not None
         done = sum(stage.state == "done" for stage in self.stages)
-        text = (
-            f"{'outcome unknown' if self.outcome == 'unknown' else self.outcome} after {duration(now - self.started)}"
-        )
-        text += f" · {done}/{len(self.stages)} stages done"
-        for state in ("failed", "unknown", "interrupted"):
+        lines = [f"{STATUS[self.outcome]} · {duration(now - self.started)} · {done}/{len(self.stages)} stages done"]
+        for state, label in (("failed", "Failed"), ("unknown", "Outcome unknown"), ("interrupted", "Interrupted")):
             names = [stage.name for stage in self.stages if stage.state == state]
             if names:
-                text += f" · {state}: {', '.join(names)}"
+                lines.append(f"{label}: {', '.join(names)}")
         if self.outcome == "failed" and not any(stage.state in ENDED - {"done"} for stage in self.stages):
-            text += " · result not accepted"
+            lines.append("Result not accepted")
         pending = [stage.name for stage in self.stages if stage.state == "pending"]
         if pending:
-            text += f" · not run: {', '.join(pending)}"
-        return text
+            lines.append(f"Not run: {', '.join(pending)}")
+        return lines
 
     def _line(self, text: str) -> None:
         self._write(f"[{self.command}] {text}\n")
@@ -275,37 +273,58 @@ class Tracker:
         spin = SPINNER[self.tick % len(SPINNER)]
         running = [stage for stage in self.stages if stage.state == "running"]
         current = running[-1] if running else None
+        columns, height = self.size()
         if self.outcome is None:
             head = f"{spin} {self.command} · {duration(now - self.started)}"
             if current is not None:
-                head += f" · stage {self._position(current)}"
+                head += f" · stage {self.stages.index(current) + 1}/{len(self.stages)}"
+            top = [head]
         else:
-            head = f"{OUTCOMES[self.outcome]} {self.command} {self._summary(now)}"
+            # Final facts wrap rather than truncate; they stay on screen after the command ends.
+            first, *facts = self._summary(now)
+            top = wrap(f"{OUTCOMES[self.outcome]} {self.command} · {first}", columns - 1)
+            top += [line for fact in facts for line in wrap("  " + fact, columns - 1)]
         width = max(len(stage.name) for stage in self.stages) if self.stages else 0
         rows: list[tuple[Stage, list[str]]] = []
         for stage in self.stages:
             if stage.state == "running":
                 assert stage.started is not None
-                lines = [f"  {spin} {stage.name:<{width}}  {duration(now - stage.started)}"]
+                lines = [f"  {spin} {stage.name:<{width}}   {duration(now - stage.started)}"]
             elif stage.state in ENDED and stage.started is not None and stage.ended is not None:
-                lines = [f"  {MARKS[stage.state]} {stage.name:<{width}}  {duration(stage.ended - stage.started)}"]
+                lines = [f"  {MARKS[stage.state]} {stage.name:<{width}}   {duration(stage.ended - stage.started)}"]
             else:
                 lines = [f"  {MARKS[stage.state]} {stage.name}"]
             if stage is current and self.outcome is None:
-                lines += [f"      {text}" for text in self.details]
-                if self.child is not None:
-                    child = self.child
-                    elapsed = duration(child.elapsed + now - self.child_seen)
-                    status = f"      {child.stage} {elapsed}"
-                    if child.last is not None:
-                        status += f" · last: {child.last}"
-                    if child.quiet is not None:
-                        status += f" · quiet {child.quiet}s"
-                    lines += [status, f"      log {child.log}"]
+                context = self._context(stage, now)
+                lines += context + ([""] if context and stage is not self.stages[-1] else [])
             rows.append((stage, lines))
-        columns, height = self.size()
-        body = self._compact(rows, max(4, height - 2))
-        return [line if len(line) < columns else line[: max(1, columns - 2)] + "…" for line in [head, *body]]
+        body = self._compact(rows, max(4, height - len(top) - 2))
+        return [clip(line, columns) for line in [*top, "", *body]]
+
+    def _context(self, stage: Stage, now: float) -> list[str]:
+        """Nested facts the stage row lacks: producer details and the logged subprocess, never a second stage timer."""
+        lines = [NESTED + text for text in self.details]
+        child = self.child
+        if child is None:
+            return lines
+        assert stage.started is not None
+        since = now - self.child_seen
+        running = child.elapsed + since
+        facts = []
+        if child.stage != stage.name and not any(child.stage in text for text in self.details):
+            facts.append(child.stage)
+        # Within one heartbeat of the stage's start the subprocess timer would only repeat the stage timer.
+        if now - running - stage.started >= self.heartbeat:
+            facts.append(f"running {duration(running)}")
+        if facts:
+            lines.append(f"{NESTED}Subprocess: {' · '.join(facts)}")
+        if child.last is not None:
+            lines.append(f"{NESTED}Last output: {child.last}")
+        if child.quiet is not None:
+            # Heartbeats sample quiet time; between them it grows with the clock until the next sample.
+            lines.append(f"{NESTED}Quiet: {duration(child.quiet + since)}")
+        lines.append(f"{NESTED}Log: {display_path(child.log)}")
+        return lines
 
     @staticmethod
     def _compact(rows: list[tuple[Stage, list[str]]], limit: int) -> list[str]:
@@ -336,6 +355,24 @@ class Tracker:
         text += "".join(line + "\n" for line in lines)
         self.height = len(lines)
         self._write(text)
+
+
+def clip(line: str, columns: int) -> str:
+    """A live line never wraps, so the frame's height stays exact."""
+    return line if len(line) < columns else line[: max(1, columns - 2)] + "…"
+
+
+def wrap(text: str, width: int) -> list[str]:
+    """Break a line at its ` · ` separators, then at spaces, so no fact is cut off."""
+    lines: list[str] = []
+    for part in text.split(" · "):
+        if lines and len(lines[-1]) + 3 + len(part) <= width:
+            lines[-1] += " · " + part
+        else:
+            lines += textwrap.wrap(
+                part, max(width, 8), initial_indent="    " if lines else "", subsequent_indent="    "
+            )
+    return lines
 
 
 ACTIVE: ContextVar[Tracker | None] = ContextVar("progress_tracker", default=None)
@@ -428,11 +465,11 @@ def note(message: str) -> None:
 
 def failure_lines(log: Path | None, tail: Sequence[str], *, lines: int = 20, jobs: Path | None = None) -> list[str]:
     """The log, job directory, bounded last lines and inspection command for a failed stage."""
-    result = [f"  log: {log}"] if log is not None else []
+    result = [f"  log: {display_path(log)}"] if log is not None else []
     if jobs is not None:
-        result.append(f"  jobs: {jobs}")
+        result.append(f"  jobs: {display_path(jobs)}")
     if tail:
         result += ["  last lines:", *(f"    {line}" for line in tail[-lines:])]
     if log is not None:
-        result.append(f"  inspect: tail -n 200 {log}")
+        result.append(f"  inspect: tail -n 200 {display_path(log)}")
     return result

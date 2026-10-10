@@ -14,7 +14,8 @@ from unittest.mock import patch
 
 from sapi_config_lab.coordinate import progress
 from sapi_config_lab.coordinate.progress import SPINNER, Tracker, tracking
-from sapi_config_lab.execute.host import LOGGED_OBSERVER, LoggedEvent, run_logged
+from sapi_config_lab.execute.host import LOGGED_OBSERVER, LoggedEvent, duration, run_logged
+from sapi_config_lab.paths import display_path
 
 
 class FakeClock:
@@ -31,6 +32,34 @@ def line_tracker(stages=("setup", "work", "finalizing"), **options):
     return tracker, stream, clock
 
 
+class DisplayFormatTests(unittest.TestCase):
+    def test_durations_read_naturally_at_every_scale(self):
+        cases = {-1: "<1s", 0: "<1s", 0.99: "<1s", 1: "1s", 7.9: "7s", 59.99: "59s", 60: "1m00s", 112: "1m52s"}
+        for seconds, text in cases.items():
+            with self.subTest(seconds=seconds):
+                self.assertEqual(duration(seconds), text)
+        self.assertEqual(duration(3725), "62m05s")
+
+    def test_paths_are_shown_relative_to_the_working_directory_only_when_inside_it(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cwd = Path(directory).resolve()
+            with patch("pathlib.Path.cwd", return_value=cwd):
+                self.assertEqual(display_path(cwd / "reports/r/local-tests.log"), Path("reports/r/local-tests.log"))
+                self.assertEqual(display_path(Path("/elsewhere/r.log")), Path("/elsewhere/r.log"))
+                log = cwd / "reports/r/oracle.log"
+                self.assertEqual(
+                    progress.failure_lines(log, ["boom"], jobs=cwd / "reports/r/jobs/oracle"),
+                    [
+                        "  log: reports/r/oracle.log",
+                        "  jobs: reports/r/jobs/oracle",
+                        "  last lines:",
+                        "    boom",
+                        "  inspect: tail -n 200 reports/r/oracle.log",
+                    ],
+                )
+            self.assertEqual(log.parent, cwd / "reports/r")
+
+
 class LineModeTests(unittest.TestCase):
     def test_transitions_and_final_summary_are_plain_ordered_lines(self):
         tracker, stream, clock = line_tracker()
@@ -43,12 +72,12 @@ class LineModeTests(unittest.TestCase):
             [
                 "[sapi-lab demo] started · stages: setup → work → finalizing",
                 "[sapi-lab demo] 1/3 setup · running",
-                "[sapi-lab demo] 1/3 setup · done 0m03s",
+                "[sapi-lab demo] 1/3 setup · done 3s",
                 "[sapi-lab demo] 2/3 work · running",
                 "[sapi-lab demo] 2/3 work · done 1m02s",
                 "[sapi-lab demo] 3/3 finalizing · running",
-                "[sapi-lab demo] 3/3 finalizing · done 0m01s",
-                "[sapi-lab demo] passed after 1m06s · 3/3 stages done",
+                "[sapi-lab demo] 3/3 finalizing · done 1s",
+                "[sapi-lab demo] PASSED · 1m06s · 3/3 stages done",
             ],
         )
         self.assertNotIn("\x1b", stream.getvalue())
@@ -65,7 +94,7 @@ class LineModeTests(unittest.TestCase):
                 with self.assertRaises(type(error)) as raised, tracker.stage("work"):
                     raise error
                 self.assertIs(raised.exception, error)
-                self.assertIn(f"[sapi-lab demo] 2/3 work · {state} 0m00s", stream.getvalue())
+                self.assertIn(f"[sapi-lab demo] 2/3 work · {state} <1s", stream.getvalue())
 
     def test_pending_stage_is_never_presented_as_done_and_finish_renders_once(self):
         tracker, stream, clock = line_tracker()
@@ -82,9 +111,9 @@ class LineModeTests(unittest.TestCase):
         self.assertNotIn("work · done", stream.getvalue())
         self.assertEqual(
             lines[-1],
-            "[sapi-lab demo] failed after 0m01s · 1/3 stages done · unknown: work · not run: finalizing",
+            "[sapi-lab demo] FAILED · 1s · 1/3 stages done · Outcome unknown: work · Not run: finalizing",
         )
-        self.assertEqual(sum("failed after" in line for line in lines), 1)
+        self.assertEqual(sum("FAILED · " in line for line in lines), 1)
         with self.assertRaises(ValueError):
             tracker.end("setup", "passed")
 
@@ -94,12 +123,12 @@ class LineModeTests(unittest.TestCase):
             raise RuntimeError("wrapper completion is missing")
         tracker.unknown_outcome()
         tracker.finish("unknown")
-        self.assertTrue(stream.getvalue().endswith("outcome unknown after 0m00s · 0/1 stages done · unknown: work\n"))
+        self.assertTrue(stream.getvalue().endswith("OUTCOME UNKNOWN · <1s · 0/1 stages done · Outcome unknown: work\n"))
         tracker, stream, _ = line_tracker(("work",))
         with tracker.stage("work"):
             pass
         tracker.finish("failed")
-        self.assertTrue(stream.getvalue().endswith("failed after 0m00s · 1/1 stages done · result not accepted\n"))
+        self.assertTrue(stream.getvalue().endswith("FAILED · <1s · 1/1 stages done · Result not accepted\n"))
 
     def test_late_and_unexpected_stages_follow_the_latest_started_stage(self):
         tracker, stream, _ = line_tracker(("setup", "preflight", "finalizing"))
@@ -162,42 +191,235 @@ def screen(text: str) -> list[str]:
     return rows
 
 
+HARBOR = ("setup", "local tests", "task plans", "transport", "native images", "oracle", "nop", "finalizing")
+
+
 def tty_tracker(stages=("setup", "transport", "oracle", "finalizing"), size=(100, 40)):
     stream, clock = Terminal(), FakeClock()
     tracker = Tracker("sapi-lab harbor", stages, stream=stream, clock=clock, size=lambda: size)
     return tracker, stream, clock
 
 
+def nested(stream, name):
+    """The running stage row named `name` and the context lines nested under it."""
+    frame = screen(stream.getvalue())
+    at = next(i for i, line in enumerate(frame) if line[4:].startswith(name + " ") and line[2] in SPINNER)
+    return frame[at], [line for line in frame[at + 1 :] if line.startswith("      ")]
+
+
 class TerminalModeTests(unittest.TestCase):
-    def test_frame_shows_header_ordered_stages_nested_context_and_elapsed(self):
-        tracker, stream, clock = tty_tracker()
-        self.assertTrue(tracker.interactive)
-        with tracker.stage("setup"):
-            clock.now += 3
-        tracker.start("transport")
-        log = Path("/runs/r/transport.log")
-        with tracker.detail("Harbor job transport · no inner phase reported"):
-            tracker.observe(LoggedEvent("started", "transport", log, 0, "ignored on a terminal"))
-            clock.now += 15
-            tracker.observe(LoggedEvent("heartbeat", "transport", log, 15, "ignored", "(no output yet)", 15))
-            clock.now += 5
-            tracker.refresh()
-            frame = screen(stream.getvalue())
+    def test_active_harbor_frame_matches_the_target_layout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cwd = Path(directory).resolve()
+            log = cwd / "reports/20261010T164637Z/transport.log"
+            with patch("pathlib.Path.cwd", return_value=cwd):
+                tracker, stream, clock = tty_tracker(HARBOR)
+                for name, seconds in (("setup", 0.3), ("local tests", 113), ("task plans", 0.2)):
+                    with tracker.stage(name):
+                        clock.now += seconds
+                tracker.start("transport")
+                with tracker.detail("Harbor job: transport · task invoice-total"):
+                    clock.now += 1
+                    tracker.observe(LoggedEvent("started", "transport", log, 0, "ignored on a terminal"))
+                    clock.now += 15
+                    tracker.observe(LoggedEvent("heartbeat", "transport", log, 15, "ignored", "(no output yet)", 15))
+                    clock.now += 12
+                    tracker.refresh()
+                    frame = screen(stream.getvalue())
         spin = SPINNER[1]
         self.assertEqual(
             frame,
             [
-                f"{spin} sapi-lab harbor · 0m23s · stage 2/4 transport",
-                "  ✓ setup       0m03s",
-                f"  {spin} transport   0m20s",
-                "      Harbor job transport · no inner phase reported",
-                "      transport 0m20s · last: (no output yet) · quiet 15s",
-                "      log /runs/r/transport.log",
+                f"{spin} sapi-lab harbor · 2m21s · stage 4/8",
+                "",
+                "  ✓ setup           <1s",
+                "  ✓ local tests     1m53s",
+                "  ✓ task plans      <1s",
+                f"  {spin} transport       28s",
+                "      Harbor job: transport · task invoice-total",
+                "      Last output: (no output yet)",
+                "      Quiet: 27s",
+                "      Log: reports/20261010T164637Z/transport.log",
+                "",
+                "  · native images",
                 "  · oracle",
+                "  · nop",
                 "  · finalizing",
             ],
         )
         self.assertNotIn("ignored", stream.getvalue())
+
+    def test_final_success_frame_matches_the_target_layout(self):
+        tracker, stream, clock = tty_tracker(HARBOR)
+        timings = (0.3, 113, 0.2, 124, 35, 72, 12, 0.5)
+        for name, seconds in zip(HARBOR, timings, strict=True):
+            with tracker.stage(name):
+                clock.now += seconds
+        tracker.finish("passed")
+        self.assertEqual(
+            screen(stream.getvalue()),
+            [
+                "✓ sapi-lab harbor · PASSED · 5m57s · 8/8 stages done",
+                "",
+                "  ✓ setup           <1s",
+                "  ✓ local tests     1m53s",
+                "  ✓ task plans      <1s",
+                "  ✓ transport       2m04s",
+                "  ✓ native images   35s",
+                "  ✓ oracle          1m12s",
+                "  ✓ nop             12s",
+                "  ✓ finalizing      <1s",
+            ],
+        )
+
+    def test_a_just_started_subprocess_adds_only_its_log(self):
+        tracker, stream, clock = tty_tracker(("local tests", "mypy"))
+        log = Path("/runs/r/local-tests.log")
+        tracker.start("local tests")
+        clock.now += 1
+        tracker.observe(LoggedEvent("started", "local tests", log, 0, "ignored"))
+        clock.now += 6
+        tracker.refresh()
+        row, lines = nested(stream, "local tests")
+        self.assertEqual(row, f"  {SPINNER[1]} local tests   7s")
+        self.assertEqual(lines, ["      Log: /runs/r/local-tests.log"])
+
+    def test_stage_timer_is_the_only_timer_and_quiet_stays_current_between_heartbeats(self):
+        # The reported case: the subprocess starts a second after its stage and stays silent.
+        tracker, stream, clock = tty_tracker(("setup", "transport"))
+        log = Path("/runs/r/transport.log")
+        tracker.start("transport")
+        clock.now += 1
+        tracker.observe(LoggedEvent("started", "transport", log, 0, "ignored"))
+        clock.now += 15
+        tracker.observe(LoggedEvent("heartbeat", "transport", log, 15, "ignored", "(no output yet)", 15))
+        for second, quiet in ((16, "15s"), (21, "20s"), (28, "27s")):
+            clock.now = 100 + second
+            tracker.refresh()
+            row, lines = nested(stream, "transport")
+            self.assertEqual(row.split()[-1], f"{second}s")
+            self.assertEqual(
+                lines,
+                ["      Last output: (no output yet)", f"      Quiet: {quiet}", "      Log: /runs/r/transport.log"],
+            )
+        clock.now += 2
+        tracker.observe(LoggedEvent("heartbeat", "transport", log, 30, "ignored", "listening", None))
+        clock.now += 3
+        tracker.refresh()
+        self.assertEqual(
+            nested(stream, "transport")[1], ["      Last output: listening", "      Log: /runs/r/transport.log"]
+        )
+
+    def test_a_subprocess_started_well_into_its_stage_shows_its_own_labelled_timer(self):
+        tracker, stream, clock = tty_tracker(("setup", "transport"))
+        log = Path("/runs/r/transport.log")
+        tracker.start("transport")
+        clock.now += 30  # Stage work before the subprocess exists.
+        tracker.observe(LoggedEvent("started", "transport", log, 0, "ignored"))
+        for second in (15, 30, 45, 60, 75):
+            clock.now += 15
+            tracker.observe(LoggedEvent("heartbeat", "transport", log, second, "ignored", "(no output yet)", second))
+        clock.now += 7
+        tracker.refresh()
+        row, lines = nested(stream, "transport")
+        self.assertEqual(row, f"  {SPINNER[1]} transport   1m52s")
+        self.assertEqual(
+            lines,
+            [
+                "      Subprocess: running 1m22s",
+                "      Last output: (no output yet)",
+                "      Quiet: 1m22s",
+                "      Log: /runs/r/transport.log",
+            ],
+        )
+        self.assertTrue(all(word not in stream.getvalue() for word in ("building", "verifying", "ETA", "%")))
+
+    def test_a_differently_named_job_is_named_once(self):
+        log = Path("/runs/r/oracle-invoice-total.log")
+        for details, expected in (
+            ((), ["      Subprocess: oracle-invoice-total"]),
+            (("Harbor job: oracle-invoice-total · task invoice-total",), []),
+        ):
+            with self.subTest(details=details):
+                tracker, stream, clock = tty_tracker(("setup", "oracle"))
+                tracker.start("oracle")
+                tracker.details.extend(details)
+                tracker.observe(LoggedEvent("started", "oracle-invoice-total", log, 0, "ignored"))
+                clock.now += 4
+                tracker.refresh()
+                _, lines = nested(stream, "oracle")
+                self.assertEqual(
+                    lines,
+                    [f"      {text}" for text in details] + expected + ["      Log: /runs/r/oracle-invoice-total.log"],
+                )
+
+    def test_final_summary_leads_with_status_and_wraps_instead_of_truncating(self):
+        stages = ("unittest", "ruff check", "ruff format", "mypy", "distribution")
+        for width in (100, 40, 24):
+            with self.subTest(width=width):
+                tracker, stream, clock = tty_tracker(stages, size=(width, 40))
+                with tracker.stage("unittest"):
+                    clock.now += 5
+                tracker.start("ruff check")
+                clock.now += 2
+                tracker.finish("interrupted")
+                frame = screen(stream.getvalue())
+                self.assertTrue(all(len(line) < width for line in frame))
+                self.assertNotIn("…", "".join(frame))
+                summary = frame[: frame.index("")]
+                self.assertTrue(summary[0].startswith("! sapi-lab harbor"))
+                text = " ".join(line.strip() for line in summary)
+                for fact in ("INTERRUPTED", "7s", "1/5 stages done", "Interrupted: ruff check"):
+                    self.assertIn(fact, text)
+                self.assertIn("Not run: ruff format, mypy, distribution", text)
+                if width == 100:
+                    self.assertEqual(
+                        summary,
+                        [
+                            "! sapi-lab harbor · INTERRUPTED · 7s · 1/5 stages done",
+                            "  Interrupted: ruff check",
+                            "  Not run: ruff format, mypy, distribution",
+                        ],
+                    )
+                if width == 24:
+                    self.assertEqual(
+                        summary,
+                        [
+                            "! sapi-lab harbor",
+                            "    INTERRUPTED · 7s",
+                            "    1/5 stages done",
+                            "  Interrupted: ruff",
+                            "    check",
+                            "  Not run: ruff format,",
+                            "    mypy, distribution",
+                        ],
+                    )
+
+    def test_final_summary_for_each_outcome_reads_alike(self):
+        cases = (
+            ("passed", None, ["✓ sapi-lab harbor · PASSED · 1s · 1/1 stages done"]),
+            ("failed", RuntimeError(), ["✗ sapi-lab harbor · FAILED · 1s · 0/1 stages done", "  Failed: work"]),
+            (
+                "unknown",
+                subprocess.TimeoutExpired("x", 1),
+                ["? sapi-lab harbor · OUTCOME UNKNOWN · 1s · 0/1 stages done", "  Outcome unknown: work"],
+            ),
+            (
+                "interrupted",
+                KeyboardInterrupt(),
+                ["! sapi-lab harbor · INTERRUPTED · 1s · 0/1 stages done", "  Interrupted: work"],
+            ),
+        )
+        for outcome, error, expected in cases:
+            with self.subTest(outcome=outcome):
+                tracker, stream, clock = tty_tracker(("work",))
+                with contextlib.suppress(type(error) if error else ()), tracker.stage("work"):
+                    clock.now += 1
+                    if error is not None:
+                        raise error
+                tracker.finish(outcome)
+                mark = expected[0][0]
+                self.assertEqual(screen(stream.getvalue()), [*expected, "", f"  {mark} work   1s"])
 
     def test_notes_stay_above_the_frame_and_final_frame_has_no_spinner(self):
         tracker, stream, clock = tty_tracker(("setup", "oracle"))
@@ -206,21 +428,23 @@ class TerminalModeTests(unittest.TestCase):
         tracker.start("oracle")
         tracker.note("oracle: 1 Harbor tasks through real n8n")
         log = Path("/runs/r/oracle.log")
-        tracker.observe(LoggedEvent("exited", "oracle-x", log, 9, "[oracle-x] exit 7 after 0m09s", code=7))
+        tracker.observe(LoggedEvent("exited", "oracle-x", log, 9, "[oracle-x] exit 7 after 9s", code=7))
         with self.assertRaises(RuntimeError), tracker.stage("oracle"):
             raise RuntimeError("Control check failed")
         tracker.finish("failed")
         tracker.refresh()
         tracker.note("after the end")
         frame = screen(stream.getvalue())
-        self.assertEqual(frame[:2], ["oracle: 1 Harbor tasks through real n8n", "[oracle-x] exit 7 after 0m09s"])
+        self.assertEqual(frame[:2], ["oracle: 1 Harbor tasks through real n8n", "[oracle-x] exit 7 after 9s"])
         final = frame.index("after the end")
         self.assertEqual(
             frame[final + 1 :],
             [
-                "✗ sapi-lab harbor failed after 0m01s · 1/2 stages done · failed: oracle",
-                "  ✓ setup   0m01s",
-                "  ✗ oracle  0m00s",
+                "✗ sapi-lab harbor · FAILED · 1s · 1/2 stages done",
+                "  Failed: oracle",
+                "",
+                "  ✓ setup    1s",
+                "  ✗ oracle   <1s",
             ],
         )
         self.assertFalse(any(mark in "".join(frame) for mark in SPINNER))
@@ -245,7 +469,7 @@ class TerminalModeTests(unittest.TestCase):
             self.assertEqual(progress.terminal_size(stream), (80, 24))
             tracker = Tracker("sapi-lab harbor", ["local tests"], stream=stream, clock=FakeClock())
             tracker.start("local tests")
-        self.assertEqual(screen(stream.getvalue())[1], "  ⠋ local tests  0m00s")
+        self.assertEqual(screen(stream.getvalue())[2], "  ⠋ local tests   <1s")
 
     def test_dumb_terminal_and_redirected_stderr_use_plain_lines(self):
         with patch.dict(os.environ, {"TERM": "dumb"}):
@@ -282,8 +506,8 @@ class LifecycleTests(unittest.TestCase):
                     self.assertEqual(self.running_threads(), [])
                     if stream.isatty():
                         self.assertNotIn("[child] ", text)
-                        self.assertIn("last: working", text)
-                        self.assertEqual(screen(text)[0].split(" after ")[0], "✓ sapi-lab demo passed")
+                        self.assertIn("Last output: working", text)
+                        self.assertTrue(screen(text)[0].startswith("✓ sapi-lab demo · PASSED · "))
                     else:
                         self.assertEqual(text.count("[child] started"), 1)
                         self.assertGreaterEqual(text.count("last: working"), 1)
@@ -303,10 +527,10 @@ class LifecycleTests(unittest.TestCase):
 
     def test_exit_paths_finalize_once_and_restore_state(self):
         cases = (
-            (None, "outcome unknown after"),
-            (RuntimeError("boom"), "failed after"),
-            (subprocess.TimeoutExpired("x", 1), "outcome unknown after"),
-            (KeyboardInterrupt(), "interrupted after"),
+            (None, "OUTCOME UNKNOWN · "),
+            (RuntimeError("boom"), "FAILED · "),
+            (subprocess.TimeoutExpired("x", 1), "OUTCOME UNKNOWN · "),
+            (KeyboardInterrupt(), "INTERRUPTED · "),
         )
         for error, final in cases:
             with self.subTest(error=type(error).__name__):

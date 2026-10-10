@@ -15,7 +15,7 @@ import time
 from typing import Any
 
 from sapi_config_lab.execute.n8n import PINNED_N8N_VERSION
-from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.paths import display_path, workspace_root
 
 HARBOR_VERSION = "0.21.0"
 LAB_IMAGE = f"sapi-config-lab-n8n:{PINNED_N8N_VERSION}"
@@ -39,6 +39,14 @@ class LoggedEvent:
 
 # A command's single progress display observes logged subprocesses here instead of competing on stderr.
 LOGGED_OBSERVER: ContextVar[Callable[[LoggedEvent], None] | None] = ContextVar("logged_observer", default=None)
+
+
+def duration(seconds: float) -> str:
+    """Elapsed time for people: `<1s`, `7s` or `1m52s`; recorded timings keep their own precision."""
+    if seconds < 1:
+        return "<1s"
+    whole = int(seconds)
+    return f"{whole}s" if whole < 60 else f"{whole // 60}m{whole % 60:02d}s"
 
 
 def report_logged(event: LoggedEvent) -> None:
@@ -144,7 +152,7 @@ def run_logged(
     previous_size = 0
     last_growth = start
     log_path = log.resolve()
-    report_logged(LoggedEvent("started", stage, log_path, 0, f"[{stage}] started · log {log_path}"))
+    report_logged(LoggedEvent("started", stage, log_path, 0, f"[{stage}] started · log {display_path(log_path)}"))
     with log.open("w") as stream:
         process = subprocess.Popen(argv, cwd=workspace_root(), stdout=stream, stderr=subprocess.STDOUT)
         try:
@@ -157,11 +165,9 @@ def run_logged(
                     code = process.wait(timeout=wait_for)
                 except subprocess.TimeoutExpired:
                     now = time.monotonic()
-                    elapsed = int(now - start)
-                    duration = f"{elapsed // 60}m{elapsed % 60:02d}s"
                     if now >= deadline:
                         assert timeout is not None
-                        line = f"[{stage}] timed out after {duration}; outcome unknown"
+                        line = f"[{stage}] timed out after {duration(now - start)}; outcome unknown"
                         report_logged(LoggedEvent("timed_out", stage, log_path, now - start, line))
                         raise subprocess.TimeoutExpired(argv, timeout) from None
                     try:
@@ -173,13 +179,13 @@ def run_logged(
                     previous_size = size
                     quiet = int(now - last_growth) if size == 0 or now > last_growth else None
                     last = last_log_line(log)
-                    line = f"[{stage}] {duration} · log {log_path} · last: {last}"
-                    line += f" · quiet {quiet}s" if quiet is not None else ""
+                    line = f"[{stage}] {duration(now - start)} · log {display_path(log_path)} · last: {last}"
+                    line += f" · quiet {duration(quiet)}" if quiet is not None else ""
                     report_logged(LoggedEvent("heartbeat", stage, log_path, now - start, line, last, quiet))
                     next_heartbeat += heartbeat
                     continue
                 elapsed = int(time.monotonic() - start)
-                line = f"[{stage}] exit {code} after {elapsed // 60}m{elapsed % 60:02d}s"
+                line = f"[{stage}] exit {code} after {duration(elapsed)}"
                 report_logged(LoggedEvent("exited", stage, log_path, elapsed, line, code=code))
                 return code
         finally:

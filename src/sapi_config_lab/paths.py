@@ -28,3 +28,11 @@ def workspace_root() -> Path:
                 )
             return path.resolve()
     raise RuntimeError("Experiment workspace not found. Run in the checkout or set SAPI_LAB_ROOT.")
+
+
+def display_path(path: Path) -> Path:
+    """A path as people at this shell can use it: relative inside the working directory, else unchanged."""
+    try:
+        return path.absolute().relative_to(Path.cwd())
+    except OSError, ValueError:
+        return path

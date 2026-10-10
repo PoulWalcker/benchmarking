@@ -15,6 +15,7 @@ from sapi_config_lab.coordinate import evaluation as evaluate_command
 from sapi_config_lab.coordinate.runs import Run
 from sapi_config_lab.execute.host import LOGGED_OBSERVER, LoggedEvent, report_logged
 
+DURATION = r"(?:<1s|\d+s|\d+m\d\ds)"
 HARBOR_STAGES = ["setup", "local tests", "task plans", "transport", "native images", "oracle", "nop", "finalizing"]
 
 
@@ -98,17 +99,17 @@ class HarborProgressTests(unittest.TestCase):
         self.assertEqual(output, Path("jobs"))
         self.assertIn("[transport] 2m00s", stderr)
         self.assertIn("quiet 120s", stderr)
-        self.assertIn("[sapi-lab harbor]   Harbor job oracle-invoice-total · task invoice-total", stderr)
+        self.assertIn("[sapi-lab harbor]   Harbor job: oracle-invoice-total · task invoice-total", stderr)
         lines = stderr.splitlines()
         for job in ("4/8 transport", "6/8 oracle"):
             start, end = (
                 lines.index(f"[sapi-lab harbor] {job} · running"),
-                lines.index(f"[sapi-lab harbor] {job} · done 0m00s"),
+                lines.index(f"[sapi-lab harbor] {job} · done <1s"),
             )
             opaque = "\n".join(lines[start + 1 : end]).replace("Harbor builds and runs", "")
             for invented in ("building", "verifying", "responding", "%", "ETA"):
                 self.assertNotIn(invented, opaque)
-        self.assertRegex(stderr, r"\[sapi-lab harbor\] passed after \dm\d\ds · 8/8 stages done\n$")
+        self.assertRegex(stderr, rf"\[sapi-lab harbor\] PASSED · {DURATION} · 8/8 stages done\n$")
         self.assertEqual(dispatch.call_count, 2)
 
     def test_failed_verifier_keeps_diagnostics_and_never_reports_later_stages_as_done(self):
@@ -121,15 +122,22 @@ class HarborProgressTests(unittest.TestCase):
         self.assertIn(("finalizing", "done"), transitions(stderr, "sapi-lab harbor"))
         self.assertIn("failed at harbor_oracle: Control check failed: harbor_oracle", stderr)
         self.assertIn("  inspect: tail -n 200 ", stderr)
-        self.assertRegex(stderr, r"failed after \dm\d\ds · 6/8 stages done · failed: oracle · not run: nop\n$")
-        self.assertEqual(stderr.count("failed after"), 1)
+        self.assertRegex(stderr, rf"FAILED · {DURATION} · 6/8 stages done · Failed: oracle · Not run: nop\n$")
+        self.assertEqual(stderr.count("FAILED · "), 1)
 
     def test_timeout_and_interrupt_end_once_with_original_semantics(self):
         cases = (
-            (subprocess.TimeoutExpired(["tests"], 300), 1, "failed", "outcome unknown after", "unknown"),
-            (KeyboardInterrupt(), 130, "interrupted", "interrupted after", "interrupted"),
+            (
+                subprocess.TimeoutExpired(["tests"], 300),
+                1,
+                "failed",
+                "OUTCOME UNKNOWN · ",
+                "unknown",
+                "Outcome unknown",
+            ),
+            (KeyboardInterrupt(), 130, "interrupted", "INTERRUPTED · ", "interrupted", "Interrupted"),
         )
-        for error, expected_code, status, final, state in cases:
+        for error, expected_code, status, final, state, label in cases:
             with self.subTest(error=type(error).__name__):
                 code, stdout, stderr, report, dispatch = self.run_controls(local_tests=error)
                 self.assertEqual(code, expected_code)
@@ -137,7 +145,7 @@ class HarborProgressTests(unittest.TestCase):
                 self.assertIn(("local tests", state), transitions(stderr, "sapi-lab harbor"))
                 self.assertIn(("finalizing", "done"), transitions(stderr, "sapi-lab harbor"))
                 self.assertEqual(stderr.count(final), 1)
-                self.assertIn(f"{state}: local tests", stderr.splitlines()[-1])
+                self.assertIn(f"{label}: local tests", stderr.splitlines()[-1])
                 dispatch.assert_not_called()
                 if status == "interrupted":
                     self.assertEqual(stdout, "")
@@ -201,12 +209,12 @@ class EvaluateProgressTests(unittest.TestCase):
             ],
         )
         self.assertIn("[sapi-lab evaluate]   task evaluator process with the requested Judge dispatch", stderr)
-        self.assertRegex(stderr, r"passed after \dm\d\ds · 2/2 stages done\n$")
+        self.assertRegex(stderr, rf"PASSED · {DURATION} · 2/2 stages done\n$")
 
     def test_failed_unknown_and_rejected_judging_keep_stdout_and_exit_code(self):
         cases = (
-            (subprocess.CalledProcessError(1, ["task"], stderr="judge reason"), "failed", "failed after", "failed"),
-            (subprocess.TimeoutExpired(["task"], 420), "unknown", "outcome unknown after", "unknown"),
+            (subprocess.CalledProcessError(1, ["task"], stderr="judge reason"), "failed", "FAILED · ", "failed"),
+            (subprocess.TimeoutExpired(["task"], 420), "unknown", "OUTCOME UNKNOWN · ", "unknown"),
         )
         for error, judge, final, state in cases:
             with self.subTest(judge=judge):
@@ -221,7 +229,7 @@ class EvaluateProgressTests(unittest.TestCase):
         rejected = {**RESULT, "acceptance": False}
         code, stdout, stderr, _, _ = self.evaluate("--dispatch-judge", outcome=lambda *a, **k: rejected)
         self.assertEqual((code, stdout), (1, json.dumps(rejected) + "\n"))
-        self.assertRegex(stderr, r"failed after \dm\d\ds · 1/1 stages done · result not accepted\n$")
+        self.assertRegex(stderr, rf"FAILED · {DURATION} · 1/1 stages done · Result not accepted\n$")
 
 
 if __name__ == "__main__":

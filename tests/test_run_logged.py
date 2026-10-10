@@ -33,7 +33,7 @@ class RunLoggedTests(unittest.TestCase):
             self.assertEqual(log.read_text(), "working\n")
             self.assertIn(f"[sample] started · log {log.resolve()}", stderr.getvalue())
             self.assertIn(f"· log {log.resolve()} · last: working", stderr.getvalue())
-            self.assertIn("quiet 0s", stderr.getvalue())
+            self.assertIn("quiet <1s", stderr.getvalue())
             self.assertIn("[sample] exit 0 after", stderr.getvalue())
 
     def test_last_line_handles_carriage_returns_ansi_invalid_utf8_and_long_logs(self):
@@ -67,7 +67,7 @@ class RunLoggedTests(unittest.TestCase):
                     heartbeat=0.05,
                 )
             self.assertIn("last: (no output yet)", stderr.getvalue())
-            self.assertIn("quiet 0s", stderr.getvalue())
+            self.assertIn("quiet <1s", stderr.getvalue())
             self.assertIn("[slow] timed out after", stderr.getvalue())
             self.assertIn("outcome unknown", stderr.getvalue())
             with self.assertRaises(ProcessLookupError):

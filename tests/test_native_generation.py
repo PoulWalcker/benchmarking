@@ -271,11 +271,11 @@ class NativeGenerationTests(unittest.TestCase):
                     )
                     self.assertIn("[sapi-lab generate]   1 authoring call reserved", stderr.getvalue())
                     self.assertIn(
-                        "[sapi-lab generate]   Harbor job generated-1-invoice-total · task invoice-total",
+                        "[sapi-lab generate]   Harbor job: generated-1-invoice-total · task invoice-total",
                         stderr.getvalue(),
                     )
                     self.assertIn("[1/1] invoice-total: passed", stderr.getvalue())
-                    self.assertRegex(stderr.getvalue(), r"passed after \dm\d\ds · 6/6 stages done\n$")
+                    self.assertRegex(stderr.getvalue(), r"PASSED · (?:<1s|\d+s|\d+m\d\ds) · 6/6 stages done\n$")
                     report = json.loads((output / "report.json").read_text())
                     self.assertEqual(report["authoring_attempts_spent"], 1)
                     self.assertTrue(report["source_unchanged"])

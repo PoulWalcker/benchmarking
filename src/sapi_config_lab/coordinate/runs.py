@@ -29,7 +29,7 @@ from sapi_config_lab.execute.host import (
     running_containers,
 )
 from sapi_config_lab.harbor_integration.runner import UPLOAD_ONLY_AGENTS, job_args, run_job
-from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.paths import display_path, workspace_root
 
 
 def fingerprint(path: Path) -> dict[str, str]:
@@ -166,7 +166,7 @@ class Run:
             argv = job_args(self.harbor_argv, tasks, jobs, job, agent, **arguments)
             self.report.setdefault("commands", []).append(argv)
             try:
-                with detail(f"Harbor job {job} · task {tasks.name}"):
+                with detail(f"Harbor job: {job} · task {tasks.name}"):
                     code = run_job(self.harbor_argv, tasks, jobs, job, agent, self.output / (job + ".log"), **arguments)
                 dispatched[job]["exit_code"] = code
                 dispatched[job]["status"] = "finished"
@@ -204,7 +204,7 @@ class Run:
             self.report.setdefault("commands", []).append(argv)
             reference: dict[str, Any] = {"path": "jobs/transport", "status": "dispatched"}
             self.report.setdefault("harbor_jobs", {})["transport"] = reference
-            with detail("Harbor job transport · task " + task.name):
+            with detail("Harbor job: transport · task " + task.name):
                 code = run_logged(argv, self.output / "transport.log", stage="transport", timeout=None)
             reference.update(status="finished", exit_code=code)
             self.check("after transport")
@@ -295,7 +295,7 @@ def run_experiment(
     report["source_manifest"] = "source-manifest.json"
     run = Run(output, report, sources, prefix, host or HostConfig.from_environment())
     with tracking(command, ["setup", *stages, "finalizing"]) as display:
-        progress(f"report directory: {output}")
+        progress(f"report directory: {display_path(output)}")
         try:
             with display.stage("setup"):
                 with run.step("docker preflight"):

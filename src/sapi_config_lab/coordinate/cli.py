@@ -14,7 +14,7 @@ from sapi_config_lab.coordinate.native_tasks import policy, select_tasks
 from sapi_config_lab.coordinate.progress import failure_lines, tracking
 from sapi_config_lab.evidence import write_json
 from sapi_config_lab.execute.host import log_tail, run_logged
-from sapi_config_lab.paths import benchmark_root, workspace_root
+from sapi_config_lab.paths import benchmark_root, display_path, workspace_root
 from sapi_config_lab.profile import Invalid, Unsupported, read, read_bindings, validate
 
 MODULES = {
@@ -77,7 +77,7 @@ def check_command(argv: list[str]) -> int:
     logs = Path(tempfile.mkdtemp(prefix=datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-check-", dir=reports))
     failed = []
     with tracking("sapi-lab check", list(CHECKS)) as display:
-        display.note(f"logs: {logs}")
+        display.note(f"logs: {display_path(logs)}")
         for name, arguments in CHECKS.items():
             log = logs / (name.replace(" ", "-") + ".log")
             with display.stage(name):
