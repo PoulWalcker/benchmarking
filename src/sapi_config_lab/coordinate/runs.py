@@ -11,6 +11,7 @@ from pathlib import Path
 import subprocess
 from typing import Any
 
+from sapi_config_lab.coordinate.ledger import UnknownOutcome
 from sapi_config_lab.coordinate.native_tasks import image_tags, public_sources
 from sapi_config_lab.coordinate.progress import detail, failure_lines, note, tracking
 from sapi_config_lab.coordinate.provenance import source_manifest
@@ -308,19 +309,27 @@ def run_experiment(
             report["error"] = f"{type(error).__name__}: {error}"
             if isinstance(error, subprocess.TimeoutExpired):
                 report["failure_category"] = "timeout_unknown_outcome"
+            elif isinstance(error, UnknownOutcome):
+                report["failure_category"] = "unknown_outcome"
             elif classify is not None:
                 report["failure_category"] = classify(error)
             stage = report.get("failure_stage", "setup")
+            if isinstance(error, (subprocess.TimeoutExpired, UnknownOutcome)):
+                report["unknown_outcome"] = {
+                    "phase": getattr(error, "phase", None),
+                    "reservation": getattr(error, "reservation", None),
+                    "reason": "timeout" if isinstance(error, subprocess.TimeoutExpired) else error.reason,
+                }
             if isinstance(error, subprocess.TimeoutExpired):
                 progress(f"outcome unknown at {stage}: timed out after {error.timeout:g}s (not a failure verdict)")
             else:
                 cause = f"exit {error.returncode}" if isinstance(error, subprocess.CalledProcessError) else str(error)
                 cause = " ".join(cause.splitlines())
-                if report.get("failure_category") == "timeout_unknown_outcome":
+                if report.get("failure_category") in {"timeout_unknown_outcome", "unknown_outcome"}:
                     progress(f"outcome unknown at {stage}: {cause} (not a failure verdict)")
                 else:
                     progress(f"failed at {stage}: {cause}")
-            if report.get("failure_category") == "timeout_unknown_outcome":
+            if report.get("failure_category") in {"timeout_unknown_outcome", "unknown_outcome"}:
                 display.unknown_outcome()
             log = output / report["log"] if report.get("log") else None
             job = Path(report["log"]).stem if report.get("log") else stage
@@ -336,5 +345,9 @@ def run_experiment(
         finally:
             with display.stage("finalizing"), display.detail("cleanup, final source check and report"):
                 run.close()
-        display.finish("unknown" if report.get("failure_category") == "timeout_unknown_outcome" else report["status"])
+        display.finish(
+            "unknown"
+            if report.get("failure_category") in {"timeout_unknown_outcome", "unknown_outcome"}
+            else report["status"]
+        )
     return report

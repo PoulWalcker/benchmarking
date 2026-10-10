@@ -139,6 +139,15 @@ invalid model line and `model_identity_mismatch` for a different model. These
 refusals upload nothing and close the reserved call as failed. Recognized tool
 markers in stderr reject an attempt. This is an audit, not a sandbox disabling
 the wrapper's CLI tools. Raw stderr is not saved.
+The agent durably records `model_outcome: unknown` immediately before dispatch,
+then writes its final outcome and `duration_seconds`. Only a final `settled` record
+(a complete `ok:true` response with integer `exit_code:0`) or `not_dispatched` record
+allows the existing trial gate to close the reservation. Missing or corrupt agent
+evidence stays unknown unless a single finalized Harbor `result.json` has
+`finished_at` and explicit `agent_execution: null`. Cancellation leaves the call
+unknown because the transport thread may still be running. Remaining attempts stop
+without retry or replay after an unknown.
+
 The model identity is the wrapper CLI's self-report bound to byte-identical
 inspected wrapper files, not a provider receipt.
 Invoice generation executes independent fixture evaluation. Checkout generation
@@ -172,13 +181,23 @@ judge cost (one Research case: 3+1=4); a larger total than `--max-calls` refuses
 any reservation. `report.json` `budget` lists exactly the per-case allocation the ledger
 reserves. Every call is durably reserved before dispatch; an unknown outcome
 is never released. `--series-dir` and fixed `--series-ceiling PHASE=N` share budgets
-across runs. Failed and unknown outcomes remain distinguishable.
+across runs. Failed and unknown outcomes remain distinguishable. Positive non-dispatch or
+settlement evidence is required to close runtime and authoring reservations;
+`ok:false`, non-zero/missing/non-integer exit codes, transport loss and incomplete
+receipts remain unknown. Even a refused connection is unknown once handed to the
+transport. A wrapper error therefore stops a shared series until a new series is
+started; the existing unknown reservation remains recorded and counted.
 
 The inspected wrapper identity binds model and source file hashes. `--wrapper-file
 NAME=PATH` relocates a named file without changing its required hash. Runtime grants
 bind operation and occurrence, and evidence/audit reconciliation checks the exact
 compiled graph, cases and request/completion/response identities. Runtime reservation
 closes before judging; a host reservation is forwarded without double accounting.
+Before classifying a live case, and on escaping exceptions, the audit must exist and
+parse, each attempt must have a terminal completion or failure, no call may remain
+unknown, and readable native Agency invocations must have matching audit responses.
+A settled content or reconciliation failure can close `failed`; absence of a response
+never proves failure.
 
 Live fixture cases have four evidence-based outcomes. `accepted` and `rejected`
 are measurements: both close the runtime reservation `passed` and continue the
@@ -311,9 +330,14 @@ Every run report includes a `logs` map from log stems to paths relative to the r
 directory. A failed step adds `failure_stage`, `log` (or null) and a bounded
 `log_tail`: at most 40 non-blank lines, 300 characters per line and 8 KiB total.
 The terminal names the stage, cause and log, shows the last 20 tail lines and gives
-an inspection command; Harbor failures also name the job directory. Timeouts keep
-`failure_category = "timeout_unknown_outcome"` and print "outcome unknown", without
-a failure verdict or release of reserved calls.
+an inspection command; Harbor failures also name the job directory. Actual timeouts
+keep `failure_category = "timeout_unknown_outcome"`; other runtime or authoring
+ambiguity uses `unknown_outcome`. Both print "outcome unknown … (not a failure
+verdict)" and finish the display as unknown, without closing or releasing reservations.
+`report.unknown_outcome` names phase, reservation and reason: `timeout`,
+`transport_error`, `incomplete_receipt`, `wrapper_unsettled`, `dispatch_unsettled`,
+`cancelled` or `evidence_unavailable`. Phase and reservation are null outside a
+reservation. The fixture Judge's existing process-loss timeout label is unchanged.
 
 For a single Ctrl+C after the run directory and `Run` exist, `report.json` is written
 with `status = "interrupted"` and the innermost `interrupted_stage` when inside a step.

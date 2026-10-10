@@ -348,7 +348,15 @@ class NativeLiveReservationTests(unittest.TestCase):
 
         scenario = workspace_root() / "tasks/checkout-recovery"
         submission_hash = sha256(scenario / "solution/config.yaml")
-        faults = (None, "duplicate", "submission", "runtime-timeout", "judge-incomplete", "judge-postcondition")
+        faults = (
+            None,
+            "duplicate",
+            "submission",
+            "runtime-timeout",
+            "runtime-reset",
+            "judge-incomplete",
+            "judge-postcondition",
+        )
         receipts = ("receipt-fresh", "receipt-standalone", "receipt-mocked")
         for fault in faults + receipts:
             with self.subTest(fault=fault), tempfile.TemporaryDirectory() as directory:
@@ -385,12 +393,26 @@ class NativeLiveReservationTests(unittest.TestCase):
                 run.use_image.return_value = "sha256:stub"
                 run.bridge.return_value = contextlib.nullcontext(output / "audit.jsonl")
                 live_trial = trial("live")
+                (output / "audit.jsonl").touch()
                 if fault == "runtime-timeout":
+                    (output / "audit.jsonl").unlink()
                     audit = DispatchAudit(
                         output / "audit.jsonl",
                         {"max_attempts": 1, "operations": {"SummarizeIncident": 1}, "model": "mocked-only"},
                     )
                     audit.fail({}, "timeout_unknown_outcome", outcome="unknown")
+                if fault == "runtime-reset":
+                    (output / "audit.jsonl").write_text(
+                        json.dumps(
+                            {
+                                "event": "failure",
+                                "model_outcome": "unknown",
+                                "outcome_reason": "transport_error",
+                                "category": "agency_transport",
+                            }
+                        )
+                        + "\n"
+                    )
                 if fault == "submission":
                     live_trial["acceptance"]["submission_sha256"] = "0" * 64
                 run.harbor.side_effect = [
@@ -492,6 +514,16 @@ class NativeLiveReservationTests(unittest.TestCase):
                         events = read_json(output / "ledger.json")["events"]
                         self.assertEqual(
                             [(event["phase"], event["status"]) for event in events], [("runtime", "unknown")]
+                        )
+                    elif fault == "runtime-reset":
+                        from sapi_config_lab.coordinate.ledger import UnknownOutcome
+
+                        with self.assertRaises(UnknownOutcome):
+                            main(arguments)
+                        dispatch.assert_not_called()
+                        self.assertEqual(
+                            [(e["phase"], e["status"]) for e in read_json(output / "ledger.json")["events"]],
+                            [("runtime", "unknown")],
                         )
                     elif fault == "judge-incomplete":
                         with self.assertRaises(SystemExit):
@@ -708,8 +740,49 @@ class LiveFixtureCohortTests(unittest.TestCase):
                     rows = []
                 elif fault == "extra":
                     rows += copy.deepcopy(rows)
+                elif fault == "settled-content":
+                    rows[1] = {
+                        **rows[1],
+                        "event": "failure",
+                        "model_outcome": "settled",
+                        "category": "model_output_contract",
+                    }
                 elif fault == "audit-failure":
-                    rows.append({"event": "failure", "category": "transport_error", "outcome": "failed"})
+                    rows.append({"event": "failure", "category": "transport_error", "model_outcome": "not_dispatched"})
+            if (
+                fault
+                in {"reset", "http", "incomplete-read", "invalid-json", "wrapper-unsettled", "dangling", "harbor-loss"}
+                and index == 0
+            ):
+                rows = rows[:1]
+                if fault not in {"dangling", "harbor-loss"}:
+                    reason = (
+                        "incomplete_receipt"
+                        if fault == "invalid-json"
+                        else "wrapper_unsettled"
+                        if fault == "wrapper-unsettled"
+                        else "transport_error"
+                    )
+                    rows.append(
+                        {
+                            "event": "failure",
+                            "invocation_id": rows[0]["invocation_id"],
+                            "model_outcome": "unknown",
+                            "outcome_reason": reason,
+                            "category": "agency_transport",
+                        }
+                    )
+            if fault == "duplicate-attempt" and index == 0:
+                rows.append(copy.deepcopy(rows[0]))
+            if fault in {"unaccounted", "extra-native"} and index == 0:
+                if fault == "unaccounted":
+                    rows = []
+                else:
+                    for node in ("Agency classify", "Prepare classify"):
+                        run["run_data"][node].append(copy.deepcopy(run["run_data"][node][0]))
+                native_path = verifier / "evidence/cases/example/case.json"
+                native_path.parent.mkdir(parents=True)
+                native_path.write_text(json.dumps(run))
             live_trials.append(trial)
             audits.append(rows)
         stub = copy.deepcopy(live_trials[0])
@@ -731,6 +804,15 @@ class LiveFixtureCohortTests(unittest.TestCase):
             dispatched.append(names[index])
             audit = output / f"audit-{index}.jsonl"
             audit.write_text("".join(json.dumps(row) + "\n" for row in audits[index]))
+            if index == 0:
+                if fault == "missing-audit":
+                    audit.unlink()
+                elif fault == "malformed-fields":
+                    audit.write_text(json.dumps({"event": "failure", "model_outcome": []}) + "\n")
+                elif fault == "truncated":
+                    audit.write_text('{"event":')
+                elif fault == "harbor-loss":
+                    raise RuntimeError("process lost")
             return (1 if fault == "exit" and index == len(outcomes) - 1 else 0), [live_trials[index]]
 
         run.harbor.side_effect = harbor
@@ -741,11 +823,22 @@ class LiveFixtureCohortTests(unittest.TestCase):
 
         def experiment(_path, report, body, **options):
             report_holder.update(report=report)
-            with tracking("sapi-lab live", ["preflight"], stream=stderr, refresh=None):
+            with tracking("sapi-lab live", ["preflight"], stream=stderr, refresh=None) as display:
                 try:
                     body(run)
-                except ValueError as error:
-                    report.update(status="failed", failure_category=options["classify"](error), error=str(error))
+                except Exception as error:
+                    from sapi_config_lab.coordinate.ledger import UnknownOutcome
+
+                    unknown = isinstance(error, UnknownOutcome)
+                    if unknown:
+                        report["unknown_outcome"] = {"reason": error.reason}
+                        display.unknown_outcome()
+                    report.update(
+                        status="failed",
+                        failure_category="unknown_outcome" if unknown else options["classify"](error),
+                        error=str(error),
+                    )
+                display.finish("unknown" if report.get("failure_category") == "unknown_outcome" else report["status"])
 
         with (
             patch.dict("os.environ", {"SAPI_WRAPPER_MODEL": "gpt-6-astra"}),
@@ -783,6 +876,33 @@ class LiveFixtureCohortTests(unittest.TestCase):
             stdout.getvalue(),
             dispatched,
         )
+
+    def test_unsettled_audits_stop_later_cases_without_closing_the_reservation(self):
+        for fault, reason in (
+            ("reset", "transport_error"),
+            ("http", "transport_error"),
+            ("incomplete-read", "transport_error"),
+            ("invalid-json", "incomplete_receipt"),
+            ("wrapper-unsettled", "wrapper_unsettled"),
+            ("dangling", "dispatch_unsettled"),
+            ("harbor-loss", "dispatch_unsettled"),
+            ("truncated", "evidence_unavailable"),
+            ("missing-audit", "evidence_unavailable"),
+            ("malformed-fields", "evidence_unavailable"),
+            ("unaccounted", "evidence_unavailable"),
+            ("extra-native", "evidence_unavailable"),
+            ("duplicate-attempt", "dispatch_unsettled"),
+        ):
+            with self.subTest(fault=fault):
+                code, report, events, stderr, _stdout, dispatched = self.replay(["accepted", "accepted"], fault=fault)
+                self.assertEqual(code, 1)
+                self.assertEqual([(e["phase"], e["status"]) for e in events], [("runtime", "unknown")])
+                self.assertEqual(report["failure_category"], "unknown_outcome")
+                self.assertEqual(report["unknown_outcome"]["reason"], reason)
+                if fault in {"reset", "http", "incomplete-read", "invalid-json", "wrapper-unsettled"}:
+                    self.assertEqual(report["audit"][-1]["outcome_reason"], reason)
+                self.assertEqual(len(dispatched), 1)
+                self.assertIn("OUTCOME UNKNOWN", stderr)
 
     def test_complete_rejection_is_measured_and_does_not_latch_the_cohort(self):
         code, report, events, stderr, stdout, dispatched = self.replay(["rejected", "accepted"], latch=True)
@@ -827,7 +947,7 @@ class LiveFixtureCohortTests(unittest.TestCase):
         self.assertIn("stopped: unverified (deadline)", stderr)
 
     def test_reconciliation_faults_are_infrastructure_and_stop_after_a_measured_rejection(self):
-        for fault in ("unbound", "extra", "audit-failure"):
+        for fault in ("unbound", "extra", "audit-failure", "settled-content"):
             with self.subTest(fault=fault):
                 code, report, events, stderr, _stdout, dispatched = self.replay(["rejected", "accepted"], fault=fault)
                 self.assertEqual(code, 1)

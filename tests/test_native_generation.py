@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 import hashlib
+from http.client import IncompleteRead
 import io
 import json
 from pathlib import Path
@@ -221,7 +222,32 @@ class NativeGenerationTests(unittest.TestCase):
             invoke(ROOT / "tasks/invoice-total", {"action": "prompt", "catalog": "full"}, {})
 
     def test_generation_cli_reserves_before_exact_wrapper_call_and_uses_native_task(self):
+        unknown_faults = {
+            "timeout": "timeout",
+            "reset": "transport_error",
+            "incomplete-read": "transport_error",
+            "invalid-json": "incomplete_receipt",
+            "oversize": "incomplete_receipt",
+            "non-object": "incomplete_receipt",
+            "ok-false": "wrapper_unsettled",
+            "nonzero-exit": "wrapper_unsettled",
+            "bool-exit": "wrapper_unsettled",
+        }
+        evidence_faults = {
+            "marker": "dispatch_unsettled",
+            "missing-started": "evidence_unavailable",
+            "missing-result": "evidence_unavailable",
+            "corrupt": "evidence_unavailable",
+            "corrupt-fields": "evidence_unavailable",
+            "multiple-trials": "evidence_unavailable",
+            "missing-nonstart": None,
+            "prompt-hash": None,
+            "empty-answer": None,
+            "tool-marker": None,
+        }
         for fault in (
+            *unknown_faults,
+            *evidence_faults,
             None,
             "control",
             "native-image",
@@ -249,12 +275,14 @@ class NativeGenerationTests(unittest.TestCase):
                 write_json(root / "reports/native-image-build.json", {"sources": sources, "images": images})
                 answer = "```yaml\r\n# exact authored answer\r\n```\r\n"
                 calls = []
+                ledger_path = root / "series/ledger.json" if fault == "reset" else output / "ledger.json"
 
                 def controls(
                     argv, log, *, output=output, fault=fault, sources=sources, images=images, root=root, **kwargs
                 ):
                     self.assertEqual(kwargs["stage"], "controls")
                     self.assertIsNone(kwargs["timeout"])
+                    output = log.parent
                     control = output / "control"
                     control.mkdir()
                     write_json(control / "source-manifest.json", {} if fault == "source" else sources)
@@ -279,13 +307,49 @@ class NativeGenerationTests(unittest.TestCase):
                     return 0
 
                 def wrapper(
-                    upstream, prompt, timeout, maximum, *, output=output, calls=calls, answer=answer, fault=fault
+                    upstream,
+                    prompt,
+                    timeout,
+                    maximum,
+                    *,
+                    output=output,
+                    calls=calls,
+                    answer=answer,
+                    fault=fault,
+                    ledger_path=ledger_path,
                 ):
                     self.assertEqual((timeout, maximum), (195, 2_000_000))
-                    event = json.loads((output / "ledger.json").read_text())["events"][-1]
+                    event = json.loads(ledger_path.read_text())["events"][-1]
                     self.assertEqual((event["phase"], event["status"], event["count"]), ("authoring", "unknown", 1))
                     self.assertEqual(prompt.encode(), (output / "inputs/invoice-total/prompt.txt").read_bytes())
                     calls.append(prompt)
+                    marker = json.loads(next(output.glob("jobs/*/*/agent/generation.json")).read_text())
+                    self.assertEqual(marker["model_outcome"], "unknown")
+                    self.assertEqual(marker["outcome_reason"], "dispatch_unsettled")
+                    self.assertNotIn("duration_seconds", marker)
+                    if fault == "timeout":
+                        raise TimeoutError()
+                    if fault == "reset":
+                        raise ConnectionResetError()
+                    if fault == "incomplete-read":
+                        raise IncompleteRead(b"partial")
+                    if fault in {"invalid-json", "oversize", "non-object"}:
+                        return {"invalid-json": b"invalid", "oversize": b"x" * 2_000_001, "non-object": b"[]"}[fault]
+                    if fault in {"ok-false", "nonzero-exit", "bool-exit"}:
+                        return json.dumps(
+                            {"ok": fault != "ok-false", "exit_code": False if fault == "bool-exit" else 1}
+                        ).encode()
+                    if fault == "empty-answer":
+                        answer = ""
+                    if fault == "tool-marker":
+                        return json.dumps(
+                            {
+                                "ok": True,
+                                "exit_code": 0,
+                                "output": answer,
+                                "stderr": "model: " + HostConfig.from_environment().wrapper_model + "\nexec\nsecret",
+                            }
+                        ).encode()
                     reported = {
                         "reported-model": "model: private-other-model",
                         "missing-model": "",
@@ -317,7 +381,54 @@ class NativeGenerationTests(unittest.TestCase):
                     options = dict(value.split("=", 1) for value in kwargs["agent_keys"])
                     instance = WrapperYamlAgent(logs_dir=trial / "agent", **options)
                     environment = SimpleNamespace(upload_file=AsyncMock())
-                    if fault in ("reported-model", "missing-model", "invalid-model"):
+                    if fault in {
+                        "marker",
+                        "missing-started",
+                        "missing-result",
+                        "corrupt",
+                        "corrupt-fields",
+                        "multiple-trials",
+                        "missing-nonstart",
+                    }:
+                        trial.mkdir(parents=True)
+                        if fault != "missing-result":
+                            save(
+                                trial / "result.json",
+                                {
+                                    "task_name": task.name,
+                                    "finished_at": "2026-10-10T00:00:00Z",
+                                    "agent_execution": None
+                                    if fault == "missing-nonstart"
+                                    else {"started_at": "2026-10-10T00:00:00Z"},
+                                },
+                            )
+                        if fault == "marker":
+                            save(
+                                trial / "agent/generation.json",
+                                {"model_outcome": "unknown", "outcome_reason": "dispatch_unsettled"},
+                            )
+                        elif fault == "corrupt-fields":
+                            save(trial / "agent/generation.json", {"model_outcome": [], "duration_seconds": 1})
+                        elif fault == "corrupt":
+                            (trial / "agent").mkdir()
+                            (trial / "agent/generation.json").write_text('{"model_outcome":')
+                        elif fault == "multiple-trials":
+                            (jobs / name / "another").mkdir()
+                        raise RuntimeError("Harbor process lost")
+                    if fault == "prompt-hash":
+                        instance.prompt_sha256 = "0" * 64
+                    if (
+                        fault
+                        in (
+                            "reported-model",
+                            "missing-model",
+                            "invalid-model",
+                            "prompt-hash",
+                            "empty-answer",
+                            "tool-marker",
+                        )
+                        or fault in unknown_faults
+                    ):
                         with self.assertRaisesRegex(RuntimeError, "YAML generation failed"):
                             asyncio.run(instance.run("unused native instruction", environment, SimpleNamespace()))
                         environment.upload_file.assert_not_awaited()
@@ -394,15 +505,47 @@ class NativeGenerationTests(unittest.TestCase):
                     code = main(
                         [
                             "--attempts",
-                            "2" if fault in ("wrapper-changed", "inspection-changed") else "1",
+                            "2"
+                            if fault in ("wrapper-changed", "inspection-changed")
+                            or fault in unknown_faults
+                            or evidence_faults.get(fault)
+                            else "1",
                             "--wrapper-evidence",
                             str(identity),
                             "--wrapper-file",
                             "wrapper.py=" + str(root / "wrapper.py"),
                             "--report-dir",
                             str(output),
+                            *(
+                                ["--series-dir", str(root / "series"), "--series-ceiling", "authoring=4"]
+                                if fault == "reset"
+                                else []
+                            ),
                         ]
                     )
+                    if fault == "reset":
+                        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                            retry = main(
+                                [
+                                    "--attempts",
+                                    "2",
+                                    "--wrapper-evidence",
+                                    str(identity),
+                                    "--wrapper-file",
+                                    "wrapper.py=" + str(root / "wrapper.py"),
+                                    "--report-dir",
+                                    str(root / "retry"),
+                                    "--series-dir",
+                                    str(root / "series"),
+                                ]
+                            )
+                        self.assertEqual(retry, 1)
+                        self.assertEqual(len(calls), 1)
+                        self.assertIn(
+                            "earlier reservation has an unknown outcome",
+                            json.loads((root / "retry/report.json").read_text())["error"],
+                        )
+                        self.assertFalse((root / "retry/jobs").exists())
                 self.assertEqual(len(stdout.getvalue().splitlines()), 1)
                 progress = [
                     line.split("] ", 1)[1].split(" · ")[:2]
@@ -427,7 +570,9 @@ class NativeGenerationTests(unittest.TestCase):
                 self.assertEqual(
                     len(calls),
                     int(
-                        fault
+                        fault in unknown_faults
+                        or fault in {"empty-answer", "tool-marker"}
+                        or fault
                         in (
                             None,
                             "wrapper-changed",
@@ -438,14 +583,42 @@ class NativeGenerationTests(unittest.TestCase):
                         )
                     ),
                 )
+                if fault in evidence_faults:
+                    events = json.loads(ledger_path.read_text())["events"]
+                    expected = "unknown" if evidence_faults[fault] else "failed"
+                    self.assertEqual([(e["phase"], e["status"]) for e in events], [("authoring", expected)])
+                    if expected == "unknown":
+                        report = json.loads((output / "report.json").read_text())
+                        self.assertEqual(report["unknown_outcome"]["reason"], evidence_faults[fault])
+                        self.assertEqual(report["failure_category"], "unknown_outcome")
+                        self.assertIn("OUTCOME UNKNOWN", stderr.getvalue())
+                    else:
+                        generation = next(output.glob("jobs/*/*/agent/generation.json"), None)
+                        if generation:
+                            self.assertEqual(
+                                json.loads(generation.read_text())["model_outcome"],
+                                "not_dispatched" if fault == "prompt-hash" else "settled",
+                            )
+                if fault in unknown_faults:
+                    events = json.loads(ledger_path.read_text())["events"]
+                    self.assertEqual([(e["phase"], e["status"]) for e in events], [("authoring", "unknown")])
+                    report = json.loads((output / "report.json").read_text())
+                    self.assertEqual(report["unknown_outcome"]["reason"], unknown_faults[fault])
+                    self.assertEqual(
+                        report["failure_category"],
+                        "timeout_unknown_outcome" if fault == "timeout" else "unknown_outcome",
+                    )
+                    self.assertIn("OUTCOME UNKNOWN", stderr.getvalue())
+                    self.assertIn("(not a failure verdict)", stderr.getvalue())
+                    self.assertFalse((output / "jobs/generated-2-invoice-total").exists())
                 if fault in ("wrapper-changed", "inspection-changed"):
-                    events = json.loads((output / "ledger.json").read_text())["events"]
+                    events = json.loads(ledger_path.read_text())["events"]
                     self.assertEqual([(row["phase"], row["status"]) for row in events], [("authoring", "passed")])
                     self.assertFalse((output / "jobs/generated-2-invoice-total").exists())
                 if fault == "wrapper-before-first":
-                    self.assertEqual(json.loads((output / "ledger.json").read_text())["events"], [])
+                    self.assertEqual(json.loads(ledger_path.read_text())["events"], [])
                 if fault in ("reported-model", "missing-model", "invalid-model"):
-                    events = json.loads((output / "ledger.json").read_text())["events"]
+                    events = json.loads(ledger_path.read_text())["events"]
                     self.assertEqual([(row["phase"], row["status"]) for row in events], [("authoring", "failed")])
                     audit = json.loads(next(output.glob("jobs/*/*/agent/generation.json")).read_text())
                     self.assertEqual(audit["expected_model"], HostConfig.from_environment().wrapper_model)
@@ -495,6 +668,46 @@ class NativeGenerationTests(unittest.TestCase):
                     self.assertEqual(audit["model"], HostConfig.from_environment().wrapper_model)
                     self.assertEqual(audit["model"], audit["expected_model"])
                     self.assertNotIn("PRIVATE", json.dumps(audit))
+
+    def test_cancelled_authoring_wait_keeps_a_durable_unknown_record(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            logs = Path(temporary)
+            agent = WrapperYamlAgent(logs_dir=logs, upstream="mock://unused", expected_model="authorized")
+            environment = SimpleNamespace(upload_file=AsyncMock())
+            with (
+                patch(
+                    "sapi_config_lab.harbor_integration.yaml_agent.asyncio.to_thread",
+                    side_effect=asyncio.CancelledError(),
+                ),
+                self.assertRaises(asyncio.CancelledError),
+            ):
+                asyncio.run(agent.run("prompt", environment, SimpleNamespace()))
+            record = json.loads((logs / "generation.json").read_text())
+            self.assertEqual((record["model_outcome"], record["outcome_reason"]), ("unknown", "cancelled"))
+            environment.upload_file.assert_not_awaited()
+
+    def test_a_failed_durable_marker_prevents_authoring_dispatch(self):
+        from sapi_config_lab.evidence import durable_json
+
+        with tempfile.TemporaryDirectory() as temporary:
+            logs = Path(temporary)
+            agent = WrapperYamlAgent(logs_dir=logs, upstream="mock://unused", expected_model="authorized")
+            writes = []
+
+            def persist(path, record):
+                writes.append(path)
+                if len(writes) == 1:
+                    raise OSError("cannot persist marker")
+                durable_json(path, record)
+
+            with (
+                patch("sapi_config_lab.harbor_integration.yaml_agent.durable_json", side_effect=persist),
+                patch("sapi_config_lab.harbor_integration.yaml_agent.request_wrapper") as wrapper,
+                self.assertRaisesRegex(RuntimeError, "YAML generation failed"),
+            ):
+                asyncio.run(agent.run("prompt", SimpleNamespace(upload_file=AsyncMock()), SimpleNamespace()))
+            wrapper.assert_not_called()
+            self.assertEqual(json.loads((logs / "generation.json").read_text())["model_outcome"], "not_dispatched")
 
     def test_another_reported_model_is_never_uploaded(self):
         with tempfile.TemporaryDirectory() as temporary:

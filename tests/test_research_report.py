@@ -568,6 +568,7 @@ class ResearchLiveJudgeTests(unittest.TestCase):
         run.step.side_effect = lambda *args, **kwargs: contextlib.nullcontext()
         run.output, run.sources = output, {}
         run.use_image.return_value = "sha256:stub"
+        (output / "audit.jsonl").touch()
         run.bridge.return_value = contextlib.nullcontext(output / "audit.jsonl")
         live_trials = [trial("live", record) for record in records.values()]
         if fault == "candidate-rejected":

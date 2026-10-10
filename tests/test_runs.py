@@ -40,6 +40,32 @@ class FakeHost:
 
 
 class RunTests(unittest.TestCase):
+    def test_transport_loss_stays_unknown_and_blocks_a_reopened_series(self):
+        from sapi_config_lab.coordinate.ledger import UnknownOutcome
+
+        FakeHost(self)
+        ledger = Ledger.open(self.root / "ledger.json", ceilings={"runtime": 2}, stop_after_failure=False)
+        stderr = io.StringIO()
+
+        def body(run):
+            with ledger.reserved("runtime", "lost", 1, run.output / "report.json", 2), run.step("runtime"):
+                raise UnknownOutcome("transport_error")
+
+        with patch("sapi_config_lab.coordinate.runs.progress", progress), contextlib.redirect_stderr(stderr):
+            run_experiment(self.output, {}, body, prefix="t", stages=["runtime"])
+        report = self.saved()
+        self.assertEqual(report["failure_category"], "unknown_outcome")
+        self.assertEqual(
+            report["unknown_outcome"], {"phase": "runtime", "reservation": "lost", "reason": "transport_error"}
+        )
+        self.assertIn("outcome unknown at runtime: transport_error (not a failure verdict)", stderr.getvalue())
+        self.assertIn("OUTCOME UNKNOWN", stderr.getvalue())
+        reopened = Ledger.open(ledger.path, ceilings=None, stop_after_failure=None)
+        self.assertEqual(reopened.data["events"][0]["status"], "unknown")
+        with self.assertRaisesRegex(ValueError, "unknown outcome"):
+            with reopened.reserved("runtime", "next", 1, self.root / "next/report.json", 2):
+                self.fail("An ambiguous call must block later dispatch")
+
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
         self.output = self.root / "run"
@@ -385,6 +411,7 @@ class RunTests(unittest.TestCase):
         report = self.saved()
         self.assertEqual(report["failure_category"], "timeout_unknown_outcome")
         self.assertEqual(report["failure_stage"], "runtime")
+        self.assertEqual(report["unknown_outcome"], {"phase": "runtime", "reservation": "slow", "reason": "timeout"})
         self.assertEqual(report["log_tail"], ["possibly dispatched"])
         self.assertIn("outcome unknown at runtime: timed out after 2.5s (not a failure verdict)", stderr.getvalue())
         self.assertNotIn("failed", stderr.getvalue())

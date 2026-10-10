@@ -8,8 +8,10 @@ from collections import Counter
 from datetime import UTC, datetime
 import hashlib
 import json
+import math
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import time
 from typing import Any
@@ -17,7 +19,7 @@ from typing import Any
 import yaml
 
 from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, NOT_EVALUATED, trial_accepted
-from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
+from sapi_config_lab.coordinate.ledger import UnknownOutcome, open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.live import validate_control
 from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
 from sapi_config_lab.coordinate.progress import detail, stage
@@ -87,6 +89,54 @@ def summarize_trials(*jobs: Path) -> list[dict]:
             }
         )
     return rows
+
+
+def confirm_authoring(job: Path) -> None:
+    """Close an attempt only with a final generation record or Harbor non-start proof."""
+    directories = [path for path in job.glob("*") if path.is_dir()]
+    if len(directories) != 1:
+        raise UnknownOutcome("evidence_unavailable")
+    directory = directories[0]
+    try:
+        agent = json.loads((directory / "agent/generation.json").read_text())
+    except OSError, ValueError:
+        agent = None
+    if isinstance(agent, dict):
+        outcome = agent.get("model_outcome")
+        if isinstance(outcome, str) and outcome in {"settled", "not_dispatched", "unknown"}:
+            if "duration_seconds" not in agent:
+                raise UnknownOutcome("dispatch_unsettled")
+            if (
+                type(agent["duration_seconds"]) in (int, float)
+                and math.isfinite(agent["duration_seconds"])
+                and agent["duration_seconds"] >= 0
+            ):
+                if outcome in {"settled", "not_dispatched"}:
+                    return
+                reason = agent.get("outcome_reason")
+                if reason == "timeout":
+                    raise subprocess.TimeoutExpired("authoring wrapper", 195)
+                if isinstance(reason, str) and reason in {
+                    "transport_error",
+                    "incomplete_receipt",
+                    "wrapper_unsettled",
+                    "dispatch_unsettled",
+                    "cancelled",
+                    "evidence_unavailable",
+                }:
+                    raise UnknownOutcome(reason)
+    try:
+        result = json.loads((directory / "result.json").read_text())
+        if (
+            isinstance(result, dict)
+            and result.get("finished_at")
+            and "agent_execution" in result
+            and result["agent_execution"] is None
+        ):
+            return
+    except OSError, ValueError:
+        pass
+    raise UnknownOutcome("evidence_unavailable")
 
 
 def write_summary(report: dict, output: Path) -> None:
@@ -263,33 +313,44 @@ def main(argv: list[str] | None = None) -> int:
                         ledger.reserved("authoring", f"{run.output.name}/{job}", 1, report_path, ceiling) as outcome,
                         detail("1 authoring call reserved"),
                     ):
-                        exit_code, _ = run.harbor(
-                            job,
-                            task,
-                            AUTHOR_AGENT,
-                            agent_keys=[
-                                "upstream=" + args.upstream,
-                                "expected_model=" + host.wrapper_model,
-                                "prompt_path=" + str(prompts[task.name]),
-                                "prompt_sha256=" + report["prompt_sha256"][task.name],
-                            ],
-                            attempts="1",
-                            admission=True,
-                            verifier_env=["SAPI_NATIVE_DEADLINE_SECONDS=120", "SAPI_LLM_MODE=stub"],
-                        )
-                        rows = summarize_trials(jobs[-1])
-                        for row in rows:
-                            verdict = "passed" if row["passed"] else f"failed at {row['failure_stage']}"
-                            seconds = trial_seconds(row)
-                            progress(
-                                f"{step} {row['scenario']}: {verdict}"
-                                + (f" ({seconds}s)" if seconds is not None else "")
+                        try:
+                            exit_code, _ = run.harbor(
+                                job,
+                                task,
+                                AUTHOR_AGENT,
+                                agent_keys=[
+                                    "upstream=" + args.upstream,
+                                    "expected_model=" + host.wrapper_model,
+                                    "prompt_path=" + str(prompts[task.name]),
+                                    "prompt_sha256=" + report["prompt_sha256"][task.name],
+                                ],
+                                attempts="1",
+                                admission=True,
+                                verifier_env=["SAPI_NATIVE_DEADLINE_SECONDS=120", "SAPI_LLM_MODE=stub"],
                             )
-                        report["harbor_exit_codes"].append(exit_code)
-                        report["trials"].extend(rows)
-                        outcome.passed = (
-                            exit_code == 0 and len(rows) == 1 and rows[0]["scenario"] == task.name and rows[0]["passed"]
-                        )
+                            confirm_authoring(jobs[-1])
+                            rows = summarize_trials(jobs[-1])
+                            for row in rows:
+                                verdict = "passed" if row["passed"] else f"failed at {row['failure_stage']}"
+                                seconds = trial_seconds(row)
+                                progress(
+                                    f"{step} {row['scenario']}: {verdict}"
+                                    + (f" ({seconds}s)" if seconds is not None else "")
+                                )
+                            report["harbor_exit_codes"].append(exit_code)
+                            report["trials"].extend(rows)
+                            outcome.passed = (
+                                exit_code == 0
+                                and len(rows) == 1
+                                and rows[0]["scenario"] == task.name
+                                and rows[0]["passed"]
+                            )
+                        finally:
+                            # Harbor process loss or missing collection is not non-dispatch proof.
+                            if isinstance(sys.exception(), Exception) and not isinstance(
+                                sys.exception(), (subprocess.TimeoutExpired, UnknownOutcome)
+                            ):
+                                confirm_authoring(jobs[-1])
         trials = report["trials"]
         report["passed_trials"] = sum(t["passed"] for t in trials)
         report["total_trials"] = len(trials)

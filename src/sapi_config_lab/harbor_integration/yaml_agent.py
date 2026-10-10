@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import json
 from pathlib import Path
 import time
+from urllib.error import URLError
 
 from harbor.agents.base import BaseAgent
 
-from sapi_config_lab.evidence import write_json
+from sapi_config_lab.evidence import durable_json, write_json
+from sapi_config_lab.execute.agency import strict_json
 from sapi_config_lab.harbor_integration.model_wrapper import request_wrapper
 from sapi_config_lab.wrapper_audit import reported_model, reported_tokens, stderr_sha256, tool_markers
 
@@ -44,19 +45,10 @@ class WrapperYamlAgent(BaseAgent):
         pass
 
     def request(self, prompt):
-        raw = request_wrapper(self.upstream, prompt, 195, 2_000_000)
-        if len(raw) > 2_000_000:
-            raise RuntimeError("Wrapper response exceeded size limit")
-        return json.loads(raw)
+        return request_wrapper(self.upstream, prompt, 195, 2_000_000)
 
     async def run(self, instruction, environment, context):
-        if self.prompt_path is not None:
-            raw = self.prompt_path.read_bytes()
-            if hashlib.sha256(raw).hexdigest() != self.prompt_sha256:
-                raise ValueError("Frozen authoring prompt differs")
-            instruction = raw.decode("utf-8")
         self.logs_dir.mkdir(parents=True, exist_ok=True)
-        (self.logs_dir / "prompt.txt").write_bytes(instruction.encode())
         record = {
             "status": "generation_error",
             "provider": "existing-codex-exec-wrapper",
@@ -65,17 +57,40 @@ class WrapperYamlAgent(BaseAgent):
             "repairs": 0,
             "runtime_llm_mode": "stub",
             "expected_model": self.expected_model,
+            "model_outcome": "not_dispatched",
+            "outcome_reason": None,
         }
         started = time.monotonic()
         try:
+            if self.prompt_path is not None:
+                raw = self.prompt_path.read_bytes()
+                if hashlib.sha256(raw).hexdigest() != self.prompt_sha256:
+                    raise ValueError("Frozen authoring prompt differs")
+                instruction = raw.decode("utf-8")
+            (self.logs_dir / "prompt.txt").write_bytes(instruction.encode())
+            record["prompt_sha256"] = hashlib.sha256(instruction.encode()).hexdigest()
             record["failure_reason"] = "wrapper_transport_or_response"
-            wrapper = await asyncio.to_thread(self.request, instruction)
+            record.update(model_outcome="unknown", outcome_reason="dispatch_unsettled")
+            try:
+                durable_json(self.logs_dir / "generation.json", record)
+            except OSError:
+                record.update(model_outcome="not_dispatched", outcome_reason=None)
+                raise
+            record["outcome_reason"] = "transport_error"
+            raw = await asyncio.to_thread(self.request, instruction)
+            record["outcome_reason"] = "incomplete_receipt"
+            if len(raw) > 2_000_000:
+                raise RuntimeError("Wrapper response exceeded size limit")
+            wrapper = strict_json(raw)
             if not isinstance(wrapper, dict):
                 raise RuntimeError("Wrapper response was not an object")
-            record.update(audit_stderr(wrapper.get("stderr", "")))
-            if wrapper.get("ok") is not True or wrapper.get("exit_code") != 0:
+            record["outcome_reason"] = "wrapper_unsettled"
+            if wrapper.get("ok") is not True or type(wrapper.get("exit_code")) is not int or wrapper["exit_code"] != 0:
                 record["failure_reason"] = "wrapper_unsuccessful"
+                record.update(audit_stderr(wrapper.get("stderr", "")))
                 raise RuntimeError("Existing wrapper did not complete successfully")
+            record.update(model_outcome="settled", outcome_reason=None)
+            record.update(audit_stderr(wrapper.get("stderr", "")))
             if record["model"] is None:
                 record["failure_reason"] = "model_identity_unverified"
                 raise RuntimeError("Authoring model identity could not be verified")
@@ -97,13 +112,22 @@ class WrapperYamlAgent(BaseAgent):
             await environment.upload_file(source_path=submission, target_path="/app/submission/config.yaml")
             record["status"] = "submitted"
             record["failure_reason"] = None
+        except asyncio.CancelledError:
+            if record["model_outcome"] == "unknown":
+                record["outcome_reason"] = "cancelled"
+            raise
         except Exception as error:  # Harbor boundary; external text may carry model output
+            if record["model_outcome"] == "unknown" and (
+                isinstance(error, TimeoutError)
+                or (isinstance(error, URLError) and isinstance(error.reason, TimeoutError))
+            ):
+                record["outcome_reason"] = "timeout"
             # Only the type is kept.
             record["error_type"] = type(error).__name__
             raise RuntimeError("YAML generation failed; see agent/generation.json") from None
         finally:
             record["duration_seconds"] = round(time.monotonic() - started, 3)
-            write_json(self.logs_dir / "generation.json", record)
+            durable_json(self.logs_dir / "generation.json", record)
             context.metadata = record
 
 

@@ -230,9 +230,17 @@ class DispatchAudit:
         self.append({"event": "dispatch_attempt", **context})
         return context
 
-    def fail(self, context, category, *, outcome="not_dispatched"):
+    def fail(self, context, category, *, outcome="not_dispatched", reason=None):
         self.failed = True
-        self.append({"event": "failure", **context, "category": category, "model_outcome": outcome})
+        self.append(
+            {
+                "event": "failure",
+                **context,
+                "category": category,
+                "model_outcome": outcome,
+                **({"outcome_reason": reason} if outcome == "unknown" else {}),
+            }
+        )
 
 
 def execute(
@@ -240,6 +248,7 @@ def execute(
 ):
     context: dict = {}
     stage = "invalid_input"
+    outcome, reason = "not_dispatched", None
     try:
         if type(data) is not dict or not {"invocation_id", "operation", "inputs"} <= data.keys():
             raise ContractError("invalid request")
@@ -265,18 +274,19 @@ def execute(
             timeout = min(timeout, WRAPPER_TIMEOUT_SECONDS, audit.budget["expires_at"] - time.time())
             if timeout <= 0:
                 raise ContractError("case deadline expired before dispatch")
+        outcome, reason = "unknown", "transport_error"
         raw = transport(upstream, prompt, timeout, MAX_BODY)
         stage = "upstream_wrapper_failure"
+        reason = "incomplete_receipt"
         if len(raw) > MAX_BODY:
             raise ContractError("wrapper response too large")
         wrapper = strict_json(raw)
-        if (
-            type(wrapper) is not dict
-            or wrapper.get("ok") is not True
-            or type(wrapper.get("exit_code")) is not int
-            or wrapper["exit_code"] != 0
-        ):
+        if type(wrapper) is not dict:
+            raise ContractError("wrapper response was not an object")
+        reason = "wrapper_unsettled"
+        if wrapper.get("ok") is not True or type(wrapper.get("exit_code")) is not int or wrapper["exit_code"] != 0:
             raise ContractError("codex wrapper failed")
+        outcome, reason = "settled", None
         stage = "model_output_contract"
         output = strict_json(wrapper.get("output"))
         check_schema(output, binding["output_schema"])
@@ -295,6 +305,7 @@ def execute(
             audit.append(
                 {
                     "event": "completion",
+                    "model_outcome": "settled",
                     **context,
                     "response_sha256": digest(result),
                     "output_sha256": digest(output),
@@ -322,8 +333,9 @@ def execute(
             )
             audit.fail(
                 context,
-                "timeout_unknown_outcome" if timeout_error else stage,
-                outcome="unknown" if context else "not_dispatched",
+                "timeout_unknown_outcome" if timeout_error and outcome == "unknown" else stage,
+                outcome=outcome,
+                reason="timeout" if timeout_error and outcome == "unknown" else reason,
             )
         raise
 

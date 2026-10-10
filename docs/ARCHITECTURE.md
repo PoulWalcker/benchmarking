@@ -104,6 +104,8 @@ lifecycle. The report is finalized even when dispatch or cleanup fails; pre-exis
 container identities are checked. The transport control uses the same argv builder.
 
 Generation reserves a durable unknown ledger event before each single wrapper call.
+The agent also fsyncs an unknown dispatch marker before handing off the request;
+its final record preserves transport loss, unreadable receipts and cancellation.
 It binds the inspected wrapper before controls, rechecks it before every reservation,
 and requires the reported authoring model to match that identity for upload and selection.
 There is no repair loop or fence stripping: exact valid answer bytes are uploaded.
@@ -119,8 +121,20 @@ ceilings. Grants bind operations, model and occurrence IDs. Native evidence is
 reconciled against the exact selected YAML, rebuilt plan and compiled graph, ordered
 case set and full file inventory. Runtime request/completion/response triples must
 match input/output hashes, model, occurrence and timing. Runtime accounting closes
-before judge reservation. Ambiguous runtime or judge timeout remains unknown and
-blocks subsequent spending. A host-reserved judge forwards its exact pending event
+before judge reservation. Runtime and authoring accounting closes only with positive
+non-dispatch proof or a complete wrapper object with `ok: true` and integer
+`exit_code: 0`. Later content or identity rejection is a confirmed failure. Timeouts,
+transport loss, incomplete receipts, unsettled wrapper replies and missing completion
+evidence remain unknown and block subsequent spending, including across a series.
+Live checks the audit and readable native Agency invocations before classification
+and on escaping exceptions. Generation accepts missing agent evidence as non-dispatch
+only with one finalized Harbor trial whose `agent_execution` is explicitly null.
+Unknown calls are never automatically retried or replayed. An `ok:false` or non-zero
+exit therefore stops a series until an operator starts a new series. Actual timeouts
+use `timeout_unknown_outcome`; other ambiguity uses `unknown_outcome`, with phase,
+reservation and reason recorded. The fixture Judge receipt protocol remains unchanged;
+its process-loss path still uses the timeout category. A host-reserved judge forwards
+its exact pending event
 to the task process without reserving a second call.
 
 A fixture task's trusted composition root supplies `coordinate/fixture_judge.py` to
