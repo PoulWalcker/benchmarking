@@ -14,6 +14,7 @@ import unittest
 from unittest.mock import AsyncMock, patch
 
 from sapi_config_lab.coordinate.generate import main, summarize_trials
+from sapi_config_lab.coordinate.ledger import UnknownOutcome
 from sapi_config_lab.coordinate.native_tasks import image_tags, invoke, select_tasks
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.replay import load_selection, select_submission
@@ -51,6 +52,192 @@ def inspected_wrapper(root: Path) -> Path:
 
 
 class NativeGenerationTests(unittest.TestCase):
+    def test_generation_reports_distinct_lifecycle_counts_even_after_a_partial_run(self):
+        for outcome in ("accepted", "rejected", "unevaluated", "not-submitted", "infrastructure", "unknown"):
+            with self.subTest(outcome=outcome), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                identity = inspected_wrapper(root)
+                output = root / "run"
+                tasks = select_tasks(ROOT / "tasks", ["checkout-recovery", "invoice-total"])
+                sources = source_manifest()
+                images = {tag: "sha256:" + tag for tag in image_tags(tasks)}
+                save(root / "reports/native-image-build.json", {"sources": sources, "images": images})
+
+                def controls(argv, log, *, sources=sources, images=images, **kwargs):
+                    control = log.parent / "control"
+                    save(control / "source-manifest.json", sources)
+                    save(
+                        control / "report.json",
+                        {
+                            "schema": "sapi-lab-harbor/v1",
+                            "status": "passed",
+                            "mode": "stub",
+                            "source_unchanged": True,
+                            "source_manifest": "source-manifest.json",
+                            "image_id": "sha256:transport",
+                            "native_images": images,
+                            "transport": {"passed": True},
+                            "oracle": {"passed": True},
+                            "nop": {"passed": True},
+                            "checks": [{"passed": True}],
+                        },
+                    )
+                    return 0
+
+                def harbor(argv, task, jobs, name, agent, log, *, outcome=outcome, **kwargs):
+                    trial = jobs / name / "one"
+                    if task.name == "invoice-total" and outcome in {"infrastructure", "unknown"}:
+                        save(
+                            trial / "agent/generation.json",
+                            {
+                                "model_outcome": "settled" if outcome == "infrastructure" else "unknown",
+                                "outcome_reason": "transport_error",
+                                "duration_seconds": 1,
+                            },
+                        )
+                        if outcome == "unknown":
+                            raise UnknownOutcome("transport_error")
+                        raise RuntimeError("infrastructure stopped the run")
+                    admitted = task.name == "checkout-recovery"
+                    submitted = admitted or outcome != "not-submitted"
+                    accepted = outcome == "accepted" and not admitted
+                    save(
+                        trial / "agent/generation.json",
+                        {
+                            "status": "submitted" if submitted else "generation_error",
+                            "submission_sha256": "submission",
+                            "model_outcome": "settled",
+                            "duration_seconds": 1,
+                        },
+                    )
+                    save(
+                        trial / "result.json",
+                        {
+                            "task_name": task.name,
+                            "verifier_result": {"rewards": {"reward": 1.0}},
+                        },
+                    )
+                    save(trial / "verifier/native-task.json", {"submission_sha256": "submission"})
+                    save(
+                        trial / "verifier/evaluation/report.json",
+                        {
+                            "scenario": task.name,
+                            "mode": "stub",
+                            "submission_sha256": "submission",
+                            "passed": admitted or accepted,
+                            **({"schema": "sapi-lab-admission/v1"} if admitted else {}),
+                        },
+                    )
+                    if admitted or outcome != "unevaluated":
+                        save(
+                            trial / "verifier/result.json",
+                            dict(NOT_EVALUATED)
+                            if admitted
+                            else {
+                                "execution": True,
+                                "acceptance": accepted,
+                                "quality": None,
+                            },
+                        )
+                    return 0
+
+                with (
+                    patch("sapi_config_lab.coordinate.runs.workspace_root", return_value=root),
+                    patch("sapi_config_lab.coordinate.runs.running_containers", return_value=""),
+                    patch("sapi_config_lab.coordinate.runs.checked_harbor", return_value=(["harbor"], "0.21.0")),
+                    patch("sapi_config_lab.coordinate.runs.docker_preflight", return_value={"context": "test"}),
+                    patch("sapi_config_lab.coordinate.runs.image_id", side_effect=images.__getitem__),
+                    patch.object(Run, "use_image", return_value="sha256:transport"),
+                    patch("sapi_config_lab.coordinate.generate.run_logged", side_effect=controls),
+                    patch("sapi_config_lab.coordinate.runs.run_job", side_effect=harbor),
+                    contextlib.redirect_stdout(io.StringIO()) as stdout,
+                    contextlib.redirect_stderr(io.StringIO()) as stderr,
+                ):
+                    code = main(
+                        [
+                            "--attempts",
+                            "1",
+                            "--wrapper-evidence",
+                            str(identity),
+                            "--report-dir",
+                            str(output),
+                            "--scenario",
+                            "checkout-recovery",
+                            "--scenario",
+                            "invoice-total",
+                        ]
+                    )
+                partial = outcome in {"infrastructure", "unknown"}
+                total = 1 if partial else 2
+                submitted = 1 if partial or outcome == "not-submitted" else 2
+                accepted = 1 if outcome == "accepted" else 0
+                passed = 2 if outcome == "accepted" else 1
+                report = json.loads((output / "report.json").read_text())
+                self.assertEqual(code, 0 if outcome == "accepted" else 1)
+                self.assertEqual(
+                    {
+                        key: report[key]
+                        for key in (
+                            "submitted_trials",
+                            "admitted_trials",
+                            "accepted_trials",
+                            "passed_trials",
+                            "total_trials",
+                        )
+                    },
+                    {
+                        "submitted_trials": submitted,
+                        "admitted_trials": 1,
+                        "accepted_trials": accepted,
+                        "passed_trials": passed,
+                        "total_trials": total,
+                    },
+                )
+                self.assertEqual(len(stdout.getvalue().splitlines()), 1)
+                self.assertEqual(
+                    json.loads(stdout.getvalue()),
+                    {
+                        "status": report["status"],
+                        "submitted": submitted,
+                        "admitted": 1,
+                        "accepted": accepted,
+                        "passed": passed,
+                        "total": total,
+                    },
+                )
+                summary = (output / "SUMMARY.md").read_text()
+                self.assertIn(
+                    f"Submitted: {submitted}/{total}. Admitted (compile only, not evaluated): 1. Accepted (independent evaluation): {accepted}.",
+                    summary,
+                )
+                self.assertIn(
+                    f"Stub gate passed: {passed}/{total} (admission or acceptance; not a performance metric).", summary
+                )
+                self.assertIn("| Task | Outcome | Failure stage |", summary)
+                self.assertNotIn("Passed:", summary)
+                self.assertIn("| checkout-recovery | admitted (not evaluated) |", summary)
+                self.assertIn("checkout-recovery: admitted (compile only, not evaluated)", stderr.getvalue())
+                self.assertIsNone(report["trials"][0]["accepted"])
+                self.assertEqual(report["trials"][0]["result"], NOT_EVALUATED)
+                if not partial:
+                    label = {
+                        "accepted": "accepted",
+                        "rejected": "rejected",
+                        "unevaluated": "submitted (not evaluated)",
+                        "not-submitted": "not submitted",
+                    }[outcome]
+                    self.assertIn(f"| invoice-total | {label} |", summary)
+                    self.assertIn(
+                        "invoice-total: "
+                        + ({"not-submitted": "failed at generation_or_transport"}.get(outcome, label)),
+                        stderr.getvalue(),
+                    )
+                if outcome == "unknown":
+                    self.assertEqual(report["failure_category"], "unknown_outcome")
+                    self.assertEqual(report["unknown_outcome"]["reason"], "transport_error")
+                    events = json.loads((output / "ledger.json").read_text())["events"]
+                    self.assertEqual([event["status"] for event in events], ["passed", "unknown"])
+
     def test_failed_task_invoke_preserves_stderr_in_the_run_report(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -470,6 +657,10 @@ class NativeGenerationTests(unittest.TestCase):
                         },
                     )
                     save(trial / "verifier/result.json", {**NOT_EVALUATED, "execution": True, "acceptance": True})
+                    save(
+                        trial / "verifier/native-task.json",
+                        {"submission_sha256": sha256(trial / "agent/submission.yaml")},
+                    )
                     return 0
 
                 def task_invoke(task, request, sources, *, fault=fault):
@@ -650,7 +841,7 @@ class NativeGenerationTests(unittest.TestCase):
                         "[sapi-lab generate]   Harbor job: generated-1-invoice-total · task invoice-total",
                         stderr.getvalue(),
                     )
-                    self.assertIn("[1/1] invoice-total: passed", stderr.getvalue())
+                    self.assertIn("[1/1] invoice-total: accepted", stderr.getvalue())
                     self.assertRegex(stderr.getvalue(), r"PASSED · (?:<1s|\d+s|\d+m\d\ds) · 6/6 stages done\n$")
                     report = json.loads((output / "report.json").read_text())
                     self.assertEqual(report["authoring_attempts_spent"], 1)

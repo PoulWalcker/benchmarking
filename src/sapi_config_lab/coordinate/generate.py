@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from contextlib import suppress
 from datetime import UTC, datetime
 import hashlib
 import json
@@ -20,11 +21,12 @@ import yaml
 
 from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, NOT_EVALUATED, trial_accepted
 from sapi_config_lab.coordinate.ledger import UnknownOutcome, open_ledger, parse_ceilings
-from sapi_config_lab.coordinate.live import validate_control
+from sapi_config_lab.coordinate.live import trial_identity, validate_control
 from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
 from sapi_config_lab.coordinate.progress import detail, stage
 from sapi_config_lab.coordinate.runs import Run, load_trials, progress, run_experiment, trial_seconds
 from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
+from sapi_config_lab.evaluate.records import validate_result
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.host import LAB_IMAGE, HostConfig, run_logged
 from sapi_config_lab.harbor_integration.runner import AUTHOR_AGENT
@@ -52,7 +54,24 @@ def summarize_trials(*jobs: Path) -> list[dict]:
             and not trial["exception"]
             and trial["rewards"] == {"reward": 1.0}
         )
-        passed = agent.get("status") == "submitted" and (admitted or trial_accepted(trial))
+        normalized = None
+        if "verdict_path" in trial:
+            with suppress(ValueError):
+                normalized = validate_result(trial["result"])
+        accepted = None
+        if (
+            agent.get("status") == "submitted"
+            and (acceptance or {}).get("schema") != ADMISSION_REPORT
+            and normalized is not None
+            and "native_task" in trial
+            and agent.get("submission_sha256") is not None
+            and trial_identity(trial).get("submission_sha256") == agent["submission_sha256"]
+            and not trial["exception"]
+        ):
+            accepted = normalized["acceptance"]
+        passed = agent.get("status") == "submitted" and (
+            admitted or (("verdict_path" not in trial or normalized is not None) and trial_accepted(trial))
+        )
         stage = None
         if not passed:
             if agent.get("status") != "submitted":
@@ -79,6 +98,7 @@ def summarize_trials(*jobs: Path) -> list[dict]:
                 "scenario": trial["task_name"],
                 "passed": passed,
                 "admitted": admitted,
+                "accepted": accepted,
                 "failure_stage": stage,
                 "generation": agent,
                 "rewards": trial["rewards"],
@@ -145,19 +165,36 @@ def write_summary(report: dict, output: Path) -> None:
         "",
         f"Status: {report['status']}. Completed: {report['experiment_completed']}.",
         f"Operation catalog: {report['catalog']['variant']}.",
-        f"Passed: {report['passed_trials']}/{report['total_trials']}.",
+        f"Submitted: {report['submitted_trials']}/{report['total_trials']}. "
+        f"Admitted (compile only, not evaluated): {report['admitted_trials']}. "
+        f"Accepted (independent evaluation): {report['accepted_trials']}.",
+        f"Stub gate passed: {report['passed_trials']}/{report['total_trials']} "
+        "(admission or acceptance; not a performance metric).",
         "",
-        "| Task | Passed | Failure stage | Artifacts |",
+        "| Task | Outcome | Failure stage | Artifacts |",
         "|---|---|---|---|",
     ]
     for trial in report["trials"]:
         path = Path(trial["result_path"]).parent.relative_to(output)
         lines.append(
-            f"| {trial['scenario']} | {trial['passed']} | {trial['failure_stage'] or '—'} "
+            f"| {trial['scenario']} | {trial_outcome(trial)} | {trial['failure_stage'] or '—'} "
             f"| [YAML]({path}/agent/submission.yaml) · [Verification]({path}/verifier/evaluation/report.json) |"
         )
     lines += ["", "## Limits", ""] + ["- " + item for item in report["limitations"]]
     (output / "SUMMARY.md").write_text("\n".join(lines) + "\n")
+
+
+def trial_outcome(trial: dict) -> str:
+    """Label recorded lifecycle facts without treating unavailable acceptance as rejection."""
+    if trial["generation"].get("status") != "submitted":
+        return "not submitted"
+    if trial["accepted"] is True:
+        return "accepted"
+    if trial["accepted"] is False:
+        return "rejected"
+    if trial["admitted"]:
+        return "admitted (not evaluated)"
+    return "submitted (not evaluated)"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -331,7 +368,11 @@ def main(argv: list[str] | None = None) -> int:
                             confirm_authoring(jobs[-1])
                             rows = summarize_trials(jobs[-1])
                             for row in rows:
-                                verdict = "passed" if row["passed"] else f"failed at {row['failure_stage']}"
+                                verdict = trial_outcome(row)
+                                if row["admitted"]:
+                                    verdict = "admitted (compile only, not evaluated)"
+                                elif row["generation"].get("status") != "submitted":
+                                    verdict = f"failed at {row['failure_stage']}"
                                 seconds = trial_seconds(row)
                                 progress(
                                     f"{step} {row['scenario']}: {verdict}"
@@ -352,6 +393,11 @@ def main(argv: list[str] | None = None) -> int:
                             ):
                                 confirm_authoring(jobs[-1])
         trials = report["trials"]
+        report["submitted_trials"] = sum(t["generation"].get("status") == "submitted" for t in trials)
+        report["admitted_trials"] = sum(t["admitted"] is True for t in trials)
+        report["accepted_trials"] = sum(
+            t["generation"].get("status") == "submitted" and t["accepted"] is True for t in trials
+        )
         report["passed_trials"] = sum(t["passed"] for t in trials)
         report["total_trials"] = len(trials)
         report["authoring_attempts_spent"] = ledger.spent("authoring", report_path.resolve())
@@ -373,13 +419,32 @@ def main(argv: list[str] | None = None) -> int:
         )
     except ValueError as error:
         parser.error(str(error))
+    report.setdefault("submitted_trials", sum(t["generation"].get("status") == "submitted" for t in report["trials"]))
+    report.setdefault("admitted_trials", sum(t["admitted"] is True for t in report["trials"]))
+    report.setdefault(
+        "accepted_trials",
+        sum(t["generation"].get("status") == "submitted" and t["accepted"] is True for t in report["trials"]),
+    )
     report.setdefault("passed_trials", sum(t["passed"] for t in report["trials"]))
     report.setdefault("total_trials", len(report["trials"]))
+    # Run.close precedes fallback aggregates; persist them in the host report, including partial runs.
+    write_json(Path(output).resolve() / "report.json", report)
     try:
         write_summary(report, Path(output).resolve())
     except (OSError, KeyError, ValueError) as error:
         print(f"SUMMARY.md not written: {error}", file=sys.stderr)
-    print(json.dumps({"status": report["status"], "passed": report["passed_trials"], "total": report["total_trials"]}))
+    print(
+        json.dumps(
+            {
+                "status": report["status"],
+                "passed": report["passed_trials"],
+                "total": report["total_trials"],
+                "submitted": report["submitted_trials"],
+                "admitted": report["admitted_trials"],
+                "accepted": report["accepted_trials"],
+            }
+        )
+    )
     return 0 if report["status"] == "passed" else 1
 
 

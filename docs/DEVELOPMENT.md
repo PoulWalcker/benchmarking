@@ -153,6 +153,18 @@ inspected wrapper files, not a provider receipt.
 Invoice generation executes independent fixture evaluation. Checkout generation
 only admits compilation/call cap/deadline; its verdict facts remain null.
 
+Generation reports `submitted_trials` for uploaded answers, `admitted_trials` for
+passed compile-only admission (not evaluated), and `accepted_trials` for submitted
+answers independently accepted by a valid normalized verdict bound to the same native
+submission, without a Harbor exception. Per-row `accepted` is true or false only with
+that evidence and null otherwise; quality stays a separate fact. Submitted rows without
+trustworthy acceptance evidence show `submitted (not evaluated)`. Malformed verdict
+files still fail closed in the trial reader. The retained `passed`/`passed_trials` and
+`status` describe the unpaid stub gate (admission or the existing acceptance gate),
+which selection and the authoring ledger use; they are not benchmark performance or
+independent acceptance metrics. Report, stdout and summary counts agree even when a
+run stops after partial trials.
+
 ```bash
 uv run --locked sapi-lab select --source-report <generation>/report.json \
   --scenario invoice-total --output <selection.json>
