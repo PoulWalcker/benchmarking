@@ -26,18 +26,11 @@ RETIRED = (
 class RetirementTests(unittest.TestCase):
     def test_production_selection_includes_retained_tasks_and_default_is_invoice_only(self):
         root = workspace_root() / "tasks"
-        self.assertEqual(
-            {
-                item.name
-                for item in select_tasks(
-                    root, ["invoice-total", "checkout-recovery", "ticket-routing", "research-report"]
-                )
-            },
-            {"invoice-total", "checkout-recovery", "ticket-routing", "research-report"},
-        )
+        names = {path.parent.name for path in root.glob("*/task.toml")}
+        self.assertEqual({item.name for item in select_tasks(root, sorted(names))}, names)
         self.assertEqual({item.name for item in select_tasks(root)}, {"invoice-total"})
         for options, expected in (
-            ([], {"invoice-total", "checkout-recovery", "ticket-routing", "research-report"}),
+            ([], names),
             (["--defaults"], {"invoice-total"}),
         ):
             output = io.StringIO()
@@ -60,13 +53,17 @@ class RetirementTests(unittest.TestCase):
                 self.assertFalse(list((root / "tasks").glob(name)))
 
     def test_build_compiles_only_retained_references(self):
+        root = workspace_root() / "tasks"
+        names = {
+            task.name for task in select_tasks(root, sorted(path.parent.name for path in root.glob("*/task.toml")))
+        }
         with tempfile.TemporaryDirectory() as temporary, contextlib.redirect_stdout(io.StringIO()) as output:
             self.assertEqual(main(["build", "--output-dir", temporary]), 0)
             self.assertEqual(
                 {row["config"] for row in json.loads(output.getvalue())},
-                {"invoice-total", "checkout-recovery", "ticket-routing", "research-report"},
+                names,
             )
             self.assertEqual(
                 {path.name.split(".", 1)[0] for path in Path(temporary).glob("*.n8n.json")},
-                {"invoice-total", "checkout-recovery", "ticket-routing", "research-report"},
+                names,
             )

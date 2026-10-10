@@ -292,6 +292,13 @@ There is no central task-name registry or generic hook manifest. Shared mechanis
 need two real callers. Preserve independent verification: expected business values
 must not come from the runtime operations being tested.
 
+Shared tests discover `tasks/*/task.toml` and validate each task's evaluator, any
+rubric card, config, isolation and use of its own image tags. Selection remains
+invoice-only by default, and retired names remain refused. Required cards and exact
+rubric versions belong to task-specific tests. Discovery needs no identity pin;
+pins are added when an experiment is frozen. Existing prompt and byte pins remain
+exact.
+
 ## Retained and deferred scope
 
 Full existing compiler/profile validation and lowering, bounded refinement and its
@@ -303,8 +310,8 @@ active. See [ARCHITECTURE.md](ARCHITECTURE.md) for ownership and trust boundarie
 
 Refactoring backlog observation: onboarding `ticket-routing` exposed hardcoded task
 sets in retirement/build expectations, rubric coverage and the explicit native
-composition-root permissions in `tests/test_boundaries.py`. Discovery already reads
-native task directories, but these separate lists require coordinated edits. Review
-that duplication in a future change while preserving exact inventory assertions,
-explicit trust boundaries and invoice-only default selection; no registration
-refactoring is part of this onboarding fix.
+composition-root permissions in `tests/test_boundaries.py`. Shared inventory tests
+now discover native task directories; explicit composition-root permissions still
+require coordinated edits. Review that remaining duplication while preserving evaluator/card
+validation, per-task config/isolation and own-image-tag checks, explicit trust
+boundaries and invoice-only default selection.

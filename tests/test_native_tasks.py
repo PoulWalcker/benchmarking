@@ -16,6 +16,7 @@ from harbor.models.task.task import Task
 import yaml
 
 from sapi_config_lab.contracts import OutputArtifact
+from sapi_config_lab.coordinate.native_tasks import select_tasks
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.paths import workspace_root
 from tests.support.checkout_evaluation import SCORING
@@ -44,27 +45,46 @@ class NativeTaskTests(unittest.TestCase):
         self.assertFalse((ROOT / "benchmarks").exists())
         for name, files in pinned.items():
             task = ROOT / "tasks" / name
-            self.assertFalse((task / "config.yaml").exists())
             for relative, expected in files.items():
                 self.assertEqual(hashlib.sha256((task / relative).read_bytes()).hexdigest(), expected)
-            config = tomllib.loads((task / "task.toml").read_text())
-            self.assertEqual(config["agent"]["user"], "1000")
-            self.assertEqual(config["environment"]["network_mode"], "no-network")
-            self.assertEqual(config["verifier"]["environment"]["network_mode"], "public")
-            self.assertEqual(config["verifier"]["environment_mode"], "separate")
-            self.assertEqual(config["artifacts"][0]["exclude"], ["*"])
-            self.assertNotIn("verifier_compose", config.get("metadata", {}).get("sapi", {}))
-            for script in (task / "tests").glob("*.py"):
-                imports = {
-                    node.module for node in ast.walk(ast.parse(script.read_text())) if isinstance(node, ast.ImportFrom)
-                }
-                self.assertFalse(imports & {"sapi_config_lab.benchmark", "sapi_config_lab.benchmark_loading"})
+
+    def test_discovered_task_config_and_evaluator_assets(self):
+        root = ROOT / "tasks"
+        for task in select_tasks(root, sorted(path.parent.name for path in root.glob("*/task.toml"))):
+            with self.subTest(task=task.name):
+                self.assertFalse((task / "config.yaml").exists())
+                evaluator = task / "evaluation/evaluator.py"
+                self.assertTrue(evaluator.is_file(), str(evaluator))
+                ast.parse(evaluator.read_text())
+                config = tomllib.loads((task / "task.toml").read_text())
+                self.assertEqual(config["agent"]["user"], "1000")
+                self.assertEqual(config["environment"]["network_mode"], "no-network")
+                self.assertEqual(config["verifier"]["environment"]["network_mode"], "public")
+                self.assertEqual(config["verifier"]["environment_mode"], "separate")
+                self.assertEqual(config["artifacts"][0]["exclude"], ["*"])
+                self.assertNotIn("verifier_compose", config.get("metadata", {}).get("sapi", {}))
+                for script in (task / "tests").glob("*.py"):
+                    imports = {
+                        node.module
+                        for node in ast.walk(ast.parse(script.read_text()))
+                        if isinstance(node, ast.ImportFrom)
+                    }
+                    self.assertFalse(imports & {"sapi_config_lab.benchmark", "sapi_config_lab.benchmark_loading"})
+                for area, role in (("environment", "public"), ("tests", "verifier")):
+                    bases = [
+                        line.split()[1]
+                        for line in (task / area / "Dockerfile").read_text().splitlines()
+                        if line.startswith("FROM ")
+                    ]
+                    self.assertEqual(bases, [f"sapi-native-{task.name}-{role}:phase1"])
 
     def test_harbor_author_environment_has_no_private_compose_overlay(self):
-        for name in ("invoice-total", "checkout-recovery", "research-report"):
-            task = Task(ROOT / "tasks" / name)
-            self.assertFalse((task.paths.environment_dir / "docker-compose.yaml").exists())
-            self.assertEqual(task.config.verifier.environment_mode, "separate")
+        root = ROOT / "tasks"
+        for directory in select_tasks(root, sorted(path.parent.name for path in root.glob("*/task.toml"))):
+            with self.subTest(task=directory.name):
+                task = Task(directory)
+                self.assertFalse((task.paths.environment_dir / "docker-compose.yaml").exists())
+                self.assertEqual(task.config.verifier.environment_mode, "separate")
         trusted = yaml.safe_load((ROOT / "tasks/checkout-recovery/tests/docker-compose.yaml").read_text())
         self.assertEqual(set(trusted["services"]), {"main", "simulator"})
         self.assertTrue(trusted["networks"]["verification"]["internal"])
