@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch
 from sapi_config_lab.coordinate.ledger import Ledger
 from sapi_config_lab.coordinate.live import main as live
 from sapi_config_lab.coordinate.native_tasks import select_tasks
+from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.runs import Run, progress, run_experiment
 from sapi_config_lab.evaluate.records import load_trials, read_report
 from sapi_config_lab.paths import workspace_root
@@ -48,6 +49,23 @@ class RunTests(unittest.TestCase):
 
     def saved(self):
         return json.loads((self.output / "report.json").read_text())
+
+    def test_invalid_task_is_refused_before_build_or_image_reuse(self):
+        task = self.root / "unsafe-task"
+        task.mkdir()
+        (task / "images.Dockerfile").write_text("FROM sapi-native-public-base:phase1 AS public\nCOPY . /app/public/\n")
+        self.output.mkdir()
+        for build in (True, False):
+            with (
+                self.subTest(build=build),
+                patch("sapi_config_lab.coordinate.runs.run_logged") as child,
+                patch("sapi_config_lab.coordinate.runs.image_id") as image,
+            ):
+                run = Run(self.output, {}, source_manifest(), "test")
+                with self.assertRaisesRegex(ValueError, "unsafe-task: S5:"):
+                    run.use_native_tasks((task,), build=build)
+                child.assert_not_called()
+                image.assert_not_called()
 
     def test_docker_preflight_failure_stops_setup_and_records_original_cause(self):
         for cause in (

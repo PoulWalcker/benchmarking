@@ -263,10 +263,22 @@ only the executor's allowed environment plus the explicit run binding.
 2. Keep business planning/evaluation in that task. Fixed `tests/main.py` composes
    explicit callbacks; fixed `experiment.py` supplies prompt, plan and evaluate
    actions required by the research CLI. `metadata.sapi` contains policy only.
-3. Add explicit public/verifier image copies to `infra/native/Dockerfile` and the
-   build targets. Public images exclude private fixtures, source pins and references.
-   Declare verifier-only worlds in `tests/docker-compose.yaml`; an environment
-   Compose file is automatically merged by Harbor into the author environment.
+3. Add task-owned `images.Dockerfile` with `public` and `verifier` stages, and the
+   mandatory `images.Dockerfile.dockerignore` (copy an existing task's file). Use the
+   shared `sapi-native-public-base:phase1` and `sapi-native-core:phase1` bases. The
+   public stage may only COPY explicit `instruction.md` (required), `task.md`,
+   `bindings.yaml` and optional flat `public/<file>` sources to `/app/public/`.
+   Public filenames match `[A-Za-z0-9][A-Za-z0-9._-]*` without `..`; files and
+   destination basenames are unique. No directories, globs, symlinks, COPY flags,
+   JSON copies or other public instructions are allowed. The recipe starts with
+   the public FROM, has exactly these two stages, and ends with the verifier import
+   check. The verifier cannot inherit or copy from public. Ignore files require the
+   exact cache/secret exclusions of existing tasks and forbid negations.
+   `public_sources` enforces S1–S8 and I1–I4; `infra/native/build.sh` discovers recipes
+   and refuses invalid definitions before Docker. Each task build uses its own
+   directory as context. Declare verifier-only worlds in `tests/docker-compose.yaml`;
+   an environment Compose file is automatically merged by Harbor into the author
+   environment.
 4. Use the existing protected YAML transfer profile. Add meaningful independent
    evaluation and source/prompt identity tests, then run `check` and unpaid controls.
 

@@ -56,12 +56,18 @@ null; successful admission is a separate selection eligibility fact.
 
 ## Images and submission boundary
 
-`infra/native/Dockerfile` explicitly copies public and trusted assets into separate
-image targets. `infra/native/build.sh` builds the runtime and four task bases from
-the editable checkout; it creates no tasks or trials. Task Dockerfiles consume
-these bases directly. The public ancestry contains only pinned runtime and public
-material. Private fixtures, scoring and world code enter verifier images; references
-enter only oracle solutions. Verifier import checks run during image builds.
+`infra/native/Dockerfile` owns the common public and trusted core bases. Each
+`tasks/<name>/images.Dockerfile` owns its public and verifier targets and the mandatory
+`images.Dockerfile.dockerignore` excludes host caches and secrets without negation.
+`coordinate/native_tasks.py::public_sources` validates the positive public allowlist
+and ignore policy before builds and native image use. `infra/native/build.sh` builds
+the runtime, shared bases and discovered task recipes with each task directory as its
+context; it creates no tasks or trials. Harbor's environment and verifier Dockerfiles
+consume the same task tags and retain ownership of trial execution and verification.
+Public images add only declared public files to the shared public base. Private
+fixtures, scoring and world code enter verifier images; references enter only oracle
+solutions. Verifier import checks run during image builds. The task ignore files govern
+these bases; Harbor's separate `tests/` context still copies its own host files.
 
 The supported profile is single-step Linux/Docker, author UID 1000 and a separate
 root verifier. `harbor_integration/task_config.py` validates it. The root collection

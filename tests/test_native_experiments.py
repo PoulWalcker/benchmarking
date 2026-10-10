@@ -24,6 +24,8 @@ class NativeExperimentTests(unittest.TestCase):
             (self.task / area / "Dockerfile").write_text(f"FROM sapi-native-{area}:test\n")
         (self.task / "task.toml").write_bytes((workspace_root() / "tasks/invoice-total/task.toml").read_bytes())
         (self.task / "instruction.md").write_text("unchanged prompt\n")
+        for name in ("images.Dockerfile", "images.Dockerfile.dockerignore", "task.md", "bindings.yaml"):
+            (self.task / name).write_bytes((workspace_root() / "tasks/invoice-total" / name).read_bytes())
         (self.root / "reports").mkdir()
         self.sources = {"task": "frozen"}
         self.images = {tag: "sha256:" + tag for tag in image_tags((self.task,))}

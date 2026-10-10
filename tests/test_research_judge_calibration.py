@@ -13,7 +13,7 @@ import unittest
 from unittest.mock import patch
 
 from sapi_config_lab.coordinate.fixture_judge import FixtureJudge
-from sapi_config_lab.coordinate.native_tasks import invoke
+from sapi_config_lab.coordinate.native_tasks import invoke, public_sources
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.evidence import digest
 from sapi_config_lab.paths import workspace_root
@@ -74,27 +74,10 @@ class FrozenCatalogTests(unittest.TestCase):
         self.assertIsNone(catalog["expected"]["c-unsupported"]["clarity"])
 
     def test_calibration_material_stays_out_of_public_candidate_image_ancestry(self):
-        stages: dict[str, str] = {}
-        copies: dict[str, list[str]] = {}
-        current = ""
-        for line in (workspace_root() / "infra/native/Dockerfile").read_text().splitlines():
-            words = line.split()
-            if words[:1] == ["FROM"]:
-                current = words[3] if len(words) > 3 else words[1]
-                stages[current] = words[1]
-            elif words[:1] == ["COPY"] or (current and line.startswith(" ")):
-                copies.setdefault(current, []).extend(words)
-
-        def public(stage: str) -> bool:
-            return stage == "public" or (stage in stages and public(stages[stage]))
-
-        candidate = [stage for stage in stages if public(stage)]
-        self.assertIn("research-report-public", candidate)
-        for stage in candidate:
-            leaked = [word for word in copies.get(stage, []) if "evaluation" in word or "calibration" in word]
-            self.assertEqual(leaked, [], stage)
-        self.assertIn("tasks/research-report/evaluation", copies["research-report-verifier"])
-        self.assertFalse(public("research-report-verifier"))
+        sources = public_sources(ROOT)
+        self.assertFalse(any("evaluation" in source or "calibration" in source for source in sources))
+        recipe = (ROOT / "images.Dockerfile").read_text()
+        self.assertIn("COPY evaluation /tests/payload/evaluation", recipe)
 
 
 class CalibrationHarness(unittest.TestCase):

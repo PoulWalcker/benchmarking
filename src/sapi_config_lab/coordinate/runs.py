@@ -12,7 +12,7 @@ import subprocess
 import sys
 from typing import Any
 
-from sapi_config_lab.coordinate.native_tasks import image_tags
+from sapi_config_lab.coordinate.native_tasks import image_tags, public_sources
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.evaluate.records import load_trials as load_trials
 from sapi_config_lab.evaluate.records import trial_seconds as trial_seconds
@@ -84,6 +84,8 @@ class Run:
         with self.step("native build" if build else "native images", log="native-build" if build else None):
             if not tasks or len(set(tasks)) != len(tasks):
                 raise ValueError("Select each native task once")
+            for task in tasks:
+                public_sources(task)
             root = workspace_root()
             cache = root / "reports/native-image-build.json"
             self.check("before-native-images")
