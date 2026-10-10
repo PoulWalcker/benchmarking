@@ -45,7 +45,8 @@ def terminal_size(stream: TextIO) -> tuple[int, int]:
         size = os.get_terminal_size(stream.fileno())
     except AttributeError, OSError, ValueError:
         return 80, 24
-    return size.columns, size.lines
+    # A pseudo-terminal without a configured size reports 0x0.
+    return size.columns or 80, size.lines or 24
 
 
 class Tracker:

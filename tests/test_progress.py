@@ -238,6 +238,15 @@ class TerminalModeTests(unittest.TestCase):
         self.assertIn("  ✓ 20 earlier stages done", frame)
         self.assertTrue(frame[-1].startswith("  · ") and frame[-1].endswith("pending"))
 
+    def test_a_terminal_reporting_zero_size_falls_back_to_a_usable_width(self):
+        stream = Terminal()
+        stream.fileno = lambda: 2  # A pseudo-terminal can report 0x0, e.g. under script(1)
+        with patch("sapi_config_lab.coordinate.progress.os.get_terminal_size", return_value=os.terminal_size((0, 0))):
+            self.assertEqual(progress.terminal_size(stream), (80, 24))
+            tracker = Tracker("sapi-lab harbor", ["local tests"], stream=stream, clock=FakeClock())
+            tracker.start("local tests")
+        self.assertEqual(screen(stream.getvalue())[1], "  ⠋ local tests  0m00s")
+
     def test_dumb_terminal_and_redirected_stderr_use_plain_lines(self):
         with patch.dict(os.environ, {"TERM": "dumb"}):
             dumb = Tracker("sapi-lab check", ["unittest"], stream=Terminal())
