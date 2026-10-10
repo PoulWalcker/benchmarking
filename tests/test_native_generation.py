@@ -56,6 +56,8 @@ class NativeGenerationTests(unittest.TestCase):
                 calls = []
 
                 def controls(argv, log, *, output=output, fault=fault, sources=sources, images=images, **kwargs):
+                    self.assertEqual(kwargs["stage"], "controls")
+                    self.assertIsNone(kwargs["timeout"])
                     control = output / "control"
                     control.mkdir()
                     write_json(control / "source-manifest.json", {} if fault == "source" else sources)

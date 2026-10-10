@@ -213,6 +213,10 @@ replay receipt; native execution and acceptance stay null.
 
 ## Reading a run
 
+Logged subprocesses report start, elapsed time, the absolute log path, the last readable
+log line, and seconds without new output to stderr every 15 seconds; they also report
+exit or timeout there. Their stdout and stderr remain in the named run log.
+
 Harbor owns `reports/<run>/jobs/<job>/<trial>/`. Research `report.json` adds identity,
 ledger and selection facts plus compact references, including partial trials. Use
 `evaluate.records.load_trials(job)` for current native files, or

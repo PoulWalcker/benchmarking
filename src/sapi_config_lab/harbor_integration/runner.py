@@ -2,9 +2,8 @@
 
 from collections.abc import Sequence
 from pathlib import Path
-import subprocess
 
-from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.execute.host import run_logged
 
 AUTHOR_AGENT = "sapi_config_lab.harbor_integration.yaml_agent:WrapperYamlAgent"
 REPLAY_AGENT = "sapi_config_lab.harbor_integration.yaml_agent:ReplayYamlAgent"
@@ -75,5 +74,4 @@ def run_job(
     )
     jobs.mkdir(parents=True, exist_ok=True)
     (jobs / job_name).mkdir()
-    with log.open("w") as stream:
-        return subprocess.run(args, cwd=workspace_root(), stdout=stream, stderr=subprocess.STDOUT).returncode
+    return run_logged(args, log, stage=job_name, timeout=None)

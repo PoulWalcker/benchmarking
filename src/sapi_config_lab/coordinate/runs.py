@@ -23,6 +23,7 @@ from sapi_config_lab.execute.host import (
     checked_harbor,
     image_id,
     pin_base_image,
+    run_logged,
     running_containers,
 )
 from sapi_config_lab.harbor_integration.runner import UPLOAD_ONLY_AGENTS, job_args, run_job
@@ -64,14 +65,10 @@ class Run:
         cache = root / "reports/native-image-build.json"
         self.check("before-native-images")
         if build:
-            with (self.output / "native-build.log").open("w") as log:
-                subprocess.run(
-                    ["sh", str(root / "infra/native/build.sh")],
-                    cwd=root,
-                    stdout=log,
-                    stderr=subprocess.STDOUT,
-                    check=True,
-                )
+            argv = ["sh", str(root / "infra/native/build.sh")]
+            code = run_logged(argv, self.output / "native-build.log", stage="native build", timeout=None)
+            if code:
+                raise subprocess.CalledProcessError(code, argv)
             self.check("after-native-build")
             all_tasks = tuple(sorted(path.parent for path in (root / "tasks").glob("*/task.toml")))
             built = {tag: image_id(tag) for tag in image_tags(all_tasks)}
@@ -177,8 +174,7 @@ class Run:
         self.report.setdefault("commands", []).append(argv)
         reference: dict[str, Any] = {"path": "jobs/transport", "status": "dispatched"}
         self.report.setdefault("harbor_jobs", {})["transport"] = reference
-        with (self.output / "transport.log").open("w") as stream:
-            code = subprocess.run(argv, cwd=workspace_root(), stdout=stream, stderr=subprocess.STDOUT).returncode
+        code = run_logged(argv, self.output / "transport.log", stage="transport", timeout=None)
         reference.update(status="finished", exit_code=code)
         self.check("after transport")
         return code

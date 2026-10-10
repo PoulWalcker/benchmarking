@@ -98,6 +98,7 @@ def main(argv: list[str] | None = None) -> int:
         exit_code = run_logged(
             [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v", "-p", "test_*.py"],
             run.output / "local-tests.log",
+            stage="local tests",
             timeout=LOCAL_TESTS_SECONDS,
         )
         check("local_tests", exit_code == 0, exit_code=exit_code)

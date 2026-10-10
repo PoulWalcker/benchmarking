@@ -7,8 +7,10 @@ from dataclasses import dataclass, fields
 from importlib.metadata import PackageNotFoundError, version
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
+import time
 from typing import Any
 
 from sapi_config_lab.execute.n8n import PINNED_N8N_VERSION
@@ -16,6 +18,8 @@ from sapi_config_lab.paths import workspace_root
 
 HARBOR_VERSION = "0.21.0"
 LAB_IMAGE = f"sapi-config-lab-n8n:{PINNED_N8N_VERSION}"
+HEARTBEAT_SECONDS = 15
+ANSI_CSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 
 @dataclass(frozen=True)
@@ -66,13 +70,70 @@ def checked_harbor() -> tuple[list[str], str]:
     return harbor, reported
 
 
-def run_logged(command: Sequence[str], log: Path, *, timeout: float | None) -> int:
-    """Run from the checkout with stdout and stderr in one log; return the exit code."""
+def last_log_line(log: Path) -> str:
+    """Read one bounded, printable progress line from a subprocess log."""
+    try:
+        with log.open("rb") as stream:
+            stream.seek(0, os.SEEK_END)
+            stream.seek(max(0, stream.tell() - 8192))
+            tail = stream.read()
+    except OSError:
+        return "(no output yet)"
+    segments = re.split(r"[\r\n]", ANSI_CSI.sub("", tail.decode("utf-8", errors="replace")))
+    line = next((segment.strip() for segment in reversed(segments) if segment.strip()), "(no output yet)")
+    return line[:159] + "…" if len(line) > 160 else line
+
+
+def run_logged(
+    command: Sequence[str], log: Path, *, stage: str, timeout: float | None, heartbeat: float = HEARTBEAT_SECONDS
+) -> int:
+    """Run from the checkout with logged output and stderr progress; return the exit code."""
+    argv = list(command)
+    start = time.monotonic()
+    previous_size = 0
+    last_growth = start
+    log_path = log.resolve()
+    print(f"[{stage}] started · log {log_path}", file=sys.stderr, flush=True)
     with log.open("w") as stream:
-        completed = subprocess.run(
-            list(command), cwd=workspace_root(), stdout=stream, stderr=subprocess.STDOUT, timeout=timeout
-        )
-    return completed.returncode
+        process = subprocess.Popen(argv, cwd=workspace_root(), stdout=stream, stderr=subprocess.STDOUT)
+        try:
+            next_heartbeat = start + heartbeat
+            while True:
+                now = time.monotonic()
+                deadline = start + timeout if timeout is not None else float("inf")
+                wait_for = max(0, min(next_heartbeat, deadline) - now)
+                try:
+                    code = process.wait(timeout=wait_for)
+                except subprocess.TimeoutExpired:
+                    now = time.monotonic()
+                    elapsed = int(now - start)
+                    duration = f"{elapsed // 60}m{elapsed % 60:02d}s"
+                    if now >= deadline:
+                        assert timeout is not None
+                        print(f"[{stage}] timed out after {duration}; outcome unknown", file=sys.stderr, flush=True)
+                        raise subprocess.TimeoutExpired(argv, timeout) from None
+                    try:
+                        size = log.stat().st_size
+                    except OSError:
+                        size = 0
+                    if size > previous_size:
+                        last_growth = now
+                    previous_size = size
+                    quiet = f" · quiet {int(now - last_growth)}s" if size == 0 or now > last_growth else ""
+                    print(
+                        f"[{stage}] {duration} · log {log_path} · last: {last_log_line(log)}{quiet}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    next_heartbeat += heartbeat
+                    continue
+                elapsed = int(time.monotonic() - start)
+                print(f"[{stage}] exit {code} after {elapsed // 60}m{elapsed % 60:02d}s", file=sys.stderr, flush=True)
+                return code
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait()
 
 
 def image_id(image: str) -> str:

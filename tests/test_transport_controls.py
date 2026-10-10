@@ -1,13 +1,14 @@
 """Redirect rejection at real clients and narrowly scoped hosted nop exceptions."""
 
+import contextlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import io
 import json
 import os
 from pathlib import Path
 import shutil
 import tempfile
 import threading
-from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError
@@ -32,6 +33,26 @@ def control_passed(agent, trial):
 
 
 class NativeTransportTaskTests(unittest.TestCase):
+    def test_local_tests_pass_the_stage_and_existing_timeout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "run"
+
+            def experiment(path, report, body, **kwargs):
+                report["status"] = "failed"
+                run = type("LocalRun", (), {"output": path})()
+                with contextlib.suppress(RuntimeError):
+                    body(run)
+
+            with (
+                patch("sapi_config_lab.coordinate.controls.run_experiment", side_effect=experiment),
+                patch("sapi_config_lab.coordinate.controls.subprocess.check_output", return_value="27.0\n"),
+                patch("sapi_config_lab.coordinate.controls.run_logged", return_value=1) as dispatch,
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                self.assertEqual(controls.main(["--report-dir", str(output), "--scenario", "invoice-total"]), 1)
+            self.assertEqual(dispatch.call_args.args[1], output / "local-tests.log")
+            self.assertEqual(dispatch.call_args.kwargs, {"stage": "local tests", "timeout": 300})
+
     def test_independent_fixture_compiles_without_the_global_catalog(self):
         from sapi_config_lab.contracts import CompileOptions
         from sapi_config_lab.coordinate.backend import N8nBackend
@@ -53,9 +74,11 @@ class NativeTransportTaskTests(unittest.TestCase):
                 output = Path(directory)
                 run = Run(output, {}, source_manifest(), "transport-test", harbor_argv=["harbor"])
 
-                def dispatch(argv, *, output=output, skip_build=skip_build, **kwargs):
+                def dispatch(argv, log, *, output=output, skip_build=skip_build, **kwargs):
                     self.assertEqual(argv[:2], ["harbor", "run"])
-                    self.assertNotIn("timeout", kwargs)
+                    self.assertIsNone(kwargs["timeout"])
+                    self.assertEqual(kwargs["stage"], "transport")
+                    self.assertEqual(log, output / "transport.log")
                     self.assertIn("--no-delete", argv)
                     self.assertEqual("--force-build" in argv, not skip_build)
                     trial = output / "jobs/transport/native"
@@ -65,10 +88,11 @@ class NativeTransportTaskTests(unittest.TestCase):
                     (trial / "result.json").write_text(
                         json.dumps({"exception_info": None, "verifier_result": {"rewards": {"reward": 1.0}}})
                     )
-                    return SimpleNamespace(returncode=0)
+                    log.write_text("Harbor started\n")
+                    return 0
 
                 with (
-                    patch.object(controls.subprocess, "run", side_effect=dispatch),
+                    patch("sapi_config_lab.coordinate.runs.run_logged", side_effect=dispatch),
                     patch("sapi_config_lab.coordinate.runs.image_id", return_value="sha256:control-image"),
                     patch("sapi_config_lab.coordinate.runs.pin_base_image", return_value="frozen-control-image"),
                 ):
@@ -85,7 +109,7 @@ class NativeTransportTaskTests(unittest.TestCase):
     def test_missing_native_terminal_result_fails_closed(self):
         with tempfile.TemporaryDirectory() as directory:
             run = Run(Path(directory), {}, source_manifest(), "transport-test", harbor_argv=["harbor"])
-            with patch.object(controls.subprocess, "run", return_value=SimpleNamespace(returncode=0)):
+            with patch("sapi_config_lab.coordinate.runs.run_logged", return_value=0):
                 self.assertFalse(controls.transport_probe(run)["passed"])
 
 

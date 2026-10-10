@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -90,6 +91,16 @@ class NativeExperimentTests(unittest.TestCase):
             self.cache.write_text(json.dumps(record))
             with self.subTest(record=record), self.assertRaises(ValueError):
                 self.run.use_native_tasks((self.task,))
+
+    def test_native_build_keeps_called_process_error_and_stage(self):
+        with patch("sapi_config_lab.coordinate.runs.run_logged", return_value=7) as dispatch:
+            with self.assertRaises(subprocess.CalledProcessError) as raised:
+                self.run.use_native_tasks((self.task,), build=True)
+        argv = ["sh", str(self.root / "infra/native/build.sh")]
+        self.assertEqual(raised.exception.cmd, argv)
+        self.assertEqual(raised.exception.returncode, 7)
+        self.assertEqual(dispatch.call_args.args, (argv, self.output / "native-build.log"))
+        self.assertEqual(dispatch.call_args.kwargs, {"stage": "native build", "timeout": None})
 
     def test_missing_quality_is_not_a_measured_zero_for_world_nop(self):
         trial = {

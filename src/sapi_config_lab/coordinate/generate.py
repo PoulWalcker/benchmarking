@@ -168,6 +168,7 @@ def main(argv: list[str] | None = None) -> int:
             [sys.executable, "-m", "sapi_config_lab.coordinate.controls", "--report-dir", str(run.output / "control")]
             + [arg for scenario in scenarios for arg in ("--scenario", scenario)],
             run.output / "control.log",
+            stage="controls",
             timeout=None,
         )
         if control or json.loads((run.output / "control/report.json").read_text()).get("status") != "passed":
