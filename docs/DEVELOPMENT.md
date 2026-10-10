@@ -227,10 +227,16 @@ a failure verdict or release of reserved calls.
 
 For a single Ctrl+C after the run directory and `Run` exist, `report.json` is written
 with `status = "interrupted"` and the innermost `interrupted_stage` when inside a step.
-The interrupt propagates; the direct logged child is killed and reaped, and in-flight
-reservations stay unknown. A report is not guaranteed for a second interrupt during
+The interrupt propagates through cleanup to the CLI, which exits with code 130 without
+a traceback; the direct logged child is killed and reaped, and in-flight reservations
+stay unknown. A report is not guaranteed for a second interrupt during
 `close()`, or an interrupt before the run directory exists. There is no signal handler,
 retry or shielding of cleanup.
+
+Docker readiness is checked before container inventory, Harbor or run work. The report's
+`docker` field records `server_version` and `context`; controls also retain `docker_version`.
+Preflight failures name a missing CLI, unreachable daemon/context or response timeout.
+A missing local image names its tag and instructs rebuilding without `--skip-build`.
 
 Harbor owns `reports/<run>/jobs/<job>/<trial>/`. Research `report.json` adds identity,
 ledger and selection facts plus compact references, including partial trials. Use

@@ -25,6 +25,7 @@ class FakeHost:
         self.ran = []
         listing = iter(containers)
         patches = {
+            "docker_preflight": lambda: {"server_version": "29.4.0", "context": "test"},
             "running_containers": lambda: next(listing) + "\n",
             "checked_harbor": lambda: (["harbor"], "0.21.0"),
             "image_id": lambda tag: "sha256:fixed",
@@ -47,6 +48,35 @@ class RunTests(unittest.TestCase):
 
     def saved(self):
         return json.loads((self.output / "report.json").read_text())
+
+    def test_docker_preflight_failure_stops_setup_and_records_original_cause(self):
+        for cause in (
+            "docker CLI not found on PATH",
+            "Docker daemon not reachable (context dead): Cannot connect",
+            "Docker daemon did not answer within 20s (context slow)",
+        ):
+            with self.subTest(cause=cause):
+                FakeHost(self)
+                body = Mock()
+                error = RuntimeError(cause)
+                with (
+                    patch("sapi_config_lab.coordinate.runs.docker_preflight", side_effect=error),
+                    patch("sapi_config_lab.coordinate.runs.running_containers") as containers,
+                    patch("sapi_config_lab.coordinate.runs.checked_harbor") as harbor,
+                    patch("sapi_config_lab.coordinate.runs.progress", wraps=progress),
+                    contextlib.redirect_stderr(io.StringIO()) as stderr,
+                ):
+                    report = run_experiment(self.root / str(len(cause)), {}, body, prefix="t")
+                self.assertEqual(report["status"], "failed")
+                self.assertEqual(report["failure_stage"], "docker preflight")
+                self.assertEqual(report["error"], "RuntimeError: " + cause)
+                self.assertIsNone(report["log"])
+                self.assertEqual(report["logs"], {})
+                self.assertNotIn("timeout_unknown_outcome", report.values())
+                self.assertIn("failed at docker preflight: " + cause, stderr.getvalue())
+                containers.assert_not_called()
+                harbor.assert_not_called()
+                body.assert_not_called()
 
     def test_a_setup_failure_still_writes_a_failed_report(self):
         FakeHost(self)

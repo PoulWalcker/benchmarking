@@ -207,3 +207,5 @@ def main(argv: list[str] | None = None, *, backend: WorkflowBackend | None = Non
     except (Invalid, Unsupported, ValueError) as error:
         print(json.dumps({"error": {"type": type(error).__name__, "message": str(error)}}), file=sys.stderr)
         return 2
+    except KeyboardInterrupt:
+        return 130

@@ -8,7 +8,6 @@ from datetime import UTC, datetime
 import json
 from pathlib import Path
 import shutil
-import subprocess
 import sys
 from typing import Any
 
@@ -91,9 +90,7 @@ def main(argv: list[str] | None = None) -> int:
             raise RuntimeError(f"Control check failed: {name}")
 
     def body(run: Run) -> None:
-        report["docker_version"] = subprocess.check_output(
-            ["docker", "version", "--format", "{{.Server.Version}}"], text=True
-        ).strip()
+        report["docker_version"] = report["docker"]["server_version"]
         progress(f"local tests; report directory {run.output}")
         with run.step("local tests", log="local-tests"):
             exit_code = run_logged(

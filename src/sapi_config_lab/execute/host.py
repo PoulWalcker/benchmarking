@@ -159,9 +159,50 @@ def run_logged(
                 process.wait()
 
 
+def docker_preflight(timeout: float = 20) -> dict[str, str]:
+    """Check Docker readiness before dispatching any experiment work."""
+    context = "unknown"
+    try:
+        context = (
+            subprocess.check_output(
+                ["docker", "context", "show"], text=True, stderr=subprocess.PIPE, timeout=timeout
+            ).strip()
+            or context
+        )
+    except FileNotFoundError as error:
+        raise RuntimeError("docker CLI not found on PATH") from error
+    except subprocess.CalledProcessError, subprocess.TimeoutExpired:
+        pass
+    try:
+        result = subprocess.run(
+            ["docker", "version", "--format", "{{.Server.Version}}"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=timeout,
+        )
+    except FileNotFoundError as error:
+        raise RuntimeError("docker CLI not found on PATH") from error
+    except subprocess.CalledProcessError as error:
+        cause = error.stderr.splitlines()[0] if error.stderr else str(error)
+        raise RuntimeError(f"Docker daemon not reachable (context {context}): {cause}") from error
+    except subprocess.TimeoutExpired as error:
+        raise RuntimeError(f"Docker daemon did not answer within {timeout:g}s (context {context})") from error
+    return {"server_version": result.stdout.strip(), "context": context}
+
+
 def image_id(image: str) -> str:
     """The content identity behind a tag. Evidence pins this, never the tag."""
-    return subprocess.check_output(["docker", "image", "inspect", image, "--format", "{{.Id}}"], text=True).strip()
+    try:
+        return subprocess.check_output(
+            ["docker", "image", "inspect", image, "--format", "{{.Id}}"], text=True, stderr=subprocess.PIPE
+        ).strip()
+    except subprocess.CalledProcessError as error:
+        diagnostic = (error.stderr or "").lower()
+        if any(f"no such {kind}: {image.lower()}" in diagnostic for kind in ("image", "object")):
+            raise RuntimeError(f"Docker image {image} is missing; rebuild without --skip-build") from error
+        sys.stderr.write(error.stderr or "")
+        raise
 
 
 def pin_base_image(identity: str, prefix: str) -> str:

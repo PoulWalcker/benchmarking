@@ -45,7 +45,10 @@ class NativeTransportTaskTests(unittest.TestCase):
             with (
                 patch("sapi_config_lab.coordinate.runs.running_containers", return_value=""),
                 patch("sapi_config_lab.coordinate.runs.checked_harbor", return_value=(["harbor"], "0.21.0")),
-                patch("sapi_config_lab.coordinate.controls.subprocess.check_output", return_value="27.0\n"),
+                patch(
+                    "sapi_config_lab.coordinate.runs.docker_preflight",
+                    return_value={"server_version": "27.0", "context": "test"},
+                ),
                 patch("sapi_config_lab.coordinate.controls.run_logged", side_effect=local_tests) as dispatch,
                 contextlib.redirect_stdout(io.StringIO()),
                 contextlib.redirect_stderr(io.StringIO()) as stderr,
@@ -54,6 +57,8 @@ class NativeTransportTaskTests(unittest.TestCase):
             self.assertEqual(dispatch.call_args.args[1], output.resolve() / "local-tests.log")
             self.assertEqual(dispatch.call_args.kwargs, {"stage": "local tests", "timeout": 300})
             report = json.loads((output / "report.json").read_text())
+            self.assertEqual(report["docker"], {"server_version": "27.0", "context": "test"})
+            self.assertEqual(report["docker_version"], "27.0")
             self.assertEqual(report["failure_stage"], "local tests")
             self.assertEqual(report["log"], "local-tests.log")
             self.assertEqual(report["log_tail"], ["local test reason"])
@@ -66,7 +71,10 @@ class NativeTransportTaskTests(unittest.TestCase):
             with (
                 patch("sapi_config_lab.coordinate.runs.running_containers", return_value=""),
                 patch("sapi_config_lab.coordinate.runs.checked_harbor", return_value=(["harbor"], "0.21.0")),
-                patch("sapi_config_lab.coordinate.controls.subprocess.check_output", return_value="27.0\n"),
+                patch(
+                    "sapi_config_lab.coordinate.runs.docker_preflight",
+                    return_value={"server_version": "27.0", "context": "test"},
+                ),
                 patch("sapi_config_lab.coordinate.controls.run_logged", return_value=0),
                 patch("sapi_config_lab.coordinate.controls.invoke", side_effect=error),
                 patch("sapi_config_lab.coordinate.runs.run_job") as dispatch,
@@ -115,7 +123,10 @@ class NativeTransportTaskTests(unittest.TestCase):
                 with (
                     patch("sapi_config_lab.coordinate.runs.running_containers", return_value=""),
                     patch("sapi_config_lab.coordinate.runs.checked_harbor", return_value=(["harbor"], "0.21.0")),
-                    patch("sapi_config_lab.coordinate.controls.subprocess.check_output", return_value="27.0\n"),
+                    patch(
+                        "sapi_config_lab.coordinate.runs.docker_preflight",
+                        return_value={"server_version": "27.0", "context": "test"},
+                    ),
                     patch("sapi_config_lab.coordinate.controls.run_logged", return_value=0),
                     patch("sapi_config_lab.coordinate.controls.invoke", return_value={}),
                     patch(

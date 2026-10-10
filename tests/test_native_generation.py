@@ -51,6 +51,10 @@ class NativeGenerationTests(unittest.TestCase):
                 patch("sapi_config_lab.coordinate.native_tasks.resource_root", return_value=root),
                 patch("sapi_config_lab.coordinate.runs.running_containers", return_value=""),
                 patch("sapi_config_lab.coordinate.runs.checked_harbor", return_value=(["harbor"], "0.21.0")),
+                patch(
+                    "sapi_config_lab.coordinate.runs.docker_preflight",
+                    return_value={"server_version": "27.0", "context": "test"},
+                ),
                 contextlib.redirect_stderr(io.StringIO()) as stderr,
             ):
                 report = run_experiment(
@@ -86,6 +90,10 @@ class NativeGenerationTests(unittest.TestCase):
                 with (
                     patch("sapi_config_lab.coordinate.runs.running_containers", return_value=""),
                     patch("sapi_config_lab.coordinate.runs.checked_harbor", return_value=(["harbor"], "0.21.0")),
+                    patch(
+                        "sapi_config_lab.coordinate.runs.docker_preflight",
+                        return_value={"server_version": "27.0", "context": "test"},
+                    ),
                     patch("sapi_config_lab.coordinate.generate.run_logged", side_effect=controls),
                     patch("sapi_config_lab.coordinate.runs.run_job") as harbor,
                     contextlib.redirect_stderr(stderr),
@@ -214,6 +222,10 @@ class NativeGenerationTests(unittest.TestCase):
                     patch("sapi_config_lab.coordinate.runs.workspace_root", return_value=root),
                     patch("sapi_config_lab.coordinate.runs.running_containers", return_value=""),
                     patch("sapi_config_lab.coordinate.runs.checked_harbor", return_value=(["harbor"], "0.21.0")),
+                    patch(
+                        "sapi_config_lab.coordinate.runs.docker_preflight",
+                        return_value={"server_version": "27.0", "context": "test"},
+                    ),
                     patch("sapi_config_lab.coordinate.runs.image_id", side_effect=images.__getitem__),
                     patch.object(Run, "use_image", return_value="sha256:transport"),
                     patch.object(Run, "check", check),

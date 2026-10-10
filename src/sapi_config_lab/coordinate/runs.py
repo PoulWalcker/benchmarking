@@ -21,6 +21,7 @@ from sapi_config_lab.execute.agency import start_bridge, stop_bridge
 from sapi_config_lab.execute.host import (
     HostConfig,
     checked_harbor,
+    docker_preflight,
     image_id,
     log_tail,
     pin_base_image,
@@ -283,6 +284,8 @@ def run_experiment(
     report["source_manifest"] = "source-manifest.json"
     run = Run(output, report, sources, prefix, host or HostConfig.from_environment())
     try:
+        with run.step("docker preflight"):
+            report["docker"] = docker_preflight()
         (output / "existing-containers.txt").write_text(running_containers())
         run.harbor_argv, report["harbor_version"] = checked_harbor()
         body(run)
