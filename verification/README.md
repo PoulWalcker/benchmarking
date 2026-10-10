@@ -25,6 +25,8 @@ provide business rules and expected values. These files provide reusable indepen
 | `refinement.py` | generic native history checks with independent callbacks |
 | `rubric.py`, `rubric_facts.py` | optional quality beside acceptance, using an explicit card |
 
+`n8n_provenance.executed_live_operations` binds executed live calls from native Restore envelopes when Result is absent, using the same per-call proof as complete traces; `failed_nodes` exposes native errors for host attribution without changing verifier acceptance.
+
 Acceptance requires independent obligations and native provenance. Evaluation never
 reruns a workflow or rewrites evidence. Quality remains separate; unavailable scores
 stay null. Current occurrence acceptance requires the submitted graph. Historical

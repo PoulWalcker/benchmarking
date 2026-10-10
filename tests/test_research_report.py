@@ -569,7 +569,41 @@ class ResearchLiveJudgeTests(unittest.TestCase):
         run.output, run.sources = output, {}
         run.use_image.return_value = "sha256:stub"
         run.bridge.return_value = contextlib.nullcontext(output / "audit.jsonl")
-        run.harbor.side_effect = [(0, [trial("stub")])] + [(0, [trial("live", record)]) for record in records.values()]
+        live_trials = [trial("live", record) for record in records.values()]
+        if fault == "candidate-rejected":
+            live_trials[0]["result"] = {"execution": False, "acceptance": False, "quality": None}
+            live_trials[0]["exception"] = {"exception_type": "RewardFileNotFoundError"}
+        run.harbor.side_effect = [(0, [trial("stub")])] + [(0, [row]) for row in live_trials]
+
+        def collected(trials, *_args, **_kwargs):
+            rejected = trials[0]["result"]["acceptance"] is False
+            record = {
+                "status": "error",
+                "persisted_status": "error",
+                "result_node_present": False,
+                "mapping": {"combine": "combine"},
+                "run_data": {
+                    "combine": [
+                        {
+                            "startTime": 20,
+                            "error": {
+                                "name": "WrappedExecutionError",
+                                "message": "Unavailable reference: steps.marketing [line 30]",
+                            },
+                        }
+                    ]
+                },
+            }
+            return [
+                {
+                    "trace": "incomplete" if rejected else "complete",
+                    "calls": [],
+                    "record": record,
+                    "graph": {"nodes": [{"name": "combine", "type": "n8n-nodes-base.code"}]},
+                    "failed_node": [{"node": "combine"}] if rejected else [],
+                }
+            ]
+
         selection = {
             ROOT.name: {
                 "path": ROOT / "solution/config.yaml",
@@ -586,6 +620,8 @@ class ResearchLiveJudgeTests(unittest.TestCase):
 
         def judged(recorded, derived, judgement, **options):
             result = real(recorded, derived, judgement, **options)
+            if fault == "changed-acceptance":
+                result["acceptance"] = False
             receipts = derived / "judge"
             if fault == "no-receipt":
                 shutil.rmtree(receipts)
@@ -607,8 +643,11 @@ class ResearchLiveJudgeTests(unittest.TestCase):
                 "sapi_config_lab.coordinate.live.validate_control",
                 return_value={"oracle": {"trials": [{"task_name": ROOT.name}]}},
             ),
-            patch("sapi_config_lab.coordinate.live.collect_native", return_value=[]),
-            patch("sapi_config_lab.coordinate.live.reconcile_dispatches", return_value=[{}] * 3),
+            patch("sapi_config_lab.coordinate.live.collect_native", side_effect=collected),
+            patch(
+                "sapi_config_lab.coordinate.live.reconcile_dispatches",
+                return_value=[{}] * (1 if fault == "candidate-rejected" else 3),
+            ),
             patch("sapi_config_lab.coordinate.native_evaluation.reevaluate_native", side_effect=judged),
             contextlib.redirect_stderr(io.StringIO()),
             contextlib.redirect_stdout(io.StringIO()),
@@ -713,3 +752,27 @@ class ResearchLiveJudgeTests(unittest.TestCase):
                 self.assertEqual(
                     [(e["phase"], e["status"]) for e in events], [("runtime", "passed"), ("judge", "failed")]
                 )
+
+    def test_rejected_case_below_runtime_minimum_has_null_quality_and_no_judge_event(self):
+        run, output = self.live(self.judge_arguments(), "candidate-rejected")
+        self.assertEqual(run.exit_code, 0)
+        self.assertEqual(self.wrapper.prompts, [])
+        events = json.loads((output / "ledger.json").read_text())["events"]
+        self.assertEqual(
+            [(event["phase"], event["count"], event["status"]) for event in events], [("runtime", 3, "passed")]
+        )
+        self.assertEqual(len(run.report["correlation"]), 1)
+        self.assertEqual(run.report["case_outcomes"], {"research-report/orion-clinics": "rejected"})
+        trial = run.report["trials"][0]
+        self.assertIsNone(trial["result"]["quality"])
+        self.assertIsNone(trial["exception"])
+        self.assertEqual(trial["native_exception"], {"exception_type": "RewardFileNotFoundError"})
+        self.assertFalse((output / "jobs/live/trial/verifier/paid-evaluation").exists())
+
+    def test_judge_cannot_substitute_a_rejection_for_the_runtime_accepted_verdict(self):
+        with self.assertRaises(SystemExit):
+            self.live(self.judge_arguments(), "changed-acceptance")
+        events = json.loads((self.root / "run/ledger.json").read_text())["events"]
+        self.assertEqual(
+            [(event["phase"], event["status"]) for event in events], [("runtime", "passed"), ("judge", "failed")]
+        )

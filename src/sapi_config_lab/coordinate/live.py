@@ -17,7 +17,7 @@ from typing import Any
 
 from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, NOT_EVALUATED, trial_accepted, validate_result
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
-from sapi_config_lab.coordinate.live_evidence import collect_native, reconcile_dispatches
+from sapi_config_lab.coordinate.live_evidence import attribute_incomplete, collect_native, reconcile_dispatches
 from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
 from sapi_config_lab.coordinate.progress import add_stages, detail, stage
 from sapi_config_lab.coordinate.provenance import source_manifest
@@ -129,7 +129,20 @@ def check_trials(
             else:
                 require((trial["result"]["quality"] or {}).get("status") == "complete", "Hosted evaluation is unscored")
             continue
-        require(trial_accepted(trial), "Harbor or independent acceptance failed")
+        if mode == "live":
+            validate_result(trial["result"])
+            require(type(trial["result"]["acceptance"]) is bool, "Missing independent live verdict")
+            exception = trial["exception"] or {}
+            require(
+                not exception
+                or (
+                    policy(benchmarks[scenario]).get("judge_calls")
+                    and exception.get("exception_type") == "RewardFileNotFoundError"
+                ),
+                "Harbor or independent acceptance failed",
+            )
+        else:
+            require(trial_accepted(trial), "Harbor or independent acceptance failed")
         verifier = Path(trial["result_path"]).parent / "verifier"
         require(
             identity.get("submission_sha256")
@@ -143,7 +156,8 @@ def check_trials(
             require(bool(cases), "Missing independent case observations")
         else:
             require(
-                acceptance.get("cases") and all(row.get("passed") is True for row in acceptance["cases"]),
+                acceptance.get("cases")
+                and (mode == "live" or all(row.get("passed") is True for row in acceptance["cases"])),
                 "Missing independent case acceptance",
             )
             cases = [row["name"] for row in acceptance["cases"]]
@@ -176,11 +190,16 @@ def audit_records(path: Path) -> list[dict]:
     return records
 
 
-def failure_category(trials: list[dict], audit: list[dict], default: str) -> str:
+def failure_category(trials: list[dict], audit: list[dict], default: str, case_outcomes: dict | None = None) -> str:
     failed = next((row for row in audit if row.get("event") == "failure"), None)
     if failed:
         return failed["category"]
     for trial in trials:
+        outcome = (case_outcomes or {}).get(trial.get("live_case"))
+        if outcome in {"accepted", "rejected"}:
+            continue
+        if outcome == "unverified":
+            return "unverified_live_outcome"
         if trial.get("exception") or not trial.get("acceptance"):
             return "harbor_environment"
         for row in trial["acceptance"].get("cases", []):
@@ -250,7 +269,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--bridge-port", type=int, default=host.bridge_port, help="(SAPI_BRIDGE_PORT)")
     parser.add_argument("--series-dir", type=Path, help="Reserve in a ledger shared with other runs")
     parser.add_argument("--series-ceiling", action="append", help="PHASE=N, fixed when a series ledger is created")
-    parser.add_argument("--stop-after-failure", action="store_true", help="A failed case blocks later reservations")
+    parser.add_argument(
+        "--stop-after-failure", action="store_true", help="A failed or unknown reservation blocks later ones"
+    )
     parser.add_argument("--judge-model", help="Judge model for hosted evaluators that call one")
     parser.add_argument("--judge-upstream", help="Fixture Judge wrapper URL; never the runtime wrapper")
     parser.add_argument("--judge-wrapper-evidence", type=Path, help="The inspected Judge wrapper identity record")
@@ -291,6 +312,9 @@ def main(argv: list[str] | None = None) -> int:
         "not_run": [],
         "correlation": [],
         "audit": [],
+        "case_outcomes": {},
+        "case_attribution": {},
+        "acceptance_counts": {"accepted": 0, "rejected": 0},
         "limitations": [
             "Call and time caps are enforced; currency cost and provider-internal retries remain unknown.",
             "The wrapper is trusted; its tool restrictions are cooperative, not a sandbox.",
@@ -507,26 +531,93 @@ def main(argv: list[str] | None = None) -> int:
                         or (judge_calls.get(scenario) and exception.get("exception_type") == "RewardFileNotFoundError"),
                         "Live Harbor case failed",
                     )
-                    native = collect_native(
-                        trials, submissions, {scenario: {name}}, bridge_url, benchmarks, judge_model=args.judge_model
-                    )
-                    correlation = reconcile_dispatches(
-                        native,
-                        records,
-                        budget["model"],
-                        bindings=benchmarks[scenario] / "bindings.yaml",
-                    )
-                    calls, cap = len(correlation), grant["max_attempts"]
-                    require(grant["minimum_attempts"] <= calls <= cap, "Unexpected call count")
-                    report["correlation"].extend(correlation)
-                    run.check(f"before-judge-{scenario}-{name}")
-                    if not judge_calls.get(scenario):
+                    world = policy(benchmarks[scenario]).get("admission") == "compile"
+                    case_key = f"{scenario}/{name}"
+                    trial["live_case"] = case_key
+                    if not world:
                         check_trials(
                             trials, submissions, benchmarks=benchmarks, mode="live", expected_cases={scenario: {name}}
                         )
+                    attribution = {"trace": None, "reason": "native_integrity_failed", "node": None}
+                    try:
+                        native = collect_native(
+                            trials,
+                            submissions,
+                            {scenario: {name}},
+                            bridge_url,
+                            benchmarks,
+                            judge_model=args.judge_model,
+                        )
+                        if not world:
+                            require(len(native) == 1, "Missing native live case")
+                            case = native[0]
+                            attribution.update(
+                                trace=case["trace"],
+                                reason="dispatch_reconciliation_failed",
+                                node=case["failed_node"][0]["node"] if len(case["failed_node"]) == 1 else None,
+                            )
+                        calls_native = [call for case in native for call in case["calls"]]
+                        correlation = reconcile_dispatches(
+                            calls_native,
+                            records,
+                            budget["model"],
+                            bindings=benchmarks[scenario] / "bindings.yaml",
+                        )
+                        complete = world or native[0]["trace"] == "complete"
+                        calls, cap = len(correlation), grant["max_attempts"]
+                        require((grant["minimum_attempts"] if complete else 0) <= calls <= cap, "Unexpected call count")
+                    except (ValueError, AssertionError, OSError, KeyError, TypeError) as error:
+                        if world:
+                            raise
+                        report["case_outcomes"][case_key] = "infrastructure"
+                        report["case_attribution"][case_key] = attribution
+                        progress(f"{step}: stopped: infrastructure ({attribution['reason']})")
+                        raise ValueError(f"Live case stopped: infrastructure ({attribution['reason']})") from error
+                    report["correlation"].extend(correlation)
+                    outcome = None
+                    if not world:
+                        case = native[0]
+                        if complete:
+                            outcome = "accepted" if trial["result"]["acceptance"] else "rejected"
+                            reason = "reconciled_complete_trace"
+                        else:
+                            from sapi_config_lab.compile.n8n import RESOURCES
+
+                            outcome, reason = attribute_incomplete(
+                                {**case["record"], "acceptance": trial["result"]["acceptance"]},
+                                case["graph"],
+                                (
+                                    (RESOURCES / "runtime-fragment.js").read_text(),
+                                    (benchmarks[scenario] / "operations.js").read_text(),
+                                ),
+                            )
+                        report["case_outcomes"][case_key] = outcome
+                        report["case_attribution"][case_key] = {
+                            "trace": case["trace"],
+                            "reason": reason,
+                            "node": case["failed_node"][0]["node"] if len(case["failed_node"]) == 1 else None,
+                        }
+                        if outcome in {"infrastructure", "unverified"}:
+                            progress(f"{step}: stopped: {outcome} ({reason})")
+                            raise ValueError(f"Live case stopped: {outcome} ({reason})")
+                        report["acceptance_counts"][outcome] += 1
+                    run.check(f"before-judge-{scenario}-{name}")
+                    if not judge_calls.get(scenario) or outcome == "rejected":
+                        if world:
+                            check_trials(
+                                trials,
+                                submissions,
+                                benchmarks=benchmarks,
+                                mode="live",
+                                expected_cases={scenario: {name}},
+                            )
                         run.check(f"after-{scenario}-{name}")
                     runtime_outcome.passed = True
-                if judge_calls.get(scenario):
+                if outcome == "rejected" and judge_calls.get(scenario):
+                    trial["native_exception"] = trial["exception"]
+                    if exception.get("exception_type") == "RewardFileNotFoundError":
+                        trial["exception"] = None
+                if judge_calls.get(scenario) and outcome != "rejected":
                     from sapi_config_lab.coordinate import fixture_judge
                     from sapi_config_lab.coordinate.native_evaluation import reevaluate_native
 
@@ -575,6 +666,8 @@ def main(argv: list[str] | None = None) -> int:
                         trial["verdict_path"] = str(result_file)
                         trial["acceptance"] = json.loads(report_file.read_text()) if report_file.exists() else None
                         trial["evaluation_path"] = str(report_file)
+                        if not world:
+                            require(result["acceptance"] is True, "Judge changed independent acceptance")
                         require(
                             (result["quality"] or {}).get("status") == "complete",
                             "Judge dispatch incomplete: quality is not complete",
@@ -602,7 +695,10 @@ def main(argv: list[str] | None = None) -> int:
                         run.check(f"after-{scenario}-{name}")
                         judge_outcome.passed = True
                 report["not_run"].remove(f"{scenario}/{name}")
-                progress(f"{step}: passed ({round(time.monotonic() - started)}s)")
+                progress(f"{step}: {outcome or 'passed'} ({round(time.monotonic() - started)}s)")
+        if report["case_outcomes"]:
+            counts = report["acceptance_counts"]
+            progress(f"live: {counts['accepted']} accepted, {counts['rejected']} rejected of {len(grants)} cases")
         report["counts"] = {
             event: sum(row.get("event") == event for row in report["audit"])
             for event in ("dispatch_attempt", "completion", "failure")
@@ -611,7 +707,10 @@ def main(argv: list[str] | None = None) -> int:
 
     def classify(error: Exception) -> str:
         return failure_category(
-            report["trials"] + report.get("preflight", {}).get("trials", []), report["audit"], "live_gate"
+            report["trials"] + report.get("preflight", {}).get("trials", []),
+            report["audit"],
+            "live_gate",
+            report["case_outcomes"],
         )
 
     try:

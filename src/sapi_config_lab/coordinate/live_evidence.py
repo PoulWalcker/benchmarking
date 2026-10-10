@@ -4,12 +4,60 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
+import re
 
 from sapi_config_lab.contracts import CompileOptions
 from sapi_config_lab.coordinate.replay import read_json, require
 from sapi_config_lab.evidence import digest, sha256
 from sapi_config_lab.execute.agency import MAX_BODY, build_prompt
 from sapi_config_lab.profile import read_bindings
+
+
+def attribute_incomplete(record: dict, graph: dict, sources: tuple[str, str]) -> tuple[str, str]:
+    """Attribute a reconciled fixture trace using the runtime fragment and task source."""
+    from verification.n8n_provenance import failed_nodes
+
+    if record.get("status") in {"engine_error", "import_error", "compile_error"}:
+        return "infrastructure", record["status"]
+    if not record.get("run_data") or not record.get("persisted_status"):
+        return "infrastructure", "missing_execution_data"
+    errors = failed_nodes(record)
+    for error in errors:
+        node = error["node"]
+        if error["name"] == "NodeApiError":
+            return "infrastructure", "node_api_error"
+        if node in {"Demo start", "Fixture"} or node.startswith(("Guard ", "Agency ")) or node.endswith(" [LLM LIVE]"):
+            return "infrastructure", "infrastructure_node_error"
+    if (
+        record.get("status") != "error"
+        or record.get("persisted_status") != "error"
+        or record.get("result_node_present") is not False
+    ):
+        return "unverified", "incomplete_execution"
+    if record.get("acceptance") is not False:
+        return "unverified", "incomplete_accepted_verdict"
+    if len(errors) != 1:
+        return "unverified", "ambiguous_node_errors"
+    error = errors[0]
+    times = [row.get("startTime") for records in record["run_data"].values() for row in records]
+    if not all(type(value) in (int, float) for value in times) or error["startTime"] != max(times):
+        return "unverified", "error_not_last_execution"
+    node = error["node"]
+    candidates = set(record.get("mapping", {})) | {"Join final", "Result"}
+    candidates |= {prefix + sid for sid in record.get("mapping", {}) for prefix in ("Prepare ", "Join ")}
+    code = any(row["name"] == node and row["type"] == "n8n-nodes-base.code" for row in graph["nodes"])
+    message = re.sub(r" \[line \d+\]$", "", error.get("message") or "")
+    if message == "Workflow deadline exceeded":
+        return "unverified", "deadline"
+    trusted = False
+    for index, source in enumerate(sources):
+        for match in re.finditer(r"""(['"])((?:\\.|(?!\1)[^\\])*)\1(\s*\+)?""", source):
+            # Only the leading runtime check message is a prefix; path and output fragments are not errors.
+            prefix = index == 0 and match[3] and source[: match.start()].rstrip().endswith(",")
+            trusted |= message == match[2] or bool(prefix and message.startswith(match[2]))
+    if node in candidates and code and error["name"] == "WrappedExecutionError" and trusted:
+        return "rejected", "trusted_deterministic_check"
+    return "unverified", "untrusted_node_error"
 
 
 def reconcile_dispatches(native: list[dict], audit: list[dict], model: str, *, bindings: Path) -> list[dict]:
@@ -120,7 +168,7 @@ def collect_native(
     *,
     judge_model: str | None = None,
 ) -> list[dict]:
-    """Re-check native artifacts of live trials and return each observed model call."""
+    """Re-check native artifacts and return each case with its trace and bound calls."""
     from verification import n8n_provenance as provenance
     from verification import verify as verification
 
@@ -134,7 +182,7 @@ def collect_native(
         benchmark = benchmarks[scenario]
         from sapi_config_lab.coordinate.backend import N8nBackend
         from sapi_config_lab.coordinate.native_evaluation import validate_record
-        from sapi_config_lab.coordinate.native_tasks import invoke
+        from sapi_config_lab.coordinate.native_tasks import invoke, policy
         from sapi_config_lab.coordinate.provenance import source_manifest
 
         options = {"mode": "live", "judge_model": judge_model, "selected_case": next(iter(cohorts[scenario]))}
@@ -176,8 +224,24 @@ def collect_native(
                 and compiled.mapping == run["mapping"],
                 "Saved graph differs from selected compiler sources",
             )
-            calls = provenance.live_operations(run, graph)
-            native.extend({"scenario": scenario, "case": name, **call} for call in calls)
+            complete = run.get("status") == "success" and run.get("result_node_present") is True
+            calls = (
+                provenance.live_operations(run, graph)
+                if complete or policy(benchmark).get("admission") == "compile"
+                else provenance.executed_live_operations(run, graph)
+            )
+            native.append(
+                {
+                    "scenario": scenario,
+                    "case": name,
+                    "trace": "complete" if complete else "incomplete",
+                    "calls": [{"scenario": scenario, "case": name, **call} for call in calls],
+                    "status": run.get("status"),
+                    "failed_node": provenance.failed_nodes(run),
+                    "record": run,
+                    "graph": graph,
+                }
+            )
     expected = {(scenario, name) for scenario in {t["task_name"] for t in trials} for name in cohorts[scenario]}
     require(observed == expected, "Missing required live case")
     return native

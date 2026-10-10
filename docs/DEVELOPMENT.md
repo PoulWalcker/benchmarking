@@ -160,6 +160,35 @@ bind operation and occurrence, and evidence/audit reconciliation checks the exac
 compiled graph, cases and request/completion/response identities. Runtime reservation
 closes before judging; a host reservation is forwarded without double accounting.
 
+Live fixture cases have four evidence-based outcomes. `accepted` and `rejected`
+are measurements: both close the runtime reservation `passed` and continue the
+cohort. A rejection needs either a fully reconciled complete trace, or a single
+last `WrappedExecutionError` in a candidate Code node whose message is a trusted
+deterministic-check literal (or runtime fragment prefix), with every executed live
+call reconciled. Early rejections may make fewer calls than the planned minimum;
+the cap still binds. A rejected judged fixture case spends no Judge calls and
+keeps quality null.
+
+`infrastructure` records engine, transport, bridge or evidence-chain faults;
+`unverified` records failures whose attribution cannot be proven. Both stop the
+cohort and close the reservation `failed`. Deadline expiry, untrusted runtime
+errors such as `TypeError`, cancellations and multiple errors remain unverified
+and stop later spending: this is the residual live measurement limitation. An
+unknown dispatch outcome takes precedence and keeps its reservation unknown.
+Identity, submission, case-set, Harbor and missing/null verdict guards remain
+fatal; stub preflight still requires acceptance. `--stop-after-failure` blocks
+later reservations after a failed or unknown reservation, including in a shared
+series, and does not latch on a measured rejection.
+
+In `sapi-lab-live/v3`, `case_outcomes` records these four values,
+`case_attribution` records each trace kind, reason and errored node (null when
+unavailable or ambiguous), and `acceptance_counts` counts accepted and rejected
+cases only. Exit 0 and `status: passed` mean every planned case was measured;
+they do not mean every case was accepted. Stopping unverified cases use
+`failure_category: unverified_live_outcome`. Stderr names each outcome and reports
+`live: <accepted> accepted, <rejected> rejected of <planned> cases`; stdout retains
+the status and report path.
+
 A task whose plan freezes `judge_mode: wrapper` (Research Report) is judged by the
 host fixture Judge. It needs `--judge-upstream URL --judge-wrapper-evidence
 <judge-identity.json>`, plus `--judge-wrapper-file NAME=PATH` for relocated files.
