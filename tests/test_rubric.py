@@ -4,9 +4,11 @@ import ast
 import asyncio
 from decimal import ROUND_HALF_UP, Decimal
 import inspect
+import json
 import math
 import unittest
 
+from sapi_config_lab.coordinate.native_tasks import select_tasks
 from sapi_config_lab.paths import workspace_root
 from tests.support.checkout_evaluation import SCORING as checkout_scoring
 from tests.support.invoice import card as invoice_card
@@ -24,9 +26,19 @@ from verification.rubric import (
 
 ANCHORS = {"yes": "a", "maybe": "b", "no": "c"}
 
-CARDED = {"invoice-total"}
-# The scenarios that ship a card file today.
-CARDS = {path.parent.parent.name for path in (workspace_root() / "tasks").glob("*/evaluation/rubric.json")}
+
+def scenario_cards():
+    root = workspace_root() / "tasks"
+    return tuple(
+        task.name
+        for task in select_tasks(root, sorted(path.parent.name for path in root.glob("*/task.toml")))
+        if (task / "evaluation/rubric.json").exists()
+    )
+
+
+def scenario_card(scenario):
+    document = json.loads((workspace_root() / "tasks" / scenario / "evaluation/rubric.json").read_text())
+    return RubricCard(**{**document, "criteria": tuple(Criterion(**item) for item in document["criteria"])})
 
 
 # The criteria of the 2026-10-05 checkout recovery run as the upstream judge scored them (9.33/10).
@@ -271,11 +283,13 @@ class RewardInvariantTests(unittest.TestCase):
                 self.assertTrue(document["score_0_10"] is None or 0.0 <= document["score_0_10"] <= 10.0)
 
     def test_binary_cards_keep_the_existing_pass_fail_behaviour(self):
-        for scenario in ("invoice-total",):
-            card = invoice_card()
+        for scenario in scenario_cards():
+            card = scenario_card(scenario)
+            if card.needs_judge:
+                continue
             self.assertFalse(card.needs_judge)
-            accepted = score(card, RunFacts(execution_pass=True, checks={"accepted": True}))
-            rejected = score(card, RunFacts(execution_pass=True, checks={"accepted": False}))
+            accepted = score(card, RunFacts(True, {criterion.check_id: True for criterion in card.criteria}))
+            rejected = score(card, RunFacts(True, {criterion.check_id: False for criterion in card.criteria}))
             with self.subTest(scenario=scenario):
                 self.assertEqual((accepted["score_0_10"], accepted["normalized_reward"]), (10.0, 1.0))
                 self.assertEqual((rejected["score_0_10"], rejected["normalized_reward"]), (0.0, 0.0))
@@ -490,13 +504,14 @@ class ImmutabilityTests(unittest.TestCase):
     def test_a_card_is_read_from_scenario_data_and_cannot_be_altered_in_process(self):
         # A card held in a mutable registry could be swapped for every later run; one read from
         # the scenario's rubric.json into a frozen dataclass cannot.
-        card = invoice_card()
-        with self.assertRaises(AttributeError):
-            card.id = "evil"  # type: ignore[misc]
-        with self.assertRaises(TypeError):
-            card.answer_values["yes"] = 0.0  # type: ignore[index]
-        self.assertEqual(invoice_card().digest(), card.digest())
-        self.assertEqual(CARDS, CARDED)
+        for scenario in scenario_cards():
+            with self.subTest(scenario=scenario):
+                card = scenario_card(scenario)
+                with self.assertRaises(AttributeError):
+                    card.id = "evil"  # type: ignore[misc]
+                with self.assertRaises(TypeError):
+                    card.answer_values["yes"] = 0.0  # type: ignore[index]
+                self.assertEqual(scenario_card(scenario).digest(), card.digest())
 
 
 class CardRewriteTests(unittest.TestCase):
@@ -863,6 +878,7 @@ class UnscoredTests(unittest.TestCase):
             ("differs from the dispatched judge", ForgedJudge({"model": "gpt-6-astra"})),
             ("differs from the card prompt version", ForgedJudge({"prompt_version": "0.9"})),
             ("answered a different run", ForgedJudge({"run_digest": "another-run"})),
+            ("answered a different run", ForgedJudge({}, dropped=("run_digest",))),
             ("attribution is incomplete", ForgedJudge({}, dropped=("response_digest",))),
         ]
         for fault, judge in faults:
@@ -997,13 +1013,12 @@ class ArithmeticTests(unittest.TestCase):
             },
         )
         self.assertEqual(sum(criterion.weight for criterion in SAMPLE_CARD.criteria), 10)
-        self.assertEqual(set(CARDS), CARDED)
 
     def test_every_card_weighs_ten_with_a_deterministic_majority(self):
         """Ten points per card, and no card leaves the majority to a judge."""
-        for scenario in sorted(CARDS):
-            card = invoice_card()
+        for scenario in scenario_cards():
             with self.subTest(scenario=scenario):
+                card = scenario_card(scenario)
                 self.assertEqual(card.id, scenario)
                 total = sum(criterion.weight for criterion in card.criteria)
                 determined = sum(
@@ -1011,8 +1026,19 @@ class ArithmeticTests(unittest.TestCase):
                 )
                 self.assertEqual(total, 10)
                 self.assertGreaterEqual(determined, total - determined)
-                self.assertEqual(card.version, "1.0.0")
                 self.assertEqual(card.origin, "local")
+                facts = RunFacts(
+                    False,
+                    {
+                        criterion.check_id: False
+                        for criterion in card.criteria
+                        if criterion.evaluator == "deterministic"
+                    },
+                    prose={source: "" for criterion in card.criteria for source in criterion.required_evidence},
+                )
+                judge = RecordedJudge({})
+                self.assertEqual(score(card, facts, judge)["status"], "unscored")
+                self.assertFalse(judge.requests)
 
     def test_the_digest_covers_every_field_the_document_prints_beside_it(self):
         # The document prints `origin` next to the digest and the attribution

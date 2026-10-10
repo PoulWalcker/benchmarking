@@ -1,7 +1,6 @@
 """Native Harbor dispatch preserves phase limits and durable partial jobs."""
 
 from pathlib import Path
-import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -56,8 +55,7 @@ class NativeHarborRunnerTests(unittest.TestCase):
     def test_dispatch_preserves_native_phase_limits_and_resources_without_outer_timeout(self):
         task = self.task()
         original = (task / "task.toml").read_bytes()
-        with patch("sapi_config_lab.harbor_integration.runner.subprocess.run") as dispatch:
-            dispatch.return_value.returncode = 7
+        with patch("sapi_config_lab.harbor_integration.runner.run_logged", return_value=7) as dispatch:
             self.assertEqual(
                 self.run_job(task, agent_key="model=test", attempts="2", verifier_env=["SAPI_MODE=control"]), 7
             )
@@ -88,9 +86,9 @@ class NativeHarborRunnerTests(unittest.TestCase):
                 "--force-build",
             ],
         )
-        self.assertNotIn("timeout", dispatch.call_args.kwargs)
-        self.assertEqual(dispatch.call_args.kwargs["stderr"], subprocess.STDOUT)
-        self.assertEqual(dispatch.call_args.kwargs["stdout"].name, str(self.log))
+        self.assertIsNone(dispatch.call_args.kwargs["timeout"])
+        self.assertEqual(dispatch.call_args.kwargs["stage"], "control")
+        self.assertEqual(dispatch.call_args.args[1], self.log)
         self.assertEqual((task / "task.toml").read_bytes(), original)
         config = validate_config(original.decode())
         self.assertEqual(config.agent.timeout_sec, 17)
@@ -125,7 +123,7 @@ class NativeHarborRunnerTests(unittest.TestCase):
     def test_all_selected_tasks_are_validated_before_dispatch(self):
         self.task("a-valid")
         self.task("z-invalid", TASK.replace("[environment]\n", "[environment]\ngpus = 1\n"))
-        with patch("sapi_config_lab.harbor_integration.runner.subprocess.run") as dispatch:
+        with patch("sapi_config_lab.harbor_integration.runner.run_logged") as dispatch:
             with self.assertRaises(ValueError):
                 self.run_job()
         dispatch.assert_not_called()
@@ -138,7 +136,7 @@ class NativeHarborRunnerTests(unittest.TestCase):
         evidence = job / "partial.json"
         evidence.write_text('{"execution": null}')
         self.log.write_text("previous dispatch\n")
-        with patch("sapi_config_lab.harbor_integration.runner.subprocess.run") as dispatch:
+        with patch("sapi_config_lab.harbor_integration.runner.run_logged") as dispatch:
             with self.assertRaises(ValueError):
                 self.run_job()
         dispatch.assert_not_called()
@@ -149,15 +147,17 @@ class NativeHarborRunnerTests(unittest.TestCase):
         self.task()
         evidence = self.jobs / "control/example__partial/verifier/world/001.json"
 
-        def interrupted(command, **options):
+        def interrupted(command, log, **options):
             self.assertEqual(Path(command[command.index("--jobs-dir") + 1]), self.jobs)
-            self.assertNotIn("timeout", options)
+            self.assertIsNone(options["timeout"])
+            self.assertEqual(options["stage"], "control")
+            self.assertEqual(log, self.log)
             evidence.parent.mkdir(parents=True)
             evidence.write_text('{"state": "reserved"}')
-            options["stdout"].write("Harbor started\n")
+            log.write_text("Harbor started\n")
             raise KeyboardInterrupt
 
-        with patch("sapi_config_lab.harbor_integration.runner.subprocess.run", side_effect=interrupted) as dispatch:
+        with patch("sapi_config_lab.harbor_integration.runner.run_logged", side_effect=interrupted) as dispatch:
             with self.assertRaises(KeyboardInterrupt):
                 self.run_job()
             with self.assertRaises(ValueError):

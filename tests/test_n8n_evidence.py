@@ -17,6 +17,19 @@ class PersistedEvidenceTests(unittest.TestCase):
 
 
 class NativeLiveEvidenceTests(unittest.TestCase):
+    def test_executed_calls_bind_without_result_and_reject_an_unrestored_call(self):
+        from verification.contracts import Rejected
+        from verification.n8n_provenance import executed_live_operations
+
+        run = self.live_record()
+        final = run["run_data"].pop("Result")[0]["data"]["main"][0][0]["json"]
+        restore = run["run_data"]["classify [LLM LIVE]"][0]["data"]["main"][0][0]["json"]
+        restore["workflow_ref"] = final["workflow_ref"]
+        self.assertEqual(executed_live_operations(run, None)[0]["request"]["operation"], "ticket.classify")
+        run["run_data"].pop("classify [LLM LIVE]")
+        with self.assertRaises(Rejected):
+            executed_live_operations(run, None)
+
     def live_record(self):
         request = {
             "invocation_id": "ticket-routing/r1/classify/wf/1",

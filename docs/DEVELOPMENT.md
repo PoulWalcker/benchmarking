@@ -21,10 +21,15 @@ uv run --locked sapi-lab check
 ```
 
 `check` runs unit tests, lint, formatting, types and direct/sdist wheel installation
-checks. It uses no Docker or models. `run.sh` additionally builds source-identified
+checks. It uses no Docker or models. Each check's output goes to
+`reports/<UTC>-check-<id>/<check>.log`; a failed check prints its exit code, log, last 40
+lines and an inspection command, and later checks still run. `run.sh` additionally builds source-identified
 native images, runs transport controls and submits direct Harbor oracle/nop trials.
 Invoice is the sole default when scenarios are omitted. `--skip-build` requires an
-existing build record matching every current source and selected image ID.
+existing build record matching every current source and selected image ID. Controls
+build the shared bases and only the selected tasks' public/verifier images; the build
+record contains exactly those task tags. Selecting an unrecorded task requires rebuilding
+without `--skip-build`.
 
 Freeze all source-manifest files, including documentation, before guarded controls.
 Write progress only under `reports/` until the run finalizes. Oracle acceptance and
@@ -89,14 +94,17 @@ does not bundle task resources.
 
 ```bash
 uv run --locked sh infra/native/build.sh
+uv run --locked sh infra/native/build.sh invoice-total research-report
 uv run --locked harbor run -p tasks/invoice-total -a oracle --max-retries 0 --force-build
 uv run --locked harbor run -p tasks/checkout-recovery -a oracle --max-retries 0 --force-build
 ```
 
-The build script creates images only. Harbor receives canonical task directories,
+The build script creates images only. Names select task images; omitting names builds
+all discovered tasks. Both paths build the runtime and shared public/core bases.
+Harbor receives canonical task directories,
 without generation or materialization. Rebuild after changing sources: Harbor's
 `--force-build` rebuilds task layers, not their local base images. Research CLI
-controls record all base-image identities and the full source manifest.
+controls record selected task-image identities and the full source manifest.
 
 Checkout native modes are explicit: `control` uses stub execution for zero-model
 workflows and fake runtime transport for model steps; `admission` compiles only;
@@ -105,6 +113,11 @@ The calibration adapter records its provenance separately from measured quality.
 
 ## Generation and fixed selection
 
+```bash
+./run-generation.sh --wrapper-evidence <identity.json> \
+  [--wrapper-file NAME=PATH] --attempts 3
+```
+
 `./run-generation.sh` gives the model the task, unchanged generation contracts and
 catalog once per attempt. There is no repair or feedback. `--catalog scenario` is
 a separately hash-pinned invoice arm containing reference-used operations; full is
@@ -112,11 +125,45 @@ the default and checkout has no reduced arm. `tests/test_native_generation.py` a
 `tests/test_packaging.py` pin exact prompt bytes. Editing prompt material changes
 the experiment.
 
+`generate` requires `--wrapper-evidence`; the script forwards this flag unchanged.
+Before controls and again before each authoring reservation, the inspection must
+match `--upstream`, `SAPI_WRAPPER_MODEL` and every inspected file hash.
+Repeatable `--wrapper-file NAME=PATH` relocates inspected files as in live.
+The inspection is copied to `wrapper-identity.json` and pinned; the generation
+report records `wrapper_identity` and `wrapper_files_relocated`.
+
 The wrapper's JSON and bounded answer are validated before upload; exact answer
-bytes are preserved. Recognized tool markers in stderr reject an attempt. This is
-an audit, not a sandbox disabling the wrapper's CLI tools. Raw stderr is not saved.
+bytes are preserved. The reported model must equal the required `expected_model`;
+`generation.json` records both, with `model_identity_unverified` for a missing or
+invalid model line and `model_identity_mismatch` for a different model. These
+refusals upload nothing and close the reserved call as failed. Recognized tool
+markers in stderr reject an attempt. This is an audit, not a sandbox disabling
+the wrapper's CLI tools. Raw stderr is not saved.
+The agent durably records `model_outcome: unknown` immediately before dispatch,
+then writes its final outcome and `duration_seconds`. Only a final `settled` record
+(a complete `ok:true` response with integer `exit_code:0`) or `not_dispatched` record
+allows the existing trial gate to close the reservation. Missing or corrupt agent
+evidence stays unknown unless a single finalized Harbor `result.json` has
+`finished_at` and explicit `agent_execution: null`. Cancellation leaves the call
+unknown because the transport thread may still be running. Remaining attempts stop
+without retry or replay after an unknown.
+
+The model identity is the wrapper CLI's self-report bound to byte-identical
+inspected wrapper files, not a provider receipt.
 Invoice generation executes independent fixture evaluation. Checkout generation
 only admits compilation/call cap/deadline; its verdict facts remain null.
+
+Generation reports `submitted_trials` for uploaded answers, `admitted_trials` for
+passed compile-only admission (not evaluated), and `accepted_trials` for submitted
+answers independently accepted by a valid normalized verdict bound to the same native
+submission, without a Harbor exception. Per-row `accepted` is true or false only with
+that evidence and null otherwise; quality stays a separate fact. Submitted rows without
+trustworthy acceptance evidence show `submitted (not evaluated)`. Malformed verdict
+files still fail closed in the trial reader. The retained `passed`/`passed_trials` and
+`status` describe the unpaid stub gate (admission or the existing acceptance gate),
+which selection and the authoring ledger use; they are not benchmark performance or
+independent acceptance metrics. Report, stdout and summary counts agree even when a
+run stops after partial trials.
 
 ```bash
 uv run --locked sapi-lab select --source-report <generation>/report.json \
@@ -124,6 +171,8 @@ uv run --locked sapi-lab select --source-report <generation>/report.json \
 ```
 
 Selection chooses the first-started attempt, never the first passing replacement.
+It requires a bound authoring identity and matching reported and expected models;
+older generation reports without that identity cannot be selected.
 It rejects tied ordering, contradictory/missing current normalized verdicts and
 changed YAML, prompt, generation, native or case bytes. Loading the selection
 recomputes the choice from the frozen source report. Upload-only replay calls no
@@ -139,16 +188,63 @@ uv run --locked sapi-lab live --stub-report <control>/report.json \
 
 Before paid work, controls must match current sources and all selected image IDs.
 Fixture replay or world compilation admission must pass. `--preflight-only` stops
-before runtime/judge dispatch. Total runtime plus judge cost is checked before any
-reservation. Every call is durably reserved before dispatch; an unknown outcome
+before runtime/judge dispatch. Each admitted case adds its runtime grant and its task's
+judge cost (one Research case: 3+1=4); a larger total than `--max-calls` refuses before
+any reservation. `report.json` `budget` lists exactly the per-case allocation the ledger
+reserves. Every call is durably reserved before dispatch; an unknown outcome
 is never released. `--series-dir` and fixed `--series-ceiling PHASE=N` share budgets
-across runs. Failed and unknown outcomes remain distinguishable.
+across runs. Failed and unknown outcomes remain distinguishable. Positive non-dispatch or
+settlement evidence is required to close runtime and authoring reservations;
+`ok:false`, non-zero/missing/non-integer exit codes, transport loss and incomplete
+receipts remain unknown. Even a refused connection is unknown once handed to the
+transport. A wrapper error therefore stops a shared series until a new series is
+started; the existing unknown reservation remains recorded and counted.
 
 The inspected wrapper identity binds model and source file hashes. `--wrapper-file
 NAME=PATH` relocates a named file without changing its required hash. Runtime grants
 bind operation and occurrence, and evidence/audit reconciliation checks the exact
 compiled graph, cases and request/completion/response identities. Runtime reservation
 closes before judging; a host reservation is forwarded without double accounting.
+Before classifying a live case, and on escaping exceptions, the audit must exist and
+parse, each attempt must have a terminal completion or failure, no call may remain
+unknown, and readable native Agency invocations must have matching audit responses.
+A settled content or reconciliation failure can close `failed`; absence of a response
+never proves failure.
+
+Live fixture cases have four evidence-based outcomes. `accepted` and `rejected`
+are measurements: both close the runtime reservation `passed` and continue the
+cohort. A rejection needs either a fully reconciled complete trace, or a single
+last `WrappedExecutionError` in a candidate Code node whose message is a trusted
+deterministic-check literal (or runtime fragment prefix), with every executed live
+call reconciled. Early rejections may make fewer calls than the planned minimum;
+the cap still binds. A rejected judged fixture case spends no Judge calls and
+keeps quality null.
+
+`infrastructure` records engine, transport, bridge or evidence-chain faults;
+`unverified` records failures whose attribution cannot be proven. Both stop the
+cohort and close the reservation `failed`. Deadline expiry, untrusted runtime
+errors such as `TypeError`, cancellations and multiple errors remain unverified
+and stop later spending: this is the residual live measurement limitation. An
+unknown dispatch outcome takes precedence and keeps its reservation unknown.
+Identity, submission, case-set, Harbor and missing/null verdict guards remain
+fatal; stub preflight still requires acceptance. `--stop-after-failure` blocks
+later reservations after a failed or unknown reservation, including in a shared
+series, and does not latch on a measured rejection.
+
+In `sapi-lab-live/v3`, `case_outcomes` records these four values,
+`case_attribution` records each trace kind, reason and errored node (null when
+unavailable or ambiguous), and `acceptance_counts` counts accepted and rejected
+cases only. Exit 0 and `status: passed` mean every planned case was measured;
+they do not mean every case was accepted. Stopping unverified cases use
+`failure_category: unverified_live_outcome`. Stderr names each outcome and reports
+`live: <accepted> accepted, <rejected> rejected of <planned> cases`; stdout retains
+the status and report path.
+
+A task whose plan freezes `judge_mode: wrapper` (Research Report) is judged by the
+host fixture Judge. It needs `--judge-upstream URL --judge-wrapper-evidence
+<judge-identity.json>`, plus `--judge-wrapper-file NAME=PATH` for relocated files.
+Before any reservation, the Judge model must differ from the runtime model, the
+endpoint from the runtime wrapper, and the separate inspection must bind both.
 
 ## Current offline evaluation
 
@@ -156,6 +252,9 @@ closes before judging; a host reservation is forwarded without double accounting
 uv run --locked sapi-lab evaluate --record <trial>/verifier --output <new-directory>
 uv run --locked sapi-lab evaluate --record <trial>/verifier --output <new-directory> \
   --judgement <saved-reply.json>
+uv run --locked sapi-lab evaluate --record <trial>/verifier --output <new-directory> \
+  --dispatch-judge --judge-model <model> --judge-upstream <url> \
+  --judge-wrapper-evidence <judge-identity.json> [--judge-wrapper-file NAME=PATH]
 ```
 
 The current task evaluator reads frozen evidence; it never starts n8n or a world.
@@ -166,6 +265,14 @@ judge reply with matching contract/run identity. Fresh judging requires explicit
 --judge-model MODEL`. Shared-series options preserve existing source-bound budgets.
 An actual judge timeout leaves the reservation unknown and blocks retry.
 
+Eligibility is the task's `judge_calls` policy plus its explicit composition. A Judge
+endpoint is refused by a task that composes no fixture Judge. `--judge-model` must
+equal a frozen native Judge identity; for an identity-free record it names the Judge
+in derived evidence only, never by runtime-model fallback. `--judgement <bundle>`
+replays a fixture bundle offline under the identity it was answered by. With any
+requested judging, the command exits nonzero unless acceptance holds and quality is
+complete; a failed or unknown Judge still prints the recorded acceptance.
+
 Original Harbor result/reward and execution evidence stay untouched. Derived judged
 results live beside them and remain explicitly associated with the trial. Source
 mismatch refuses before evaluation; use the exact recorded source revision when
@@ -173,7 +280,89 @@ reproducing a current native experiment. Archived snapshot execution is deferred
 Older or Phase 1 native records lacking complete identity remain readable, but
 cannot claim current guarded re-evaluation.
 
+## Research Judge calibration
+
+```bash
+echo '{"action": "calibrate", "record": "<trial>/verifier", "output": "<new-directory>",
+  "variant": "a-faithful", "judge_model": "<model>"}' \
+  | uv run --locked python tasks/research-report/experiment.py
+```
+
+Variants are the six IDs in `tasks/research-report/evaluation/calibration.json`. The
+base record must verify as one run of the frozen Orion source. Without `"judgement"` or
+`"dispatch": true` nothing is judged. A saved bundle replays offline and must match the
+exact variant bytes. A dispatch also takes `"judge": {"upstream", "inspection", "files"}`
+and reserves one Judge call in its own or a `"series_dir"` ledger (fixed by
+`"series_ceiling": ["judge=6"]`) that stops after any failed or unknown attempt.
+`calibration.json` in the output reports `simulated` for mocked replies, `measured` only
+for this call's own fresh dispatch and `replayed` for a saved wrapper reply. Its `judge`
+field names the origin, new invocation count and the fresh receipt and ledger event or the
+replay receipt; native execution and acceptance stay null.
+
 ## Reading a run
+
+`check`, `harbor`, `generate`, `live` and `evaluate --dispatch-judge` share one stderr
+progress display (`coordinate/progress.py`); stdout keeps only the machine-readable
+result, printed after the display finishes. Run commands show `setup`, their own stages
+and `finalizing`: for `harbor`, `local tests`, `task plans`, `transport`, `native images`,
+`oracle` and `nop`; for `generate`, `controls`, `native images`, `prompts` and one
+`authoring N/total` per attempt; for `live`, `preflight` and then one `case N/total` per
+admitted case. Each stage is pending, running, done, failed, unknown or interrupted.
+Counters count stages, never work, and there are no percentages or ETAs. The final line
+says passed, failed (naming failed stages, or "result not accepted" when every stage
+finished), outcome unknown, or interrupted, and lists stages that did not run. Offline
+`evaluate` shows nothing.
+
+On a terminal (stderr is a TTY and `TERM` is not `dumb`) the display redraws one compact
+frame in place: header with total elapsed time, ordered stages with one timer each, the
+running stage's job or reservation context and its logged subprocess's last output, quiet
+time and log path. The subprocess's own timer appears only when it started at least one
+heartbeat after its stage. It uses no colour and truncates live lines to the terminal
+width; durable messages print above it, and the final frame stays without a spinner on
+every outcome, including Ctrl+C. The final frame leads with command, status, elapsed time
+and completed stages, puts failed, unknown, interrupted and unrun stages on their own
+lines, and wraps rather than truncates them. Durations read `<1s`, `7s` or `1m52s`; paths
+inside the working directory are shown relative to it. Otherwise the
+display prints plain lines: `[<command>] N/total <stage> · <state>`, nested context,
+the logged subprocess lines below, and a heartbeat every 15 seconds only while a stage
+waits without a logged subprocess.
+
+Stages change only at orchestration boundaries the host owns. A Harbor job or other
+subprocess stays running until it returns; its heartbeat proves only that the parent is
+waiting, and its last output is a diagnostic, not a phase. `generate`'s control suite is a
+child whose stderr is `control.log`, so its stage lines appear only as the parent's last output.
+
+Logged subprocesses report start, elapsed time, the log path, the last readable
+log line, and seconds without new output every 15 seconds; they also report exit or
+timeout. Without a display these are stderr lines; on a terminal display they update the
+frame, and only a non-zero exit or timeout is printed. Their stdout and stderr remain in
+the named run log; inspect it with `tail -n 200 reports/<run>/<stem>.log`.
+
+Every run report includes a `logs` map from log stems to paths relative to the run
+directory. A failed step adds `failure_stage`, `log` (or null) and a bounded
+`log_tail`: at most 40 non-blank lines, 300 characters per line and 8 KiB total.
+The terminal names the stage, cause and log, shows the last 20 tail lines and gives
+an inspection command; Harbor failures also name the job directory. Actual timeouts
+keep `failure_category = "timeout_unknown_outcome"`; other runtime or authoring
+ambiguity uses `unknown_outcome`. Both print "outcome unknown … (not a failure
+verdict)" and finish the display as unknown, without closing or releasing reservations.
+`report.unknown_outcome` names phase, reservation and reason: `timeout`,
+`transport_error`, `incomplete_receipt`, `wrapper_unsettled`, `dispatch_unsettled`,
+`cancelled` or `evidence_unavailable`. Phase and reservation are null outside a
+reservation. The fixture Judge's existing process-loss timeout label is unchanged.
+
+For a single Ctrl+C after the run directory and `Run` exist, `report.json` is written
+with `status = "interrupted"` and the innermost `interrupted_stage` when inside a step.
+The interrupt propagates through cleanup to the CLI, which exits with code 130 without
+a traceback; the direct logged child is killed and reaped, and in-flight reservations
+stay unknown. A report is not guaranteed for a second interrupt during
+`close()`, or an interrupt before the run directory exists. There is no signal handler,
+retry or shielding of cleanup.
+
+Docker readiness is checked before container inventory, Harbor or run work. The report's
+`docker` field records `server_version` and `context`; controls also retain `docker_version`.
+Preflight failures name a missing CLI, unreachable daemon/context or response timeout.
+A missing local image names its tag and instructs rebuilding without `--skip-build`.
 
 Harbor owns `reports/<run>/jobs/<job>/<trial>/`. Research `report.json` adds identity,
 ledger and selection facts plus compact references, including partial trials. Use
@@ -200,16 +389,35 @@ only the executor's allowed environment plus the explicit run binding.
 2. Keep business planning/evaluation in that task. Fixed `tests/main.py` composes
    explicit callbacks; fixed `experiment.py` supplies prompt, plan and evaluate
    actions required by the research CLI. `metadata.sapi` contains policy only.
-3. Add explicit public/verifier image copies to `infra/native/Dockerfile` and the
-   build targets. Public images exclude private fixtures, source pins and references.
-   Declare verifier-only worlds in `tests/docker-compose.yaml`; an environment
-   Compose file is automatically merged by Harbor into the author environment.
+3. Add task-owned `images.Dockerfile` with `public` and `verifier` stages, and the
+   mandatory `images.Dockerfile.dockerignore` (copy an existing task's file). Use the
+   shared `sapi-native-public-base:phase1` and `sapi-native-core:phase1` bases. The
+   public stage may only COPY explicit `instruction.md` (required), `task.md`,
+   `bindings.yaml` and optional flat `public/<file>` sources to `/app/public/`.
+   Public filenames match `[A-Za-z0-9][A-Za-z0-9._-]*` without `..`; files and
+   destination basenames are unique. No directories, globs, symlinks, COPY flags,
+   JSON copies or other public instructions are allowed. The recipe starts with
+   the public FROM, has exactly these two stages, and ends with the verifier import
+   check. The verifier cannot inherit or copy from public. Ignore files require the
+   exact cache/secret exclusions of existing tasks and forbid negations.
+   `public_sources` enforces S1–S8 and I1–I4; `infra/native/build.sh` discovers recipes
+   and refuses invalid definitions before Docker. Each task build uses its own
+   directory as context. Declare verifier-only worlds in `tests/docker-compose.yaml`;
+   an environment Compose file is automatically merged by Harbor into the author
+   environment.
 4. Use the existing protected YAML transfer profile. Add meaningful independent
    evaluation and source/prompt identity tests, then run `check` and unpaid controls.
 
 There is no central task-name registry or generic hook manifest. Shared mechanisms
 need two real callers. Preserve independent verification: expected business values
 must not come from the runtime operations being tested.
+
+Shared tests discover `tasks/*/task.toml` and validate each task's evaluator, any
+rubric card, config, isolation and use of its own image tags. Selection remains
+invoice-only by default, and retired names remain refused. Required cards and exact
+rubric versions belong to task-specific tests. Discovery needs no identity pin;
+pins are added when an experiment is frozen. Existing prompt and byte pins remain
+exact.
 
 ## Retained and deferred scope
 

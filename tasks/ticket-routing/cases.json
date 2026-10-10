@@ -1,0 +1,30 @@
+{
+  "positive": [
+    {
+      "name": "high-priority",
+      "inputs": {"ticket": {"id": "T-101", "text": "My parcel is four days late", "days_overdue": 4}}
+    },
+    {
+      "name": "normal-priority",
+      "inputs": {"ticket": {"id": "T-102", "text": "My parcel is one day late", "days_overdue": 1}}
+    },
+    {
+      "name": "boundary-two-days",
+      "inputs": {"ticket": {"id": "T-103", "text": "My parcel is two days late", "days_overdue": 2}}
+    }
+  ],
+  "negative": [
+    {
+      "name": "negative-days",
+      "inputs": {"ticket": {"id": "T-104", "text": "Invalid record", "days_overdue": -1}},
+      "error": "Invalid overdue days",
+      "operation": "ticket.classify"
+    },
+    {
+      "name": "non-integer-days",
+      "inputs": {"ticket": {"id": "T-105", "text": "Invalid record", "days_overdue": 1.5}},
+      "error": "Invalid overdue days",
+      "operation": "ticket.classify"
+    }
+  ]
+}

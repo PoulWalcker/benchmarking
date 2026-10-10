@@ -1,0 +1,52 @@
+schema: sapi-bindings/v0
+target:
+  demo: n8n_json
+  code_node_version: 2
+  merge_node_version: 3.2
+  execution_order: v1
+operations:
+  ticket.classify:
+    kind: LLM
+    inputs: [ticket]
+    outputs: [category, priority]
+    implementation: agency_bridge
+    prompt: >-
+      Classify the provided delivery ticket. Priority is high if days_overdue > 2,
+      otherwise normal. Return category=delivery and priority=high|normal as JSON.
+      Do not invent ticket contents.
+    output_contract: "{category: delivery, priority: high|normal}"
+    input_schema:
+      type: object
+      properties:
+        ticket:
+          type: object
+          properties:
+            id: {type: string, minLength: 1}
+            text: {type: string}
+            days_overdue: {type: integer, minimum: 0}
+          required: [id, days_overdue]
+          additionalProperties: false
+      required: [ticket]
+      additionalProperties: false
+    output_schema:
+      type: object
+      properties:
+        category: {type: string, enum: [delivery]}
+        priority: {type: string, enum: [high, normal]}
+      required: [category, priority]
+      additionalProperties: false
+  ticket.escalation_draft:
+    kind: Script
+    inputs: [ticket]
+    outputs: [ticket_id, action, mode]
+    implementation: local_js
+  ticket.normal_draft:
+    kind: Script
+    inputs: [ticket]
+    outputs: [ticket_id, action, mode]
+    implementation: local_js
+  branch.select_one:
+    kind: Script
+    inputs: [escalated, normal]
+    outputs: [ticket_id, action, mode]
+    implementation: local_js

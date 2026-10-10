@@ -1,12 +1,14 @@
 """Contract tests; upstream is mocked, never invokes a model."""
 
 from functools import partial
+from http.client import HTTPException, IncompleteRead, RemoteDisconnected
 from io import BytesIO
 import json
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from urllib.error import HTTPError, URLError
 
 from sapi_config_lab.execute.agency import ContractError, DispatchAudit, check_schema, strict_json
 from sapi_config_lab.execute.agency import execute as agency_execute
@@ -16,6 +18,61 @@ execute = partial(agency_execute, transport=request_wrapper)
 
 
 class BridgeContractTests(unittest.TestCase):
+    def test_call_outcomes_require_positive_settlement_evidence(self):
+        cases = [
+            (TimeoutError(), "unknown", "timeout"),
+            (URLError(TimeoutError()), "unknown", "timeout"),
+            (ConnectionResetError(), "unknown", "transport_error"),
+            (ConnectionRefusedError(), "unknown", "transport_error"),
+            (RemoteDisconnected(), "unknown", "transport_error"),
+            (HTTPError("http://unused", 500, "error", {}, None), "unknown", "transport_error"),
+            (IncompleteRead(b"partial"), "unknown", "transport_error"),
+            (b"invalid", "unknown", "incomplete_receipt"),
+            (b"x" * 2_000_001, "unknown", "incomplete_receipt"),
+            (b"[]", "unknown", "incomplete_receipt"),
+        ]
+        cases.extend(
+            (json.dumps(wrapper).encode(), "unknown", "wrapper_unsettled")
+            for wrapper in (
+                {"ok": False, "exit_code": 1},
+                {"ok": True},
+                {"ok": True, "exit_code": 2},
+                {"ok": True, "exit_code": False},
+            )
+        )
+        cases.extend(
+            (json.dumps({"ok": True, "exit_code": 0, **wrapper}).encode(), "settled", None)
+            for wrapper in (
+                {"output": "{}"},
+                {"output": '{"priority":"high"}', "stderr": "model: wrong"},
+                {"output": '{"priority":"high"}', "stderr": "model: configured-model\nexec\nsecret"},
+            )
+        )
+        for response, outcome, reason in cases:
+            with (
+                self.subTest(outcome=outcome, reason=reason, response=str(response)[:80]),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                audit = DispatchAudit(
+                    Path(directory) / "audit.jsonl",
+                    {
+                        "max_attempts": 2,
+                        "operations": {"example.classify": 2},
+                        "model": "configured-model",
+                    },
+                )
+                with patch(
+                    "sapi_config_lab.harbor_integration.model_wrapper.urlopen",
+                    side_effect=response if isinstance(response, Exception) else None,
+                    return_value=BytesIO(response) if isinstance(response, bytes) else None,
+                ) as call:
+                    with self.assertRaises((ContractError, OSError, HTTPException)):
+                        execute(self.request, self.catalog, "http://unused", 1, audit=audit, reject_tool_use=True)
+                    self.assertEqual(call.call_count, 1)
+                row = audit.records()[-1]
+                self.assertEqual(row["model_outcome"], outcome)
+                self.assertEqual(row.get("outcome_reason"), reason)
+
     def setUp(self):
         self.catalog = {
             "example.classify": {

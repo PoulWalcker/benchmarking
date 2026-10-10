@@ -23,9 +23,4 @@ reviews/
 .env
 .env.*
 .DS_Store
-# Evaluator-only fixtures and evaluation data never enter an image a candidate runs in.
-tasks/*/cases.json
-tasks/*/evaluation/
-# Explicit trusted targets need fixtures; candidate targets never COPY these paths.
-!tasks/*/cases.json
-!tasks/*/evaluation/
+tasks/

@@ -19,7 +19,7 @@ from sapi_config_lab.coordinate.replay import load_selection, select_submission
 from sapi_config_lab.evidence import digest, sha256, write_json
 from sapi_config_lab.paths import workspace_root
 from sapi_config_lab.profile import read_bindings
-from tests.support.invoice import EVALUATOR, fixture
+from tests.support.invoice import EVALUATOR, card, fixture
 from tests.support.invoice import cases as invoice_cases
 from tests.support.native import SimulatedN8n
 from verification import verify
@@ -32,6 +32,11 @@ class InvoicePackageTests(unittest.TestCase):
     def setUp(self):
         self.options = {"mode": "stub", "deadline_seconds": 30}
         self.identity = {"task": DIRECTORY.name, "sources_sha256": digest(source_manifest())}
+
+    def test_versioned_rubric_card_is_present(self):
+        self.assertTrue((DIRECTORY / "evaluation/rubric.json").is_file())
+        rubric = card()
+        self.assertEqual((rubric.id, rubric.version, rubric.origin), ("invoice-total", "1.0.0", "local"))
 
     def test_plan_is_exactly_the_frozen_fixture_and_probe_plan(self):
         case_data = json.loads((DIRECTORY / "cases.json").read_text())
@@ -174,6 +179,7 @@ class InvoicePackageTests(unittest.TestCase):
                     "generation_calls": 1,
                     "repairs": 0,
                     "model": "mock-record-only",
+                    "expected_model": "mock-record-only",
                     "observed_tool_markers": [],
                     "submission_sha256": sha256(submission),
                     "prompt_sha256": sha256(trial / "agent/prompt.txt"),
@@ -202,6 +208,7 @@ class InvoicePackageTests(unittest.TestCase):
                 "report.json",
                 {
                     "schema": "sapi-lab-generation/v2",
+                    "wrapper_identity": {"model": "mock-record-only"},
                     "source_unchanged": True,
                     "native_tasks": {"invoice-total": str(DIRECTORY)},
                     "trials": [

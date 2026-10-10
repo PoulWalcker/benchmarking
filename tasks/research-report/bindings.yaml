@@ -1,0 +1,86 @@
+schema: sapi-bindings/v0
+target:
+  demo: n8n_json
+  code_node_version: 2
+  merge_node_version: 3.2
+  execution_order: v1
+operations:
+  research.validate:
+    kind: Script
+    inputs: [material]
+    outputs: [material]
+    implementation: local_js
+  research.product:
+    kind: LLM
+    inputs: [material]
+    outputs: [summary, evidence]
+    implementation: agency_bridge
+    prompt: >-
+      Summarize product capabilities using only the supplied material. Preserve
+      explicitly named capabilities. Evidence must be an exact nonempty substring
+      of material with no alterations. Return JSON only.
+    output_contract: '{summary: string, evidence: string}'
+    input_schema: &material_input
+      type: object
+      required: [material]
+      additionalProperties: false
+      properties:
+        material: {type: string, minLength: 1}
+    output_schema: &analysis_output
+      type: object
+      required: [summary, evidence]
+      additionalProperties: false
+      properties:
+        summary: {type: string, minLength: 1}
+        evidence: {type: string, minLength: 1}
+  research.marketing:
+    kind: LLM
+    inputs: [material]
+    outputs: [summary, evidence]
+    implementation: agency_bridge
+    prompt: >-
+      Summarize only the named audiences and channels in the material. Preserve
+      named audiences and channels. Evidence must be an exact nonempty substring
+      of material with no alterations. Return JSON only.
+    output_contract: '{summary: string, evidence: string}'
+    input_schema: *material_input
+    output_schema: *analysis_output
+  research.combine:
+    kind: Script
+    inputs: [product, marketing]
+    outputs: [product, marketing]
+    implementation: local_js
+  research.write:
+    kind: LLM
+    inputs: [brief]
+    outputs: [report, evidence]
+    implementation: agency_bridge
+    prompt: >-
+      Write one concise report based only on both supplied analyses. Include all
+      named product capabilities, audiences and channels, without inventing
+      facts. Preserve the evidence strings exactly in product, marketing order.
+      Write in the original material's language. Return JSON only.
+    output_contract: '{report: string, evidence: string[2]}'
+    input_schema:
+      type: object
+      required: [brief]
+      additionalProperties: false
+      properties:
+        brief:
+          type: object
+          required: [product, marketing]
+          additionalProperties: false
+          properties:
+            product: *analysis_output
+            marketing: *analysis_output
+    output_schema:
+      type: object
+      required: [report, evidence]
+      additionalProperties: false
+      properties:
+        report: {type: string, minLength: 1}
+        evidence:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items: {type: string, minLength: 1}

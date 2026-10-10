@@ -10,10 +10,10 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING or __package__:
     from .contracts import Rejected, WorkflowObservation
-    from .rubric import SCHEMA, Judge, RubricCard, RunFacts, digest, score
+    from .rubric import SCHEMA, Judge, RubricCard, RunFacts, score
 else:
     from contracts import Rejected, WorkflowObservation
-    from rubric import SCHEMA, Judge, RubricCard, RunFacts, digest, score
+    from rubric import SCHEMA, Judge, RubricCard, RunFacts, score
 
 Document = dict[str, Any]
 
@@ -46,6 +46,7 @@ def evaluate(
     execution_pass: bool,
     judge: Judge | None = None,
     card: RubricCard | None,
+    run_digest: str | None = None,
 ) -> Document | None:
     """This submission's card scored, or why not; None for a scenario with no card. Never raises."""
     if card is None:
@@ -62,11 +63,13 @@ def evaluate(
             return _not_evaluated(card, _NO_RUN + ": " + ", ".join(missing), checks, execution_pass)
         if card.needs_judge and judge is None:
             return _not_evaluated(card, _NO_JUDGE, checks, execution_pass)
+        if card.needs_judge and not run_digest:
+            return _not_evaluated(card, "Not scored: missing validated content identity", checks, execution_pass)
         facts = RunFacts(
             execution_pass=execution_pass,
             checks=checks,
             prose=_merged_prose(runs),
-            run_digest=digest({"scenario": scenario, "cases": [run.get("case") for run in runs]}),
+            run_digest=run_digest or "",
         )
         return score(card, facts, judge)
     except Exception as error:  # A rubric must never fail an accepted run

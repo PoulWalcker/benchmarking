@@ -26,15 +26,15 @@ Unavailable facts remain null.
 Neutral contracts under `src/sapi_config_lab/*.py` import no stage. Independent
 verification imports only itself. Task `evaluation/` and `environment/` modules
 may import neutral contracts and verification, but not compiler/runtime or
-coordination implementations. Their fixed `experiment.py` and `tests/main.py`
-are composition roots and may call coordination mechanisms. Only integration
+coordination implementations. Their fixed `experiment.py` and direct `tests/*.py` modules
+are discovered composition roots and may call coordination mechanisms. Only integration
 imports Harbor. `tests/test_boundaries.py` checks these edges, including literal
 dynamic imports. It does not detect computed imports or business logic hidden in
 file reads; those still require review.
 
 ## Native task ownership
 
-`tasks/invoice-total/` and `tasks/checkout-recovery/` own their public instructions,
+`tasks/invoice-total/`, `tasks/checkout-recovery/` and `tasks/ticket-routing/` own their public instructions,
 bindings, operations, private evaluation, source pins, calibration and oracle
 solutions. Native `task.toml` owns Harbor configuration. Its small `metadata.sapi`
 table contains research policy: default selection, model budgets, catalog arms,
@@ -56,12 +56,18 @@ null; successful admission is a separate selection eligibility fact.
 
 ## Images and submission boundary
 
-`infra/native/Dockerfile` explicitly copies public and trusted assets into separate
-image targets. `infra/native/build.sh` builds the runtime and four task bases from
-the editable checkout; it creates no tasks or trials. Task Dockerfiles consume
-these bases directly. The public ancestry contains only pinned runtime and public
-material. Private fixtures, scoring and world code enter verifier images; references
-enter only oracle solutions. Verifier import checks run during image builds.
+`infra/native/Dockerfile` owns the common public and trusted core bases. Each
+`tasks/<name>/images.Dockerfile` owns its public and verifier targets and the mandatory
+`images.Dockerfile.dockerignore` excludes host caches and secrets without negation.
+`coordinate/native_tasks.py::public_sources` validates the positive public allowlist
+and ignore policy before builds and native image use. `infra/native/build.sh` builds
+the runtime, shared bases and discovered task recipes with each task directory as its
+context; it creates no tasks or trials. Harbor's environment and verifier Dockerfiles
+consume the same task tags and retain ownership of trial execution and verification.
+Public images add only declared public files to the shared public base. Private
+fixtures, scoring and world code enter verifier images; references enter only oracle
+solutions. Verifier import checks run during image builds. The task ignore files govern
+these bases; Harbor's separate `tests/` context still copies its own host files.
 
 The supported profile is single-step Linux/Docker, author UID 1000 and a separate
 root verifier. `harbor_integration/task_config.py` validates it. The root collection
@@ -85,6 +91,11 @@ Image reuse requires a build record matching the complete current sources.
 Documentation is included in that identity; progress belongs under ignored
 `reports/` while guarded runs are active.
 
+Each command owns one stderr progress display in `coordinate/progress.py`; producers
+report stage boundaries and job context, and `execute/host.py::run_logged` hands its
+subprocess facts to that display through an observer instead of printing beside it.
+The display is a projection of orchestration facts, never evidence.
+
 `Run.harbor` dispatches one selected task with one attempt and zero infrastructure
 retries into `reports/<run>/jobs/`. Harbor's results remain authoritative. Research
 reports add source/model/prompt identities, reservations, selection and compact
@@ -93,20 +104,45 @@ lifecycle. The report is finalized even when dispatch or cleanup fails; pre-exis
 container identities are checked. The transport control uses the same argv builder.
 
 Generation reserves a durable unknown ledger event before each single wrapper call.
+The agent also fsyncs an unknown dispatch marker before handing off the request;
+its final record preserves transport loss, unreadable receipts and cancellation.
+It binds the inspected wrapper before controls, rechecks it before every reservation,
+and requires the reported authoring model to match that identity for upload and selection.
 There is no repair loop or fence stripping: exact valid answer bytes are uploaded.
 Empty, oversized, failed or tool-marked answers cannot upload. Raw wrapper stderr is
 not persisted. Selection always chooses the first-started attempt; a failed first
 attempt is never replaced by a later passing one. Replay rechecks all recorded
 hashes and normalized verdict authority and performs no generation call.
 
-Live replay checks total runtime plus judge cost before any reservation or native
-dispatch. Grants bind operations, model and occurrence IDs. Native evidence is
+Live replay sums each admitted case's runtime grant and its task's judge cost, reports
+that per-case allocation and refuses a larger total than `--max-calls` before any
+reservation or native dispatch; a run's own ledger takes that allocation as its phase
+ceilings. Grants bind operations, model and occurrence IDs. Native evidence is
 reconciled against the exact selected YAML, rebuilt plan and compiled graph, ordered
 case set and full file inventory. Runtime request/completion/response triples must
 match input/output hashes, model, occurrence and timing. Runtime accounting closes
-before judge reservation. Ambiguous runtime or judge timeout remains unknown and
-blocks subsequent spending. A host-reserved judge forwards its exact pending event
+before judge reservation. Runtime and authoring accounting closes only with positive
+non-dispatch proof or a complete wrapper object with `ok: true` and integer
+`exit_code: 0`. Later content or identity rejection is a confirmed failure. Timeouts,
+transport loss, incomplete receipts, unsettled wrapper replies and missing completion
+evidence remain unknown and block subsequent spending, including across a series.
+Live checks the audit and readable native Agency invocations before classification
+and on escaping exceptions. Generation accepts missing agent evidence as non-dispatch
+only with one finalized Harbor trial whose `agent_execution` is explicitly null.
+Unknown calls are never automatically retried or replayed. An `ok:false` or non-zero
+exit therefore stops a series until an operator starts a new series. Actual timeouts
+use `timeout_unknown_outcome`; other ambiguity uses `unknown_outcome`, with phase,
+reservation and reason recorded. The fixture Judge receipt protocol remains unchanged;
+its process-loss path still uses the timeout category. A host-reserved judge forwards
+its exact pending event
 to the task process without reserving a second call.
+
+A fixture task's trusted composition root supplies `coordinate/fixture_judge.py` to
+native evaluation; its evaluator receives only the Judge, never the host-owned endpoint,
+and the native verifier records Judge identity without constructing one. Whichever
+host command composed fresh fixture judging verifies the durable receipt against its
+own reservation, model and inspection, and the quality against that reply, instead
+of trusting the task process's success.
 
 ## Evaluation and historical reads
 
@@ -118,6 +154,15 @@ The evaluator reads existing evidence and never starts n8n or a world. Saved rep
 remain offline; explicitly requested fresh judging uses the same source-bound ledger.
 Derived results sit beside immutable evidence. Original Harbor rewards and terminal
 exceptions are preserved even when the host produces a later judged result.
+
+Research calibration is a separate synthetic action of its composition root.
+`evaluation/calibration.json` freezes six counterfactual final reports of the Orion
+source, with expectations that never enter a Judge request. `calibrate` re-verifies one
+source-matched native record, replaces only the final report the Judge reads, binds base
+run digest, variant bytes and card into a new run digest, and reports native execution
+and acceptance as null. Mocked replies compare as `simulated` and saved wrapper replies as
+`replayed`; only a fresh dispatch in that call is `measured`. Label agreement from a
+real Judge still needs human review of its reasons. Native evaluation refuses calibration.
 
 Checkout controls use an explicitly labeled saved calibration adapter rebound to
 each fresh run, plus unpaid fake runtime transport where needed. These scores are

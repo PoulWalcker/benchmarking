@@ -43,7 +43,7 @@ if __name__ == "__main__":
     if request["action"] in {"prompt", "plan"}:
         require_verifier_phase(ROOT, execution_ceiling(120, bound=False) + 120)
     if request["action"] == "prompt" and request["catalog"] == "full":
-        result = {"prompt": (ROOT / "authoring-prompt.txt").read_text()}
+        result = {"prompt": (ROOT / "public/authoring-prompt.txt").read_text()}
     elif request["action"] == "plan":
         options = runtime_options(request["options"])
         result = {"options": options, "plan": plan(Path(request["submission"]), options)}

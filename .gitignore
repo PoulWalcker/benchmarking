@@ -18,6 +18,9 @@ dist/
 /reviews/
 /.scratch/
 /.codegraph/
+# Uncited run extracts stay local; evidence/ holds only artifacts a tracked claim cites
+/evidence/design/
+/evidence/ticket11-w2-controls/
 .env
 .env.*
 !.env.example

@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 import json
 from pathlib import Path
 import subprocess
-import sys
 from typing import Any
 
-from sapi_config_lab.coordinate.native_tasks import image_tags
+from sapi_config_lab.coordinate.ledger import UnknownOutcome
+from sapi_config_lab.coordinate.native_tasks import image_tags, public_sources
+from sapi_config_lab.coordinate.progress import detail, failure_lines, note, tracking
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.evaluate.records import load_trials as load_trials
 from sapi_config_lab.evaluate.records import trial_seconds as trial_seconds
@@ -21,12 +22,15 @@ from sapi_config_lab.execute.agency import start_bridge, stop_bridge
 from sapi_config_lab.execute.host import (
     HostConfig,
     checked_harbor,
+    docker_preflight,
     image_id,
+    log_tail,
     pin_base_image,
+    run_logged,
     running_containers,
 )
 from sapi_config_lab.harbor_integration.runner import UPLOAD_ONLY_AGENTS, job_args, run_job
-from sapi_config_lab.paths import workspace_root
+from sapi_config_lab.paths import display_path, workspace_root
 
 
 def fingerprint(path: Path) -> dict[str, str]:
@@ -37,8 +41,8 @@ def fingerprint(path: Path) -> dict[str, str]:
 
 
 def progress(message: str) -> None:
-    """Human progress on stderr; stdout stays machine-readable."""
-    print(message, file=sys.stderr, flush=True)
+    """Human progress on stderr, above any live display; stdout stays machine-readable."""
+    note(message)
 
 
 @dataclass
@@ -56,39 +60,60 @@ class Run:
     native_tasks: tuple[Path, ...] = ()
     native_images: dict[str, str] = field(default_factory=dict)
 
+    @contextmanager
+    def step(self, stage: str, log: str | None = None) -> Iterator[Path | None]:
+        """Record the innermost failed or interrupted stage without converting its exception."""
+        path = self.output / f"{log}.log" if log is not None else None
+        if path is not None:
+            self.report.setdefault("logs", {})[log] = path.name
+        try:
+            yield path
+        except Exception as error:
+            if "failure_stage" not in self.report:
+                self.report["failure_stage"] = stage
+                self.report["log"] = path.name if path is not None else None
+                self.report["log_tail"] = log_tail(
+                    path, stderr=error.stderr if isinstance(error, subprocess.CalledProcessError) else None
+                )
+            raise
+        except KeyboardInterrupt:
+            self.report.setdefault("interrupted_stage", stage)
+            raise
+
     def use_native_tasks(self, tasks: tuple[Path, ...], *, build: bool = False) -> None:
         """Pin direct task sources and the source-verified local images that Harbor will consume."""
-        if not tasks or len(set(tasks)) != len(tasks):
-            raise ValueError("Select each native task once")
-        root = workspace_root()
-        cache = root / "reports/native-image-build.json"
-        self.check("before-native-images")
-        if build:
-            with (self.output / "native-build.log").open("w") as log:
-                subprocess.run(
-                    ["sh", str(root / "infra/native/build.sh")],
-                    cwd=root,
-                    stdout=log,
-                    stderr=subprocess.STDOUT,
-                    check=True,
-                )
-            self.check("after-native-build")
-            all_tasks = tuple(sorted(path.parent for path in (root / "tasks").glob("*/task.toml")))
-            built = {tag: image_id(tag) for tag in image_tags(all_tasks)}
-            write_json(cache, {"sources": self.sources, "images": built})
-        recorded = json.loads(cache.read_text())
-        if recorded.get("sources") != self.sources:
-            raise ValueError("Native image build sources differ; rebuild through the control suite")
-        self.native_images = {tag: image_id(tag) for tag in image_tags(tasks)}
-        if any(recorded.get("images", {}).get(tag) != identity for tag, identity in self.native_images.items()):
-            raise ValueError("Native image differs from its verified build")
-        self.native_tasks = tasks
-        self.report["native_images"] = dict(self.native_images)
-        self.report["native_tasks"] = {task.name: str(task) for task in tasks}
-        for task in tasks:
-            self.pin("native task " + task.name, task)
-        write_json(self.output / "native-inputs.json", {task.name: fingerprint(task) for task in tasks})
-        self.pin("native inputs", self.output / "native-inputs.json")
+        with self.step("native build" if build else "native images", log="native-build" if build else None):
+            if not tasks or len(set(tasks)) != len(tasks):
+                raise ValueError("Select each native task once")
+            for task in tasks:
+                public_sources(task)
+            root = workspace_root()
+            cache = root / "reports/native-image-build.json"
+            self.check("before-native-images")
+            if build:
+                argv = ["sh", str(root / "infra/native/build.sh"), *[task.name for task in tasks]]
+                code = run_logged(argv, self.output / "native-build.log", stage="native build", timeout=None)
+                if code:
+                    raise subprocess.CalledProcessError(code, argv)
+                self.check("after-native-build")
+                built = {tag: image_id(tag) for tag in image_tags(tasks)}
+                write_json(cache, {"sources": self.sources, "images": built})
+            recorded = json.loads(cache.read_text())
+            if recorded.get("sources") != self.sources:
+                raise ValueError("Native image build sources differ; rebuild through the control suite")
+            for tag in image_tags(tasks):
+                if tag not in recorded.get("images", {}):
+                    raise ValueError(f"Native image {tag} is not in the verified build; rebuild without --skip-build")
+            self.native_images = {tag: image_id(tag) for tag in image_tags(tasks)}
+            if any(recorded.get("images", {}).get(tag) != identity for tag, identity in self.native_images.items()):
+                raise ValueError("Native image differs from its verified build")
+            self.native_tasks = tasks
+            self.report["native_images"] = dict(self.native_images)
+            self.report["native_tasks"] = {task.name: str(task) for task in tasks}
+            for task in tasks:
+                self.pin("native task " + task.name, task)
+            write_json(self.output / "native-inputs.json", {task.name: fingerprint(task) for task in tasks})
+            self.pin("native inputs", self.output / "native-inputs.json")
 
     def use_image(self, tag: str) -> str:
         """Pin the content identity behind `tag` under a run-specific tag."""
@@ -124,64 +149,67 @@ class Run:
         **arguments: Any,
     ) -> tuple[int, list[dict]]:
         """Submit declared native packages durably under Harbor phase limits."""
-        if tasks not in self.native_tasks:
-            raise ValueError("Only a selected native task can be dispatched")
-        if int(arguments.get("attempts") or 1) != 1:
-            raise ValueError("Native execution requires one attempt per fresh environment")
-        if agent not in UPLOAD_ONLY_AGENTS:
-            raise RuntimeError(f"Agent {agent} may run commands beside the shared verifier environment")
-        if admission:
-            arguments["verifier_env"] = [*arguments.get("verifier_env", []), "SAPI_HOSTED_ADMISSION=1"]
-        self.check("before " + job)
-        dispatched = self.report.setdefault("harbor_jobs", {})
-        if job in dispatched:
-            raise ValueError("A Harbor job cannot be dispatched twice")
-        jobs = self.output / "jobs"
-        dispatched[job] = {"path": str(Path("jobs") / job), "status": "dispatched"}
-        argv = job_args(self.harbor_argv, tasks, jobs, job, agent, **arguments)
-        self.report.setdefault("commands", []).append(argv)
-        try:
-            code = run_job(self.harbor_argv, tasks, jobs, job, agent, self.output / (job + ".log"), **arguments)
-            dispatched[job]["exit_code"] = code
-            dispatched[job]["status"] = "finished"
-        finally:
-            trials = load_trials(jobs / job)
-            dispatched[job]["trials"] = [
-                {
-                    key: row[key]
-                    for key in (
-                        "task_name",
-                        "trial_id",
-                        "trial_path",
-                        "evidence_path",
-                        "partial",
-                    )
-                    if key in row
-                }
-                for row in trials
-            ]
-        return code, trials
+        with self.step(job, log=job):
+            if tasks not in self.native_tasks:
+                raise ValueError("Only a selected native task can be dispatched")
+            if int(arguments.get("attempts") or 1) != 1:
+                raise ValueError("Native execution requires one attempt per fresh environment")
+            if agent not in UPLOAD_ONLY_AGENTS:
+                raise RuntimeError(f"Agent {agent} may run commands beside the shared verifier environment")
+            if admission:
+                arguments["verifier_env"] = [*arguments.get("verifier_env", []), "SAPI_HOSTED_ADMISSION=1"]
+            self.check("before " + job)
+            dispatched = self.report.setdefault("harbor_jobs", {})
+            if job in dispatched:
+                raise ValueError("A Harbor job cannot be dispatched twice")
+            jobs = self.output / "jobs"
+            dispatched[job] = {"path": str(Path("jobs") / job), "status": "dispatched"}
+            argv = job_args(self.harbor_argv, tasks, jobs, job, agent, **arguments)
+            self.report.setdefault("commands", []).append(argv)
+            try:
+                with detail(f"Harbor job: {job} · task {tasks.name}"):
+                    code = run_job(self.harbor_argv, tasks, jobs, job, agent, self.output / (job + ".log"), **arguments)
+                dispatched[job]["exit_code"] = code
+                dispatched[job]["status"] = "finished"
+            finally:
+                trials = load_trials(jobs / job)
+                dispatched[job]["trials"] = [
+                    {
+                        key: row[key]
+                        for key in (
+                            "task_name",
+                            "trial_id",
+                            "trial_path",
+                            "evidence_path",
+                            "partial",
+                        )
+                        if key in row
+                    }
+                    for row in trials
+                ]
+            return code, trials
 
     def transport(self, task: Path, *, skip_build: bool = False) -> int:
         """Run the trusted transport control with native Harbor phase limits."""
-        self.pin("transport-task", task)
-        self.check("before transport")
-        jobs = self.output / "jobs"
-        if (jobs / "transport").exists():
-            raise ValueError("A transport job cannot be dispatched twice")
-        argv = job_args(self.harbor_argv, task, jobs, "transport", "nop")
-        # Docker still removes containers/networks; retained engine bytes serve later adapters and skip-build.
-        argv.append("--no-delete")
-        if skip_build:
-            argv.remove("--force-build")
-        self.report.setdefault("commands", []).append(argv)
-        reference: dict[str, Any] = {"path": "jobs/transport", "status": "dispatched"}
-        self.report.setdefault("harbor_jobs", {})["transport"] = reference
-        with (self.output / "transport.log").open("w") as stream:
-            code = subprocess.run(argv, cwd=workspace_root(), stdout=stream, stderr=subprocess.STDOUT).returncode
-        reference.update(status="finished", exit_code=code)
-        self.check("after transport")
-        return code
+        with self.step("transport", log="transport"):
+            self.pin("transport-task", task)
+            self.check("before transport")
+            jobs = self.output / "jobs"
+            if (jobs / "transport").exists():
+                raise ValueError("A transport job cannot be dispatched twice")
+            argv = job_args(self.harbor_argv, task, jobs, "transport", "nop")
+            # Docker still removes containers/networks; retained engine bytes serve later adapters and skip-build.
+            argv.append("--no-delete")
+            if skip_build:
+                argv.remove("--force-build")
+            self.report.setdefault("commands", []).append(argv)
+            reference: dict[str, Any] = {"path": "jobs/transport", "status": "dispatched"}
+            self.report.setdefault("harbor_jobs", {})["transport"] = reference
+            with detail("Harbor job: transport · task " + task.name):
+                code = run_logged(argv, self.output / "transport.log", stage="transport", timeout=None)
+            reference.update(status="finished", exit_code=code)
+            self.check("after transport")
+            return code
 
     @contextmanager
     def bridge(self, budget: dict, name: str, *, bindings: Path, reject_tool_use=False) -> Iterator[Path]:
@@ -191,6 +219,7 @@ class Run:
         budget_path.parent.mkdir(exist_ok=True)
         write_json(budget_path, budget)
         self.pin("budget " + name, budget_path)
+        self.report.setdefault("logs", {})[name + "-bridge"] = name + "-bridge.log"
         self.bridge_process = start_bridge(
             self.host.listen_host,
             self.host.bridge_port,
@@ -215,7 +244,8 @@ class Run:
                 self.report.setdefault("cleanup_errors", []).append(
                     {"stage": stage, "error": f"{type(error).__name__}: {error}"}
                 )
-                self.report["status"] = "failed"
+                if self.report.get("status") != "interrupted":
+                    self.report["status"] = "failed"
 
         def containers() -> None:
             before = (self.output / "existing-containers.txt").read_text().splitlines()
@@ -235,6 +265,7 @@ class Run:
         cleanup("final_check", lambda: self.check("final"))
         cleanup("containers", containers)
         self.report["finished_at"] = datetime.now(UTC).isoformat()
+        self.report.setdefault("logs", {}).update({path.stem: path.name for path in self.output.glob("*.log")})
         write_json(self.output / "report.json", self.report)
 
 
@@ -246,31 +277,77 @@ def run_experiment(
     prefix: str,
     classify: Callable[[Exception], str] | None = None,
     host: HostConfig | None = None,
+    command: str = "sapi-lab run",
+    stages: Sequence[str] = (),
 ) -> dict[str, Any]:
-    """Create the run directory, call `body(run)`, and always finish the run."""
+    """Create the run directory, call `body(run)`, and always finish the run.
+
+    The body reports its own `stages` between the shared setup and finalizing stages.
+    """
     output = output.resolve()
     if output.exists():
         raise ValueError("Choose a new report directory; an existing one is never overwritten")
     output.mkdir(parents=True)
     report.setdefault("status", "failed")
+    report.setdefault("logs", {})
     report["started_at"] = datetime.now(UTC).isoformat()
     sources = source_manifest()
     write_json(output / "source-manifest.json", sources)
     report["source_manifest"] = "source-manifest.json"
     run = Run(output, report, sources, prefix, host or HostConfig.from_environment())
-    try:
-        (output / "existing-containers.txt").write_text(running_containers())
-        run.harbor_argv, report["harbor_version"] = checked_harbor()
-        body(run)
-    except Exception as error:  # A run always ends with a written report
-        report["status"] = "failed"
-        report["error"] = f"{type(error).__name__}: {error}"
-        progress(f"failed: {report['error']}")
-        if isinstance(error, subprocess.TimeoutExpired):
-            report["failure_category"] = "timeout_unknown_outcome"
-        elif classify is not None:
-            report["failure_category"] = classify(error)
-    finally:
-        progress("finalizing: cleanup, final source check and report")
-        run.close()
+    with tracking(command, ["setup", *stages, "finalizing"]) as display:
+        progress(f"report directory: {display_path(output)}")
+        try:
+            with display.stage("setup"):
+                with run.step("docker preflight"):
+                    report["docker"] = docker_preflight()
+                (output / "existing-containers.txt").write_text(running_containers())
+                run.harbor_argv, report["harbor_version"] = checked_harbor()
+            body(run)
+        except Exception as error:  # A run always ends with a written report
+            report["status"] = "failed"
+            report["error"] = f"{type(error).__name__}: {error}"
+            if isinstance(error, subprocess.TimeoutExpired):
+                report["failure_category"] = "timeout_unknown_outcome"
+            elif isinstance(error, UnknownOutcome):
+                report["failure_category"] = "unknown_outcome"
+            elif classify is not None:
+                report["failure_category"] = classify(error)
+            stage = report.get("failure_stage", "setup")
+            if isinstance(error, (subprocess.TimeoutExpired, UnknownOutcome)):
+                report["unknown_outcome"] = {
+                    "phase": getattr(error, "phase", None),
+                    "reservation": getattr(error, "reservation", None),
+                    "reason": "timeout" if isinstance(error, subprocess.TimeoutExpired) else error.reason,
+                }
+            if isinstance(error, subprocess.TimeoutExpired):
+                progress(f"outcome unknown at {stage}: timed out after {error.timeout:g}s (not a failure verdict)")
+            else:
+                cause = f"exit {error.returncode}" if isinstance(error, subprocess.CalledProcessError) else str(error)
+                cause = " ".join(cause.splitlines())
+                if report.get("failure_category") in {"timeout_unknown_outcome", "unknown_outcome"}:
+                    progress(f"outcome unknown at {stage}: {cause} (not a failure verdict)")
+                else:
+                    progress(f"failed at {stage}: {cause}")
+            if report.get("failure_category") in {"timeout_unknown_outcome", "unknown_outcome"}:
+                display.unknown_outcome()
+            log = output / report["log"] if report.get("log") else None
+            job = Path(report["log"]).stem if report.get("log") else stage
+            jobs = output / report["harbor_jobs"][job]["path"] if job in report.get("harbor_jobs", {}) else None
+            for line in failure_lines(log, report.get("log_tail") or [], jobs=jobs):
+                progress(line)
+        except KeyboardInterrupt:
+            report["status"] = "interrupted"
+            progress(
+                f"interrupted at {report.get('interrupted_stage', 'setup')}; in-flight work has an unknown outcome"
+            )
+            raise
+        finally:
+            with display.stage("finalizing"), display.detail("cleanup, final source check and report"):
+                run.close()
+        display.finish(
+            "unknown"
+            if report.get("failure_category") in {"timeout_unknown_outcome", "unknown_outcome"}
+            else report["status"]
+        )
     return report

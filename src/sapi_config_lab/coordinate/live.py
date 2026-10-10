@@ -11,14 +11,16 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import time
 import tomllib
 from typing import Any
 
 from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, NOT_EVALUATED, trial_accepted, validate_result
-from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
-from sapi_config_lab.coordinate.live_evidence import collect_native, reconcile_dispatches
+from sapi_config_lab.coordinate.ledger import UnknownOutcome, open_ledger, parse_ceilings
+from sapi_config_lab.coordinate.live_evidence import attribute_incomplete, collect_native, reconcile_dispatches
 from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
+from sapi_config_lab.coordinate.progress import add_stages, detail, stage
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.replay import load_selection, read_json, require
 from sapi_config_lab.coordinate.runs import Run, progress, run_experiment
@@ -128,7 +130,20 @@ def check_trials(
             else:
                 require((trial["result"]["quality"] or {}).get("status") == "complete", "Hosted evaluation is unscored")
             continue
-        require(trial_accepted(trial), "Harbor or independent acceptance failed")
+        if mode == "live":
+            validate_result(trial["result"])
+            require(type(trial["result"]["acceptance"]) is bool, "Missing independent live verdict")
+            exception = trial["exception"] or {}
+            require(
+                not exception
+                or (
+                    policy(benchmarks[scenario]).get("judge_calls")
+                    and exception.get("exception_type") == "RewardFileNotFoundError"
+                ),
+                "Harbor or independent acceptance failed",
+            )
+        else:
+            require(trial_accepted(trial), "Harbor or independent acceptance failed")
         verifier = Path(trial["result_path"]).parent / "verifier"
         require(
             identity.get("submission_sha256")
@@ -142,7 +157,8 @@ def check_trials(
             require(bool(cases), "Missing independent case observations")
         else:
             require(
-                acceptance.get("cases") and all(row.get("passed") is True for row in acceptance["cases"]),
+                acceptance.get("cases")
+                and (mode == "live" or all(row.get("passed") is True for row in acceptance["cases"])),
                 "Missing independent case acceptance",
             )
             cases = [row["name"] for row in acceptance["cases"]]
@@ -175,11 +191,83 @@ def audit_records(path: Path) -> list[dict]:
     return records
 
 
-def failure_category(trials: list[dict], audit: list[dict], default: str) -> str:
+def confirm_runtime(audit: Path | None, trials: list[dict], job: Path, timeout: float) -> None:
+    """Keep spending unknown unless the bridge and readable native calls account for it."""
+    try:
+        if audit is None or not audit.is_file():
+            raise UnknownOutcome("evidence_unavailable")
+        records = audit_records(audit)
+    except (OSError, ValueError) as error:
+        raise UnknownOutcome("evidence_unavailable") from error
+    for row in records:
+        if row.get("model_outcome") == "unknown" or (
+            row.get("event") == "failure" and row.get("model_outcome") not in ("settled", "not_dispatched")
+        ):
+            reason = row.get("outcome_reason") or (
+                "timeout" if row.get("category") == "timeout_unknown_outcome" else "evidence_unavailable"
+            )
+            if reason == "timeout":
+                raise subprocess.TimeoutExpired("protected runtime model", timeout)
+            raise UnknownOutcome(
+                reason
+                if reason
+                in (
+                    "transport_error",
+                    "incomplete_receipt",
+                    "wrapper_unsettled",
+                    "dispatch_unsettled",
+                    "cancelled",
+                    "evidence_unavailable",
+                )
+                else "evidence_unavailable"
+            )
+    if any(
+        row.get("event") in ("dispatch_attempt", "completion", "agency_response")
+        and (not isinstance(row.get("invocation_id"), str) or not row["invocation_id"])
+        for row in records
+    ):
+        raise UnknownOutcome("evidence_unavailable")
+    terminal = Counter(
+        row["invocation_id"]
+        for row in records
+        if row.get("event") in ("completion", "failure") and isinstance(row.get("invocation_id"), str)
+    )
+    attempts = Counter(row["invocation_id"] for row in records if row.get("event") == "dispatch_attempt")
+    if attempts - terminal:
+        raise UnknownOutcome("dispatch_unsettled")
+    replies = Counter(row["invocation_id"] for row in records if row.get("event") == "agency_response")
+    paths = set(job.glob("*/verifier/evidence/cases/*/case.json"))
+    for trial in trials:
+        paths.update(Path(trial["result_path"]).parent.glob("verifier/evidence/cases/*/case.json"))
+    for path in paths:
+        try:
+            run = read_json(path)
+        except OSError, ValueError:
+            continue  # Unreadable native evidence is still refused by the integrity gate.
+        try:
+            for node, executions in run.get("run_data", {}).items():
+                if not node.startswith("Agency ") or not executions:
+                    continue
+                prepared = run["run_data"]["Prepare " + node.removeprefix("Agency ")]
+                invocations = [row["data"]["main"][0][0]["json"]["request"]["invocation_id"] for row in prepared]
+                calls = Counter(invocations)
+                if len(invocations) != len(executions) or calls - replies:
+                    raise UnknownOutcome("evidence_unavailable")
+                replies.subtract(calls)
+        except (KeyError, TypeError, IndexError, AttributeError) as error:
+            raise UnknownOutcome("evidence_unavailable") from error
+
+
+def failure_category(trials: list[dict], audit: list[dict], default: str, case_outcomes: dict | None = None) -> str:
     failed = next((row for row in audit if row.get("event") == "failure"), None)
     if failed:
         return failed["category"]
     for trial in trials:
+        outcome = (case_outcomes or {}).get(trial.get("live_case"))
+        if outcome in {"accepted", "rejected"}:
+            continue
+        if outcome == "unverified":
+            return "unverified_live_outcome"
         if trial.get("exception") or not trial.get("acceptance"):
             return "harbor_environment"
         for row in trial["acceptance"].get("cases", []):
@@ -197,9 +285,10 @@ def failure_category(trials: list[dict], audit: list[dict], default: str) -> str
 
 def cohort_grants(
     submissions: dict, benchmarks: dict, judge_model: str | None = None
-) -> dict[tuple[str, str], tuple[dict, dict]]:
-    """Reserve the occurrences of each selected benchmark's live observation plan."""
+) -> tuple[dict[tuple[str, str], tuple[dict, dict]], dict[str, dict]]:
+    """Reserve the occurrences of each selected benchmark's live observation plan, and return its frozen options."""
     grants = {}
+    planned = {}
     for scenario, submission in submissions.items():
         benchmark = benchmarks[scenario]
         options = {"mode": "live", "judge_model": judge_model}
@@ -214,10 +303,11 @@ def cohort_grants(
             )
         if "cases" in submission:
             options["cases"] = submission["cases"]
-        plan = invoke(
+        bundle = invoke(
             benchmark, {"action": "plan", "submission": str(submission["path"]), "options": options}, source_manifest()
-        )["plan"]
-        for entry in plan["entries"]:
+        )
+        planned[scenario] = bundle["options"]
+        for entry in bundle["plan"]["entries"]:
             config = entry["config"]
             grant = model_grant(benchmark, config)
             minimum = entry.get(
@@ -227,7 +317,7 @@ def cohort_grants(
             require(type(minimum) is int and 0 <= minimum <= grant["max_attempts"], "Invalid planned model minimum")
             grant["minimum_attempts"] = minimum
             grants[scenario, entry["name"]] = (grant, config)
-    return grants
+    return grants, planned
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -247,16 +337,30 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--bridge-port", type=int, default=host.bridge_port, help="(SAPI_BRIDGE_PORT)")
     parser.add_argument("--series-dir", type=Path, help="Reserve in a ledger shared with other runs")
     parser.add_argument("--series-ceiling", action="append", help="PHASE=N, fixed when a series ledger is created")
-    parser.add_argument("--stop-after-failure", action="store_true", help="A failed case blocks later reservations")
+    parser.add_argument(
+        "--stop-after-failure", action="store_true", help="A failed or unknown reservation blocks later ones"
+    )
     parser.add_argument("--judge-model", help="Judge model for hosted evaluators that call one")
+    parser.add_argument("--judge-upstream", help="Fixture Judge wrapper URL; never the runtime wrapper")
+    parser.add_argument("--judge-wrapper-evidence", type=Path, help="The inspected Judge wrapper identity record")
+    parser.add_argument(
+        "--judge-wrapper-file", action="append", help="NAME=PATH: where an inspected Judge wrapper file is here"
+    )
     args = parser.parse_args(argv)
     if args.submissions_manifest and args.scenario:
         parser.error("A manifest selects its own scenarios")
     if not args.preflight_only and args.wrapper_evidence is None:
         parser.error("Live dispatch requires --wrapper-evidence")
+    if (args.judge_upstream is None) != (args.judge_wrapper_evidence is None) or (
+        args.judge_wrapper_file and args.judge_wrapper_evidence is None
+    ):
+        parser.error("--judge-upstream and --judge-wrapper-evidence name one inspected Judge wrapper together")
+    if args.judge_upstream and not args.judge_model:
+        parser.error("A Judge endpoint needs an explicit --judge-model")
     try:
         series_ceilings = parse_ceilings(args.series_ceiling)
         wrapper_files = parse_wrapper_files(args.wrapper_file)
+        judge_files = parse_wrapper_files(args.judge_wrapper_file)
         reference = (
             {item.name: item for item in select_tasks(ROOT / "tasks", args.scenario)}
             if not args.submissions_manifest
@@ -276,6 +380,9 @@ def main(argv: list[str] | None = None) -> int:
         "not_run": [],
         "correlation": [],
         "audit": [],
+        "case_outcomes": {},
+        "case_attribution": {},
+        "acceptance_counts": {"accepted": 0, "rejected": 0},
         "limitations": [
             "Call and time caps are enforced; currency cost and provider-internal retries remain unknown.",
             "The wrapper is trusted; its tool restrictions are cooperative, not a sandbox.",
@@ -284,223 +391,407 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     def body(run: Run) -> None:
-        progress(f"controls: checking {args.stub_report}")
-        report["stub_report_sha256"] = sha256(args.stub_report)
-        identity = run.use_image(LAB_IMAGE)
-        gate = validate_control(args.stub_report.resolve(), run.sources, identity)
-        shutil.copyfile(args.stub_report, run.output / "control-report.json")
-        if args.submissions_manifest:
-            submissions = load_selection(args.submissions_manifest, copy_to=run.output / "selection")
-            report["selection_sha256"] = sha256(args.submissions_manifest)
-            run.pin("selection", run.output / "selection")
-            run.pin("selection manifest", args.submissions_manifest)
-        else:
-            submissions = {
-                name: {"path": s / "solution/config.yaml", "sha256": sha256(s / "solution/config.yaml")}
-                for name, s in reference.items()
+        with stage("preflight"), run.step("preflight"):
+            progress(f"controls: checking {args.stub_report}")
+            report["stub_report_sha256"] = sha256(args.stub_report)
+            identity = run.use_image(LAB_IMAGE)
+            gate = validate_control(args.stub_report.resolve(), run.sources, identity)
+            shutil.copyfile(args.stub_report, run.output / "control-report.json")
+            if args.submissions_manifest:
+                submissions = load_selection(args.submissions_manifest, copy_to=run.output / "selection")
+                report["selection_sha256"] = sha256(args.submissions_manifest)
+                run.pin("selection", run.output / "selection")
+                run.pin("selection manifest", args.submissions_manifest)
+            else:
+                submissions = {
+                    name: {"path": s / "solution/config.yaml", "sha256": sha256(s / "solution/config.yaml")}
+                    for name, s in reference.items()
+                }
+            scenarios = tuple(submissions)
+            selected = select_tasks(ROOT / "tasks", scenarios)
+            benchmarks = {item.name: item for item in selected}
+            run.use_native_tasks(selected)
+            validate_control(args.stub_report.resolve(), run.sources, identity, native_images=run.native_images)
+            controlled = {trial["task_name"] for trial in gate["oracle"]["trials"]}
+            require(set(scenarios) <= controlled, "The control report does not cover every scenario")
+            judge_calls = {}
+            for name in scenarios:
+                benchmark = benchmarks[name]
+                judge_calls[name] = policy(benchmark).get("judge_calls", 0)
+            judged = any(judge_calls.values())
+            require(not judged or args.preflight_only or args.judge_model, "Hosted evaluation needs --judge-model")
+            grants, planned = cohort_grants(submissions, benchmarks, args.judge_model)
+            # Every Judge identity and endpoint is settled here, before the first runtime reservation.
+            fixture = {name for name in scenarios if judge_calls[name] and planned[name].get("judge_mode") == "wrapper"}
+            require(
+                not judged or not args.judge_model or args.judge_model != host.wrapper_model,
+                "The Judge model must differ from the runtime model",
+            )
+            require(
+                args.preflight_only or not fixture or args.judge_upstream is not None,
+                "A fixture Judge needs --judge-upstream and --judge-wrapper-evidence",
+            )
+            require(
+                all(planned[name].get("judge_model") == args.judge_model for name in fixture),
+                "Planned Judge identity differs from --judge-model",
+            )
+            judge_endpoint = None
+            if args.judge_upstream is not None:
+                require(args.judge_upstream != host.wrapper_url, "The Judge endpoint must not be the runtime wrapper")
+                report["judge_wrapper_identity"] = wrapper_identity(
+                    args.judge_wrapper_evidence, args.judge_upstream, args.judge_model, judge_files
+                )
+                report["judge_wrapper_files_relocated"] = sorted(judge_files)
+                shutil.copyfile(args.judge_wrapper_evidence, run.output / "judge-wrapper-identity.json")
+                run.pin("judge wrapper identity", args.judge_wrapper_evidence)
+                judge_endpoint = {
+                    "upstream": args.judge_upstream,
+                    "inspection": str(args.judge_wrapper_evidence.resolve()),
+                    "files": {name: str(path.resolve()) for name, path in judge_files.items()},
+                }
+            # Each admitted case reserves its own runtime grant and, afterwards, its task's Judge cost; the
+            # ledger's phase ceilings are exactly this reported allocation.
+            runtime_allocation = {f"{s}/{c}": grant["max_attempts"] for (s, c), (grant, _) in grants.items()}
+            judge_allocation = {f"{s}/{c}": judge_calls[s] for s, c in grants if judge_calls[s]}
+            ceilings = {"runtime": sum(runtime_allocation.values())} | (
+                {"judge": sum(judge_allocation.values())} if judge_allocation else {}
+            )
+            needed = sum(ceilings.values())
+            report["budget"].update(cases=runtime_allocation, judge=judge_allocation, total=needed)
+            require(
+                needed <= args.max_calls,
+                f"The cohort needs up to {needed} model calls; --max-calls allows {args.max_calls}",
+            )
+            report["human_review"] = {s: policy(benchmarks[s]).get("human_review", False) for s in scenarios}
+            ledger = open_ledger(run.output, args.series_dir, ceilings, args.stop_after_failure, series_ceilings)
+            report["ledger"] = str(ledger.path)
+            if args.wrapper_evidence:
+                report["wrapper_identity"] = wrapper_identity(
+                    args.wrapper_evidence, host.wrapper_url, host.wrapper_model, wrapper_files
+                )
+                report["wrapper_files_relocated"] = sorted(wrapper_files)
+                shutil.copyfile(args.wrapper_evidence, run.output / "wrapper-identity.json")
+                run.pin("wrapper identity", args.wrapper_evidence)
+            progress(f"inputs: pinning {len(scenarios)} exact submissions for native replay")
+            for scenario, submission in submissions.items():
+                require(sha256(submission["path"]) == submission["sha256"], "Selected submission changed")
+                inputs = run.output / "inputs" / scenario
+                inputs.mkdir(parents=True)
+                shutil.copyfile(submission["path"], inputs / "submission.yaml")
+                submission["path"] = inputs / "submission.yaml"
+                if "cases" in submission:
+                    write_json(inputs / "cases.json", {scenario: submission["cases"]})
+            run.pin("replay inputs", run.output / "inputs")
+            run.check("before-stub")
+            progress(f"preflight: fixture stub replay and hosted compilation/admission of {', '.join(scenarios)}")
+            started = time.monotonic()
+            stub_trials, exit_code = [], 0
+            for task in selected:
+                submission = submissions[task.name]
+                code, rows = run.harbor(
+                    "stub-replay-" + task.name,
+                    task,
+                    REPLAY_AGENT,
+                    agent_keys=[
+                        "submission_path=" + str(submission["path"]),
+                        "submission_sha256=" + submission["sha256"],
+                    ],
+                    verifier_env=[
+                        "SAPI_LLM_MODE=stub",
+                        "SAPI_EXPECTED_SUBMISSION_SHA256=" + submission["sha256"],
+                        "SAPI_NATIVE_DEADLINE_SECONDS="
+                        + str(read(submission["path"])["execution"]["deadline_seconds"]),
+                    ]
+                    + (["SAPI_NATIVE_CASES=" + json.dumps(submission["cases"])] if "cases" in submission else []),
+                    admission=True,
+                )
+                exit_code = exit_code or code
+                stub_trials.extend(rows)
+            report["preflight"] = {
+                "harbor_exit_code": exit_code,
+                "trials": stub_trials,
+                "hosted_scope": "Live-mode compilation and limits only; no candidate execution or acceptance",
             }
-        scenarios = tuple(submissions)
-        selected = select_tasks(ROOT / "tasks", scenarios)
-        benchmarks = {item.name: item for item in selected}
-        run.use_native_tasks(selected)
-        validate_control(args.stub_report.resolve(), run.sources, identity, native_images=run.native_images)
-        controlled = {trial["task_name"] for trial in gate["oracle"]["trials"]}
-        require(set(scenarios) <= controlled, "The control report does not cover every scenario")
-        judge_calls = {}
-        for name in scenarios:
-            benchmark = benchmarks[name]
-            judge_calls[name] = policy(benchmark).get("judge_calls", 0)
-        judge_total = sum(judge_calls.values())
-        require(not judge_total or args.preflight_only or args.judge_model, "Hosted evaluation needs --judge-model")
-        grants = cohort_grants(submissions, benchmarks, args.judge_model)
-        report["budget"]["cases"] = {f"{s}/{c}": grant["max_attempts"] for (s, c), (grant, _) in grants.items()}
-        report["budget"]["judge"] = judge_calls
-        needed = sum(report["budget"]["cases"].values()) + judge_total
-        require(
-            needed <= args.max_calls,
-            f"The cohort needs up to {needed} model calls; --max-calls allows {args.max_calls}",
-        )
-        report["human_review"] = {s: policy(benchmarks[s]).get("human_review", False) for s in scenarios}
-        ceilings = {"runtime": args.max_calls} | ({"judge": args.max_calls} if judge_total else {})
-        ledger = open_ledger(run.output, args.series_dir, ceilings, args.stop_after_failure, series_ceilings)
-        report["ledger"] = str(ledger.path)
-        if args.wrapper_evidence:
-            report["wrapper_identity"] = wrapper_identity(
-                args.wrapper_evidence, host.wrapper_url, host.wrapper_model, wrapper_files
+            require(
+                exit_code == 0 and sorted(t["task_name"] for t in stub_trials) == sorted(scenarios),
+                "Unpaid stub replay failed",
             )
-            report["wrapper_files_relocated"] = sorted(wrapper_files)
-            shutil.copyfile(args.wrapper_evidence, run.output / "wrapper-identity.json")
-            run.pin("wrapper identity", args.wrapper_evidence)
-        progress(f"inputs: pinning {len(scenarios)} exact submissions for native replay")
-        for scenario, submission in submissions.items():
-            require(sha256(submission["path"]) == submission["sha256"], "Selected submission changed")
-            inputs = run.output / "inputs" / scenario
-            inputs.mkdir(parents=True)
-            shutil.copyfile(submission["path"], inputs / "submission.yaml")
-            submission["path"] = inputs / "submission.yaml"
-            if "cases" in submission:
-                write_json(inputs / "cases.json", {scenario: submission["cases"]})
-        run.pin("replay inputs", run.output / "inputs")
-        run.check("before-stub")
-        progress(f"preflight: fixture stub replay and hosted compilation/admission of {', '.join(scenarios)}")
-        started = time.monotonic()
-        stub_trials, exit_code = [], 0
-        for task in selected:
-            submission = submissions[task.name]
-            code, rows = run.harbor(
-                "stub-replay-" + task.name,
-                task,
-                REPLAY_AGENT,
-                agent_keys=["submission_path=" + str(submission["path"]), "submission_sha256=" + submission["sha256"]],
-                verifier_env=[
-                    "SAPI_LLM_MODE=stub",
-                    "SAPI_EXPECTED_SUBMISSION_SHA256=" + submission["sha256"],
-                    "SAPI_NATIVE_DEADLINE_SECONDS=" + str(read(submission["path"])["execution"]["deadline_seconds"]),
-                ]
-                + (["SAPI_NATIVE_CASES=" + json.dumps(submission["cases"])] if "cases" in submission else []),
-                admission=True,
-            )
-            exit_code = exit_code or code
-            stub_trials.extend(rows)
-        report["preflight"] = {
-            "harbor_exit_code": exit_code,
-            "trials": stub_trials,
-            "hosted_scope": "Live-mode compilation and limits only; no candidate execution or acceptance",
-        }
-        require(
-            exit_code == 0 and sorted(t["task_name"] for t in stub_trials) == sorted(scenarios),
-            "Unpaid stub replay failed",
-        )
-        check_trials(stub_trials, submissions, benchmarks=benchmarks, mode="stub", admission=True)
-        progress(f"preflight: passed ({round(time.monotonic() - started)}s)")
-        if args.preflight_only:
-            report["status"] = "passed"
-            return
+            check_trials(stub_trials, submissions, benchmarks=benchmarks, mode="stub", admission=True)
+            progress(f"preflight: passed ({round(time.monotonic() - started)}s)")
+            if args.preflight_only:
+                report["status"] = "passed"
+                return
         report["not_run"] = list(report["budget"]["cases"])
         report["judge_model"] = args.judge_model
         report_path = run.output / "report.json"
         bridge_url = host.container_url(host.bridge_port)
+        add_stages([f"case {number}/{len(grants)} {s}/{c}" for number, (s, c) in enumerate(grants, 1)])
         for number, ((scenario, name), (grant, _config)) in enumerate(grants.items(), 1):
             step = f"[{number}/{len(grants)}] {scenario}/{name}"
-            progress(f"{step}: live, up to {grant['max_attempts']} model calls reserved")
-            started = time.monotonic()
-            run.check(f"before-{scenario}-{name}")
-            wrapper_identity(args.wrapper_evidence, host.wrapper_url, host.wrapper_model, wrapper_files)
-            label = f"{scenario}-{name}"
-            with ledger.reserved(
-                "runtime", f"{run.output.name}/{scenario}/{name}", grant["max_attempts"], report_path, args.max_calls
-            ) as runtime_outcome:
-                budget = {
-                    **{key: value for key, value in grant.items() if key != "minimum_attempts"},
-                    "model": host.wrapper_model,
-                    "expires_at": time.time() + runtime_grant_seconds(benchmarks[scenario]),
-                }
-                with run.bridge(
-                    budget,
-                    label,
-                    bindings=benchmarks[scenario] / "bindings.yaml",
-                    reject_tool_use=True,
-                ) as audit:
-                    exit_code, trials = run.harbor(
-                        "live-" + label,
-                        benchmarks[scenario],
-                        REPLAY_AGENT,
-                        agent_keys=[
-                            "submission_path=" + str(submissions[scenario]["path"]),
-                            "submission_sha256=" + submissions[scenario]["sha256"],
-                        ],
-                        verifier_env=[
-                            "SAPI_LLM_MODE=live",
-                            "SAPI_NATIVE_MODE=live",
-                            "SAPI_CASE_NAME=" + name,
-                            "SAPI_BRIDGE_URL=" + bridge_url,
-                            "SAPI_EXPECTED_SUBMISSION_SHA256=" + submissions[scenario]["sha256"],
-                        ]
-                        + (["SAPI_NATIVE_JUDGE_MODEL=" + args.judge_model] if args.judge_model else [])
-                        + (
-                            ["SAPI_NATIVE_CASES=" + json.dumps(submissions[scenario]["cases"])]
-                            if "cases" in submissions[scenario]
-                            else []
-                        ),
-                    )
-                report["trials"].extend(trials)
-                records = audit_records(audit)
-                report["audit"].extend(records)
-                if any(row.get("category") == "timeout_unknown_outcome" for row in records):
-                    raise subprocess.TimeoutExpired(
-                        "protected runtime model", runtime_grant_seconds(benchmarks[scenario])
-                    )
-                require(exit_code == 0 and len(trials) == 1, "Live Harbor case failed")
-                trial = trials[0]
-                require(trial["task_name"] == scenario, "Live Harbor selected another benchmark")
-                record_identity = trial_identity(trial)
-                require(
-                    record_identity.get("mode") == "live" and record_identity.get("scenario") == scenario,
-                    "Live record identity differs",
-                )
-                require(
-                    record_identity.get("submission_sha256") == submissions[scenario]["sha256"],
-                    "Live submission identity differs",
-                )
-                exception = trial["exception"] or {}
-                require(
-                    not exception
-                    or (judge_calls.get(scenario) and exception.get("exception_type") == "RewardFileNotFoundError"),
-                    "Live Harbor case failed",
-                )
-                native = collect_native(
-                    trials, submissions, {scenario: {name}}, bridge_url, benchmarks, judge_model=args.judge_model
-                )
-                correlation = reconcile_dispatches(
-                    native,
-                    records,
-                    budget["model"],
-                    bindings=benchmarks[scenario] / "bindings.yaml",
-                )
-                calls, cap = len(correlation), grant["max_attempts"]
-                require(grant["minimum_attempts"] <= calls <= cap, "Unexpected call count")
-                report["correlation"].extend(correlation)
-                run.check(f"before-judge-{scenario}-{name}")
-                if not judge_calls.get(scenario):
-                    check_trials(
-                        trials, submissions, benchmarks=benchmarks, mode="live", expected_cases={scenario: {name}}
-                    )
-                    run.check(f"after-{scenario}-{name}")
-                runtime_outcome.passed = True
-            if judge_calls.get(scenario):
-                from sapi_config_lab.coordinate.native_evaluation import reevaluate_native
-
+            with stage(f"case {number}/{len(grants)} {scenario}/{name}"), run.step(step):
+                progress(f"{step}: live, up to {grant['max_attempts']} model calls reserved")
+                started = time.monotonic()
+                run.check(f"before-{scenario}-{name}")
+                wrapper_identity(args.wrapper_evidence, host.wrapper_url, host.wrapper_model, wrapper_files)
+                label = f"{scenario}-{name}"
                 with ledger.reserved(
-                    "judge",
-                    f"{run.output.name}/{scenario}/{name}/judge",
-                    judge_calls[scenario],
+                    "runtime",
+                    f"{run.output.name}/{scenario}/{name}",
+                    grant["max_attempts"],
                     report_path,
-                    args.max_calls,
-                ) as judge_outcome:
-                    record = Path(trial["result_path"]).parent / "verifier"
-                    reservation = {
-                        "ledger": str(ledger.path),
-                        "index": len(ledger.data["events"]) - 1,
-                        "event": ledger.data["events"][-1],
-                    }
-                    result = reevaluate_native(
-                        record, record / "paid-evaluation", None, dispatch=True, reservation=reservation
-                    )
+                    ceilings["runtime"],
+                ) as runtime_outcome:
+                    audit = None
+                    trials: list[dict] = []
+                    try:
+                        budget = {
+                            **{key: value for key, value in grant.items() if key != "minimum_attempts"},
+                            "model": host.wrapper_model,
+                            "expires_at": time.time() + runtime_grant_seconds(benchmarks[scenario]),
+                        }
+                        with run.bridge(
+                            budget,
+                            label,
+                            bindings=benchmarks[scenario] / "bindings.yaml",
+                            reject_tool_use=True,
+                        ) as audit:
+                            exit_code, trials = run.harbor(
+                                "live-" + label,
+                                benchmarks[scenario],
+                                REPLAY_AGENT,
+                                agent_keys=[
+                                    "submission_path=" + str(submissions[scenario]["path"]),
+                                    "submission_sha256=" + submissions[scenario]["sha256"],
+                                ],
+                                verifier_env=[
+                                    "SAPI_LLM_MODE=live",
+                                    "SAPI_NATIVE_MODE=live",
+                                    "SAPI_CASE_NAME=" + name,
+                                    "SAPI_BRIDGE_URL=" + bridge_url,
+                                    "SAPI_EXPECTED_SUBMISSION_SHA256=" + submissions[scenario]["sha256"],
+                                ]
+                                + (["SAPI_NATIVE_JUDGE_MODEL=" + args.judge_model] if args.judge_model else [])
+                                + (
+                                    ["SAPI_NATIVE_CASES=" + json.dumps(submissions[scenario]["cases"])]
+                                    if "cases" in submissions[scenario]
+                                    else []
+                                ),
+                            )
+                        report["trials"].extend(trials)
+                        records = audit_records(audit)
+                        report["audit"].extend(records)
+                        confirm_runtime(
+                            audit,
+                            trials,
+                            run.output / "jobs" / ("live-" + label),
+                            runtime_grant_seconds(benchmarks[scenario]),
+                        )
+                        require(exit_code == 0 and len(trials) == 1, "Live Harbor case failed")
+                        trial = trials[0]
+                        require(trial["task_name"] == scenario, "Live Harbor selected another benchmark")
+                        record_identity = trial_identity(trial)
+                        require(
+                            record_identity.get("mode") == "live" and record_identity.get("scenario") == scenario,
+                            "Live record identity differs",
+                        )
+                        require(
+                            record_identity.get("submission_sha256") == submissions[scenario]["sha256"],
+                            "Live submission identity differs",
+                        )
+                        exception = trial["exception"] or {}
+                        require(
+                            not exception
+                            or (
+                                judge_calls.get(scenario)
+                                and exception.get("exception_type") == "RewardFileNotFoundError"
+                            ),
+                            "Live Harbor case failed",
+                        )
+                        world = policy(benchmarks[scenario]).get("admission") == "compile"
+                        case_key = f"{scenario}/{name}"
+                        trial["live_case"] = case_key
+                        if not world:
+                            check_trials(
+                                trials,
+                                submissions,
+                                benchmarks=benchmarks,
+                                mode="live",
+                                expected_cases={scenario: {name}},
+                            )
+                        attribution = {"trace": None, "reason": "native_integrity_failed", "node": None}
+                        try:
+                            native = collect_native(
+                                trials,
+                                submissions,
+                                {scenario: {name}},
+                                bridge_url,
+                                benchmarks,
+                                judge_model=args.judge_model,
+                            )
+                            if not world:
+                                require(len(native) == 1, "Missing native live case")
+                                case = native[0]
+                                attribution.update(
+                                    trace=case["trace"],
+                                    reason="dispatch_reconciliation_failed",
+                                    node=case["failed_node"][0]["node"] if len(case["failed_node"]) == 1 else None,
+                                )
+                            calls_native = [call for case in native for call in case["calls"]]
+                            correlation = reconcile_dispatches(
+                                calls_native,
+                                records,
+                                budget["model"],
+                                bindings=benchmarks[scenario] / "bindings.yaml",
+                            )
+                            complete = world or native[0]["trace"] == "complete"
+                            calls, cap = len(correlation), grant["max_attempts"]
+                            require(
+                                (grant["minimum_attempts"] if complete else 0) <= calls <= cap, "Unexpected call count"
+                            )
+                        except (ValueError, AssertionError, OSError, KeyError, TypeError) as error:
+                            if world:
+                                raise
+                            report["case_outcomes"][case_key] = "infrastructure"
+                            report["case_attribution"][case_key] = attribution
+                            progress(f"{step}: stopped: infrastructure ({attribution['reason']})")
+                            raise ValueError(f"Live case stopped: infrastructure ({attribution['reason']})") from error
+                        report["correlation"].extend(correlation)
+                        outcome = None
+                        if not world:
+                            case = native[0]
+                            if complete:
+                                outcome = "accepted" if trial["result"]["acceptance"] else "rejected"
+                                reason = "reconciled_complete_trace"
+                            else:
+                                from sapi_config_lab.compile.n8n import RESOURCES
+
+                                outcome, reason = attribute_incomplete(
+                                    {**case["record"], "acceptance": trial["result"]["acceptance"]},
+                                    case["graph"],
+                                    (
+                                        (RESOURCES / "runtime-fragment.js").read_text(),
+                                        (benchmarks[scenario] / "operations.js").read_text(),
+                                    ),
+                                )
+                            report["case_outcomes"][case_key] = outcome
+                            report["case_attribution"][case_key] = {
+                                "trace": case["trace"],
+                                "reason": reason,
+                                "node": case["failed_node"][0]["node"] if len(case["failed_node"]) == 1 else None,
+                            }
+                            if outcome in {"infrastructure", "unverified"}:
+                                progress(f"{step}: stopped: {outcome} ({reason})")
+                                raise ValueError(f"Live case stopped: {outcome} ({reason})")
+                            report["acceptance_counts"][outcome] += 1
+                        run.check(f"before-judge-{scenario}-{name}")
+                        if not judge_calls.get(scenario) or outcome == "rejected":
+                            if world:
+                                check_trials(
+                                    trials,
+                                    submissions,
+                                    benchmarks=benchmarks,
+                                    mode="live",
+                                    expected_cases={scenario: {name}},
+                                )
+                            run.check(f"after-{scenario}-{name}")
+                        runtime_outcome.passed = True
+                    finally:
+                        # Exceptions after dispatch cannot turn lost completion evidence into failure.
+                        if isinstance(sys.exception(), Exception) and not isinstance(
+                            sys.exception(), (subprocess.TimeoutExpired, UnknownOutcome)
+                        ):
+                            confirm_runtime(
+                                audit,
+                                trials,
+                                run.output / "jobs" / ("live-" + label),
+                                runtime_grant_seconds(benchmarks[scenario]),
+                            )
+                if outcome == "rejected" and judge_calls.get(scenario):
                     trial["native_exception"] = trial["exception"]
                     if exception.get("exception_type") == "RewardFileNotFoundError":
                         trial["exception"] = None
-                    trial["result"] = result
-                    trial["verdict_path"] = str(record / "paid-evaluation/result.json")
-                    report_file = record / "paid-evaluation/evaluation/report.json"
-                    trial["acceptance"] = json.loads(report_file.read_text()) if report_file.exists() else None
-                    trial["evaluation_path"] = str(record / "paid-evaluation/evaluation/report.json")
-                    check_trials(
-                        trials, submissions, benchmarks=benchmarks, mode="live", expected_cases={scenario: {name}}
-                    )
-                    run.check(f"after-{scenario}-{name}")
-                    judge_outcome.passed = True
-            report["not_run"].remove(f"{scenario}/{name}")
-            progress(f"{step}: passed ({round(time.monotonic() - started)}s)")
+                if judge_calls.get(scenario) and outcome != "rejected":
+                    from sapi_config_lab.coordinate import fixture_judge
+                    from sapi_config_lab.coordinate.native_evaluation import reevaluate_native
+
+                    with (
+                        ledger.reserved(
+                            "judge",
+                            f"{run.output.name}/{scenario}/{name}/judge",
+                            judge_allocation[f"{scenario}/{name}"],
+                            report_path,
+                            ceilings["judge"],
+                        ) as judge_outcome,
+                        detail(
+                            f"Judge: {judge_allocation[f'{scenario}/{name}']} reserved call"
+                            + ("s" if judge_allocation[f"{scenario}/{name}"] != 1 else "")
+                            + "; task evaluator running"
+                        ),
+                    ):
+                        record = Path(trial["result_path"]).parent / "verifier"
+                        reservation = {
+                            "ledger": str(ledger.path),
+                            "index": len(ledger.data["events"]) - 1,
+                            "event": ledger.data["events"][-1],
+                        }
+                        derived = record / "paid-evaluation"
+                        report_file = derived / "evaluation/report.json"
+                        result_file = derived / "result.json"
+                        composition = (
+                            {"judge": judge_endpoint, "judge_model": args.judge_model} if scenario in fixture else {}
+                        )
+                        try:
+                            result = reevaluate_native(
+                                record, derived, None, dispatch=True, reservation=reservation, **composition
+                            )
+                        finally:
+                            # The evaluator can fail its Judge postcondition after recording acceptance.
+                            if result_file.is_file():
+                                trial["result"] = json.loads(result_file.read_text())
+                                trial["verdict_path"] = str(result_file)
+                            if report_file.is_file():
+                                trial["acceptance"] = json.loads(report_file.read_text())
+                                trial["evaluation_path"] = str(report_file)
+                        trial["native_exception"] = trial["exception"]
+                        if exception.get("exception_type") == "RewardFileNotFoundError":
+                            trial["exception"] = None
+                        trial["result"] = result
+                        trial["verdict_path"] = str(result_file)
+                        trial["acceptance"] = json.loads(report_file.read_text()) if report_file.exists() else None
+                        trial["evaluation_path"] = str(report_file)
+                        if not world:
+                            require(result["acceptance"] is True, "Judge changed independent acceptance")
+                        require(
+                            (result["quality"] or {}).get("status") == "complete",
+                            "Judge dispatch incomplete: quality is not complete",
+                        )
+                        if scenario in fixture:
+                            # The host composed this Judge, so its own receipt check decides; the child's success does not.
+                            assert args.judge_model is not None and args.judge_wrapper_evidence is not None
+                            fixture_judge.require_fresh(
+                                derived / "judge",
+                                ledger.path,
+                                reservation["index"],
+                                reservation["event"],
+                                model=args.judge_model,
+                                inspection=args.judge_wrapper_evidence,
+                                quality=result["quality"],
+                            )
+                        elif fixture_judge.receipt_state(derived / "judge") is not None:
+                            # A fixture receipt must prove one fresh dispatch for this host event, not another's.
+                            fixture_judge.dispatch_outcome(
+                                derived / "judge", ledger.path, reservation["index"], reservation["event"]
+                            )
+                        check_trials(
+                            trials, submissions, benchmarks=benchmarks, mode="live", expected_cases={scenario: {name}}
+                        )
+                        run.check(f"after-{scenario}-{name}")
+                        judge_outcome.passed = True
+                report["not_run"].remove(f"{scenario}/{name}")
+                progress(f"{step}: {outcome or 'passed'} ({round(time.monotonic() - started)}s)")
+        if report["case_outcomes"]:
+            counts = report["acceptance_counts"]
+            progress(f"live: {counts['accepted']} accepted, {counts['rejected']} rejected of {len(grants)} cases")
         report["counts"] = {
             event: sum(row.get("event") == event for row in report["audit"])
             for event in ("dispatch_attempt", "completion", "failure")
@@ -509,11 +800,23 @@ def main(argv: list[str] | None = None) -> int:
 
     def classify(error: Exception) -> str:
         return failure_category(
-            report["trials"] + report.get("preflight", {}).get("trials", []), report["audit"], "live_gate"
+            report["trials"] + report.get("preflight", {}).get("trials", []),
+            report["audit"],
+            "live_gate",
+            report["case_outcomes"],
         )
 
     try:
-        run_experiment(output, report, body, prefix="sapi-lab-live", classify=classify, host=host)
+        run_experiment(
+            output,
+            report,
+            body,
+            prefix="sapi-lab-live",
+            classify=classify,
+            host=host,
+            command="sapi-lab live",
+            stages=["preflight"],
+        )
     except ValueError as error:
         parser.error(str(error))
     print(json.dumps({"status": report["status"], "report": str(Path(output).resolve() / "report.json")}), flush=True)

@@ -1,0 +1,6 @@
+{
+  "ticket.classify": ["category", "priority"],
+  "ticket.escalation_draft": ["ticket_id", "action", "mode"],
+  "ticket.normal_draft": ["ticket_id", "action", "mode"],
+  "branch.select_one": ["ticket_id", "action", "mode"]
+}

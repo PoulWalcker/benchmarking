@@ -291,99 +291,10 @@ def live_operations(run: dict, compiled: dict | None = None) -> list[dict]:
     for event in final.get("trace", []):
         if event.get("implementation") != "live":
             continue
-        sid = event["step_id"]
-        prepare, guard, http = "Prepare " + sid, "Guard " + sid, "Agency " + sid
-        restored = run.get("mapping", {}).get(sid)
-        require(restored == sid + " [LLM LIVE]", "Live Restore mapping differs from compiled convention")
-        prep_record, prepared = one_run(run, prepare)
-        guard_record, guarded = one_run(run, guard)
-        restore_record, envelope = one_run(run, restored)
-        equal(guarded, prepared, "Native Guard changed Prepare request")
-        equal(
-            guard_record.get("source"),
-            [{"previousNode": prepare, "previousNodeOutput": 0, "previousNodeRun": 0}],
-            "Guard did not receive native Prepare",
-        )
-        equal(envelope.get("events", {}).get(sid), event, "Native Restore event differs from Result")
-        if event["status"] == "skipped":
-            channels = guard_record.get("data", {}).get("main", [])
-            require(len(channels) == 2 and not channels[0] and bool(channels[1]), "Native false Guard branch missing")
-            require(prepared.get("request") is None, "Skipped operation prepared an Agency request")
-            ordered(prep_record, guard_record, prepare, guard)
-            ordered(guard_record, restore_record, guard, restored)
-            require(
-                prepared.get("should_run") is False and not run["run_data"].get(http),
-                "Skipped operation reached Agency",
-            )
-            equal(
-                restore_record.get("source"),
-                [{"previousNode": guard, "previousNodeOutput": 1, "previousNodeRun": 0}],
-                "Skipped Restore did not use false Guard branch",
-            )
-            continue
-        require(event["status"] == "completed" and prepared.get("should_run") is True, "Live operation did not execute")
-        channels = guard_record.get("data", {}).get("main", [])
-        require(
-            len(channels) == 2 and bool(channels[0]) and not channels[1], "Native IF branch does not prove dispatch"
-        )
-        request = prepared.get("request")
-        if not isinstance(request, dict):
-            raise Rejected("Missing native prepared request")
-        equal(request.get("operation"), event["operation"], "Native operation mismatch")
-        equal(request.get("actor"), event.get("actor"), "Native actor mismatch")
-        invocation = request.get("invocation_id")
-        equal(invocation, event.get("invocation_id"), "Native invocation mismatch")
-        ref = final.get("workflow_ref", {})
-        equal(
-            invocation,
-            f"{ref.get('id')}/r{ref.get('revision')}/{sid}/{run.get('workflow_id')}/{run.get('execution_id')}",
-            "Invocation is not bound to native execution identity",
-        )
-        http_record, response = one_run(run, http)
-        equal(
-            http_record.get("source"),
-            [{"previousNode": guard, "previousNodeOutput": 0, "previousNodeRun": 0}],
-            "HTTP did not use native true Guard branch",
-        )
-        equal(
-            restore_record.get("source"),
-            [{"previousNode": http, "previousNodeOutput": 0, "previousNodeRun": 0}],
-            "Restore did not receive native HTTP output",
-        )
-        require(response.get("status") == "completed", "Native HTTP completion missing")
-        equal(response.get("invocation_id"), invocation, "Native HTTP invocation mismatch")
-        equal(
-            response.get("output"),
-            envelope.get("steps", {}).get(sid),
-            "Native HTTP response differs from Restore result",
-        )
-        for first, second in ((prep_record, guard_record), (guard_record, http_record), (http_record, restore_record)):
-            require(
-                type(first.get("startTime")) in (int, float)
-                and type(first.get("executionTime")) in (int, float)
-                and type(second.get("startTime")) in (int, float),
-                "Missing native live timing",
-            )
-            require(
-                first["startTime"] + first["executionTime"] <= second["startTime"], "Native live node ordering mismatch"
-            )
-        expected_http.add(http)
-        if compiled is not None:
-            nodes = {node["name"]: node for node in compiled["nodes"]}
-            for name, kind in ((prepare, "code"), (guard, "if"), (http, "httpRequest"), (restored, "code")):
-                require(
-                    nodes.get(name, {}).get("type") == "n8n-nodes-base." + kind,
-                    "Native live node missing from compiled graph",
-                )
-            for source, target in ((prepare, guard), (guard, http), (http, restored)):
-                require(
-                    {"node": target, "type": "main", "index": 0}
-                    in compiled["connections"].get(source, {}).get("main", [[]])[0],
-                    "Compiled live connection missing",
-                )
-            require(nodes[http].get("retryOnFail", False) is False, "Compiled HTTP retries are not permitted")
-            require(nodes[http]["parameters"]["options"]["timeout"] == 190000, "Unexpected live HTTP timeout")
-        calls.append({"step_id": sid, "http_node": http, "request": request, "response": response})
+        call = _bind_live_operation(run, compiled, final, event)
+        if call is not None:
+            calls.append(call)
+            expected_http.add(call["http_node"])
     observed_http = {
         name for name, records in run.get("run_data", {}).items() if name.startswith("Agency ") and records
     }
@@ -396,3 +307,142 @@ def live_operations(run: dict, compiled: dict | None = None) -> list[dict]:
             "Native node missing from compiled graph",
         )
     return calls
+
+
+def failed_nodes(run: dict) -> list[dict]:
+    """Return native node errors and their execution start times."""
+    return [
+        {
+            "node": node,
+            "name": record["error"].get("name"),
+            "message": record["error"].get("message"),
+            "startTime": record.get("startTime"),
+        }
+        for node, records in run.get("run_data", {}).items()
+        for record in records
+        if record.get("error")
+    ]
+
+
+def executed_live_operations(run: dict, compiled: dict | None) -> list[dict]:
+    """Bind executed live calls from Restore envelopes when Result was not reached."""
+    calls = []
+    for name, records in run.get("run_data", {}).items():
+        if not name.startswith("Agency ") or not records:
+            continue
+        sid = name.removeprefix("Agency ")
+        _, envelope = one_run(run, sid + " [LLM LIVE]")
+        event = envelope.get("events", {}).get(sid)
+        require(
+            isinstance(event, dict) and event.get("step_id") == sid and event.get("implementation") == "live",
+            "Missing native live Restore event",
+        )
+        call = _bind_live_operation(run, compiled, envelope, event)
+        require(call is not None, "Executed Agency occurrence was skipped")
+        assert call is not None
+        calls.append(call)
+    equal(
+        {call["http_node"] for call in calls},
+        {name for name, records in run.get("run_data", {}).items() if name.startswith("Agency ") and records},
+        "Unmatched native Agency execution",
+    )
+    if compiled is not None:
+        require(
+            set(run.get("run_data", {})) <= {node["name"] for node in compiled["nodes"]},
+            "Native node missing from compiled graph",
+        )
+    return calls
+
+
+def _bind_live_operation(run: dict, compiled: dict | None, final: dict, event: dict) -> dict | None:
+    """Bind one occurrence using the native live chain."""
+    sid = event["step_id"]
+    prepare, guard, http = "Prepare " + sid, "Guard " + sid, "Agency " + sid
+    restored = run.get("mapping", {}).get(sid)
+    require(restored == sid + " [LLM LIVE]", "Live Restore mapping differs from compiled convention")
+    prep_record, prepared = one_run(run, prepare)
+    guard_record, guarded = one_run(run, guard)
+    restore_record, envelope = one_run(run, restored)
+    equal(guarded, prepared, "Native Guard changed Prepare request")
+    equal(
+        guard_record.get("source"),
+        [{"previousNode": prepare, "previousNodeOutput": 0, "previousNodeRun": 0}],
+        "Guard did not receive native Prepare",
+    )
+    equal(envelope.get("events", {}).get(sid), event, "Native Restore event differs from Result")
+    if event["status"] == "skipped":
+        channels = guard_record.get("data", {}).get("main", [])
+        require(len(channels) == 2 and not channels[0] and bool(channels[1]), "Native false Guard branch missing")
+        require(prepared.get("request") is None, "Skipped operation prepared an Agency request")
+        ordered(prep_record, guard_record, prepare, guard)
+        ordered(guard_record, restore_record, guard, restored)
+        require(
+            prepared.get("should_run") is False and not run["run_data"].get(http),
+            "Skipped operation reached Agency",
+        )
+        equal(
+            restore_record.get("source"),
+            [{"previousNode": guard, "previousNodeOutput": 1, "previousNodeRun": 0}],
+            "Skipped Restore did not use false Guard branch",
+        )
+        return None
+    require(event["status"] == "completed" and prepared.get("should_run") is True, "Live operation did not execute")
+    channels = guard_record.get("data", {}).get("main", [])
+    require(len(channels) == 2 and bool(channels[0]) and not channels[1], "Native IF branch does not prove dispatch")
+    request = prepared.get("request")
+    if not isinstance(request, dict):
+        raise Rejected("Missing native prepared request")
+    equal(request.get("operation"), event["operation"], "Native operation mismatch")
+    equal(request.get("actor"), event.get("actor"), "Native actor mismatch")
+    invocation = request.get("invocation_id")
+    equal(invocation, event.get("invocation_id"), "Native invocation mismatch")
+    ref = final.get("workflow_ref", {})
+    equal(
+        invocation,
+        f"{ref.get('id')}/r{ref.get('revision')}/{sid}/{run.get('workflow_id')}/{run.get('execution_id')}",
+        "Invocation is not bound to native execution identity",
+    )
+    http_record, response = one_run(run, http)
+    equal(
+        http_record.get("source"),
+        [{"previousNode": guard, "previousNodeOutput": 0, "previousNodeRun": 0}],
+        "HTTP did not use native true Guard branch",
+    )
+    equal(
+        restore_record.get("source"),
+        [{"previousNode": http, "previousNodeOutput": 0, "previousNodeRun": 0}],
+        "Restore did not receive native HTTP output",
+    )
+    require(response.get("status") == "completed", "Native HTTP completion missing")
+    equal(response.get("invocation_id"), invocation, "Native HTTP invocation mismatch")
+    equal(
+        response.get("output"),
+        envelope.get("steps", {}).get(sid),
+        "Native HTTP response differs from Restore result",
+    )
+    for first, second in ((prep_record, guard_record), (guard_record, http_record), (http_record, restore_record)):
+        require(
+            type(first.get("startTime")) in (int, float)
+            and type(first.get("executionTime")) in (int, float)
+            and type(second.get("startTime")) in (int, float),
+            "Missing native live timing",
+        )
+        require(
+            first["startTime"] + first["executionTime"] <= second["startTime"], "Native live node ordering mismatch"
+        )
+    if compiled is not None:
+        nodes = {node["name"]: node for node in compiled["nodes"]}
+        for name, kind in ((prepare, "code"), (guard, "if"), (http, "httpRequest"), (restored, "code")):
+            require(
+                nodes.get(name, {}).get("type") == "n8n-nodes-base." + kind,
+                "Native live node missing from compiled graph",
+            )
+        for source, target in ((prepare, guard), (guard, http), (http, restored)):
+            require(
+                {"node": target, "type": "main", "index": 0}
+                in compiled["connections"].get(source, {}).get("main", [[]])[0],
+                "Compiled live connection missing",
+            )
+        require(nodes[http].get("retryOnFail", False) is False, "Compiled HTTP retries are not permitted")
+        require(nodes[http]["parameters"]["options"]["timeout"] == 190000, "Unexpected live HTTP timeout")
+    return {"step_id": sid, "http_node": http, "request": request, "response": response}

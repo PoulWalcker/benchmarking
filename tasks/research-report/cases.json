@@ -1,0 +1,53 @@
+{
+  "positive": [
+    {
+      "name": "orion-clinics",
+      "inputs": {
+        "material": "Orion offers CSV export and SSO. Customers: clinics and retailers. Channels: email and partner referrals."
+      },
+      "terms": [
+        "CSV export",
+        "SSO",
+        "clinics",
+        "retailers",
+        "email",
+        "partner referrals"
+      ]
+    },
+    {
+      "name": "beacon-bookings",
+      "inputs": {
+        "material": "Beacon includes booking reminders and invoice PDF. Audiences: yoga studios and salons. Channels: SMS and local workshops."
+      },
+      "terms": [
+        "booking reminders",
+        "invoice PDF",
+        "yoga studios",
+        "salons",
+        "SMS",
+        "local workshops"
+      ]
+    }
+  ],
+  "negative": [
+    {
+      "name": "empty-material",
+      "inputs": {
+        "material": ""
+      },
+      "error": "Material must be nonempty",
+      "operation": "research.validate"
+    },
+    {
+      "name": "whitespace-material",
+      "inputs": {
+        "material": "   "
+      },
+      "error": "Material must be nonempty",
+      "operation": "research.validate"
+    }
+  ],
+  "live_cases": [
+    "orion-clinics"
+  ]
+}

@@ -4,6 +4,7 @@ from collections.abc import Callable
 import json
 from pathlib import Path
 
+from sapi_config_lab.coordinate import fixture_judge
 from sapi_config_lab.coordinate.ledger import Ledger, open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.native_record import SCHEMA
 from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
@@ -38,6 +39,11 @@ def validate_record(record: Path, task: Path, sources: dict) -> dict:
         or ("native_mode" in options and options["native_mode"] not in {"control", "admission", "live"})
     ):
         raise ValueError("Invalid native recorded runtime options")
+    judge = (options.get("judge_mode"), options.get("judge_model"))
+    if ("judge_mode" in options or "judge_model" in options) and not (
+        judge == ("demo", None) or (judge[0] in {"codex", "wrapper"} and isinstance(judge[1], str) and judge[1].strip())
+    ):
+        raise ValueError("Invalid native recorded Judge identity")
     submission = record / "evidence/submission.yaml"
     actual = sha256(submission) if submission.is_file() else None
     if "submission_sha256" not in metadata or actual != metadata["submission_sha256"]:
@@ -50,8 +56,58 @@ def validate_record(record: Path, task: Path, sources: dict) -> dict:
     return metadata
 
 
-def evaluate_record(task: Path, evaluator: Callable, request: dict) -> dict:
-    """Task-owned composition calls its evaluator with the original reservation rules."""
+def judge_endpoint(value: object) -> dict | None:
+    """The host-owned Judge wrapper a fixture dispatch may use; never native configuration."""
+    if value is None:
+        return None
+    if (
+        not isinstance(value, dict)
+        or set(value) != {"upstream", "inspection", "files"}
+        or not isinstance(value["upstream"], str)
+        or not value["upstream"]
+        or not isinstance(value["inspection"], str)
+        or not isinstance(value["files"], dict)
+        or not all(isinstance(name, str) and isinstance(path, str) for name, path in value["files"].items())
+    ):
+        raise ValueError("Invalid Judge endpoint")
+    return {
+        "upstream": value["upstream"],
+        "inspection": Path(value["inspection"]),
+        "wrapper_files": {name: Path(path) for name, path in value["files"].items()},
+    }
+
+
+def _resolve_judge(options: dict, recorded: dict, request: dict, *, composed: bool) -> None:
+    """Bind the derived Judge identity: a frozen one is never overridden and the runtime model never fills in."""
+    if request.get("calibration"):
+        return
+    named, frozen = request.get("judge_model"), recorded.get("judge_model")
+    if named is not None and frozen is not None and named != frozen:
+        raise ValueError("The recorded Judge model is frozen and cannot be overridden")
+    if not composed:
+        if named is not None and frozen is None:
+            raise ValueError("This task composes no Judge for an explicitly named model")
+        return
+    if request.get("judgement"):
+        answered = fixture_judge.saved_model(Path(request["judgement"]))
+        if any(model not in (None, answered) for model in (named, frozen)):
+            raise ValueError("The saved Judge identity differs from the requested or recorded Judge")
+        named = answered
+    model = frozen or named
+    if model is not None:
+        if options.get("judge_mode", "wrapper") != "wrapper":
+            raise ValueError("A fixture Judge dispatches only through the inspected wrapper")
+        # Derived options only; the native record and its options digest stay unchanged.
+        options.update(judge_mode="wrapper", judge_model=model)
+
+
+def evaluate_record(task: Path, evaluator: Callable, request: dict, *, judge_factory: Callable | None = None) -> dict:
+    """Task-owned composition calls its evaluator with the original reservation rules.
+
+    An explicit `judge_factory` builds the Judge from the one-use reservation callback and the
+    stronger fixture receipt contract applies; without one the evaluator receives the callback.
+    For a saved judgement the same factory receives `saved` instead and nothing is reserved.
+    """
     record, output = Path(request["record"]).resolve(), Path(request["output"]).resolve()
     sources = source_manifest()
     metadata = validate_record(record, task, sources)
@@ -78,17 +134,44 @@ def evaluate_record(task: Path, evaluator: Callable, request: dict) -> dict:
     cost = policy(task).get("judge_calls", 0)
     if (options["dispatch"] or request.get("calibration") or request.get("judgement")) and not cost:
         raise ValueError("This task has no semantic judge")
+    endpoint = judge_endpoint(request.get("judge"))
+    if endpoint is not None and (judge_factory is None or not options["dispatch"]):
+        raise ValueError("A Judge endpoint needs a requested dispatch by a task that composes a fixture Judge")
+    _resolve_judge(options, metadata["options"], request, composed=judge_factory is not None)
     consumed = False
+    duplicate = False
+    work_complete = False
+    receipts = output / "judge" if judge_factory is not None and options["dispatch"] else None
+    saved = Path(request["judgement"]) if judge_factory is not None and request.get("judgement") else None
+
+    def settle(call: Callable, ledger: Path, index: int, event: dict) -> dict:
+        if receipts is None:
+            return call()
+        return fixture_judge.dispatch_reserved(
+            receipts,
+            call,
+            ledger,
+            index,
+            event,
+            model=options.get("judge_model"),
+            inspection_sha256=sha256(endpoint["inspection"]) if endpoint else None,
+        )
 
     def reserved(call: Callable) -> dict:
-        nonlocal consumed
-        if consumed or not cost or source_manifest() != sources:
+        nonlocal consumed, duplicate, work_complete
+        if consumed:
+            duplicate = True
+            raise ValueError("Native judge reservation was consumed more than once")
+        if not cost or source_manifest() != sources:
             raise ValueError("Native judge reservation or source identity differs")
         consumed = True
         existing = request.get("reservation")
         if existing is not None:
             ledger = Ledger.open(Path(existing["ledger"]), ceilings=None, stop_after_failure=None)
-            event = ledger.data["events"][existing["index"]]
+            index = existing["index"]
+            if type(index) is not int or not 0 <= index < len(ledger.data["events"]):
+                raise ValueError("Native judge requires the exact pending host reservation")
+            event = ledger.data["events"][index]
             if (
                 event != existing["event"]
                 or event["phase"] != "judge"
@@ -96,21 +179,73 @@ def evaluate_record(task: Path, evaluator: Callable, request: dict) -> dict:
                 or event["count"] != cost
             ):
                 raise ValueError("Native judge requires the exact pending host reservation")
-            return call()
+            result = settle(call, Path(existing["ledger"]), index, event)
+            work_complete = isinstance(result, dict) and result.get("status") == "complete"
+            return result
         series = Path(request["series_dir"]) if request.get("series_dir") else None
         ledger = open_ledger(output, series, {"judge": cost}, False, parse_ceilings(request.get("series_ceiling")))
         with ledger.reserved("judge", f"{output.name}/judge", cost, output / "result.json", cost) as outcome:
-            result = call()
-            outcome.passed = result["status"] == "complete"
+            index = len(ledger.data["events"]) - 1
+            result = settle(call, ledger.path, index, ledger.data["events"][index])
+            work_complete = isinstance(result, dict) and result.get("status") == "complete"
+            outcome.passed = work_complete
             return result
 
-    if options["dispatch"]:
+    if options["dispatch"] and receipts is None:
         options["reserved_judge"] = reserved
     output.mkdir(parents=True, exist_ok=False)
-    result = validate_result(evaluator(record / "evidence", options))
+    if saved is not None:
+        assert judge_factory is not None
+        (output / "judge").mkdir()
+        # A saved Judge replays `saved` exactly and writes only its replay receipt into `directory`.
+        replay = judge_factory(
+            directory=output / "judge",
+            native_identity=(record / "native-task.json").read_bytes(),
+            options=dict(options),
+            saved=saved,
+        )
+        returned = evaluator(record / "evidence", options, judge=replay)
+        if (
+            isinstance(returned, dict)
+            and (returned.get("quality") or {}).get("status") == "complete"
+            and not (output / "judge/replay-receipt.json").is_file()
+        ):
+            raise ValueError("Saved Judge quality without a replay")
+    elif receipts is None:
+        returned = evaluator(record / "evidence", options)
+    else:
+        assert judge_factory is not None
+        judge = judge_factory(
+            directory=receipts,
+            native_identity=(record / "native-task.json").read_bytes(),
+            options=dict(options),
+            reserved=reserved,
+            wrapper=endpoint or {"upstream": None, "inspection": None, "wrapper_files": None},
+        )
+        if fixture_judge.receipt_state(receipts) != "not_dispatched":
+            raise ValueError("Judge factory must initialize an undispatched fresh receipt")
+        with fixture_judge.unknown_while_unsettled(receipts):
+            returned = evaluator(record / "evidence", options, judge=judge)
+            # Rubric catches may have hidden an unknown dispatch; keep acceptance, never its quality.
+            if fixture_judge.receipt_state(receipts) in fixture_judge.UNSETTLED and isinstance(returned, dict):
+                write_json(output / "result.json", validate_result({**returned, "quality": None}))
+        fixture_judge.skip(receipts, "The evaluator completed no Judge dispatch")
+    try:
+        result = validate_result(returned)
+    except ValueError:
+        if options["dispatch"] and isinstance(returned, dict) and returned.get("quality") is not None:
+            diagnostic = validate_result({**returned, "quality": None})
+            if source_manifest() != sources:
+                raise ValueError("Native evaluator sources changed") from None
+            write_json(output / "result.json", diagnostic)
+        raise
     if source_manifest() != sources:
         raise ValueError("Native evaluator sources changed")
     write_json(output / "result.json", result)
+    if options["dispatch"] and (
+        not consumed or duplicate or not work_complete or (result["quality"] or {}).get("status") != "complete"
+    ):
+        raise ValueError("Judge dispatch incomplete: callback and complete quality are required")
     return result
 
 
@@ -127,4 +262,7 @@ def reevaluate_native(record: Path, output: Path, judgement: Path | None, **opti
         "judgement": str(judgement.resolve()) if judgement else None,
         **options,
     }
-    return validate_result(invoke(task, request, sources))
+    # A task process lost after its Judge start receipt is an unknown spend, not a known failure.
+    with fixture_judge.unknown_while_unsettled(output / "judge"):
+        result = invoke(task, request, sources)
+    return validate_result(result)

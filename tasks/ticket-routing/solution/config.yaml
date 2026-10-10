@@ -1,0 +1,54 @@
+schema: sapi-lab/v0
+spec_revision: 06ddd3333109cea8a2cb3071609070d7a3c0d3ff
+workflow:
+  id: ticket-routing
+  revision: 1
+  kind: Gantt
+  inputs:
+    ticket:
+      id: T-101
+      text: My order is late
+      days_overdue: 4
+  steps:
+    - id: classify
+      kind: LLM
+      uses: ticket.classify
+      with:
+        ticket: {ref: inputs.ticket}
+    - id: escalate
+      kind: Script
+      uses: ticket.escalation_draft
+      with:
+        ticket: {ref: inputs.ticket}
+      when: {ref: steps.classify.priority, eq: high}
+    - id: normal
+      kind: Script
+      uses: ticket.normal_draft
+      with:
+        ticket: {ref: inputs.ticket}
+      when: {ref: steps.classify.priority, eq: normal}
+    - id: select
+      kind: Script
+      uses: branch.select_one
+      with:
+        escalated: {optional_ref: steps.escalate}
+        normal: {optional_ref: steps.normal}
+      join: all_terminal
+  dependencies:
+    - [classify, escalate]
+    - [classify, normal]
+    - [escalate, select]
+    - [normal, select]
+  acceptance: Exactly one branch executes and returns an appropriate ticket draft.
+  output: {ref: steps.select}
+activation:
+  kind: Callback
+  rule_id: ticket-received
+  hook: ticket.received
+  condition: valid_input
+  reaction: Trigger
+  workflow_ref: {id: ticket-routing, revision: 1}
+execution:
+  concurrency: independent
+  deadline_seconds: 120
+  on_step_error: fail

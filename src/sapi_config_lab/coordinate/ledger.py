@@ -17,6 +17,14 @@ SCHEMA = "sapi-lab-ledger/v1"
 EVENT_FIELDS = {"phase", "name", "count", "status", "report"}
 
 
+class UnknownOutcome(Exception):
+    """A dispatched call lacks positive completion evidence."""
+
+    def __init__(self, reason: str):
+        self.reason = reason
+        super().__init__(reason)
+
+
 @dataclass
 class Outcome:
     """Set `passed` once the reserved work's own gate has been checked."""
@@ -132,7 +140,8 @@ class Ledger:
         outcome = Outcome()
         try:
             yield outcome
-        except subprocess.TimeoutExpired:
+        except (subprocess.TimeoutExpired, UnknownOutcome) as error:
+            error.__dict__.update(phase=phase, reservation=name)
             raise  # stays unknown: the work may have dispatched
         except Exception:
             self.finish(reservation, False)

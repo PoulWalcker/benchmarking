@@ -30,6 +30,9 @@ CALIBRATION = __import__(PACKAGE + ".calibration", fromlist=["calibration_fixtur
 
 
 class CheckoutEvaluatorOwnershipTests(unittest.TestCase):
+    def test_checkout_has_no_local_rubric_card(self):
+        self.assertFalse((DIRECTORY / "rubric.json").exists())
+
     def test_checkout_calibration_retains_only_its_own_exact_narratives(self):
         actual = json.loads((DIRECTORY / "judge-calibration.json").read_text())
         # The digest pins checkout's subset of the audited baseline calibration document.

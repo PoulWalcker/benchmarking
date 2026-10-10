@@ -28,20 +28,6 @@ ALLOWED = {
     },
 }
 
-# Native trusted scripts are explicit composition roots, not lower-stage modules.
-NATIVE_COORDINATORS = {
-    "native_tasks.invoice-total.experiment": set(),
-    "native_tasks.checkout-recovery.experiment": set(),
-    "native_tasks.invoice-total.tests.main": {"payload.evaluation.evaluator", "payload.experiment"},
-    "native_tasks.checkout-recovery.tests.main": {
-        "payload.environment.hooks",
-        "payload.experiment",
-        "payload.evaluation.evaluator",
-        "payload.evaluation.scoring",
-    },
-    "native_tasks.checkout-recovery.tests.fake_bridge": set(),
-    "native_tasks.checkout-recovery.tests.calibration_transport": set(),
-}
 ALLOWED["benchmark_domain"] = {SHARED, "verification", "benchmark_domain"}
 ALLOWED["native_coordinate"] = ALLOWED["coordinate"] | {"benchmark_domain", "native_coordinate"}
 
@@ -64,8 +50,20 @@ STAGES = {
 }
 
 
+def native_composition_roots() -> dict[str, Path]:
+    """Discover trusted roots by their fixed locations, without loading task code."""
+    roots = {}
+    for pattern in ("*/experiment.py", "*/tests/*.py"):
+        for path in (ROOT / "tasks").glob(pattern):
+            relative = path.relative_to(ROOT / "tasks")
+            task = ROOT / "tasks" / relative.parts[0]
+            if path.is_file() and not task.is_symlink() and path.resolve().is_relative_to(task.resolve()):
+                roots[".".join(("native_tasks", *relative.with_suffix("").parts))] = task
+    return roots
+
+
 def stage_of(module: str) -> str:
-    if module in NATIVE_COORDINATORS:
+    if module in native_composition_roots():
         return "native_coordinate"
     if module.startswith("native_tasks."):
         parts = module.split(".")
@@ -121,6 +119,18 @@ class StageBoundaryTests(unittest.TestCase):
     def test_imports_follow_stage_rules(self):
         self.assertEqual(self.violations(), set(), "Cross-stage import; see docs/ARCHITECTURE.md")
 
+    def test_the_fixture_judge_adapter_is_reachable_only_from_coordination_and_composition_roots(self):
+        self.assertEqual(stage_of("coordinate.fixture_judge"), "coordinate")
+        importers = {
+            module
+            for module, path, verifier in modules()
+            if "coordinate.fixture_judge" in imported(path, module, verifier)
+        }
+        self.assertTrue(importers)
+        self.assertEqual({stage_of(module) for module in importers} - {"coordinate", "native_coordinate"}, set())
+        for stage in (SHARED, "execute", "evaluate", "verification", "benchmark_domain"):
+            self.assertNotIn("coordinate", ALLOWED[stage], stage)
+
     def test_dynamic_imports_have_explicit_boundaries(self):
         # The selected benchmark loader is the only neutral dynamic-import seam.
         for module, path, _ in modules():
@@ -148,7 +158,7 @@ class StageBoundaryTests(unittest.TestCase):
             for module, _, _ in modules()
             if module.startswith("native_tasks.") and stage_of(module) != "benchmark_domain"
         }
-        self.assertEqual(native, set(NATIVE_COORDINATORS), "Every native script needs explicit ownership")
+        self.assertEqual(native, set(native_composition_roots()), "Every native script needs explicit ownership")
         for stage in stages:
             self.assertTrue((ROOT / "src" / PACKAGE / stage).is_dir(), stage)
 
@@ -162,7 +172,9 @@ class StageBoundaryTests(unittest.TestCase):
                     self.assertFalse(owned & {alias.name for alias in node.names}, module)
 
 
-def ownership_imports(source: str, module: str, *, package: bool = False) -> set[str]:
+def ownership_imports(
+    source: str, module: str, *, package: bool = False, module_files: set[str] | None = None
+) -> set[str]:
     """Resolve static and literal dynamic imports without importing benchmark code."""
     tree = ast.parse(source)
     parent_parts = module.split(".") if package else module.split(".")[:-1]
@@ -178,7 +190,8 @@ def ownership_imports(source: str, module: str, *, package: bool = False) -> set
             if node.level:
                 parent = ".".join([*parent_parts[: len(parent_parts) - node.level + 1], *parent.split(".")]).rstrip(".")
             names.add(parent)
-            names.update(f"{parent}.{alias.name}" for alias in node.names)
+            if parent not in (module_files or set()):
+                names.update(f"{parent}.{alias.name}" for alias in node.names)
             if parent == "importlib":
                 loaders.update(alias.asname or alias.name for alias in node.names if alias.name == "import_module")
     for node in ast.walk(tree):
@@ -201,16 +214,36 @@ def ownership_imports(source: str, module: str, *, package: bool = False) -> set
 def ownership_edges(module: str, source: str, *, package: bool = False) -> set[tuple[str, str]]:
     """Forbidden benchmark and infrastructure imports, regardless of stage or import syntax."""
     found = set()
-    for name in ownership_imports(source, module, package=package):
-        if (name == "payload" or name.startswith("payload.")) and not any(
-            name == allowed or name.startswith(allowed + ".") for allowed in NATIVE_COORDINATORS.get(module, set())
-        ):
-            found.add((module, "benchmark_domain"))
+    task = native_composition_roots().get(module)
+    module_files = (
+        {
+            "payload." + ".".join(path.relative_to(task).with_suffix("").parts)
+            for path in task.rglob("*.py")
+            if path.name != "__init__.py" and path.resolve().is_relative_to(task.resolve())
+        }
+        if task
+        else set()
+    )
+    for name in ownership_imports(source, module, package=package, module_files=module_files):
+        if name == "payload" or name.startswith("payload."):
+            permitted = False
+            if task:
+                target = task.joinpath(*name.split(".")[1:])
+                permitted = name == "payload" or any(
+                    path.is_file() and path.resolve().is_relative_to(task.resolve())
+                    for path in (target.with_suffix(".py"), target / "__init__.py")
+                )
+            if not permitted:
+                found.add((module, "benchmark_domain"))
         if any(
             name == prefix or name.startswith(prefix + ".")
             for prefix in ("benchmarks", "tasks", PACKAGE + ".resources.benchmarks", PACKAGE + ".resources.tasks")
         ):
             found.add((module, "tasks"))
+        if name == "native_tasks" or name.startswith("native_tasks."):
+            own_task = ".".join(module.split(".")[:2])
+            if not module.startswith("native_tasks.") or not (name == own_task or name.startswith(own_task + ".")):
+                found.add((module, "tasks"))
         if (
             (name == "harbor" or name.startswith("harbor."))
             and not module.startswith("sapi_config_lab.harbor_integration.")
@@ -240,7 +273,7 @@ class OwnershipTests(unittest.TestCase):
         self.assertTrue(ownership_edges("sapi_config_lab.compile.n8n", "from payload.environment.hooks import prepare"))
         self.assertNotIn("native_coordinate", ALLOWED["compile"])
         self.assertNotIn("native_coordinate", ALLOWED["coordinate"])
-        self.assertEqual(stage_of("native_tasks.checkout-recovery.tests.unregistered"), "unclassified_native")
+        self.assertEqual(stage_of("native_tasks.checkout-recovery.solution.helper"), "unclassified_native")
 
     def test_static_relative_and_literal_dynamic_imports_obey_boundaries(self):
         examples = (

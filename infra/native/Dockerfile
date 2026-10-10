@@ -7,12 +7,6 @@ WORKDIR /app
 USER 1000
 CMD ["sleep", "infinity"]
 
-FROM public AS invoice-total-public
-COPY tasks/invoice-total/instruction.md tasks/invoice-total/task.md tasks/invoice-total/bindings.yaml /app/public/
-
-FROM public AS checkout-recovery-public
-COPY tasks/checkout-recovery/instruction.md tasks/checkout-recovery/authoring-notes.md tasks/checkout-recovery/bindings.yaml tasks/checkout-recovery/authoring-prompt.txt /app/public/
-
 # Trusted stages use the existing pinned n8n runtime, never a public descendant.
 FROM sapi-native-runtime:phase1 AS core
 COPY --from=sapi-identity source-manifest.json /opt/source-manifest.json
@@ -25,20 +19,3 @@ COPY --from=sapi-verification *.py /tests/core/verification/
 COPY --from=sapi-core harbor_integration/submission.py /opt/sapi-submission.py
 ENV PYTHONPATH=/tests/core:/tests PYTHONDONTWRITEBYTECODE=1 PYTHONNOUSERSITE=1
 RUN mkdir -p /submission /logs/artifacts
-
-FROM core AS invoice-total-verifier
-COPY tasks/invoice-total/experiment.py /tests/payload/experiment.py
-COPY tasks/invoice-total/bindings.yaml tasks/invoice-total/operations.js tasks/invoice-total/cases.json /tests/payload/
-COPY tasks/invoice-total/evaluation /tests/payload/evaluation
-RUN python3 -c "from payload.evaluation.evaluator import plan, evaluate; from sapi_config_lab.coordinate.task_worker import run_task"
-
-FROM core AS checkout-recovery-verifier
-COPY tasks/checkout-recovery/experiment.py /tests/payload/experiment.py
-COPY tasks/checkout-recovery/tests/calibration/judge-reply.json /tests/calibration/judge-reply.json
-COPY tasks/checkout-recovery/bindings.yaml tasks/checkout-recovery/operations.js /tests/payload/
-COPY tasks/checkout-recovery/evaluation /tests/payload/evaluation
-COPY tasks/checkout-recovery/environment/__init__.py tasks/checkout-recovery/environment/hooks.py tasks/checkout-recovery/environment/server.py tasks/checkout-recovery/environment/install.py /tests/payload/environment/
-COPY tasks/checkout-recovery/provenance/autowfbench-source.json /tests/payload/provenance/
-RUN python3 /tests/payload/environment/install.py
-ENV PYTHONPATH=/tests/core:/tests:/tests/payload/vendor/autowfbench AUTOWFBENCH_ROOT=/tests/payload/vendor/autowfbench
-RUN python3 -c "from payload.environment.hooks import plan, prepare, snapshot; from payload.evaluation.evaluator import evaluate; from sapi_config_lab.execute.agency import make_handler"

@@ -8,12 +8,12 @@ from datetime import UTC, datetime
 import json
 from pathlib import Path
 import shutil
-import subprocess
 import sys
 from typing import Any
 
 from sapi_config_lab.coordinate.evaluation import control_passed
 from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
+from sapi_config_lab.coordinate.progress import detail, stage
 from sapi_config_lab.coordinate.provenance import host_environment
 from sapi_config_lab.coordinate.runs import Run, progress, run_experiment
 from sapi_config_lab.execute.host import LAB_IMAGE, run_logged
@@ -91,52 +91,84 @@ def main(argv: list[str] | None = None) -> int:
             raise RuntimeError(f"Control check failed: {name}")
 
     def body(run: Run) -> None:
-        report["docker_version"] = subprocess.check_output(
-            ["docker", "version", "--format", "{{.Server.Version}}"], text=True
-        ).strip()
-        progress(f"local tests; report directory {run.output}")
-        exit_code = run_logged(
-            [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v", "-p", "test_*.py"],
-            run.output / "local-tests.log",
-            timeout=LOCAL_TESTS_SECONDS,
-        )
-        check("local_tests", exit_code == 0, exit_code=exit_code)
-        for task in tasks:
-            invoke(
-                task,
-                {"action": "plan", "submission": str(task / "solution/config.yaml"), "options": {"mode": "stub"}},
-                run.sources,
+        report["docker_version"] = report["docker"]["server_version"]
+        with stage("local tests"), run.step("local tests", log="local-tests"):
+            exit_code = run_logged(
+                [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v", "-p", "test_*.py"],
+                run.output / "local-tests.log",
+                stage="local tests",
+                timeout=LOCAL_TESTS_SECONDS,
             )
-        progress("transport: Harbor builds and runs real n8n HTTP transport and rejection probes")
-        report["transport"] = transport_probe(run, skip_build=args.skip_build)
-        check("real_n8n_transport", report["transport"]["exit_code"] == 0 and report["transport"].get("passed") is True)
-        if not args.skip_build:
-            run.use_image(LAB_IMAGE)
-        progress(f"native images: verifying sources and {len(selected)} checked-in tasks")
-        run.use_native_tasks(tasks, build=not args.skip_build)
-        for agent in ("oracle", "nop"):
-            progress(f"{agent}: {len(selected)} Harbor tasks through real n8n")
-            trials, exit_codes = [], []
+            check("local_tests", exit_code == 0, exit_code=exit_code)
+        with stage("task plans"):
             for task in tasks:
-                code, rows = run.harbor(agent + "-" + task.name, task, agent)
-                exit_codes.append(code)
-                trials.extend(rows)
-            exit_code = next((code for code in exit_codes if code), 0)
-            passed = (
-                exit_code == 0
-                and sorted(t["task_name"] for t in trials) == sorted(selected)
-                and all(
-                    control_passed(agent, trial, reference_reward=policies[trial["task_name"]].get("reference_reward"))
-                    for trial in trials
-                )
+                with run.step("plan " + task.name), detail("plan " + task.name):
+                    invoke(
+                        task,
+                        {
+                            "action": "plan",
+                            "submission": str(task / "solution/config.yaml"),
+                            "options": {"mode": "stub"},
+                        },
+                        run.sources,
+                    )
+        with stage("transport"), run.step("transport", log="transport"):
+            with detail("Harbor builds and runs real n8n HTTP transport and rejection probes"):
+                report["transport"] = transport_probe(run, skip_build=args.skip_build)
+            check(
+                "real_n8n_transport",
+                report["transport"]["exit_code"] == 0 and report["transport"].get("passed") is True,
             )
-            report[agent] = {"passed": passed, "harbor_exit_code": exit_code, "trials": trials}
-            progress(f"{agent}: {'passed' if passed else 'failed'}")
-            check(f"harbor_{agent}", passed)
+        with stage("native images"), detail(f"verifying sources and {len(selected)} checked-in tasks"):
+            if not args.skip_build:
+                run.use_image(LAB_IMAGE)
+            run.use_native_tasks(tasks, build=not args.skip_build)
+        for agent in ("oracle", "nop"):
+            with stage(agent), run.step(f"harbor_{agent}"):
+                progress(f"{agent}: {len(selected)} Harbor tasks through real n8n")
+                trials, exit_codes = [], []
+                for task in tasks:
+                    code, rows = run.harbor(agent + "-" + task.name, task, agent)
+                    exit_codes.append(code)
+                    trials.extend(rows)
+                exit_code = next((code for code in exit_codes if code), 0)
+                passed = (
+                    exit_code == 0
+                    and sorted(t["task_name"] for t in trials) == sorted(selected)
+                    and all(
+                        control_passed(
+                            agent, trial, reference_reward=policies[trial["task_name"]].get("reference_reward")
+                        )
+                        for trial in trials
+                    )
+                )
+                report[agent] = {"passed": passed, "harbor_exit_code": exit_code, "trials": trials}
+                progress(f"{agent}: {'passed' if passed else 'failed'}")
+                failed_task = next((task.name for task, code in zip(tasks, exit_codes, strict=True) if code), None)
+                if not passed and failed_task is None:
+                    failed_task = next(
+                        (
+                            trial["task_name"]
+                            for trial in trials
+                            if not control_passed(
+                                agent, trial, reference_reward=policies[trial["task_name"]].get("reference_reward")
+                            )
+                        ),
+                        selected[0],
+                    )
+                with run.step(f"harbor_{agent}", log=agent + "-" + (failed_task or selected[0])):
+                    check(f"harbor_{agent}", passed)
         report["status"] = "passed"
 
     try:
-        run_experiment(output, report, body, prefix="sapi-lab-harbor")
+        run_experiment(
+            output,
+            report,
+            body,
+            prefix="sapi-lab-harbor",
+            command="sapi-lab harbor",
+            stages=["local tests", "task plans", "transport", "native images", "oracle", "nop"],
+        )
     except ValueError as error:
         parser.error(str(error))
     print(json.dumps({"status": report["status"], "report": str(Path(output).resolve() / "report.json")}), flush=True)

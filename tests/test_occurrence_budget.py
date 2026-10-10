@@ -17,6 +17,37 @@ execute = partial(agency_execute, transport=request_wrapper)
 
 
 class OccurrenceBudgetTests(unittest.TestCase):
+    def test_deadline_expiring_after_attempt_record_proves_non_dispatch(self):
+        request = {"invocation_id": "workflow/r1/step/wf/1", "operation": "SummarizeIncident", "inputs": {}}
+        with tempfile.TemporaryDirectory() as directory:
+            audit = DispatchAudit(
+                Path(directory) / "audit.jsonl",
+                {
+                    "max_attempts": 1,
+                    "operations": {"SummarizeIncident": 1},
+                    "model": "configured-model",
+                    "expires_at": 2,
+                    "occurrences": {"workflow/r1/step": "SummarizeIncident"},
+                },
+            )
+            catalog = {
+                "SummarizeIncident": {
+                    "kind": "LLM",
+                    "prompt": "summarize",
+                    "input_schema": {"type": "object"},
+                    "output_schema": {"type": "object"},
+                }
+            }
+            with (
+                patch("sapi_config_lab.execute.agency.time.time", side_effect=[1, 1, 1, 3, 3]),
+                patch("sapi_config_lab.harbor_integration.model_wrapper.urlopen") as dispatch,
+                self.assertRaises(ContractError),
+            ):
+                execute(request, catalog, "http://unused", 1, audit=audit)
+            dispatch.assert_not_called()
+            self.assertEqual([row["event"] for row in audit.records()], ["dispatch_attempt", "failure"])
+            self.assertEqual(audit.records()[-1]["model_outcome"], "not_dispatched")
+
     def test_wrong_occurrence_never_spends_an_allowed_operation_budget(self):
         budget = {
             "max_attempts": 1,

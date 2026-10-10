@@ -175,7 +175,7 @@ def sha256_bytes(raw: bytes) -> str:
 
 
 def canonical(value: Any) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
 
 
 def digest(value: Any) -> str:
@@ -379,6 +379,21 @@ def read_evidence(evidence: Path, expected_plan: dict) -> dict[str, dict[str, st
     return files
 
 
+def verified_content_digest(
+    evidence: Path, expected_plan: dict, files: dict[str, dict[str, str]], identity: dict
+) -> str:
+    """Identify the exact inventory after read_evidence has validated it."""
+    return digest(
+        {
+            "plan_sha256": digest(expected_plan),
+            "submission_sha256": expected_plan["submission_sha256"],
+            "entries": [{"name": entry["name"], "files": files[entry["name"]]} for entry in expected_plan["entries"]],
+            "observation_sha256": sha256_bytes((evidence / "observation.json").read_bytes()),
+            "evaluator": identity,
+        }
+    )
+
+
 def check_runtime_sources(runtime_src: Path, manifest_path: Path) -> None:
     """Detects edits to the packaged runtime a candidate could make in its container; not a sandbox."""
     expected = json.loads(manifest_path.read_text())
@@ -521,6 +536,7 @@ def evaluate(
             "Live report checks source evidence and dataflow; natural-language semantic completeness is not proven.",
         ],
     }
+    run_digest: str | None = None
     try:
         if runtime_src is not None:
             require(runtime_manifest is not None and runtime_manifest.is_file(), "Missing packaged runtime manifest")
@@ -533,7 +549,9 @@ def evaluate(
         report["config_transformations"] = ["workflow.inputs replaced by case fixture"] + (
             ["execution.deadline_seconds set to 600"] if mode == "live" else []
         )
-        recorded = Recorded(evidence, evaluation, read_evidence(evidence, expected), identity)
+        files = read_evidence(evidence, expected)
+        run_digest = verified_content_digest(evidence, expected, files, identity)
+        recorded = Recorded(evidence, evaluation, files, identity)
         report["observation"] = {"manifest": "evidence/observation.json", "plan_sha256": digest(expected)}
         judge_entries(scenario, expected["entries"], recorded, cases, mode, report, rubric_runs, fixture=fixture)
         report["passed"] = all(row["passed"] for row in report["cases"])
@@ -554,6 +572,7 @@ def evaluate(
             execution_pass=executed,
             judge=judge,
             card=fixture.rubric,
+            run_digest=run_digest,
         )
     except Exception as error:  # A rubric must never cost a correct submission its report
         scored = {

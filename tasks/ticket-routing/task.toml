@@ -1,0 +1,30 @@
+schema_version = "1.4"
+artifacts = [
+  {source="/logs/artifacts", destination="discarded-convention", exclude=["*"]},
+  {source="/submission/config.yaml", destination="submission/config.yaml"}
+]
+[agent]
+timeout_sec = 600
+user = "1000"
+[environment]
+network_mode = "no-network"
+build_timeout_sec = 600
+cpus = 1
+memory_mb = 2048
+[verifier]
+timeout_sec = 6000
+environment_mode = "separate"
+[[verifier.collect]]
+command = "python3 /opt/sapi-submission.py collect"
+user = "root"
+timeout_sec = 10
+[verifier.environment]
+network_mode = "public"
+cpus = 1
+memory_mb = 2048
+
+[metadata.sapi]
+default = false
+judge_calls = 0
+runtime_model_calls = 1
+catalogs = ["full"]

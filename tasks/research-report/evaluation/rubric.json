@@ -1,0 +1,58 @@
+{
+  "id": "research-report",
+  "version": "2.0.0",
+  "origin": "local",
+  "prompt_version": "fixture-judge/v1",
+  "criteria": [
+    {
+      "id": "acceptance",
+      "question": "Did the independently verified graph and report satisfy all mandatory factual checks?",
+      "weight": 4,
+      "evaluator": "deterministic",
+      "check_id": "accepted"
+    },
+    {
+      "id": "grounding",
+      "question": "Are intermediate and final evidence excerpts exact substrings of the source?",
+      "weight": 1,
+      "evaluator": "deterministic",
+      "check_id": "grounding"
+    },
+    {
+      "id": "coverage",
+      "question": "Does the final report retain every named capability, audience and channel?",
+      "weight": 1,
+      "evaluator": "deterministic",
+      "check_id": "coverage"
+    },
+    {
+      "id": "clarity",
+      "question": "Is the synthesized report clear, readable and well organized for its intended reader?",
+      "weight": 2,
+      "evaluator": "llm",
+      "anchors": {
+        "yes": "Concise, organized and internally coherent. Fluency alone does not establish usefulness.",
+        "maybe": "Understandable, but repetitive or confusingly organized.",
+        "no": "Seriously confusing or contradictory."
+      },
+      "required_evidence": [
+        "candidate"
+      ]
+    },
+    {
+      "id": "usefulness",
+      "question": "Does the report provide a coherent synthesis of the supplied product, audience and channels without irrelevant filler?",
+      "weight": 2,
+      "evaluator": "llm",
+      "anchors": {
+        "yes": "A faithful synthesis of the product, audience and channels that preserves all important source information and adds no unsupported factual claims.",
+        "maybe": "Faithful, but mostly copied or only weakly synthesized.",
+        "no": "Material unsupported claims, contradictions, important omissions, or irrelevant or instructional filler that makes the report unreliable."
+      },
+      "required_evidence": [
+        "environment",
+        "candidate"
+      ]
+    }
+  ]
+}
