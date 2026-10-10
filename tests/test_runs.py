@@ -46,6 +46,8 @@ class RunTests(unittest.TestCase):
         quiet = patch("sapi_config_lab.coordinate.runs.progress")
         quiet.start()
         self.addCleanup(quiet.stop)
+        # The run's progress display writes to stderr; tests that read it redirect it again.
+        self.enterContext(contextlib.redirect_stderr(io.StringIO()))
 
     def saved(self):
         return json.loads((self.output / "report.json").read_text())

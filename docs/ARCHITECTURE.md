@@ -91,6 +91,11 @@ Image reuse requires a build record matching the complete current sources.
 Documentation is included in that identity; progress belongs under ignored
 `reports/` while guarded runs are active.
 
+Each command owns one stderr progress display in `coordinate/progress.py`; producers
+report stage boundaries and job context, and `execute/host.py::run_logged` hands its
+subprocess facts to that display through an observer instead of printing beside it.
+The display is a projection of orchestration facts, never evidence.
+
 `Run.harbor` dispatches one selected task with one attempt and zero infrastructure
 retries into `reports/<run>/jobs/`. Harbor's results remain authoritative. Research
 reports add source/model/prompt identities, reservations, selection and compact

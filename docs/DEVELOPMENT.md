@@ -21,7 +21,9 @@ uv run --locked sapi-lab check
 ```
 
 `check` runs unit tests, lint, formatting, types and direct/sdist wheel installation
-checks. It uses no Docker or models. `run.sh` additionally builds source-identified
+checks. It uses no Docker or models. Each check's output goes to
+`reports/<UTC>-check-<id>/<check>.log`; a failed check prints its exit code, log, last 40
+lines and an inspection command, and later checks still run. `run.sh` additionally builds source-identified
 native images, runs transport controls and submits direct Harbor oracle/nop trials.
 Invoice is the sole default when scenarios are omitted. `--skip-build` requires an
 existing build record matching every current source and selected image ID. Controls
@@ -219,9 +221,37 @@ replay receipt; native execution and acceptance stay null.
 
 ## Reading a run
 
+`check`, `harbor`, `generate`, `live` and `evaluate --dispatch-judge` share one stderr
+progress display (`coordinate/progress.py`); stdout keeps only the machine-readable
+result, printed after the display finishes. Run commands show `setup`, their own stages
+and `finalizing`: for `harbor`, `local tests`, `task plans`, `transport`, `native images`,
+`oracle` and `nop`; for `generate`, `controls`, `native images`, `prompts` and one
+`authoring N/total` per attempt; for `live`, `preflight` and then one `case N/total` per
+admitted case. Each stage is pending, running, done, failed, unknown or interrupted.
+Counters count stages, never work, and there are no percentages or ETAs. The final line
+says passed, failed (naming failed stages, or "result not accepted" when every stage
+finished), outcome unknown, or interrupted, and lists stages that did not run. Offline
+`evaluate` shows nothing.
+
+On a terminal (stderr is a TTY and `TERM` is not `dumb`) the display redraws one compact
+frame in place: header, ordered stages, elapsed times, the running stage's job or
+reservation context and its logged subprocess's last line, quiet time and log path. It
+uses no colour and truncates to the terminal width; durable messages print above it, and
+the final frame stays without a spinner on every outcome, including Ctrl+C. Otherwise the
+display prints plain lines: `[<command>] N/total <stage> · <state>`, nested context,
+the logged subprocess lines below, and a heartbeat every 15 seconds only while a stage
+waits without a logged subprocess.
+
+Stages change only at orchestration boundaries the host owns. A Harbor job or other
+subprocess stays running until it returns; its heartbeat proves only that the parent is
+waiting, and `last:` is a diagnostic, not a phase. `generate`'s control suite is a child
+whose stderr is `control.log`, so its stage lines appear only as the parent's `last:`.
+
 Logged subprocesses report start, elapsed time, the absolute log path, the last readable
-log line, and seconds without new output to stderr every 15 seconds; they also report
-exit or timeout there. Their stdout and stderr remain in the named run log.
+log line, and seconds without new output every 15 seconds; they also report exit or
+timeout. Without a display these are stderr lines; on a terminal display they update the
+frame, and only a non-zero exit or timeout is printed. Their stdout and stderr remain in
+the named run log; inspect it with `tail -n 200 reports/<run>/<stem>.log`.
 
 Every run report includes a `logs` map from log stems to paths relative to the run
 directory. A failed step adds `failure_stage`, `log` (or null) and a bounded

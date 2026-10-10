@@ -16,6 +16,7 @@ import yaml
 
 from sapi_config_lab.coordinate.live import audit_records, check_trials, main, validate_control
 from sapi_config_lab.coordinate.live_evidence import reconcile_dispatches
+from sapi_config_lab.coordinate.progress import tracking
 from sapi_config_lab.coordinate.replay import load_selection, read_json
 from sapi_config_lab.coordinate.runs import Run
 from sapi_config_lab.coordinate.wrapper import parse_wrapper_files, wrapper_identity
@@ -397,8 +398,12 @@ class NativeLiveReservationTests(unittest.TestCase):
                     (0, [live_trial] * (2 if fault == "duplicate" else 1)),
                 ]
 
-                def experiment(path, report, body, run=run, **options):
-                    body(run)
+                display = io.StringIO()
+
+                def experiment(path, report, body, run=run, display=display, **options):
+                    self.assertEqual((options["command"], options["stages"]), ("sapi-lab live", ["preflight"]))
+                    with tracking("sapi-lab live", options["stages"], stream=display, refresh=None):
+                        body(run)
 
                 def judge(
                     recorded,
@@ -462,9 +467,17 @@ class NativeLiveReservationTests(unittest.TestCase):
                         "--judge-model",
                         "stub-judge",
                     ]
+                    case = f"case 1/1 {scenario.name}/"
                     if fault in (None, "receipt-fresh"):
                         self.assertEqual(main(arguments), 0)
                         dispatch.assert_called_once()
+                        lines = display.getvalue().splitlines()
+                        # Cases become known stages only after preflight admitted them.
+                        self.assertIn("[sapi-lab live] 1/1 preflight · done 0m00s", lines)
+                        self.assertTrue(any(line.startswith(f"[sapi-lab live] 2/2 {case}") for line in lines))
+                        self.assertRegex(display.getvalue(), r"\] 2/2 case 1/1 [^\n]+ · done")
+                        self.assertIn(f"[1/1] {scenario.name}/workflow: live, up to 0 model calls reserved", lines)
+                        self.assertIn("[sapi-lab live]   Judge: 1 reserved call; task evaluator running", lines)
                         self.assertTrue(
                             all(event["status"] == "passed" for event in read_json(output / "ledger.json")["events"])
                         )
@@ -474,6 +487,8 @@ class NativeLiveReservationTests(unittest.TestCase):
                         with self.assertRaises(subprocess.TimeoutExpired):
                             main(arguments)
                         dispatch.assert_not_called()
+                        self.assertRegex(display.getvalue(), r"\] 2/2 case 1/1 [^\n]+ · unknown")
+                        self.assertNotIn("Judge:", display.getvalue())
                         events = read_json(output / "ledger.json")["events"]
                         self.assertEqual(
                             [(event["phase"], event["status"]) for event in events], [("runtime", "unknown")]

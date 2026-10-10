@@ -779,6 +779,8 @@ class HostReceiptProofTests(unittest.TestCase):
     """`sapi-lab evaluate` proves requested fresh judging itself; the task process's success is not evidence."""
 
     def setUp(self):
+        # Requested Judge dispatch shows its progress display on stderr.
+        self.enterContext(contextlib.redirect_stderr(io.StringIO()))
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)

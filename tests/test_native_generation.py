@@ -233,10 +233,24 @@ class NativeGenerationTests(unittest.TestCase):
                     patch("sapi_config_lab.coordinate.generate.invoke", side_effect=task_invoke),
                     patch("sapi_config_lab.coordinate.runs.run_job", side_effect=harbor),
                     patch("sapi_config_lab.harbor_integration.yaml_agent.request_wrapper", side_effect=wrapper),
-                    contextlib.redirect_stdout(io.StringIO()),
-                    contextlib.redirect_stderr(io.StringIO()),
+                    contextlib.redirect_stdout(io.StringIO()) as stdout,
+                    contextlib.redirect_stderr(io.StringIO()) as stderr,
                 ):
                     code = main(["--attempts", "1", "--report-dir", str(output)])
+                self.assertEqual(len(stdout.getvalue().splitlines()), 1)
+                progress = [
+                    line.split("] ", 1)[1].split(" · ")[:2]
+                    for line in stderr.getvalue().splitlines()
+                    if line.startswith("[sapi-lab generate] ") and " · " in line and "/" in line.split()[2]
+                ]
+                prompt = output / "inputs/invoice-total/prompt.txt"
+                for private in ("PRIVATE", "exact authored answer", "mocked-model"):
+                    self.assertNotIn(private, stderr.getvalue())
+                if prompt.is_file() and prompt.read_text() != "changed":
+                    self.assertNotIn(prompt.read_text()[:200], stderr.getvalue())
+                if fault == "phase":
+                    self.assertIn(("4/6 prompts", "failed"), [(a, b.split()[0]) for a, b in progress])
+                    self.assertNotIn(["5/6 authoring 1/1", "running"], progress)
                 self.assertEqual(code, int(fault is not None))
                 self.assertEqual(len(calls), int(fault is None))
                 self.assertFalse((output / "task-packages").exists())
@@ -244,6 +258,24 @@ class NativeGenerationTests(unittest.TestCase):
                     self.assertFalse((output / "ledger.json").exists())
                     self.assertFalse((output / "jobs").exists())
                 if fault is None:
+                    self.assertEqual(
+                        [stage for stage, state in progress if state == "running"],
+                        [
+                            "1/6 setup",
+                            "2/6 controls",
+                            "3/6 native images",
+                            "4/6 prompts",
+                            "5/6 authoring 1/1",
+                            "6/6 finalizing",
+                        ],
+                    )
+                    self.assertIn("[sapi-lab generate]   1 authoring call reserved", stderr.getvalue())
+                    self.assertIn(
+                        "[sapi-lab generate]   Harbor job generated-1-invoice-total · task invoice-total",
+                        stderr.getvalue(),
+                    )
+                    self.assertIn("[1/1] invoice-total: passed", stderr.getvalue())
+                    self.assertRegex(stderr.getvalue(), r"passed after \dm\d\ds · 6/6 stages done\n$")
                     report = json.loads((output / "report.json").read_text())
                     self.assertEqual(report["authoring_attempts_spent"], 1)
                     self.assertTrue(report["source_unchanged"])

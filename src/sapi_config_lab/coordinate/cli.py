@@ -1,16 +1,19 @@
 """The sapi-lab command line. Optional experiment dependencies are imported only by the command that needs them."""
 
 import argparse
+from datetime import UTC, datetime
 import importlib
 import json
 from pathlib import Path
-import subprocess
 import sys
+import tempfile
 
 from sapi_config_lab.contracts import CompileOptions, WorkflowBackend
 from sapi_config_lab.coordinate.compilation import compose_compilation
 from sapi_config_lab.coordinate.native_tasks import policy, select_tasks
+from sapi_config_lab.coordinate.progress import failure_lines, tracking
 from sapi_config_lab.evidence import write_json
+from sapi_config_lab.execute.host import log_tail, run_logged
 from sapi_config_lab.paths import benchmark_root, workspace_root
 from sapi_config_lab.profile import Invalid, Unsupported, read, read_bindings, validate
 
@@ -69,13 +72,22 @@ CHECKS = {
 def check_command(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="sapi-lab check", description="Run every required local check.")
     parser.parse_args(argv)
+    reports = workspace_root() / "reports"
+    reports.mkdir(parents=True, exist_ok=True)
+    logs = Path(tempfile.mkdtemp(prefix=datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-check-", dir=reports))
     failed = []
-    for index, (name, arguments) in enumerate(CHECKS.items(), 1):
-        print(f"[{index}/{len(CHECKS)}] {name}", file=sys.stderr, flush=True)
-        if subprocess.run([sys.executable, *arguments], cwd=workspace_root(), check=False).returncode:
-            failed.append(name)
-            print(f"[{index}/{len(CHECKS)}] {name}: FAILED", file=sys.stderr, flush=True)
-    print("check " + ("failed: " + ", ".join(failed) if failed else "passed"), file=sys.stderr, flush=True)
+    with tracking("sapi-lab check", list(CHECKS)) as display:
+        display.note(f"logs: {logs}")
+        for name, arguments in CHECKS.items():
+            log = logs / (name.replace(" ", "-") + ".log")
+            with display.stage(name):
+                code = run_logged([sys.executable, *arguments], log, stage=name, timeout=None)
+                if code:
+                    failed.append(name)
+                    display.end(name, "failed")
+                    for line in [f"failed at {name}: exit {code}", *failure_lines(log, log_tail(log), lines=40)]:
+                        display.note(line)
+        display.finish("failed" if failed else "passed")
     return 1 if failed else 0
 
 

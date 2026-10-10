@@ -1,7 +1,9 @@
 """Checkout's positive Harbor package and opt-in fresh-world oracle/nop proof."""
 
+import contextlib
 from datetime import datetime
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -54,6 +56,8 @@ def inspect_public(archive, reference):
 
 class CheckoutHarborPackageTests(unittest.TestCase):
     def setUp(self):
+        # Requested Judge dispatch shows its progress display on stderr.
+        self.enterContext(contextlib.redirect_stderr(io.StringIO()))
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)

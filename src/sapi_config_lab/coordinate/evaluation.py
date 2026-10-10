@@ -7,6 +7,7 @@ quality score (null is never zero); they share no scoring semantics.
 from __future__ import annotations
 
 import argparse
+from contextlib import nullcontext
 import json
 from pathlib import Path
 import subprocess
@@ -141,43 +142,50 @@ def main(argv: list[str] | None = None) -> int:
         else None
     )
     requested = bool(args.dispatch_judge or args.judgement or args.calibration)
-    try:
-        result = reevaluate_native(
-            record,
-            output,
-            args.judgement,
-            dispatch=args.dispatch_judge,
-            calibration=args.calibration,
-            judge_model=args.judge_model,
-            judge=endpoint,
-            series_dir=str(series_dir) if series_dir else None,
-            series_ceiling=args.series_ceiling,
-        )
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
-        if not requested:
-            raise
-        return _judge_failed(output, error)
-    if endpoint is not None:
+    from sapi_config_lab.coordinate.progress import detail, stage, tracking
+
+    # Only an explicitly requested dispatch gets a display; offline replay keeps its silent stderr.
+    stages = ["re-evaluate and judge", *(["receipt check"] if endpoint is not None else [])]
+    with tracking("sapi-lab evaluate", stages) if args.dispatch_judge else nullcontext() as display:
+        code, printed = 1, None
         try:
-            _require_fresh(output, series_dir, args.judge_model, args.judge_wrapper_evidence, result["quality"])
-        except ValueError as error:
-            return _judge_failed(output, error)
-    print(json.dumps(result))
-    judged = (result["quality"] or {}).get("status") == "complete"
-    return 0 if result["acceptance"] and (judged or not requested) else 1
+            with stage(stages[0]), detail("task evaluator process with the requested Judge dispatch"):
+                result = reevaluate_native(
+                    record,
+                    output,
+                    args.judgement,
+                    dispatch=args.dispatch_judge,
+                    calibration=args.calibration,
+                    judge_model=args.judge_model,
+                    judge=endpoint,
+                    series_dir=str(series_dir) if series_dir else None,
+                    series_ceiling=args.series_ceiling,
+                )
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+            if not requested:
+                raise
+            printed = _judge_failed(output, error)
+        if printed is None and endpoint is not None:
+            try:
+                with stage("receipt check"):
+                    _require_fresh(output, series_dir, args.judge_model, args.judge_wrapper_evidence, result["quality"])
+            except ValueError as error:
+                printed = _judge_failed(output, error)
+        if printed is None:
+            judged = (result["quality"] or {}).get("status") == "complete"
+            code, printed = (0 if result["acceptance"] and (judged or not requested) else 1), result
+        if display is not None:
+            display.finish("passed" if code == 0 else "unknown" if printed.get("judge") == "unknown" else "failed")
+    print(json.dumps(printed))
+    return code
 
 
-def _judge_failed(output: Path, error: Exception) -> int:
+def _judge_failed(output: Path, error: Exception) -> dict:
     """Report a requested Judge stage that failed or stayed unknown; recorded acceptance stays visible."""
     saved = output / "result.json"
     reason = (getattr(error, "stderr", None) or str(error)).strip().splitlines()
-    print(
-        json.dumps(
-            {
-                "judge": "unknown" if isinstance(error, subprocess.TimeoutExpired) else "failed",
-                "reason": reason[-1] if reason else type(error).__name__,
-                "result": json.loads(saved.read_text()) if saved.is_file() else None,
-            }
-        )
-    )
-    return 1
+    return {
+        "judge": "unknown" if isinstance(error, subprocess.TimeoutExpired) else "failed",
+        "reason": reason[-1] if reason else type(error).__name__,
+        "result": json.loads(saved.read_text()) if saved.is_file() else None,
+    }

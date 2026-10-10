@@ -19,6 +19,7 @@ from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, NOT_EVALUATE
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.live import validate_control
 from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
+from sapi_config_lab.coordinate.progress import detail, stage
 from sapi_config_lab.coordinate.runs import Run, load_trials, progress, run_experiment, trial_seconds
 from sapi_config_lab.evidence import sha256, write_json
 from sapi_config_lab.execute.host import LAB_IMAGE, HostConfig, run_logged
@@ -162,22 +163,23 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     def body(run: Run) -> None:
-        progress(f"controls: unpaid control suite first; log {run.output / 'control.log'}")
         started = time.monotonic()
-        with run.step("controls", log="control"):
-            control = run_logged(
-                [
-                    sys.executable,
-                    "-m",
-                    "sapi_config_lab.coordinate.controls",
-                    "--report-dir",
-                    str(run.output / "control"),
-                ]
-                + [arg for scenario in scenarios for arg in ("--scenario", scenario)],
-                run.output / "control.log",
-                stage="controls",
-                timeout=None,
-            )
+        with stage("controls"), run.step("controls", log="control"):
+            # The child's own progress lines go to control.log; its last line is shown as nested context.
+            with detail("unpaid control suite child process; its stages are in control.log"):
+                control = run_logged(
+                    [
+                        sys.executable,
+                        "-m",
+                        "sapi_config_lab.coordinate.controls",
+                        "--report-dir",
+                        str(run.output / "control"),
+                    ]
+                    + [arg for scenario in scenarios for arg in ("--scenario", scenario)],
+                    run.output / "control.log",
+                    stage="controls",
+                    timeout=None,
+                )
             try:
                 child = json.loads((run.output / "control/report.json").read_text())
             except OSError, ValueError:
@@ -194,76 +196,85 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 raise RuntimeError(cause + "; model generation was not started")
         progress(f"controls: passed ({round(time.monotonic() - started)}s)")
-        run.check("after-controls")
-        identity = run.use_image(LAB_IMAGE)
-        run.use_native_tasks(tasks)
-        validate_control(run.output / "control/report.json", run.sources, identity, native_images=run.native_images)
+        with stage("native images"):
+            run.check("after-controls")
+            identity = run.use_image(LAB_IMAGE)
+            run.use_native_tasks(tasks)
+            validate_control(run.output / "control/report.json", run.sources, identity, native_images=run.native_images)
         report["prompt_sha256"], report["private_cases_sha256"], report["private_cases_paths"] = {}, {}, {}
         prompts = {}
-        for task in tasks:
-            with run.step("prompt " + task.name):
-                run.check("before-prompt-" + task.name)
-                material = invoke(task, {"action": "prompt", "catalog": args.catalog}, run.sources)
-                inputs = run.output / "inputs" / task.name
-                inputs.mkdir(parents=True)
-                prompt = inputs / "prompt.txt"
-                prompt.write_bytes(material["prompt"].encode())
-                prompts[task.name] = prompt
-                report["prompt_sha256"][task.name] = sha256(prompt)
-                if "cases" in material:
-                    cases = inputs / "cases.json"
-                    write_json(cases, {task.name: material["cases"]})
-                    report["private_cases_sha256"][task.name] = sha256(cases)
-                    report["private_cases_paths"][task.name] = str(cases.relative_to(run.output))
-                if args.catalog == "scenario":
-                    text = material["catalog"]
-                    report["catalog"].setdefault("operations", {})[task.name] = sorted(
-                        yaml.safe_load(text)["operations"]
-                    )
-                    report["catalog"].setdefault("sha256", {})[task.name] = hashlib.sha256(text.encode()).hexdigest()
-        run.pin("authoring inputs", run.output / "inputs")
-        run.check("before-authoring-ledger")
-        ledger = open_ledger(
-            run.output, args.series_dir, {"authoring": ceiling}, args.stop_after_failure, series_ceilings
-        )
+        with stage("prompts"):
+            for task in tasks:
+                with run.step("prompt " + task.name), detail("prompt " + task.name):
+                    run.check("before-prompt-" + task.name)
+                    material = invoke(task, {"action": "prompt", "catalog": args.catalog}, run.sources)
+                    inputs = run.output / "inputs" / task.name
+                    inputs.mkdir(parents=True)
+                    prompt = inputs / "prompt.txt"
+                    prompt.write_bytes(material["prompt"].encode())
+                    prompts[task.name] = prompt
+                    report["prompt_sha256"][task.name] = sha256(prompt)
+                    if "cases" in material:
+                        cases = inputs / "cases.json"
+                        write_json(cases, {task.name: material["cases"]})
+                        report["private_cases_sha256"][task.name] = sha256(cases)
+                        report["private_cases_paths"][task.name] = str(cases.relative_to(run.output))
+                    if args.catalog == "scenario":
+                        text = material["catalog"]
+                        report["catalog"].setdefault("operations", {})[task.name] = sorted(
+                            yaml.safe_load(text)["operations"]
+                        )
+                        report["catalog"].setdefault("sha256", {})[task.name] = hashlib.sha256(
+                            text.encode()
+                        ).hexdigest()
+            run.pin("authoring inputs", run.output / "inputs")
+            run.check("before-authoring-ledger")
+            ledger = open_ledger(
+                run.output, args.series_dir, {"authoring": ceiling}, args.stop_after_failure, series_ceilings
+            )
         report["ledger"] = str(ledger.path)
         report["fixture_overlay"] = []
         report_path = run.output / "report.json"
         jobs = []
         for attempt in range(1, args.attempts + 1):
-            run.check(f"before-attempt-{attempt}")
-            step = f"[{attempt}/{args.attempts}]"
-            progress(f"{step} authoring, then verifying: {', '.join(scenarios)}")
-            for task in tasks:
-                job = f"generated-{attempt}-{task.name}"
-                jobs.append(run.output / "jobs" / job)
-                run.check("before-reservation-" + job)
-                with ledger.reserved("authoring", f"{run.output.name}/{job}", 1, report_path, ceiling) as outcome:
-                    exit_code, _ = run.harbor(
-                        job,
-                        task,
-                        AUTHOR_AGENT,
-                        agent_keys=[
-                            "upstream=" + args.upstream,
-                            "prompt_path=" + str(prompts[task.name]),
-                            "prompt_sha256=" + report["prompt_sha256"][task.name],
-                        ],
-                        attempts="1",
-                        admission=True,
-                        verifier_env=["SAPI_NATIVE_DEADLINE_SECONDS=120", "SAPI_LLM_MODE=stub"],
-                    )
-                    rows = summarize_trials(jobs[-1])
-                    for row in rows:
-                        verdict = "passed" if row["passed"] else f"failed at {row['failure_stage']}"
-                        seconds = trial_seconds(row)
-                        progress(
-                            f"{step} {row['scenario']}: {verdict}" + (f" ({seconds}s)" if seconds is not None else "")
+            with stage(f"authoring {attempt}/{args.attempts}"):
+                run.check(f"before-attempt-{attempt}")
+                step = f"[{attempt}/{args.attempts}]"
+                progress(f"{step} authoring, then verifying: {', '.join(scenarios)}")
+                for task in tasks:
+                    job = f"generated-{attempt}-{task.name}"
+                    jobs.append(run.output / "jobs" / job)
+                    run.check("before-reservation-" + job)
+                    with (
+                        ledger.reserved("authoring", f"{run.output.name}/{job}", 1, report_path, ceiling) as outcome,
+                        detail("1 authoring call reserved"),
+                    ):
+                        exit_code, _ = run.harbor(
+                            job,
+                            task,
+                            AUTHOR_AGENT,
+                            agent_keys=[
+                                "upstream=" + args.upstream,
+                                "prompt_path=" + str(prompts[task.name]),
+                                "prompt_sha256=" + report["prompt_sha256"][task.name],
+                            ],
+                            attempts="1",
+                            admission=True,
+                            verifier_env=["SAPI_NATIVE_DEADLINE_SECONDS=120", "SAPI_LLM_MODE=stub"],
                         )
-                    report["harbor_exit_codes"].append(exit_code)
-                    report["trials"].extend(rows)
-                    outcome.passed = (
-                        exit_code == 0 and len(rows) == 1 and rows[0]["scenario"] == task.name and rows[0]["passed"]
-                    )
+                        rows = summarize_trials(jobs[-1])
+                        for row in rows:
+                            verdict = "passed" if row["passed"] else f"failed at {row['failure_stage']}"
+                            seconds = trial_seconds(row)
+                            progress(
+                                f"{step} {row['scenario']}: {verdict}"
+                                + (f" ({seconds}s)" if seconds is not None else "")
+                            )
+                        report["harbor_exit_codes"].append(exit_code)
+                        report["trials"].extend(rows)
+                        outcome.passed = (
+                            exit_code == 0 and len(rows) == 1 and rows[0]["scenario"] == task.name and rows[0]["passed"]
+                        )
         trials = report["trials"]
         report["passed_trials"] = sum(t["passed"] for t in trials)
         report["total_trials"] = len(trials)
@@ -275,7 +286,15 @@ def main(argv: list[str] | None = None) -> int:
             report["status"] = "passed"
 
     try:
-        run_experiment(output, report, body, prefix="sapi-yaml-generation")
+        run_experiment(
+            output,
+            report,
+            body,
+            prefix="sapi-yaml-generation",
+            command="sapi-lab generate",
+            stages=["controls", "native images", "prompts"]
+            + [f"authoring {attempt}/{args.attempts}" for attempt in range(1, args.attempts + 1)],
+        )
     except ValueError as error:
         parser.error(str(error))
     report.setdefault("passed_trials", sum(t["passed"] for t in report["trials"]))

@@ -306,6 +306,8 @@ for env in ({"SAPI_LLM_MODE": "live", "SAPI_NATIVE_JUDGE_MODEL": sys.argv[4]}, {
 
 class ResearchJudgeCommandTests(unittest.TestCase):
     def setUp(self):
+        # Requested Judge dispatch shows its progress display on stderr.
+        self.enterContext(contextlib.redirect_stderr(io.StringIO()))
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
@@ -500,6 +502,8 @@ class ResearchLiveJudgeTests(unittest.TestCase):
     RUNTIME_UPSTREAM = "http://127.0.0.1:9/runtime"
 
     def setUp(self):
+        # Requested Judge dispatch shows its progress display on stderr.
+        self.enterContext(contextlib.redirect_stderr(io.StringIO()))
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)

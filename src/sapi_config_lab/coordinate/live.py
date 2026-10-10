@@ -19,6 +19,7 @@ from sapi_config_lab.coordinate.evaluation import ADMISSION_REPORT, NOT_EVALUATE
 from sapi_config_lab.coordinate.ledger import open_ledger, parse_ceilings
 from sapi_config_lab.coordinate.live_evidence import collect_native, reconcile_dispatches
 from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
+from sapi_config_lab.coordinate.progress import add_stages, detail, stage
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.coordinate.replay import load_selection, read_json, require
 from sapi_config_lab.coordinate.runs import Run, progress, run_experiment
@@ -298,7 +299,7 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     def body(run: Run) -> None:
-        with run.step("preflight"):
+        with stage("preflight"), run.step("preflight"):
             progress(f"controls: checking {args.stub_report}")
             report["stub_report_sha256"] = sha256(args.stub_report)
             identity = run.use_image(LAB_IMAGE)
@@ -432,9 +433,10 @@ def main(argv: list[str] | None = None) -> int:
         report["judge_model"] = args.judge_model
         report_path = run.output / "report.json"
         bridge_url = host.container_url(host.bridge_port)
+        add_stages([f"case {number}/{len(grants)} {s}/{c}" for number, (s, c) in enumerate(grants, 1)])
         for number, ((scenario, name), (grant, _config)) in enumerate(grants.items(), 1):
             step = f"[{number}/{len(grants)}] {scenario}/{name}"
-            with run.step(step):
+            with stage(f"case {number}/{len(grants)} {scenario}/{name}"), run.step(step):
                 progress(f"{step}: live, up to {grant['max_attempts']} model calls reserved")
                 started = time.monotonic()
                 run.check(f"before-{scenario}-{name}")
@@ -528,13 +530,20 @@ def main(argv: list[str] | None = None) -> int:
                     from sapi_config_lab.coordinate import fixture_judge
                     from sapi_config_lab.coordinate.native_evaluation import reevaluate_native
 
-                    with ledger.reserved(
-                        "judge",
-                        f"{run.output.name}/{scenario}/{name}/judge",
-                        judge_allocation[f"{scenario}/{name}"],
-                        report_path,
-                        ceilings["judge"],
-                    ) as judge_outcome:
+                    with (
+                        ledger.reserved(
+                            "judge",
+                            f"{run.output.name}/{scenario}/{name}/judge",
+                            judge_allocation[f"{scenario}/{name}"],
+                            report_path,
+                            ceilings["judge"],
+                        ) as judge_outcome,
+                        detail(
+                            f"Judge: {judge_allocation[f'{scenario}/{name}']} reserved call"
+                            + ("s" if judge_allocation[f"{scenario}/{name}"] != 1 else "")
+                            + "; task evaluator running"
+                        ),
+                    ):
                         record = Path(trial["result_path"]).parent / "verifier"
                         reservation = {
                             "ledger": str(ledger.path),
@@ -606,7 +615,16 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     try:
-        run_experiment(output, report, body, prefix="sapi-lab-live", classify=classify, host=host)
+        run_experiment(
+            output,
+            report,
+            body,
+            prefix="sapi-lab-live",
+            classify=classify,
+            host=host,
+            command="sapi-lab live",
+            stages=["preflight"],
+        )
     except ValueError as error:
         parser.error(str(error))
     print(json.dumps({"status": report["status"], "report": str(Path(output).resolve() / "report.json")}), flush=True)

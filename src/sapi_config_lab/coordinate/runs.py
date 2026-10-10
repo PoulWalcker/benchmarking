@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 import json
 from pathlib import Path
 import subprocess
-import sys
 from typing import Any
 
 from sapi_config_lab.coordinate.native_tasks import image_tags, public_sources
+from sapi_config_lab.coordinate.progress import detail, failure_lines, note, tracking
 from sapi_config_lab.coordinate.provenance import source_manifest
 from sapi_config_lab.evaluate.records import load_trials as load_trials
 from sapi_config_lab.evaluate.records import trial_seconds as trial_seconds
@@ -40,8 +40,8 @@ def fingerprint(path: Path) -> dict[str, str]:
 
 
 def progress(message: str) -> None:
-    """Human progress on stderr; stdout stays machine-readable."""
-    print(message, file=sys.stderr, flush=True)
+    """Human progress on stderr, above any live display; stdout stays machine-readable."""
+    note(message)
 
 
 @dataclass
@@ -166,7 +166,8 @@ class Run:
             argv = job_args(self.harbor_argv, tasks, jobs, job, agent, **arguments)
             self.report.setdefault("commands", []).append(argv)
             try:
-                code = run_job(self.harbor_argv, tasks, jobs, job, agent, self.output / (job + ".log"), **arguments)
+                with detail(f"Harbor job {job} · task {tasks.name}"):
+                    code = run_job(self.harbor_argv, tasks, jobs, job, agent, self.output / (job + ".log"), **arguments)
                 dispatched[job]["exit_code"] = code
                 dispatched[job]["status"] = "finished"
             finally:
@@ -203,7 +204,8 @@ class Run:
             self.report.setdefault("commands", []).append(argv)
             reference: dict[str, Any] = {"path": "jobs/transport", "status": "dispatched"}
             self.report.setdefault("harbor_jobs", {})["transport"] = reference
-            code = run_logged(argv, self.output / "transport.log", stage="transport", timeout=None)
+            with detail("Harbor job transport · task " + task.name):
+                code = run_logged(argv, self.output / "transport.log", stage="transport", timeout=None)
             reference.update(status="finished", exit_code=code)
             self.check("after transport")
             return code
@@ -274,8 +276,13 @@ def run_experiment(
     prefix: str,
     classify: Callable[[Exception], str] | None = None,
     host: HostConfig | None = None,
+    command: str = "sapi-lab run",
+    stages: Sequence[str] = (),
 ) -> dict[str, Any]:
-    """Create the run directory, call `body(run)`, and always finish the run."""
+    """Create the run directory, call `body(run)`, and always finish the run.
+
+    The body reports its own `stages` between the shared setup and finalizing stages.
+    """
     output = output.resolve()
     if output.exists():
         raise ValueError("Choose a new report directory; an existing one is never overwritten")
@@ -287,45 +294,47 @@ def run_experiment(
     write_json(output / "source-manifest.json", sources)
     report["source_manifest"] = "source-manifest.json"
     run = Run(output, report, sources, prefix, host or HostConfig.from_environment())
-    try:
-        with run.step("docker preflight"):
-            report["docker"] = docker_preflight()
-        (output / "existing-containers.txt").write_text(running_containers())
-        run.harbor_argv, report["harbor_version"] = checked_harbor()
-        body(run)
-    except Exception as error:  # A run always ends with a written report
-        report["status"] = "failed"
-        report["error"] = f"{type(error).__name__}: {error}"
-        if isinstance(error, subprocess.TimeoutExpired):
-            report["failure_category"] = "timeout_unknown_outcome"
-        elif classify is not None:
-            report["failure_category"] = classify(error)
-        stage = report.get("failure_stage", "setup")
-        if isinstance(error, subprocess.TimeoutExpired):
-            progress(f"outcome unknown at {stage}: timed out after {error.timeout:g}s (not a failure verdict)")
-        else:
-            cause = f"exit {error.returncode}" if isinstance(error, subprocess.CalledProcessError) else str(error)
-            cause = " ".join(cause.splitlines())
-            if report.get("failure_category") == "timeout_unknown_outcome":
-                progress(f"outcome unknown at {stage}: {cause} (not a failure verdict)")
+    with tracking(command, ["setup", *stages, "finalizing"]) as display:
+        progress(f"report directory: {output}")
+        try:
+            with display.stage("setup"):
+                with run.step("docker preflight"):
+                    report["docker"] = docker_preflight()
+                (output / "existing-containers.txt").write_text(running_containers())
+                run.harbor_argv, report["harbor_version"] = checked_harbor()
+            body(run)
+        except Exception as error:  # A run always ends with a written report
+            report["status"] = "failed"
+            report["error"] = f"{type(error).__name__}: {error}"
+            if isinstance(error, subprocess.TimeoutExpired):
+                report["failure_category"] = "timeout_unknown_outcome"
+            elif classify is not None:
+                report["failure_category"] = classify(error)
+            stage = report.get("failure_stage", "setup")
+            if isinstance(error, subprocess.TimeoutExpired):
+                progress(f"outcome unknown at {stage}: timed out after {error.timeout:g}s (not a failure verdict)")
             else:
-                progress(f"failed at {stage}: {cause}")
-        if report.get("log"):
-            progress(f"  log: {output / report['log']}")
-        job = Path(report["log"]).stem if report.get("log") else stage
-        if job in report.get("harbor_jobs", {}):
-            progress(f"  jobs: {output / report['harbor_jobs'][job]['path']}")
-        if report.get("log_tail"):
-            progress("  last lines:")
-            for line in report["log_tail"][-20:]:
-                progress(f"    {line}")
-        if report.get("log"):
-            progress(f"  inspect: tail -n 200 {output / report['log']}")
-    except KeyboardInterrupt:
-        report["status"] = "interrupted"
-        progress(f"interrupted at {report.get('interrupted_stage', 'setup')}; in-flight work has an unknown outcome")
-        raise
-    finally:
-        progress("finalizing: cleanup, final source check and report")
-        run.close()
+                cause = f"exit {error.returncode}" if isinstance(error, subprocess.CalledProcessError) else str(error)
+                cause = " ".join(cause.splitlines())
+                if report.get("failure_category") == "timeout_unknown_outcome":
+                    progress(f"outcome unknown at {stage}: {cause} (not a failure verdict)")
+                else:
+                    progress(f"failed at {stage}: {cause}")
+            if report.get("failure_category") == "timeout_unknown_outcome":
+                display.unknown_outcome()
+            log = output / report["log"] if report.get("log") else None
+            job = Path(report["log"]).stem if report.get("log") else stage
+            jobs = output / report["harbor_jobs"][job]["path"] if job in report.get("harbor_jobs", {}) else None
+            for line in failure_lines(log, report.get("log_tail") or [], jobs=jobs):
+                progress(line)
+        except KeyboardInterrupt:
+            report["status"] = "interrupted"
+            progress(
+                f"interrupted at {report.get('interrupted_stage', 'setup')}; in-flight work has an unknown outcome"
+            )
+            raise
+        finally:
+            with display.stage("finalizing"), display.detail("cleanup, final source check and report"):
+                run.close()
+        display.finish("unknown" if report.get("failure_category") == "timeout_unknown_outcome" else report["status"])
     return report

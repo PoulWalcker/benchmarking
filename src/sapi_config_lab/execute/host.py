@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
+from contextvars import ContextVar
 from dataclasses import dataclass, fields
 from importlib.metadata import PackageNotFoundError, version
 import os
@@ -20,6 +21,33 @@ HARBOR_VERSION = "0.21.0"
 LAB_IMAGE = f"sapi-config-lab-n8n:{PINNED_N8N_VERSION}"
 HEARTBEAT_SECONDS = 15
 ANSI_CSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+
+
+@dataclass(frozen=True)
+class LoggedEvent:
+    """One `run_logged` fact: started, heartbeat, exited or timed_out; `line` is its standalone stderr text."""
+
+    kind: str
+    stage: str
+    log: Path
+    elapsed: float
+    line: str
+    last: str | None = None
+    quiet: int | None = None
+    code: int | None = None
+
+
+# A command's single progress display observes logged subprocesses here instead of competing on stderr.
+LOGGED_OBSERVER: ContextVar[Callable[[LoggedEvent], None] | None] = ContextVar("logged_observer", default=None)
+
+
+def report_logged(event: LoggedEvent) -> None:
+    """Hand the event to the installed display, or print the standalone line."""
+    observer = LOGGED_OBSERVER.get()
+    if observer is None:
+        print(event.line, file=sys.stderr, flush=True)
+    else:
+        observer(event)
 
 
 @dataclass(frozen=True)
@@ -116,7 +144,7 @@ def run_logged(
     previous_size = 0
     last_growth = start
     log_path = log.resolve()
-    print(f"[{stage}] started · log {log_path}", file=sys.stderr, flush=True)
+    report_logged(LoggedEvent("started", stage, log_path, 0, f"[{stage}] started · log {log_path}"))
     with log.open("w") as stream:
         process = subprocess.Popen(argv, cwd=workspace_root(), stdout=stream, stderr=subprocess.STDOUT)
         try:
@@ -133,7 +161,8 @@ def run_logged(
                     duration = f"{elapsed // 60}m{elapsed % 60:02d}s"
                     if now >= deadline:
                         assert timeout is not None
-                        print(f"[{stage}] timed out after {duration}; outcome unknown", file=sys.stderr, flush=True)
+                        line = f"[{stage}] timed out after {duration}; outcome unknown"
+                        report_logged(LoggedEvent("timed_out", stage, log_path, now - start, line))
                         raise subprocess.TimeoutExpired(argv, timeout) from None
                     try:
                         size = log.stat().st_size
@@ -142,16 +171,16 @@ def run_logged(
                     if size > previous_size:
                         last_growth = now
                     previous_size = size
-                    quiet = f" · quiet {int(now - last_growth)}s" if size == 0 or now > last_growth else ""
-                    print(
-                        f"[{stage}] {duration} · log {log_path} · last: {last_log_line(log)}{quiet}",
-                        file=sys.stderr,
-                        flush=True,
-                    )
+                    quiet = int(now - last_growth) if size == 0 or now > last_growth else None
+                    last = last_log_line(log)
+                    line = f"[{stage}] {duration} · log {log_path} · last: {last}"
+                    line += f" · quiet {quiet}s" if quiet is not None else ""
+                    report_logged(LoggedEvent("heartbeat", stage, log_path, now - start, line, last, quiet))
                     next_heartbeat += heartbeat
                     continue
                 elapsed = int(time.monotonic() - start)
-                print(f"[{stage}] exit {code} after {elapsed // 60}m{elapsed % 60:02d}s", file=sys.stderr, flush=True)
+                line = f"[{stage}] exit {code} after {elapsed // 60}m{elapsed % 60:02d}s"
+                report_logged(LoggedEvent("exited", stage, log_path, elapsed, line, code=code))
                 return code
         finally:
             if process.poll() is None:

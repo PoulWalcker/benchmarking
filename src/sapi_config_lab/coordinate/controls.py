@@ -13,6 +13,7 @@ from typing import Any
 
 from sapi_config_lab.coordinate.evaluation import control_passed
 from sapi_config_lab.coordinate.native_tasks import invoke, policy, select_tasks
+from sapi_config_lab.coordinate.progress import detail, stage
 from sapi_config_lab.coordinate.provenance import host_environment
 from sapi_config_lab.coordinate.runs import Run, progress, run_experiment
 from sapi_config_lab.execute.host import LAB_IMAGE, run_logged
@@ -91,8 +92,7 @@ def main(argv: list[str] | None = None) -> int:
 
     def body(run: Run) -> None:
         report["docker_version"] = report["docker"]["server_version"]
-        progress(f"local tests; report directory {run.output}")
-        with run.step("local tests", log="local-tests"):
+        with stage("local tests"), run.step("local tests", log="local-tests"):
             exit_code = run_logged(
                 [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v", "-p", "test_*.py"],
                 run.output / "local-tests.log",
@@ -100,26 +100,31 @@ def main(argv: list[str] | None = None) -> int:
                 timeout=LOCAL_TESTS_SECONDS,
             )
             check("local_tests", exit_code == 0, exit_code=exit_code)
-        for task in tasks:
-            with run.step("plan " + task.name):
-                invoke(
-                    task,
-                    {"action": "plan", "submission": str(task / "solution/config.yaml"), "options": {"mode": "stub"}},
-                    run.sources,
-                )
-        progress("transport: Harbor builds and runs real n8n HTTP transport and rejection probes")
-        with run.step("transport", log="transport"):
-            report["transport"] = transport_probe(run, skip_build=args.skip_build)
+        with stage("task plans"):
+            for task in tasks:
+                with run.step("plan " + task.name), detail("plan " + task.name):
+                    invoke(
+                        task,
+                        {
+                            "action": "plan",
+                            "submission": str(task / "solution/config.yaml"),
+                            "options": {"mode": "stub"},
+                        },
+                        run.sources,
+                    )
+        with stage("transport"), run.step("transport", log="transport"):
+            with detail("Harbor builds and runs real n8n HTTP transport and rejection probes"):
+                report["transport"] = transport_probe(run, skip_build=args.skip_build)
             check(
                 "real_n8n_transport",
                 report["transport"]["exit_code"] == 0 and report["transport"].get("passed") is True,
             )
-        if not args.skip_build:
-            run.use_image(LAB_IMAGE)
-        progress(f"native images: verifying sources and {len(selected)} checked-in tasks")
-        run.use_native_tasks(tasks, build=not args.skip_build)
+        with stage("native images"), detail(f"verifying sources and {len(selected)} checked-in tasks"):
+            if not args.skip_build:
+                run.use_image(LAB_IMAGE)
+            run.use_native_tasks(tasks, build=not args.skip_build)
         for agent in ("oracle", "nop"):
-            with run.step(f"harbor_{agent}"):
+            with stage(agent), run.step(f"harbor_{agent}"):
                 progress(f"{agent}: {len(selected)} Harbor tasks through real n8n")
                 trials, exit_codes = [], []
                 for task in tasks:
@@ -156,7 +161,14 @@ def main(argv: list[str] | None = None) -> int:
         report["status"] = "passed"
 
     try:
-        run_experiment(output, report, body, prefix="sapi-lab-harbor")
+        run_experiment(
+            output,
+            report,
+            body,
+            prefix="sapi-lab-harbor",
+            command="sapi-lab harbor",
+            stages=["local tests", "task plans", "transport", "native images", "oracle", "nop"],
+        )
     except ValueError as error:
         parser.error(str(error))
     print(json.dumps({"status": report["status"], "report": str(Path(output).resolve() / "report.json")}), flush=True)
