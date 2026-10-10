@@ -14,7 +14,7 @@ FROM public AS research-report-public
 COPY tasks/research-report/instruction.md tasks/research-report/task.md tasks/research-report/bindings.yaml /app/public/
 
 FROM public AS checkout-recovery-public
-COPY tasks/checkout-recovery/instruction.md tasks/checkout-recovery/authoring-notes.md tasks/checkout-recovery/bindings.yaml tasks/checkout-recovery/authoring-prompt.txt /app/public/
+COPY tasks/checkout-recovery/instruction.md tasks/checkout-recovery/public/authoring-notes.md tasks/checkout-recovery/bindings.yaml tasks/checkout-recovery/public/authoring-prompt.txt /app/public/
 
 FROM public AS ticket-routing-public
 COPY tasks/ticket-routing/instruction.md \
